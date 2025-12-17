@@ -232,7 +232,7 @@ if (packageName && !/^[a-z][a-z0-9-]*$/.test(packageName)) {
   error('Package name must be lowercase and contain only letters, numbers, and hyphens');
 }
 
-const frontendRoot = path.resolve(__dirname, '..');
+const frontendRoot = path.resolve(__dirname, '..', 'frontend');
 const packagesDir = path.join(frontendRoot, 'packages');
 const templatesRoot = path.join(__dirname, 'templates');
 
