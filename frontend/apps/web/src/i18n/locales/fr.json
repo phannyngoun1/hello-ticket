@@ -1,0 +1,181 @@
+{
+  "common": {
+    "welcome": "Bienvenue",
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "noData": "Aucune donnée disponible",
+    "expandMenu": "Développer le menu",
+    "collapseMenu": "Réduire le menu"
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre",
+    "system": "Système",
+    "toggle": "Changer le thème"
+  },
+  "language": {
+    "select": "Sélectionner la langue",
+    "en": "Anglais",
+    "fr": "Français",
+    "es": "Espagnol"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "dontHaveAccount": "Vous n'avez pas de compte ?",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "logoutSuccess": "Vous avez été déconnecté avec succès",
+    "authenticationRequired": "Authentification requise",
+    "authenticationRequiredMessage": "Vous devez être connecté pour accéder à cette page. Veuillez vous connecter pour continuer.",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "signUp": "S'inscrire",
+    "signupComingSoon": "La fonctionnalité d'inscription sera bientôt disponible."
+  },
+  "pages": {
+    "home": {
+      "title": "Bienvenue sur Truths",
+      "subtitle": "Une application React moderne avec les meilleures pratiques",
+      "getStarted": "Commencer"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "overview": "Aperçu",
+      "statistics": "Statistiques"
+    },
+    "profile": {
+      "title": "Profil",
+      "subtitle": "Gérez les informations et les paramètres de votre compte",
+      "loading": "Chargement de votre profil...",
+      "error": "Échec du chargement des informations du profil",
+      "contactInfo": "Informations de contact",
+      "accountInfo": "Informations du compte",
+      "additionalInfo": "Informations supplémentaires",
+      "email": "Email",
+      "username": "Nom d'utilisateur",
+      "userId": "ID utilisateur",
+      "role": "Rôle",
+      "tenantId": "ID locataire",
+      "displayName": "Nom d'affichage",
+      "accountStatus": "Statut du compte",
+      "active": "Actif"
+    },
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Connectez-vous à votre compte pour continuer",
+      "usernameLabel": "Nom d'utilisateur ou Email",
+      "usernamePlaceholder": "Entrez votre nom d'utilisateur ou email",
+      "passwordLabel": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter",
+      "loggingIn": "Connexion en cours...",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "signUp": "S'inscrire",
+      "success": "Connexion réussie",
+      "successDescription": "Bon retour !",
+      "error": "Échec de la connexion",
+      "errors": {
+        "usernameRequired": "Le nom d'utilisateur ou l'email est requis",
+        "passwordRequired": "Le mot de passe est requis",
+        "passwordTooShort": "Le mot de passe doit contenir au moins 8 caractères",
+        "invalidCredentials": "Nom d'utilisateur ou mot de passe invalide"
+      }
+    },
+    "notFound": {
+      "title": "Page introuvable",
+      "message": "La page que vous recherchez n'existe pas ou a été déplacée.",
+      "goHome": "Aller à l'accueil",
+      "goBack": "Retour"
+    },
+    "settings": {
+      "title": "Paramètres",
+      "subtitle": "Gérez les paramètres et préférences de votre compte",
+      "menu": {
+        "profile": "Profil",
+        "profileDesc": "Gérer vos informations de profil",
+        "account": "Compte",
+        "accountDesc": "Gérer les paramètres du compte",
+        "notifications": "Notifications",
+        "notificationsDesc": "Configurer les notifications",
+        "appearance": "Apparence",
+        "appearanceDesc": "Personnaliser l'apparence",
+        "language": "Langue",
+        "languageDesc": "Choisir votre langue",
+        "security": "Sécurité",
+        "securityDesc": "Mot de passe et sécurité",
+        "companyAddresses": "Adresses de l'entreprise",
+        "companyAddressesDesc": "Gérer les adresses et emplacements de l'entreprise"
+      },
+      "profile": {
+        "title": "Paramètres du profil",
+        "description": "Mettez à jour vos informations de profil",
+        "name": "Nom complet",
+        "username": "Nom d'utilisateur",
+        "email": "Adresse e-mail",
+        "bio": "Biographie",
+        "bioPlaceholder": "Parlez-nous de vous..."
+      },
+      "account": {
+        "title": "Paramètres du compte",
+        "description": "Gérez les préférences de votre compte",
+        "accountStatus": "Statut du compte",
+        "accountStatusDesc": "Votre compte est actuellement actif",
+        "active": "Actif",
+        "dangerZone": "Zone dangereuse",
+        "dangerZoneDesc": "Actions irréversibles et destructrices",
+        "deleteAccount": "Supprimer le compte"
+      },
+      "appearance": {
+        "title": "Paramètres d'apparence",
+        "description": "Personnalisez l'apparence de l'application",
+        "themeMode": "Mode thème"
+      },
+      "language": {
+        "title": "Paramètres de langue",
+        "description": "Choisissez votre langue préférée"
+      },
+      "notifications": {
+        "title": "Paramètres de notification",
+        "description": "Gérez la façon dont vous recevez les notifications",
+        "emailNotifications": "Notifications par e-mail",
+        "emailNotificationsDesc": "Recevoir des notifications par e-mail pour les mises à jour importantes",
+        "pushNotifications": "Notifications push",
+        "pushNotificationsDesc": "Recevoir des notifications push dans votre navigateur",
+        "marketingEmails": "E-mails marketing",
+        "marketingEmailsDesc": "Recevoir des e-mails sur les nouvelles fonctionnalités et offres",
+        "securityAlerts": "Alertes de sécurité",
+        "securityAlertsDesc": "Être notifié des activités liées à la sécurité"
+      },
+      "security": {
+        "title": "Paramètres de sécurité",
+        "description": "Gérez votre mot de passe et vos options de sécurité",
+        "changePassword": "Changer le mot de passe",
+        "changePasswordDesc": "Mettez à jour votre mot de passe régulièrement pour sécuriser votre compte",
+        "currentPassword": "Mot de passe actuel",
+        "newPassword": "Nouveau mot de passe",
+        "confirmPassword": "Confirmer le nouveau mot de passe",
+        "updatePassword": "Mettre à jour le mot de passe",
+        "twoFactor": "Authentification à deux facteurs",
+        "twoFactorDesc": "Ajoutez une couche de sécurité supplémentaire à votre compte",
+        "enableTwoFactor": "Activer l'authentification à deux facteurs"
+      }
+    }
+  }
+}
+

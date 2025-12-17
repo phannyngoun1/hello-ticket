@@ -1,0 +1,77 @@
+{
+  "components": [
+    {
+      "id": "root",
+      "type": "Container",
+      "props": {
+        "maxWidth": "7xl"
+      },
+      "children": [
+        {
+          "id": "card-1",
+          "type": "Card",
+          "children": [
+            {
+              "id": "card-header",
+              "type": "CardHeader",
+              "children": [
+                {
+                  "id": "heading",
+                  "type": "Heading",
+                  "props": {
+                    "level": 2,
+                    "children": "Customer Information"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "card-content",
+              "type": "CardContent",
+              "children": [
+                {
+                  "id": "label-name",
+                  "type": "Label",
+                  "props": {
+                    "children": "Customer Name"
+                  }
+                },
+                {
+                  "id": "input-name",
+                  "type": "Input",
+                  "props": {
+                    "placeholder": "Enter customer name",
+                    "required": true
+                  }
+                },
+                {
+                  "id": "label-email",
+                  "type": "Label",
+                  "props": {
+                    "children": "Email Address"
+                  }
+                },
+                {
+                  "id": "input-email",
+                  "type": "Input",
+                  "props": {
+                    "type": "email",
+                    "placeholder": "customer@example.com"
+                  }
+                },
+                {
+                  "id": "btn-submit",
+                  "type": "Button",
+                  "props": {
+                    "variant": "default",
+                    "children": "Save Customer"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

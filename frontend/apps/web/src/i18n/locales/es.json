@@ -1,0 +1,181 @@
+{
+  "common": {
+    "welcome": "Bienvenido",
+    "home": "Inicio",
+    "dashboard": "Panel",
+    "settings": "Configuración",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "noData": "No hay datos disponibles",
+    "expandMenu": "Expandir menú",
+    "collapseMenu": "Contraer menú"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema",
+    "toggle": "Cambiar tema"
+  },
+  "language": {
+    "select": "Seleccionar idioma",
+    "en": "Inglés",
+    "fr": "Francés",
+    "es": "Español"
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "dontHaveAccount": "¿No tienes una cuenta?",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "logoutSuccess": "Has cerrado sesión exitosamente",
+    "authenticationRequired": "Autenticación requerida",
+    "authenticationRequiredMessage": "Debes iniciar sesión para acceder a esta página. Por favor, inicia sesión para continuar.",
+    "noAccount": "¿No tienes una cuenta?",
+    "signUp": "Regístrate",
+    "signupComingSoon": "La funcionalidad de registro estará disponible pronto."
+  },
+  "pages": {
+    "home": {
+      "title": "Bienvenido a Truths",
+      "subtitle": "Una aplicación React moderna con mejores prácticas",
+      "getStarted": "Comenzar"
+    },
+    "dashboard": {
+      "title": "Panel",
+      "overview": "Resumen",
+      "statistics": "Estadísticas"
+    },
+    "profile": {
+      "title": "Perfil",
+      "subtitle": "Administra la información y configuración de tu cuenta",
+      "loading": "Cargando tu perfil...",
+      "error": "Error al cargar la información del perfil",
+      "contactInfo": "Información de Contacto",
+      "accountInfo": "Información de la Cuenta",
+      "additionalInfo": "Información Adicional",
+      "email": "Correo electrónico",
+      "username": "Usuario",
+      "userId": "ID de usuario",
+      "role": "Rol",
+      "tenantId": "ID de inquilino",
+      "displayName": "Nombre para mostrar",
+      "accountStatus": "Estado de la cuenta",
+      "active": "Activo"
+    },
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Inicia sesión en tu cuenta para continuar",
+      "usernameLabel": "Usuario o Correo electrónico",
+      "usernamePlaceholder": "Ingresa tu usuario o correo electrónico",
+      "passwordLabel": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "loggingIn": "Iniciando sesión...",
+      "noAccount": "¿No tienes una cuenta?",
+      "signUp": "Regístrate",
+      "success": "Inicio de sesión exitoso",
+      "successDescription": "¡Bienvenido de nuevo!",
+      "error": "Error al iniciar sesión",
+      "errors": {
+        "usernameRequired": "El usuario o correo electrónico es requerido",
+        "passwordRequired": "La contraseña es requerida",
+        "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+        "invalidCredentials": "Usuario o contraseña inválidos"
+      }
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "message": "La página que buscas no existe o ha sido movida.",
+      "goHome": "Ir al inicio",
+      "goBack": "Volver"
+    },
+    "settings": {
+      "title": "Configuración",
+      "subtitle": "Administra la configuración y preferencias de tu cuenta",
+      "menu": {
+        "profile": "Perfil",
+        "profileDesc": "Administrar información del perfil",
+        "account": "Cuenta",
+        "accountDesc": "Administrar configuración de cuenta",
+        "notifications": "Notificaciones",
+        "notificationsDesc": "Configurar notificaciones",
+        "appearance": "Apariencia",
+        "appearanceDesc": "Personalizar apariencia",
+        "language": "Idioma",
+        "languageDesc": "Elegir tu idioma",
+        "security": "Seguridad",
+        "securityDesc": "Contraseña y seguridad",
+        "companyAddresses": "Direcciones de la empresa",
+        "companyAddressesDesc": "Administrar direcciones y ubicaciones de la empresa"
+      },
+      "profile": {
+        "title": "Configuración del perfil",
+        "description": "Actualiza tu información de perfil",
+        "name": "Nombre completo",
+        "username": "Nombre de usuario",
+        "email": "Correo electrónico",
+        "bio": "Biografía",
+        "bioPlaceholder": "Cuéntanos sobre ti..."
+      },
+      "account": {
+        "title": "Configuración de cuenta",
+        "description": "Administra las preferencias de tu cuenta",
+        "accountStatus": "Estado de la cuenta",
+        "accountStatusDesc": "Tu cuenta está actualmente activa",
+        "active": "Activa",
+        "dangerZone": "Zona de peligro",
+        "dangerZoneDesc": "Acciones irreversibles y destructivas",
+        "deleteAccount": "Eliminar cuenta"
+      },
+      "appearance": {
+        "title": "Configuración de apariencia",
+        "description": "Personaliza la apariencia de la aplicación",
+        "themeMode": "Modo de tema"
+      },
+      "language": {
+        "title": "Configuración de idioma",
+        "description": "Elige tu idioma preferido"
+      },
+      "notifications": {
+        "title": "Configuración de notificaciones",
+        "description": "Administra cómo recibes notificaciones",
+        "emailNotifications": "Notificaciones por correo",
+        "emailNotificationsDesc": "Recibir notificaciones por correo para actualizaciones importantes",
+        "pushNotifications": "Notificaciones push",
+        "pushNotificationsDesc": "Recibir notificaciones push en tu navegador",
+        "marketingEmails": "Correos de marketing",
+        "marketingEmailsDesc": "Recibir correos sobre nuevas funciones y ofertas",
+        "securityAlerts": "Alertas de seguridad",
+        "securityAlertsDesc": "Recibir notificaciones sobre actividades de seguridad"
+      },
+      "security": {
+        "title": "Configuración de seguridad",
+        "description": "Administra tu contraseña y opciones de seguridad",
+        "changePassword": "Cambiar contraseña",
+        "changePasswordDesc": "Actualiza tu contraseña regularmente para mantener tu cuenta segura",
+        "currentPassword": "Contraseña actual",
+        "newPassword": "Nueva contraseña",
+        "confirmPassword": "Confirmar nueva contraseña",
+        "updatePassword": "Actualizar contraseña",
+        "twoFactor": "Autenticación de dos factores",
+        "twoFactorDesc": "Agrega una capa adicional de seguridad a tu cuenta",
+        "enableTwoFactor": "Activar autenticación de dos factores"
+      }
+    }
+  }
+}
+

@@ -1,0 +1,18 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { RootLayout } from "../../../components/layouts/root-layout";
+import { SettingsLayout } from "../../../components/layouts/settings-layout";
+import { UnitsOfMeasureListPage } from "../../../pages/settings/inventory/units-list-page";
+
+function UnitsOfMeasureRoute() {
+  return (
+    <RootLayout>
+      <SettingsLayout>
+        <UnitsOfMeasureListPage />
+      </SettingsLayout>
+    </RootLayout>
+  );
+}
+
+export const Route = createFileRoute("/settings/inventory/units")({
+  component: UnitsOfMeasureRoute,
+});
