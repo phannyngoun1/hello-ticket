@@ -1,0 +1,92 @@
+[
+  {
+    "label": "Dashboard",
+    "path": "/dashboard",
+    "icon": "LayoutDashboard",
+    "shortcut": "mod+D",
+    "description": "Monitor company performance and operational insights in real time.",
+    "keywords": [
+      "dashboard",
+      "dash",
+      "home",
+      "overview"
+    ]
+  },
+  {
+    "label": "Sales",
+    "path": "/sales",
+    "icon": "TrendingUp",
+    "shortcut": "mod+S",
+    "description": "Analyze sales trends, revenue, and customer behavior.",
+    "keywords": [
+      "sales",
+      "sell",
+      "selling"
+    ],
+    "children": [
+      {
+        "label": "Customers",
+        "path": "/sales/customers",
+        "icon": "Users",
+        "description": "Manage customers and related data.",
+        "keywords": [
+          "customer",
+          "cust",
+          "client",
+          "cus",
+          "customers"
+        ]
+      },
+      {
+        "label": "Tests",
+        "path": "/sales/tests",
+        "icon": "Test",
+        "description": "Manage tests and related data."
+      }
+    ]
+  },
+  {
+    "label": "Inventory",
+    "path": "/inventory",
+    "icon": "Boxes",
+    "shortcut": "mod+I",
+    "description": "Track products, availability, and valuation with live data governance.",
+    "keywords": [
+      "inventory",
+      "inv",
+      "stock"
+    ],
+    "children": [
+      {
+        "label": "Items",
+        "path": "/inventory/items",
+        "icon": "Package",
+        "description": "View and manage catalog items.",
+        "keywords": [
+          "item",
+          "items",
+          "product",
+          "products",
+          "inventory",
+          "inv"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Users",
+    "path": "/users",
+    "icon": "Users",
+    "shortcut": "mod+U",
+    "description": "Manage people, roles, and access levels across the organization.",
+    "keywords": [
+      "user",
+      "usr",
+      "people",
+      "person",
+      "users",
+      "account",
+      "accounts"
+    ]
+  }
+]

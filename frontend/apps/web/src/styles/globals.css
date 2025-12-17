@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Inter font face declarations - works offline with system fonts or local font files */
+/* Checks for locally installed Inter first, then web fonts, then falls back to system fonts */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: local('Inter Light'),
+       local('Inter-Light'),
+       url('/fonts/Inter-Light.woff2') format('woff2'),
+       url('/fonts/Inter-Light.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Inter'),
+       local('Inter Regular'),
+       local('Inter-Regular'),
+       url('/fonts/Inter-Regular.woff2') format('woff2'),
+       url('/fonts/Inter-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Inter Medium'),
+       local('Inter-Medium'),
+       url('/fonts/Inter-Medium.woff2') format('woff2'),
+       url('/fonts/Inter-Medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Inter SemiBold'),
+       local('Inter-SemiBold'),
+       url('/fonts/Inter-SemiBold.woff2') format('woff2'),
+       url('/fonts/Inter-SemiBold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Inter Bold'),
+       local('Inter-Bold'),
+       url('/fonts/Inter-Bold.woff2') format('woff2'),
+       url('/fonts/Inter-Bold.woff') format('woff');
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variant-numeric: oldstyle-nums;
+  }
+  
+  /* Improve readability for body text */
+  p {
+    @apply leading-7;
+  }
+  
+  /* Better heading typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Improve code and monospace font rendering */
+  code, pre {
+    font-feature-settings: normal;
+    font-variant-numeric: normal;
+  }
+  
+  /* Better link styling */
+  a {
+    @apply transition-colors;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+  }
+  
+  /* Improve input placeholder text */
+  input::placeholder,
+  textarea::placeholder {
+    @apply opacity-60;
+  }
+  
+  /* Improve table cell text rendering */
+  td, th {
+    @apply text-sm;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Ensure table cell text is dark and readable with high contrast */
+  table td {
+    color: hsl(var(--foreground));
+    font-weight: 400; /* Normal weight */
+  }
+  
+  /* Make table cell text even darker for better readability */
+  table tbody td {
+    /* Use a darker shade for maximum contrast */
+    color: hsl(222.2 84% 2%);
+    opacity: 1;
+  }
+  
+  /* Dark mode: ensure light text for contrast */
+  .dark table tbody td {
+    color: hsl(210 40% 100%);
+  }
+  
+  /* Increase contrast for table cell content - override muted colors */
+  table tbody td > *,
+  table tbody td span,
+  table tbody td div {
+    color: inherit;
+  }
+  
+  /* Override any muted-foreground in table cells for better contrast */
+  table tbody td .text-muted-foreground {
+    color: hsl(222.2 84% 2%) !important;
+  }
+  
+  .dark table tbody td .text-muted-foreground {
+    color: hsl(210 40% 95%) !important;
+  }
+  
+  /* Better button text rendering */
+  button {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Improve label readability */
+  label {
+    @apply font-medium;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Better small text rendering */
+  small, .text-xs, .text-sm {
+    letter-spacing: 0.01em;
+  }
+  
+  /* Improve select dropdown styling */
+  select {
+    @apply text-sm;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Better badge and tag styling */
+  [class*="badge"], [class*="tag"] {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: 0.01em;
+  }
+}
+
+@layer utilities {
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .sticky-tabs {
+    position: sticky;
+    top: 3rem; /* 48px - header height */
+    z-index: 40;
+  }
+}

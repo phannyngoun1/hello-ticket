@@ -1,0 +1,198 @@
+/**
+ * Edit TestTree Dialog
+ *
+ * Dialog for editing existing testTrees
+ *
+ * @author Phanny
+ */
+
+import { useForm } from "react-hook-form";
+import React from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  cn,
+} from "@truths/ui";
+import { useDensityStyles, useDensity } from "@truths/utils";
+import { DialogAction } from "@truths/custom-ui";
+import type {TestTreeTree, UpdateTestTreeInput } from "./types";
+
+const formSchema = z.object({
+  code: z.string().min(1, "Code is required").max(50),
+  name: z.string().max(200).optional(),
+
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface EditTestTreeDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (id: string, data: UpdateTestTreeInput) => Promise<void>;
+  item: TestTreeTree | null;
+}
+
+export function EditTestTreeDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  item,
+}: EditTestTreeDialogProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      code: "",
+      name: "",
+
+    },
+  });
+
+  // Get density from user preference
+  const { isCompact: userIsCompact } = useDensity();
+  const baseDensity = useDensityStyles();
+
+  // Determine effective compact mode
+  const effectiveIsCompact = userIsCompact;
+
+  // Use base density styles with proper button padding
+  const density = {
+    ...baseDensity,
+    paddingCell: effectiveIsCompact ? "px-2 py-1.5" : "px-3 py-2",
+  };
+
+  // Reset form when dialog opens or item changes
+  React.useEffect(() => {
+    if (open && item) {
+      reset({
+        code: item.code || "",
+        name: item.name || "",
+
+      });
+    }
+  }, [open, item, reset]);
+
+  const onFormSubmit = async (data: FormData) => {
+    if (!item) return;
+
+    try {
+      const input: UpdateTestTreeInput = {
+        code: data.code,
+        name: data.name || undefined,
+
+      };
+      await onSubmit(item.id, input);
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error updating test-tree:", error);
+    }
+  };
+
+  if (!item) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className={cn(
+          "max-w-md max-h-[90vh] overflow-y-auto",
+          density.paddingContainer
+        )}
+      >
+        <DialogHeader className={cn(density.spacingFormItem)}>
+          <DialogTitle
+            className={cn(
+              effectiveIsCompact ? "text-base" : "text-lg",
+              "font-semibold"
+            )}
+          >
+            Edit TestTree
+          </DialogTitle>
+          <DialogDescription
+            className={cn(density.textSizeSmall, "text-muted-foreground")}
+          >
+            Update details for {item.name || item.code}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          onSubmit={handleSubmit(onFormSubmit)}
+          className={cn(density.spacingFormSection)}
+        >
+          <div className={cn("space-y-2", density.spacingFormItem)}>
+            <Label
+              htmlFor="code"
+              className={cn(density.textSizeLabel, "font-medium")}
+            >
+              Code *
+            </Label>
+            <Input
+              id="code"
+              {...register("code")}
+              className={cn(
+                density.inputHeight,
+                density.textSizeSmall,
+                errors.code ? "border-destructive" : ""
+              )}
+            />
+            {errors.code && (
+              <p className={cn(density.textSizeSmall, "text-destructive")}>
+                {errors.code.message}
+              </p>
+            )}
+          </div>
+
+          <div className={cn("space-y-2", density.spacingFormItem)}>
+            <Label
+              htmlFor="name"
+              className={cn(density.textSizeLabel, "font-medium")}
+            >
+              Name
+            </Label>
+            <Input
+              id="name"
+              {...register("name")}
+              className={cn(
+                density.inputHeight,
+                density.textSizeSmall,
+                errors.name ? "border-destructive" : ""
+              )}
+            />
+            {errors.name && (
+              <p className={cn(density.textSizeSmall, "text-destructive")}>
+                {errors.name.message}
+              </p>
+            )}
+          </div>
+
+
+
+          <DialogFooter className={cn(density.gapButtonGroup)}>
+            <DialogAction
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </DialogAction>
+            <DialogAction type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save"}
+            </DialogAction>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

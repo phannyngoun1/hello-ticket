@@ -1,0 +1,243 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "login": "Login",
+    "register": "Register",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "noData": "No data available",
+    "add": "Add",
+    "items": "items",
+    "actions": "Actions",
+    "errorOccurred": "An error occurred",
+    "noItems": "No items found",
+    "comingSoon": "Coming soon",
+    "none": "None",
+    "expandMenu": "Expand menu",
+    "collapseMenu": "Collapse menu"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "toggle": "Toggle theme"
+  },
+  "language": {
+    "select": "Select language",
+    "en": "English",
+    "fr": "French",
+    "es": "Spanish"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "logoutSuccess": "You have been logged out successfully",
+    "authenticationRequired": "Authentication Required",
+    "authenticationRequiredMessage": "You need to be logged in to access this page. Please sign in to continue.",
+    "noAccount": "Don't have an account?",
+    "signUp": "Sign up",
+    "signupComingSoon": "Sign up functionality will be available soon."
+  },
+  "pages": {
+    "home": {
+      "title": "Welcome to Hello Ticket",
+      "subtitle": "A ticket brokerage system with best practices",
+      "getStarted": "Get Started"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "overview": "Overview",
+      "statistics": "Statistics"
+    },
+    "profile": {
+      "title": "Profile",
+      "subtitle": "Manage your account information and settings",
+      "loading": "Loading your profile...",
+      "error": "Failed to load profile information",
+      "contactInfo": "Contact Information",
+      "accountInfo": "Account Information",
+      "additionalInfo": "Additional Information",
+      "email": "Email",
+      "username": "Username",
+      "userId": "User ID",
+      "role": "Role",
+      "tenantId": "Tenant ID",
+      "displayName": "Display Name",
+      "accountStatus": "Account Status",
+      "active": "Active"
+    },
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your account to continue",
+      "usernameLabel": "Username or Email",
+      "usernamePlaceholder": "Enter your username or email",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "loggingIn": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "success": "Login successful",
+      "successDescription": "Welcome back!",
+      "error": "Login failed",
+      "errors": {
+        "usernameRequired": "Username or email is required",
+        "passwordRequired": "Password is required",
+        "passwordTooShort": "Password must be at least 8 characters",
+        "invalidCredentials": "Invalid username or password"
+      }
+    },
+    "notFound": {
+      "title": "Page Not Found",
+      "message": "The page you're looking for doesn't exist or has been moved.",
+      "goHome": "Go to Home",
+      "goBack": "Go Back"
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "Manage your account settings and preferences",
+      "menu": {
+        "profile": "Profile",
+        "profileDesc": "Manage your profile information",
+        "account": "Account",
+        "accountDesc": "Manage account settings",
+        "notifications": "Notifications",
+        "notificationsDesc": "Configure notifications",
+        "appearance": "Appearance",
+        "appearanceDesc": "Customize look and feel",
+        "language": "Language",
+        "languageDesc": "Choose your language",
+        "security": "Security",
+        "securityDesc": "Password and security",
+        "companyAddresses": "Company Addresses",
+        "companyAddressesDesc": "Manage company addresses and locations",
+        "inventory": "Inventory",
+        "inventoryDesc": "Manage inventory master data",
+        "unitsOfMeasure": "Units of Measure",
+        "warehouses": "Warehouses",
+        "lotSettings": "Lot Settings"
+      },
+      "profile": {
+        "title": "Profile Settings",
+        "description": "Update your profile information",
+        "name": "Full Name",
+        "username": "Username",
+        "email": "Email Address",
+        "bio": "Bio",
+        "bioPlaceholder": "Tell us about yourself..."
+      },
+      "account": {
+        "title": "Account Settings",
+        "description": "Manage your account preferences",
+        "accountStatus": "Account Status",
+        "accountStatusDesc": "Your account is currently active",
+        "active": "Active",
+        "cacheManagement": "Cache Management",
+        "cacheManagementDesc": "Clear cached data and refresh application state",
+        "clearCache": "Clear Cache",
+        "invalidateAllQueries": "Invalidate All Queries",
+        "cacheCleared": "Cache Cleared",
+        "cacheClearedDesc": "All cached data has been successfully cleared",
+        "cacheClearError": "Cache Clear Failed",
+        "cacheClearErrorDesc": "Failed to clear cache. Please try again.",
+        "queriesInvalidated": "Queries Invalidated",
+        "queriesInvalidatedDesc": "All React Query queries have been invalidated and will refetch on next access",
+        "queriesInvalidateError": "Query Invalidation Failed",
+        "queriesInvalidateErrorDesc": "Failed to invalidate queries. Please try again.",
+        "dangerZone": "Danger Zone",
+        "dangerZoneDesc": "Irreversible and destructive actions",
+        "deleteAccount": "Delete Account"
+      },
+      "appearance": {
+        "title": "Appearance Settings",
+        "description": "Customize the look and feel of the application",
+        "themeMode": "Theme Mode",
+        "interfaceSettings": "Interface Settings",
+        "interfaceSettingsDesc": "Customize interface elements",
+        "enableTabs": "Enable Tabs",
+        "enableTabsDesc": "Show in-app tabs for multitasking and task preservation",
+        "tabPosition": "Tab Position",
+        "tabPositionSeparate": "Separate Bar",
+        "tabPositionSeparateDesc": "Tabs in their own bar below header",
+        "tabPositionInline": "Inline Header",
+        "tabPositionInlineDesc": "Tabs integrated into header for more space"
+      },
+      "language": {
+        "title": "Language Settings",
+        "description": "Choose your preferred language"
+      },
+      "notifications": {
+        "title": "Notification Settings",
+        "description": "Manage how you receive notifications",
+        "emailNotifications": "Email Notifications",
+        "emailNotificationsDesc": "Receive email notifications for important updates",
+        "pushNotifications": "Push Notifications",
+        "pushNotificationsDesc": "Receive push notifications in your browser",
+        "marketingEmails": "Marketing Emails",
+        "marketingEmailsDesc": "Receive emails about new features and offers",
+        "securityAlerts": "Security Alerts",
+        "securityAlertsDesc": "Get notified about security-related activities"
+      },
+      "security": {
+        "title": "Security Settings",
+        "description": "Manage your password and security options",
+        "changePassword": "Change Password",
+        "changePasswordDesc": "Update your password regularly to keep your account secure",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "Confirm New Password",
+        "updatePassword": "Update Password",
+        "twoFactor": "Two-Factor Authentication",
+        "twoFactorDesc": "Add an extra layer of security to your account",
+        "enableTwoFactor": "Enable Two-Factor Authentication"
+      },
+      "inventory": {
+        "uom": {
+          "title": "Units of Measure",
+          "description": "Manage units of measure and conversions",
+          "list": "UOM List",
+          "code": "Code",
+          "name": "Name",
+          "baseUom": "Base UOM",
+          "conversionFactor": "Conversion Factor",
+          "deleted": "Unit of measure deleted successfully",
+          "confirmDelete": "Are you sure you want to delete unit of measure {{code}}?"
+        },
+        "warehouses": {
+          "title": "Warehouses",
+          "description": "Manage warehouse locations",
+          "list": "Warehouse List",
+          "code": "Code",
+          "name": "Name",
+          "address": "Address",
+          "deleted": "Warehouse deleted successfully",
+          "confirmDelete": "Are you sure you want to delete warehouse {{code}}?"
+        },
+        "lots": {
+          "title": "Lot Settings",
+          "description": "Configure lot tracking settings",
+          "configuration": "Lot Configuration",
+          "configurationDesc": "Settings for lot tracking and management"
+        }
+      }
+    }
+  }
+}
+

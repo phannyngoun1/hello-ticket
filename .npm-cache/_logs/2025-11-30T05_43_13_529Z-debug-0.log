@@ -1,0 +1,37 @@
+0 verbose cli /usr/local/bin/node /opt/homebrew/bin/npm
+1 info using npm@11.6.2
+2 info using node@v22.16.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 info config found workspace root at /Users/ngounphanny/dev/envs/projects/truths/frontend
+5 silly config load:file:/Users/ngounphanny/dev/envs/projects/truths/frontend/.npmrc
+6 silly config load:file:/Users/ngounphanny/.npmrc
+7 silly config load:file:/opt/homebrew/etc/npmrc
+8 verbose title npm run type-check
+9 verbose argv "run" "type-check"
+10 verbose logfile logs-max:10 dir:/Users/ngounphanny/dev/envs/projects/truths/.npm-cache/_logs/2025-11-30T05_43_13_529Z-
+11 verbose logfile /Users/ngounphanny/dev/envs/projects/truths/.npm-cache/_logs/2025-11-30T05_43_13_529Z-debug-0.log
+12 silly logfile done cleaning log files
+13 verbose stack Error: command failed
+13 verbose stack     at promiseSpawn (/opt/homebrew/lib/node_modules/npm/node_modules/@npmcli/promise-spawn/lib/index.js:22:22)
+13 verbose stack     at spawnWithShell (/opt/homebrew/lib/node_modules/npm/node_modules/@npmcli/promise-spawn/lib/index.js:124:10)
+13 verbose stack     at promiseSpawn (/opt/homebrew/lib/node_modules/npm/node_modules/@npmcli/promise-spawn/lib/index.js:12:12)
+13 verbose stack     at runScriptPkg (/opt/homebrew/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/run-script-pkg.js:79:13)
+13 verbose stack     at runScript (/opt/homebrew/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/run-script.js:9:12)
+13 verbose stack     at #run (/opt/homebrew/lib/node_modules/npm/lib/commands/run.js:135:13)
+13 verbose stack     at RunScript.execWorkspaces (/opt/homebrew/lib/node_modules/npm/lib/commands/run.js:67:24)
+13 verbose stack     at async Npm.exec (/opt/homebrew/lib/node_modules/npm/lib/npm.js:208:9)
+13 verbose stack     at async module.exports (/opt/homebrew/lib/node_modules/npm/lib/cli/entry.js:67:5)
+14 verbose pkgid @truths/web@1.0.0
+15 error Lifecycle script `type-check` failed with error:
+16 error code 2
+17 error path /Users/ngounphanny/dev/envs/projects/truths/frontend/apps/web
+18 error workspace @truths/web@1.0.0
+19 error location /Users/ngounphanny/dev/envs/projects/truths/frontend/apps/web
+20 error command failed
+21 error command sh -c tsc --noEmit
+22 verbose cwd /Users/ngounphanny/dev/envs/projects/truths/frontend/apps/web
+23 verbose os Darwin 25.1.0
+24 verbose node v22.16.0
+25 verbose npm  v11.6.2
+26 verbose exit 2
+27 verbose code 2

@@ -1,0 +1,19 @@
+0 verbose cli /usr/local/bin/node /opt/homebrew/bin/npm
+1 info using npm@11.6.2
+2 info using node@v22.16.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/ngounphanny/dev/envs/projects/truths/frontend/.npmrc
+5 silly config load:file:/Users/ngounphanny/.npmrc
+6 silly config load:file:/opt/homebrew/etc/npmrc
+7 verbose title npm run type-check
+8 verbose argv "run" "type-check" "--workspaces"
+9 verbose logfile logs-max:10 dir:/Users/ngounphanny/dev/envs/projects/truths/.npm-cache/_logs/2025-11-30T05_41_47_514Z-
+10 verbose logfile /Users/ngounphanny/dev/envs/projects/truths/.npm-cache/_logs/2025-11-30T05_41_47_514Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /Users/ngounphanny/dev/envs/projects/truths/frontend
+13 verbose os Darwin 25.1.0
+14 verbose node v22.16.0
+15 verbose npm  v11.6.2
+16 verbose exit 1
+17 verbose code 1
+18 error A complete log of this run can be found in: /Users/ngounphanny/dev/envs/projects/truths/.npm-cache/_logs/2025-11-30T05_41_47_514Z-debug-0.log

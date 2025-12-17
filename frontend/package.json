@@ -1,0 +1,30 @@
+{
+  "name": "hello-ticket-frontend",
+  "version": "1.0.0",
+  "author": "Phanny",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "preview": "npm run preview --workspace=apps/web",
+    "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces",
+    "create-package": "node tools/create-package.cjs",
+    "create-crud": "node tools/create-crud.cjs",
+    "create-basic-crud": "node tools/create-basic-crud.cjs",
+    "create-full-crud": "node tools/create-full-crud.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "baseline-browser-mapping": "^2.9.7",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@radix-ui/react-context-menu": "^2.2.16",
+    "@tanstack/react-virtual": "^3.13.12"
+  }
+}

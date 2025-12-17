@@ -1,0 +1,36 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@truths/ui": ["../../packages/ui/src"],
+      "@truths/ui/*": ["../../packages/ui/src/*"],
+      "@truths/utils": ["../../packages/utils/src"],
+      "@truths/account": ["../../packages/account/src"],
+      "@truths/account/*": ["../../packages/account/src/*"],
+      "@truths/utils/*": ["../../packages/utils/src/*"],
+      "@truths/config": ["../../packages/config/src"],
+      "@truths/config/*": ["../../packages/config/src/*"],
+      "@truths/api": ["../../packages/api/src"],
+      "@truths/api/*": ["../../packages/api/src/*"],
+      "@truths/shared": ["../../packages/shared/src"],
+      "@truths/shared/*": ["../../packages/shared/src/*"],
+      "@truths/custom-ui": ["../../packages/custom-ui/src"],
+      "@truths/custom-ui/*": ["../../packages/custom-ui/src/*"],
+      "@truths/inventory": ["../../packages/inventory/src"],
+      "@truths/inventory/*": ["../../packages/inventory/src/*"],
+      "@truths/purchasing": ["../../packages/purchasing/src"],
+      "@truths/purchasing/*": ["../../packages/purchasing/src/*"],
+      "@truths/warehouse": ["../../packages/warehouse/src"],
+      "@truths/warehouse/*": ["../../packages/warehouse/src/*"]
+    }
+  },
+  "include": [
+    "src",
+    "../../packages/*/src"
+  ]
+}
+
