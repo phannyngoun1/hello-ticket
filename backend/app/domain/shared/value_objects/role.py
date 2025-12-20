@@ -92,9 +92,24 @@ class Permission(str, Enum):
     VIEW_WAREHOUSE_EMPLOYEE = "warehouse_employee:view"
     MANAGE_WAREHOUSE_EMPLOYEE = "warehouse_employee:manage"
 
+    # Ticketing - Venues permissions
+    CREATE_TICKETING_VENUE = "ticketing_venue:create"
+    VIEW_TICKETING_VENUE = "ticketing_venue:view"
+    MANAGE_TICKETING_VENUE = "ticketing_venue:manage"
 
 
-    
+    # Ticketing - Organizers permissions
+    CREATE_TICKETING_ORGANIZER = "ticketing_organizer:create"
+    VIEW_TICKETING_ORGANIZER = "ticketing_organizer:view"
+    MANAGE_TICKETING_ORGANIZER = "ticketing_organizer:manage"
+
+
+    # Ticketing - Event Types permissions
+    CREATE_TICKETING_EVENT_TYPE = "ticketing_event_type:create"
+    VIEW_TICKETING_EVENT_TYPE = "ticketing_event_type:view"
+    MANAGE_TICKETING_EVENT_TYPE = "ticketing_event_type:manage"
+
+
 # Role to permissions mapping
 ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.ADMIN: {
@@ -133,6 +148,15 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
 
         # Warehouse - Employees
         Permission.CREATE_WAREHOUSE_EMPLOYEE, Permission.VIEW_WAREHOUSE_EMPLOYEE, Permission.MANAGE_WAREHOUSE_EMPLOYEE,
+
+        # Ticketing - Venues
+        Permission.CREATE_TICKETING_VENUE, Permission.VIEW_TICKETING_VENUE, Permission.MANAGE_TICKETING_VENUE,
+
+        # Ticketing - Organizers
+        Permission.CREATE_TICKETING_ORGANIZER, Permission.VIEW_TICKETING_ORGANIZER, Permission.MANAGE_TICKETING_ORGANIZER,
+
+        # Ticketing - Event Types
+        Permission.CREATE_TICKETING_EVENT_TYPE, Permission.VIEW_TICKETING_EVENT_TYPE, Permission.MANAGE_TICKETING_EVENT_TYPE,
 
     },
     UserRole.MANAGER: {

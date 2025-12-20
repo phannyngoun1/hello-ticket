@@ -25,7 +25,9 @@
       "@truths/purchasing": ["../../packages/purchasing/src"],
       "@truths/purchasing/*": ["../../packages/purchasing/src/*"],
       "@truths/warehouse": ["../../packages/warehouse/src"],
-      "@truths/warehouse/*": ["../../packages/warehouse/src/*"]
+      "@truths/warehouse/*": ["../../packages/warehouse/src/*"],
+      "@truths/ticketing": ["../../packages/ticketing/src"],
+      "@truths/ticketing/*": ["../../packages/ticketing/src/*"]
     }
   },
   "include": [

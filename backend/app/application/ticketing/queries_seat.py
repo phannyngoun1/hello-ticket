@@ -1,0 +1,29 @@
+"""Ticketing seat queries for CQRS pattern."""
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
+class GetSeatByIdQuery:
+    """Query to retrieve a seat by identifier."""
+
+    seat_id: str
+
+
+@dataclass
+class GetSeatsByVenueQuery:
+    """Query to retrieve all seats for a venue."""
+
+    venue_id: str
+    skip: int = 0
+    limit: int = 1000
+
+
+@dataclass
+class GetSeatByLocationQuery:
+    """Query to retrieve a seat by venue and location."""
+
+    venue_id: str
+    section: str
+    row: str
+    seat_number: str

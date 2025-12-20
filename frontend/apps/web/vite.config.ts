@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
             '@truths/inventory': path.resolve(__dirname, '../../packages/inventory/src'),
             '@truths/purchasing': path.resolve(__dirname, '../../packages/purchasing/src'),
             '@truths/warehouse': path.resolve(__dirname, '../../packages/warehouse/src'),
+            '@truths/ticketing': path.resolve(__dirname, '../../packages/ticketing/src'),
         },
     },
     server: {

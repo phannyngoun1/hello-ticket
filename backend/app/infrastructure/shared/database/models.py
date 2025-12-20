@@ -1183,6 +1183,154 @@ class VehicleModel(SQLModel, table=True):
 
 
 # ============================================================================
+# TICKETING MODULE
+
+class EventTypeModel(SQLModel, table=True):
+    """EventType master data database model"""
+    __tablename__ = "event_types"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_event_types_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_event_types_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_event_types_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+
+
+class OrganizerModel(SQLModel, table=True):
+    """Organizer master data database model"""
+    __tablename__ = "organizers"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_organizers_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_organizers_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_organizers_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+# ============================================================================
+# TICKETING MODULE - MASTER DATA
+# ============================================================================
+
+class VenueModel(SQLModel, table=True):
+    """Venue master data database model"""
+    __tablename__ = "venues"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str
+    image_url: Optional[str] = None  # URL for venue seat map image
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_venues_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_venues_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_venues_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+
+class SeatModel(SQLModel, table=True):
+    """Seat master data database model"""
+    __tablename__ = "seats"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    venue_id: str = Field(index=True, foreign_key="venues.id")
+    section: str = Field(index=True)
+    row: str = Field(index=True)
+    seat_number: str = Field(index=True)
+    seat_type: str = Field(index=True)  # STANDARD, VIP, WHEELCHAIR, COMPANION
+    x_coordinate: Optional[float] = None
+    y_coordinate: Optional[float] = None
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    attributes: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_seats_venue', 'tenant_id', 'venue_id'),
+        Index('ix_seats_location', 'venue_id', 'section', 'row', 'seat_number', unique=True),
+        Index('ix_seats_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_seats_tenant_deleted', 'tenant_id', 'is_deleted'),
+    )
+
+
+
+# ============================================================================
 # INVENTORY MODULE - WAREHOUSE STRUCTURE
 # ============================================================================
 # Note: WarehouseModel, ZoneModel, and BinModel have been replaced by
