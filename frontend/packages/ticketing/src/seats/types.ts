@@ -1,0 +1,54 @@
+/**
+ * Seat Types
+ * 
+ * This file contains all TypeScript types and interfaces for the Seat entity.
+ */
+
+export enum SeatType {
+    STANDARD = "STANDARD",
+    VIP = "VIP",
+    WHEELCHAIR = "WHEELCHAIR",
+    COMPANION = "COMPANION",
+}
+
+export interface Seat {
+    id: string;
+    tenant_id: string;
+    venue_id: string;
+    section: string;
+    row: string;
+    seat_number: string;
+    seat_type: SeatType;
+    x_coordinate?: number;
+    y_coordinate?: number;
+    is_active: boolean;
+    created_at: Date;
+    updated_at: Date;
+}
+
+export interface CreateSeatInput {
+    venue_id: string;
+    section: string;
+    row: string;
+    seat_number: string;
+    seat_type?: SeatType;
+    x_coordinate?: number;
+    y_coordinate?: number;
+}
+
+export interface UpdateSeatInput {
+    section?: string;
+    row?: string;
+    seat_number?: string;
+    seat_type?: SeatType;
+    x_coordinate?: number;
+    y_coordinate?: number;
+}
+
+export interface SeatListResponse {
+    items: Seat[];
+    skip: number;
+    limit: number;
+    total: number;
+    has_next: boolean;
+}

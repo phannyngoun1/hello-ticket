@@ -22,7 +22,10 @@ from app.shared.container_registrations.customer_group import register_customer_
 from app.shared.container_registrations.test_tree import register_test_tree_container, register_test_tree_mediator
 from app.shared.container_registrations.test import register_test_container, register_test_mediator
 from app.shared.container_registrations.test_basic import register_test_basic_container, register_test_basic_mediator
-
+from app.shared.container_registrations.venue import register_venue_container, register_venue_mediator
+from app.shared.container_registrations.seat import register_seat_container, register_seat_mediator
+from app.shared.container_registrations.organizer import register_organizer_container, register_organizer_mediator
+from app.shared.container_registrations.event_type import register_event_type_container, register_event_type_mediator
 def setup_container() -> Container:
     """Set up dependency injection container"""
     container = Container()
@@ -57,6 +60,16 @@ def setup_container() -> Container:
     # Sales - Test Basics
     register_test_basic_container(container)    
 
+    # Venues
+    register_venue_container(container)
+    # Seats (depends on Venue)
+    register_seat_container(container)
+    # Ticketing - Organizers
+    register_organizer_container(container)
+
+    # Ticketing - Event Types
+    register_event_type_container(container)
+
     return container
 
 def setup_mediator(container: Container) -> Mediator:
@@ -80,6 +93,10 @@ def setup_mediator(container: Container) -> Mediator:
     register_test_tree_mediator(mediator)
     register_test_mediator(mediator)
     register_test_basic_mediator(mediator)
+    register_venue_mediator(mediator)
+    register_seat_mediator(mediator)
+    register_organizer_mediator(mediator)
+    register_event_type_mediator(mediator)
     return mediator
 
 

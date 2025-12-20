@@ -41,7 +41,13 @@ from app.infrastructure.shared.database.models import (
     # Warehouse master data
     VehicleModel,
     # Warehouse master data
-    EmployeeModel)
+    EmployeeModel,
+    # Ticketing master data
+    VenueModel,
+    # Ticketing master data
+    OrganizerModel,
+    # Ticketing master data
+    EventTypeModel)
 
 # Load environment variables from .env file
 try:

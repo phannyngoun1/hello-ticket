@@ -46,6 +46,44 @@
     ]
   },
   {
+    "label": "Ticketing",
+    "path": "/ticketing",
+    "icon": "Ticket",
+    "shortcut": "mod+T",
+    "description": "Manage venues and related data.",
+    "keywords": [
+      "ticketing",
+      "venue",
+      "venues"
+    ],
+    "children": [
+      {
+        "label": "Venues",
+        "path": "/ticketing/venues",
+        "icon": "Building",
+        "description": "Manage venues and related data.",
+        "keywords": [
+          "venue",
+          "venues",
+          "ticketing",
+          "ticketing venues"
+        ]
+      },
+      {
+        "label": "Organizers",
+        "path": "/ticketing/organizers",
+        "icon": "Users",
+        "description": "Manage organizers and related data.",
+        "keywords": [
+          "organizer",
+          "organizers",
+          "ticketing",
+          "ticketing organizers"
+        ]
+      }
+    ]
+  },
+  {
     "label": "Inventory",
     "path": "/inventory",
     "icon": "Boxes",

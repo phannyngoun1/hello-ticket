@@ -1,0 +1,81 @@
+/**
+ * Seat Service
+ * 
+ * Service for managing seats via API calls
+ */
+import { api } from "@truths/api";
+import type { Seat, CreateSeatInput, UpdateSeatInput, SeatListResponse } from "./types";
+
+const BASE_ENDPOINT = "/api/v1/ticketing/seats";
+
+export const seatService = {
+    /**
+     * Get all seats for a venue
+     */
+    async getByVenue(venueId: string, skip = 0, limit = 1000): Promise<SeatListResponse> {
+        return api.get<SeatListResponse>(
+            `${BASE_ENDPOINT}?venue_id=${venueId}&skip=${skip}&limit=${limit}`,
+            { requiresAuth: true }
+        );
+    },
+
+    /**
+     * Get a seat by ID
+     */
+    async getById(seatId: string): Promise<Seat> {
+        return api.get<Seat>(`${BASE_ENDPOINT}/${seatId}`, { requiresAuth: true });
+    },
+
+    /**
+     * Create a new seat
+     */
+    async create(input: CreateSeatInput): Promise<Seat> {
+        return api.post<Seat>(BASE_ENDPOINT, input, { requiresAuth: true });
+    },
+
+    /**
+     * Update a seat
+     */
+    async update(seatId: string, input: UpdateSeatInput): Promise<Seat> {
+        return api.put<Seat>(`${BASE_ENDPOINT}/${seatId}`, input, { requiresAuth: true });
+    },
+
+    /**
+     * Update seat coordinates
+     */
+    async updateCoordinates(seatId: string, x: number, y: number): Promise<Seat> {
+        return api.patch<Seat>(
+            `${BASE_ENDPOINT}/${seatId}/coordinates`,
+            { x_coordinate: x, y_coordinate: y },
+            { requiresAuth: true }
+        );
+    },
+
+    /**
+     * Delete a seat
+     */
+    async delete(seatId: string): Promise<void> {
+        return api.delete(`${BASE_ENDPOINT}/${seatId}`, { requiresAuth: true });
+    },
+
+    /**
+     * Bulk create seats
+     */
+    async bulkCreate(venueId: string, seats: Array<Partial<CreateSeatInput>>): Promise<Seat[]> {
+        return api.post<Seat[]>(
+            `${BASE_ENDPOINT}/bulk?venue_id=${venueId}`,
+            { seats },
+            { requiresAuth: true }
+        );
+    },
+
+    /**
+     * Delete all seats for a venue
+     */
+    async deleteByVenue(venueId: string): Promise<{ deleted_count: number }> {
+        return api.delete<{ deleted_count: number }>(
+            `${BASE_ENDPOINT}/venue/${venueId}`,
+            { requiresAuth: true }
+        );
+    },
+};

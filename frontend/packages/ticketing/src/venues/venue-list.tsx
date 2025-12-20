@@ -1,0 +1,205 @@
+/**
+ * Venue List Component
+ *
+ * Table view for venues with configurable columns and actions.
+ */
+
+import React, { useState } from "react";
+import { ColumnDef } from "@tanstack/react-table";
+import { Edit, Trash2 } from "lucide-react";
+import { cn } from "@truths/ui/lib/utils";
+import { useDensityStyles } from "@truths/utils";
+import {
+  ConfirmationDialog,
+  createActionsColumn,
+  createIdentifiedColumn,
+  createTextColumn,
+  createDateTimeColumn,
+  DataTable,
+} from "@truths/custom-ui";
+import { Pagination } from "@truths/shared";
+import type { Venue } from "./types";
+
+export interface VenueListProps {
+  className?: string;
+  venues?: Venue[];
+  loading?: boolean;
+  error?: Error | null;
+  pagination?: Pagination;
+  onVenueClick?: (venue: Venue) => void;
+  onEdit?: (venue: Venue) => void;
+  onDelete?: (venue: Venue) => void;
+  onCreate?: () => void;
+  onSearch?: (query: string) => void;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  customActions?: (venue: Venue) => React.ReactNode;
+}
+
+export function VenueList({
+  className,
+  venues = [],
+  loading = false,
+  error = null,
+  pagination,
+  onVenueClick,
+  onEdit,
+  onDelete,
+  onCreate,
+  onSearch,
+  onPageChange,
+  onPageSizeChange,
+  customActions,
+}: VenueListProps) {
+  const density = useDensityStyles();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+
+  const getDisplayName = (venue: Venue) => {
+    const value = venue.code;
+    return typeof value === "string" && value.trim().length > 0 ? value : String(venue.id);
+  };
+
+  const getInitials = (value: string | undefined) => {
+    if (!value) return "?";
+    const letters = value.replace(/[^A-Za-z]/g, "");
+    if (letters.length >= 2) return letters.slice(0, 2).toUpperCase();
+    if (value.length >= 2) return value.slice(0, 2).toUpperCase();
+    return value.charAt(0).toUpperCase();
+  };
+
+  const columns: ColumnDef<Venue>[] = [
+    createIdentifiedColumn<Venue>({
+      getDisplayName,
+      getInitials: (item) => getInitials(item.code as string | undefined),
+      header: "Code",
+      showAvatar: false,
+      onClick: onVenueClick,
+      additionalOptions: {
+        id: "code",
+      },
+    }),
+
+
+    
+    createTextColumn<Venue>({
+      accessorKey: "name",
+      header: "Name",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+    
+
+
+    createActionsColumn<Venue>({
+      customActions,
+      actions: [
+        ...(onEdit
+          ? [
+              {
+                icon: Edit,
+                onClick: (venue: Venue) => onEdit(venue),
+                title: "Edit",
+                className:
+                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
+              },
+            ]
+          : []),
+        ...(onDelete
+          ? [
+              {
+                icon: Trash2,
+                onClick: (venue: Venue) => {
+                  setSelectedVenue(venue);
+                  setDeleteConfirmOpen(true);
+                },
+                title: "Delete",
+                className:
+                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
+              },
+            ]
+          : []),
+      ],
+    }),
+  ];
+
+  const tableData = venues;
+  const tablePagination = pagination
+    ? {
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+        total: pagination.total,
+        totalPages: pagination.totalPages,
+      }
+    : undefined;
+
+  const handleDeleteConfirmChange = (open: boolean) => {
+    setDeleteConfirmOpen(open);
+    if (!open) {
+      setSelectedVenue(null);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedVenue && onDelete) {
+      onDelete(selectedVenue);
+    }
+    setDeleteConfirmOpen(false);
+    setSelectedVenue(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setSelectedVenue(null);
+  };
+
+  const deleteConfirmAction = {
+    label: "Delete",
+    onClick: handleDeleteConfirm,
+    variant: "destructive" as const,
+  };
+
+  const deleteCancelAction = {
+    label: "Cancel",
+    onClick: handleDeleteCancel,
+  };
+
+  return (
+    <div className={cn("w-full", className)}>
+      <DataTable<Venue>
+        data={tableData}
+        columns={columns}
+        useDefaultColumns={false}
+        title="Venues"
+        description="Manage and view venues"
+        onCreate={onCreate}
+        onSearch={onSearch}
+        manualPagination={Boolean(pagination && onPageChange)}
+        serverPagination={tablePagination}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+        loading={loading}
+      />
+
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={handleDeleteConfirmChange}
+        title="Delete Venue"
+        description={
+          selectedVenue
+            ? `Are you sure you want to delete "${getDisplayName(selectedVenue)}"? This action cannot be undone.`
+            : "Are you sure you want to delete this venue?"
+        }
+        confirmAction={deleteConfirmAction}
+        cancelAction={deleteCancelAction}
+      />
+    </div>
+  );
+}
+
