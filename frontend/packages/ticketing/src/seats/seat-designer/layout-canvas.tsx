@@ -43,6 +43,7 @@ interface LayoutCanvasProps {
   panOffset: { x: number; y: number };
   onSeatClick?: (seat: SeatMarker) => void;
   onSectionClick?: (section: SectionMarker) => void;
+  onSectionDoubleClick?: (section: SectionMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   onImageClick?: (
     e: Konva.KonvaEventObject<MouseEvent>,
@@ -72,6 +73,7 @@ export function LayoutCanvas({
   panOffset,
   onSeatClick,
   onSectionClick,
+  onSectionDoubleClick,
   onSeatDragEnd,
   onImageClick,
   onWheel,
@@ -559,6 +561,11 @@ export function LayoutCanvas({
                   // Select section when clicked
                   e.cancelBubble = true; // Prevent event from bubbling to stage
                   onSectionClick?.(section);
+                }}
+                onDblClick={(e) => {
+                  // Open section detail view when double-clicked
+                  e.cancelBubble = true; // Prevent event from bubbling to stage
+                  onSectionDoubleClick?.(section);
                 }}
                 onTap={(e: any) => {
                   e.cancelBubble = true;

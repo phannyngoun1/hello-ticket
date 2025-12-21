@@ -31,6 +31,6 @@ export type { SectionDetailViewProps } from "./section-detail-view";
 export { DatasheetView } from "./datasheet-view";
 export type { DatasheetViewProps } from "./datasheet-view";
 
-export { SelectedSectionCard } from "./selected-section-card";
-export type { SelectedSectionCardProps } from "./selected-section-card";
+export { SelectedSectionSheet } from "./selected-section-sheet";
+export type { SelectedSectionSheetProps } from "./selected-section-sheet";
 
