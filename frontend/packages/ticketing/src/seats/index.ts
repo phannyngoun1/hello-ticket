@@ -1,5 +1,5 @@
 export * from "./types";
 export * from "./seat-service";
+
+// Export seat-designer and related components from the folder
 export * from "./seat-designer";
-export * from "./seat-viewer";
-export * from "./placement-panel";

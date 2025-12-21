@@ -7,7 +7,7 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Stage, Layer, Image, Circle, Group, Text } from "react-konva";
 import Konva from "konva";
-import { SeatType } from "./types";
+import { SeatType } from "../types";
 
 interface SeatMarker {
   id: string;

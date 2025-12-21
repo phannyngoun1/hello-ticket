@@ -48,68 +48,25 @@ import {
   List,
   Edit,
 } from "lucide-react";
-import { seatService } from "./seat-service";
-import { sectionService } from "../sections/section-service";
-import { SeatType } from "./types";
+import { seatService } from "../seat-service";
+import { sectionService } from "../../sections/section-service";
+import { SeatType } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadService } from "@truths/shared";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { toast } from "@truths/ui";
 import { LayoutCanvas } from "./layout-canvas";
 import Konva from "konva";
+import { getUniqueSections as getUniqueSectionsUtil } from "./utils";
 
-export interface SeatDesignerProps {
-  venueId: string;
-  layoutId: string;
-  layoutName?: string;
-  imageUrl?: string;
-  designMode?: "seat-level" | "section-level"; // Design mode from layout
-  initialSeats?: Array<{
-    id: string;
-    section_id: string;
-    section_name?: string;
-    row: string;
-    seat_number: string;
-    seat_type: string;
-    x_coordinate?: number | null;
-    y_coordinate?: number | null;
-  }>;
-  initialSections?: Array<{
-    id: string;
-    name: string;
-    x_coordinate?: number | null;
-    y_coordinate?: number | null;
-    file_id?: string | null;
-    image_url?: string | null;
-  }>;
-  onImageUpload?: (url: string) => void;
-  className?: string;
-}
-
-interface SectionMarker {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  imageUrl?: string;
-  isNew?: boolean;
-}
-
-interface SeatInfo {
-  section: string; // Still use section name for UI display
-  sectionId?: string; // Add section_id for backend reference
-  row: string;
-  seatNumber: string;
-  seatType: SeatType;
-}
-
-interface SeatMarker {
-  id: string;
-  x: number;
-  y: number;
-  seat: SeatInfo;
-  isNew?: boolean;
-}
+// Import types from the seat-designer folder
+import type {
+  SeatDesignerProps,
+  SectionMarker,
+  SeatInfo,
+  SeatMarker,
+} from "./types";
+export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
 
 export function SeatDesigner({
   venueId,
@@ -671,32 +628,14 @@ export function SeatDesigner({
     setSectionSelectValue(currentSeat.section || "");
   }, [currentSeat.section]);
 
-  // Get unique sections from existing seats and API
+  // Get unique sections using utility function
   const getUniqueSections = (): string[] => {
-    const sections = new Set<string>();
-
-    // Add sections from existing seats
-    seats.forEach((seat) => {
-      if (seat.seat.section) {
-        sections.add(seat.seat.section);
-      }
-    });
-
-    // Add sections from API (for both modes - needed for seat editing)
-    if (sectionsData) {
-      sectionsData.forEach((section) => {
-        sections.add(section.name);
-      });
-    }
-
-    // Add sections from sectionMarkers (for section-level mode)
-    if (designMode === "section-level") {
-      sectionMarkers.forEach((section) => {
-        sections.add(section.name);
-      });
-    }
-
-    return Array.from(sections).sort();
+    return getUniqueSectionsUtil(
+      seats,
+      sectionsData,
+      sectionMarkers,
+      designMode
+    );
   };
 
   // Section mutations
