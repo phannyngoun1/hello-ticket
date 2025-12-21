@@ -5,7 +5,13 @@
  * and placing seats by clicking on the image.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+} from "react";
 import {
   Button,
   Card,
@@ -54,6 +60,7 @@ import Konva from "konva";
 export interface SeatDesignerProps {
   venueId: string;
   layoutId: string;
+  layoutName?: string;
   imageUrl?: string;
   initialSeats?: Array<{
     id: string;
@@ -97,6 +104,7 @@ interface SeatMarker {
 export function SeatDesigner({
   venueId,
   layoutId,
+  layoutName,
   imageUrl: initialImageUrl,
   initialSeats,
   onImageUpload,
@@ -163,9 +171,10 @@ export function SeatDesigner({
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const [containerDimensions, setContainerDimensions] = useState({
-    width: 800,
-    height: 600,
+    width: 0,
+    height: 0,
   });
+  const [dimensionsReady, setDimensionsReady] = useState(false);
 
   // Fetch existing seats only if initialSeats not provided (for backward compatibility)
   const {
@@ -190,74 +199,40 @@ export function SeatDesigner({
     return <div className="p-4 text-destructive">Layout ID is required</div>;
   }
 
-  // Track container dimensions for Konva canvas
+  // Initial synchronous measurement to avoid first-render resizing
+  useLayoutEffect(() => {
+    if (containerRef.current && !dimensionsReady) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = Math.floor(rect.width) || 800;
+      const height = Math.floor(rect.height) || 600;
+      setContainerDimensions({ width, height });
+      setDimensionsReady(true);
+    }
+  }, [dimensionsReady]);
+
+  // Track container dimensions for Konva canvas after initial measure
   useEffect(() => {
+    if (!containerRef.current || !dimensionsReady) return;
+
     let timeoutId: NodeJS.Timeout;
     let rafId: number;
-    let isUpdating = false;
-    let updateCount = 0;
-    let lastUpdateTime = Date.now();
 
     const updateDimensions = () => {
-      if (isUpdating || !containerRef.current) return;
-
-      // Safety check: if updating too frequently, skip
-      const now = Date.now();
-      if (now - lastUpdateTime < 50) {
-        return;
-      }
-
-      // Safety check: if too many updates in short time, something is wrong
-      if (updateCount > 10) {
-        console.warn("Too many dimension updates, stopping to prevent loop");
-        return;
-      }
-      updateCount++;
-      setTimeout(() => {
-        updateCount = Math.max(0, updateCount - 1);
-      }, 1000);
-
-      isUpdating = true;
-      lastUpdateTime = now;
+      if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
-      let width = Math.floor(rect.width);
-      let height = Math.floor(rect.height);
+      const width = Math.floor(rect.width) || 800;
+      const height = Math.floor(rect.height) || 600;
 
-      // Cap dimensions at reasonable maximums to prevent infinite expansion
-      const MAX_WIDTH = 5000;
-      const MAX_HEIGHT = 5000;
-      width = Math.min(width, MAX_WIDTH);
-      height = Math.min(height, MAX_HEIGHT);
-
-      // Ensure minimum dimensions
-      if (width <= 0) width = 800;
-      if (height <= 0) height = 600;
-
-      // Only update if dimensions actually changed significantly (more than 2px) to prevent loops
       setContainerDimensions((prev) => {
         const widthDiff = Math.abs(prev.width - width);
         const heightDiff = Math.abs(prev.height - height);
-
-        // Only update if change is significant (more than 2px)
         if (widthDiff <= 2 && heightDiff <= 2) {
-          isUpdating = false;
           return prev;
         }
-
-        // Prevent runaway growth - if growing by more than 100px at once, cap it
-        if (width > prev.width + 100) {
-          width = prev.width + 100;
-        }
-        if (height > prev.height + 100) {
-          height = prev.height + 100;
-        }
-
-        isUpdating = false;
         return { width, height };
       });
     };
 
-    // Use requestAnimationFrame to batch updates and prevent loops
     const scheduleUpdate = () => {
       if (rafId) {
         cancelAnimationFrame(rafId);
@@ -268,34 +243,17 @@ export function SeatDesigner({
       });
     };
 
-    // Initial measurement
-    if (containerRef.current) {
-      updateDimensions();
+    const resizeObserver = new ResizeObserver(scheduleUpdate);
+    resizeObserver.observe(containerRef.current);
+    window.addEventListener("resize", scheduleUpdate);
 
-      // Use ResizeObserver but throttle updates more aggressively
-      const resizeObserver = new ResizeObserver(scheduleUpdate);
-      resizeObserver.observe(containerRef.current);
-
-      window.addEventListener("resize", scheduleUpdate);
-      return () => {
-        isUpdating = false;
-        if (rafId) cancelAnimationFrame(rafId);
-        clearTimeout(timeoutId);
-        resizeObserver.disconnect();
-        window.removeEventListener("resize", scheduleUpdate);
-      };
-    } else {
-      // Fallback to window resize if container not ready
-      updateDimensions();
-      window.addEventListener("resize", scheduleUpdate);
-      return () => {
-        isUpdating = false;
-        if (rafId) cancelAnimationFrame(rafId);
-        clearTimeout(timeoutId);
-        window.removeEventListener("resize", scheduleUpdate);
-      };
-    }
-  }, []);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [dimensionsReady]);
 
   // Load existing seats when fetched or when initialSeats provided
   useEffect(() => {
@@ -1081,29 +1039,35 @@ export function SeatDesigner({
                 ref={containerRef}
                 className="relative border rounded-lg overflow-hidden bg-gray-100"
                 style={{
-                  minHeight: "400px",
+                  minHeight: "600px",
                   minWidth: 0,
                   display: "flex",
                   flexDirection: "column",
                 }}
               >
-                <LayoutCanvas
-                  imageUrl={viewingSection.imageUrl}
-                  seats={displayedSeats}
-                  selectedSeatId={selectedSeat?.id || null}
-                  isPlacingSeats={isPlacingSeats}
-                  isPlacingSections={false}
-                  zoomLevel={zoomLevel}
-                  panOffset={panOffset}
-                  onSeatClick={handleSeatClick}
-                  onSeatDragEnd={handleKonvaSeatDragEnd}
-                  onImageClick={handleKonvaImageClick}
-                  onWheel={handleKonvaWheel}
-                  onPan={handlePan}
-                  containerWidth={containerDimensions.width}
-                  containerHeight={containerDimensions.height}
-                  venueType="small"
-                />
+                {dimensionsReady ? (
+                  <LayoutCanvas
+                    imageUrl={viewingSection.imageUrl}
+                    seats={displayedSeats}
+                    selectedSeatId={selectedSeat?.id || null}
+                    isPlacingSeats={isPlacingSeats}
+                    isPlacingSections={false}
+                    zoomLevel={zoomLevel}
+                    panOffset={panOffset}
+                    onSeatClick={handleSeatClick}
+                    onSeatDragEnd={handleKonvaSeatDragEnd}
+                    onImageClick={handleKonvaImageClick}
+                    onWheel={handleKonvaWheel}
+                    onPan={handlePan}
+                    containerWidth={containerDimensions.width}
+                    containerHeight={containerDimensions.height}
+                    venueType="small"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
+                    Initializing canvas...
+                  </div>
+                )}
                 {/* Zoom Controls */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                   <Button
@@ -1151,7 +1115,9 @@ export function SeatDesigner({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">Seat Designer</h3>
+          <h3 className="text-lg font-semibold">
+            {layoutName ? `Designer - ${layoutName}` : "Seat Designer"}
+          </h3>
           {isLoading && (
             <span className="text-xs text-muted-foreground">
               Loading seats...
@@ -1383,32 +1349,38 @@ export function SeatDesigner({
             ref={containerRef}
             className="relative border rounded-lg overflow-hidden bg-gray-100"
             style={{
-              minHeight: "400px",
+              minHeight: "600px",
               minWidth: 0,
               display: "flex",
               flexDirection: "column",
             }}
           >
-            <LayoutCanvas
-              imageUrl={mainImageUrl}
-              seats={venueType === "small" ? displayedSeats : []}
-              sections={venueType === "large" ? sectionMarkers : []}
-              selectedSeatId={selectedSeat?.id || null}
-              selectedSectionId={selectedSectionMarker?.id || null}
-              isPlacingSeats={venueType === "small" && isPlacingSeats}
-              isPlacingSections={venueType === "large" && isPlacingSections}
-              zoomLevel={zoomLevel}
-              panOffset={panOffset}
-              onSeatClick={handleSeatClick}
-              onSectionClick={handleKonvaSectionClick}
-              onSeatDragEnd={handleKonvaSeatDragEnd}
-              onImageClick={handleKonvaImageClick}
-              onWheel={handleKonvaWheel}
-              onPan={handlePan}
-              containerWidth={containerDimensions.width}
-              containerHeight={containerDimensions.height}
-              venueType={venueType}
-            />
+            {dimensionsReady ? (
+              <LayoutCanvas
+                imageUrl={mainImageUrl}
+                seats={venueType === "small" ? displayedSeats : []}
+                sections={venueType === "large" ? sectionMarkers : []}
+                selectedSeatId={selectedSeat?.id || null}
+                selectedSectionId={selectedSectionMarker?.id || null}
+                isPlacingSeats={venueType === "small" && isPlacingSeats}
+                isPlacingSections={venueType === "large" && isPlacingSections}
+                zoomLevel={zoomLevel}
+                panOffset={panOffset}
+                onSeatClick={handleSeatClick}
+                onSectionClick={handleKonvaSectionClick}
+                onSeatDragEnd={handleKonvaSeatDragEnd}
+                onImageClick={handleKonvaImageClick}
+                onWheel={handleKonvaWheel}
+                onPan={handlePan}
+                containerWidth={containerDimensions.width}
+                containerHeight={containerDimensions.height}
+                venueType={venueType}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
+                Initializing canvas...
+              </div>
+            )}
             {/* Zoom Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
               <Button

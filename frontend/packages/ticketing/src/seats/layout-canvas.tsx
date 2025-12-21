@@ -83,6 +83,7 @@ export function LayoutCanvas({
   venueType,
 }: LayoutCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [imageLoading, setImageLoading] = useState(true);
   const stageRef = useRef<Konva.Stage>(null);
   const layerRef = useRef<Konva.Layer>(null);
   const [isPanning, setIsPanning] = useState(false);
@@ -122,24 +123,29 @@ export function LayoutCanvas({
   useEffect(() => {
     if (!imageUrl) {
       setImage(null);
+      setImageLoading(false);
       return;
     }
 
     // Check if we already have this image loaded
     if (image && (image.src === imageUrl || image.src.endsWith(imageUrl))) {
+      setImageLoading(false);
       return;
     }
 
+    setImageLoading(true);
     const img = new window.Image();
     img.crossOrigin = "anonymous";
 
     const handleLoad = () => {
       setImage(img);
+      setImageLoading(false);
     };
 
     const handleError = () => {
       console.error("Failed to load image:", imageUrl);
       setImage(null);
+      setImageLoading(false);
     };
 
     img.onload = handleLoad;
@@ -296,17 +302,47 @@ export function LayoutCanvas({
     [onSeatDragEnd, stageToPercentage]
   );
 
-  if (!image) {
-    return (
-      <div className="flex items-center justify-center w-full h-full">
-        <div className="text-muted-foreground">Loading image...</div>
-      </div>
-    );
-  }
-
   // Ensure container dimensions are valid
   const validWidth = containerWidth > 0 ? containerWidth : 800;
   const validHeight = containerHeight > 0 ? containerHeight : 600;
+
+  // Show loading indicator while image is loading or image dimensions are invalid
+  if (imageLoading || !image || !image.width || !image.height) {
+    return (
+      <div
+        style={{
+          width: validWidth,
+          height: validHeight,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f3f4f6",
+          borderRadius: "0.5rem",
+        }}
+      >
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              border: "4px solid #e5e7eb",
+              borderTop: "4px solid #3b82f6",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+              margin: "0 auto 16px",
+            }}
+          />
+          <p style={{ color: "#6b7280", fontSize: "14px" }}>Loading image...</p>
+        </div>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   // Calculate image dimensions to fit within container while maintaining aspect ratio
   const imageAspectRatio = image.height / image.width;
