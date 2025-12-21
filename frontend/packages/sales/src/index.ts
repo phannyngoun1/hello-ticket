@@ -19,3 +19,5 @@ export * from './test-trees';
 
 export * from './tests';
 export * from './test-basics';
+
+export * from './bookings';

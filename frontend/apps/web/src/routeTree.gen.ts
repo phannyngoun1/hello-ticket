@@ -19,6 +19,7 @@ import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as UsersIdRouteImport } from './routes/users/$id'
 import { Route as TicketingVenuesRouteImport } from './routes/ticketing/venues'
+import { Route as TicketingShowsRouteImport } from './routes/ticketing/shows'
 import { Route as TicketingOrganizersRouteImport } from './routes/ticketing/organizers'
 import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
@@ -29,13 +30,17 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings/appear
 import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SalesTestsRouteImport } from './routes/sales/tests'
 import { Route as SalesCustomersRouteImport } from './routes/sales/customers'
+import { Route as SalesBookingsRouteImport } from './routes/sales/bookings'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authChangePasswordRouteImport } from './routes/(auth)/change-password'
 import { Route as TicketingVenuesIndexRouteImport } from './routes/ticketing/venues/index'
+import { Route as TicketingShowsIndexRouteImport } from './routes/ticketing/shows/index'
 import { Route as TicketingOrganizersIndexRouteImport } from './routes/ticketing/organizers/index'
 import { Route as SalesTestsIndexRouteImport } from './routes/sales/tests/index'
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
+import { Route as SalesBookingsIndexRouteImport } from './routes/sales/bookings/index'
 import { Route as TicketingVenuesIdRouteImport } from './routes/ticketing/venues/$id'
+import { Route as TicketingShowsIdRouteImport } from './routes/ticketing/shows/$id'
 import { Route as TicketingOrganizersIdRouteImport } from './routes/ticketing/organizers/$id'
 import { Route as SettingsTicketingEventTypesRouteImport } from './routes/settings/ticketing/event-types'
 import { Route as SettingsSalesTestTreesRouteImport } from './routes/settings/sales/test-trees'
@@ -44,6 +49,7 @@ import { Route as SettingsSalesCustomerTypesRouteImport } from './routes/setting
 import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settings/sales/customer-groups'
 import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
+import { Route as SalesBookingsIdRouteImport } from './routes/sales/bookings/$id'
 import { Route as TicketingVenuesIdSeatsDesignerRouteImport } from './routes/ticketing/venues/$id/seats/designer'
 
 const UsersRoute = UsersRouteImport.update({
@@ -94,6 +100,11 @@ const UsersIdRoute = UsersIdRouteImport.update({
 const TicketingVenuesRoute = TicketingVenuesRouteImport.update({
   id: '/ticketing/venues',
   path: '/ticketing/venues',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TicketingShowsRoute = TicketingShowsRouteImport.update({
+  id: '/ticketing/shows',
+  path: '/ticketing/shows',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TicketingOrganizersRoute = TicketingOrganizersRouteImport.update({
@@ -147,6 +158,11 @@ const SalesCustomersRoute = SalesCustomersRouteImport.update({
   path: '/sales/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesBookingsRoute = SalesBookingsRouteImport.update({
+  id: '/sales/bookings',
+  path: '/sales/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const authLoginRoute = authLoginRouteImport.update({
   id: '/(auth)/login',
   path: '/login',
@@ -161,6 +177,11 @@ const TicketingVenuesIndexRoute = TicketingVenuesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => TicketingVenuesRoute,
+} as any)
+const TicketingShowsIndexRoute = TicketingShowsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TicketingShowsRoute,
 } as any)
 const TicketingOrganizersIndexRoute =
   TicketingOrganizersIndexRouteImport.update({
@@ -178,10 +199,20 @@ const SalesCustomersIndexRoute = SalesCustomersIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SalesCustomersRoute,
 } as any)
+const SalesBookingsIndexRoute = SalesBookingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesBookingsRoute,
+} as any)
 const TicketingVenuesIdRoute = TicketingVenuesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => TicketingVenuesRoute,
+} as any)
+const TicketingShowsIdRoute = TicketingShowsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TicketingShowsRoute,
 } as any)
 const TicketingOrganizersIdRoute = TicketingOrganizersIdRouteImport.update({
   id: '/$id',
@@ -226,6 +257,11 @@ const SalesCustomersIdRoute = SalesCustomersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SalesCustomersRoute,
 } as any)
+const SalesBookingsIdRoute = SalesBookingsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SalesBookingsRoute,
+} as any)
 const TicketingVenuesIdSeatsDesignerRoute =
   TicketingVenuesIdSeatsDesignerRouteImport.update({
     id: '/seats/designer',
@@ -242,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/change-password': typeof authChangePasswordRoute
   '/login': typeof authLoginRoute
+  '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
@@ -252,10 +289,12 @@ export interface FileRoutesByFullPath {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/ticketing/organizers': typeof TicketingOrganizersRouteWithChildren
+  '/ticketing/shows': typeof TicketingShowsRouteWithChildren
   '/ticketing/venues': typeof TicketingVenuesRouteWithChildren
   '/users/$id': typeof UsersIdRoute
   '/settings': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -264,10 +303,13 @@ export interface FileRoutesByFullPath {
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
+  '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
+  '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
+  '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
@@ -289,6 +331,7 @@ export interface FileRoutesByTo {
   '/users/$id': typeof UsersIdRoute
   '/settings': typeof SettingsIndexRoute
   '/users': typeof UsersIndexRoute
+  '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -297,10 +340,13 @@ export interface FileRoutesByTo {
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
+  '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
+  '/sales/bookings': typeof SalesBookingsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
   '/sales/tests': typeof SalesTestsIndexRoute
   '/ticketing/organizers': typeof TicketingOrganizersIndexRoute
+  '/ticketing/shows': typeof TicketingShowsIndexRoute
   '/ticketing/venues': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
@@ -314,6 +360,7 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/(auth)/change-password': typeof authChangePasswordRoute
   '/(auth)/login': typeof authLoginRoute
+  '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
@@ -324,10 +371,12 @@ export interface FileRoutesById {
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/ticketing/organizers': typeof TicketingOrganizersRouteWithChildren
+  '/ticketing/shows': typeof TicketingShowsRouteWithChildren
   '/ticketing/venues': typeof TicketingVenuesRouteWithChildren
   '/users/$id': typeof UsersIdRoute
   '/settings/': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
+  '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -336,10 +385,13 @@ export interface FileRoutesById {
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
+  '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
+  '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
+  '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
@@ -354,6 +406,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/change-password'
     | '/login'
+    | '/sales/bookings'
     | '/sales/customers'
     | '/sales/tests'
     | '/settings/account'
@@ -364,10 +417,12 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/ticketing/organizers'
+    | '/ticketing/shows'
     | '/ticketing/venues'
     | '/users/$id'
     | '/settings'
     | '/users/'
+    | '/sales/bookings/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -376,10 +431,13 @@ export interface FileRouteTypes {
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
+    | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
+    | '/sales/bookings/'
     | '/sales/customers/'
     | '/sales/tests/'
     | '/ticketing/organizers/'
+    | '/ticketing/shows/'
     | '/ticketing/venues/'
     | '/ticketing/venues/$id/seats/designer'
   fileRoutesByTo: FileRoutesByTo
@@ -401,6 +459,7 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/settings'
     | '/users'
+    | '/sales/bookings/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -409,10 +468,13 @@ export interface FileRouteTypes {
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
+    | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
+    | '/sales/bookings'
     | '/sales/customers'
     | '/sales/tests'
     | '/ticketing/organizers'
+    | '/ticketing/shows'
     | '/ticketing/venues'
     | '/ticketing/venues/$id/seats/designer'
   id:
@@ -425,6 +487,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/(auth)/change-password'
     | '/(auth)/login'
+    | '/sales/bookings'
     | '/sales/customers'
     | '/sales/tests'
     | '/settings/account'
@@ -435,10 +498,12 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/settings/security'
     | '/ticketing/organizers'
+    | '/ticketing/shows'
     | '/ticketing/venues'
     | '/users/$id'
     | '/settings/'
     | '/users/'
+    | '/sales/bookings/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -447,10 +512,13 @@ export interface FileRouteTypes {
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
+    | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
+    | '/sales/bookings/'
     | '/sales/customers/'
     | '/sales/tests/'
     | '/ticketing/organizers/'
+    | '/ticketing/shows/'
     | '/ticketing/venues/'
     | '/ticketing/venues/$id/seats/designer'
   fileRoutesById: FileRoutesById
@@ -464,6 +532,7 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRouteWithChildren
   authChangePasswordRoute: typeof authChangePasswordRoute
   authLoginRoute: typeof authLoginRoute
+  SalesBookingsRoute: typeof SalesBookingsRouteWithChildren
   SalesCustomersRoute: typeof SalesCustomersRouteWithChildren
   SalesTestsRoute: typeof SalesTestsRouteWithChildren
   SettingsAccountRoute: typeof SettingsAccountRoute
@@ -474,6 +543,7 @@ export interface RootRouteChildren {
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsSecurityRoute: typeof SettingsSecurityRoute
   TicketingOrganizersRoute: typeof TicketingOrganizersRouteWithChildren
+  TicketingShowsRoute: typeof TicketingShowsRouteWithChildren
   TicketingVenuesRoute: typeof TicketingVenuesRouteWithChildren
   SettingsIndexRoute: typeof SettingsIndexRoute
   SettingsSalesCustomerGroupsRoute: typeof SettingsSalesCustomerGroupsRoute
@@ -555,6 +625,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TicketingVenuesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ticketing/shows': {
+      id: '/ticketing/shows'
+      path: '/ticketing/shows'
+      fullPath: '/ticketing/shows'
+      preLoaderRoute: typeof TicketingShowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ticketing/organizers': {
       id: '/ticketing/organizers'
       path: '/ticketing/organizers'
@@ -625,6 +702,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales/bookings': {
+      id: '/sales/bookings'
+      path: '/sales/bookings'
+      fullPath: '/sales/bookings'
+      preLoaderRoute: typeof SalesBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(auth)/login': {
       id: '/(auth)/login'
       path: '/login'
@@ -645,6 +729,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/ticketing/venues/'
       preLoaderRoute: typeof TicketingVenuesIndexRouteImport
       parentRoute: typeof TicketingVenuesRoute
+    }
+    '/ticketing/shows/': {
+      id: '/ticketing/shows/'
+      path: '/'
+      fullPath: '/ticketing/shows/'
+      preLoaderRoute: typeof TicketingShowsIndexRouteImport
+      parentRoute: typeof TicketingShowsRoute
     }
     '/ticketing/organizers/': {
       id: '/ticketing/organizers/'
@@ -667,12 +758,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCustomersIndexRouteImport
       parentRoute: typeof SalesCustomersRoute
     }
+    '/sales/bookings/': {
+      id: '/sales/bookings/'
+      path: '/'
+      fullPath: '/sales/bookings/'
+      preLoaderRoute: typeof SalesBookingsIndexRouteImport
+      parentRoute: typeof SalesBookingsRoute
+    }
     '/ticketing/venues/$id': {
       id: '/ticketing/venues/$id'
       path: '/$id'
       fullPath: '/ticketing/venues/$id'
       preLoaderRoute: typeof TicketingVenuesIdRouteImport
       parentRoute: typeof TicketingVenuesRoute
+    }
+    '/ticketing/shows/$id': {
+      id: '/ticketing/shows/$id'
+      path: '/$id'
+      fullPath: '/ticketing/shows/$id'
+      preLoaderRoute: typeof TicketingShowsIdRouteImport
+      parentRoute: typeof TicketingShowsRoute
     }
     '/ticketing/organizers/$id': {
       id: '/ticketing/organizers/$id'
@@ -730,6 +835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCustomersIdRouteImport
       parentRoute: typeof SalesCustomersRoute
     }
+    '/sales/bookings/$id': {
+      id: '/sales/bookings/$id'
+      path: '/$id'
+      fullPath: '/sales/bookings/$id'
+      preLoaderRoute: typeof SalesBookingsIdRouteImport
+      parentRoute: typeof SalesBookingsRoute
+    }
     '/ticketing/venues/$id/seats/designer': {
       id: '/ticketing/venues/$id/seats/designer'
       path: '/seats/designer'
@@ -751,6 +863,20 @@ const UsersRouteChildren: UsersRouteChildren = {
 }
 
 const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
+
+interface SalesBookingsRouteChildren {
+  SalesBookingsIdRoute: typeof SalesBookingsIdRoute
+  SalesBookingsIndexRoute: typeof SalesBookingsIndexRoute
+}
+
+const SalesBookingsRouteChildren: SalesBookingsRouteChildren = {
+  SalesBookingsIdRoute: SalesBookingsIdRoute,
+  SalesBookingsIndexRoute: SalesBookingsIndexRoute,
+}
+
+const SalesBookingsRouteWithChildren = SalesBookingsRoute._addFileChildren(
+  SalesBookingsRouteChildren,
+)
 
 interface SalesCustomersRouteChildren {
   SalesCustomersIdRoute: typeof SalesCustomersIdRoute
@@ -793,6 +919,20 @@ const TicketingOrganizersRouteChildren: TicketingOrganizersRouteChildren = {
 const TicketingOrganizersRouteWithChildren =
   TicketingOrganizersRoute._addFileChildren(TicketingOrganizersRouteChildren)
 
+interface TicketingShowsRouteChildren {
+  TicketingShowsIdRoute: typeof TicketingShowsIdRoute
+  TicketingShowsIndexRoute: typeof TicketingShowsIndexRoute
+}
+
+const TicketingShowsRouteChildren: TicketingShowsRouteChildren = {
+  TicketingShowsIdRoute: TicketingShowsIdRoute,
+  TicketingShowsIndexRoute: TicketingShowsIndexRoute,
+}
+
+const TicketingShowsRouteWithChildren = TicketingShowsRoute._addFileChildren(
+  TicketingShowsRouteChildren,
+)
+
 interface TicketingVenuesIdRouteChildren {
   TicketingVenuesIdSeatsDesignerRoute: typeof TicketingVenuesIdSeatsDesignerRoute
 }
@@ -827,6 +967,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRouteWithChildren,
   authChangePasswordRoute: authChangePasswordRoute,
   authLoginRoute: authLoginRoute,
+  SalesBookingsRoute: SalesBookingsRouteWithChildren,
   SalesCustomersRoute: SalesCustomersRouteWithChildren,
   SalesTestsRoute: SalesTestsRouteWithChildren,
   SettingsAccountRoute: SettingsAccountRoute,
@@ -837,6 +978,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsSecurityRoute: SettingsSecurityRoute,
   TicketingOrganizersRoute: TicketingOrganizersRouteWithChildren,
+  TicketingShowsRoute: TicketingShowsRouteWithChildren,
   TicketingVenuesRoute: TicketingVenuesRouteWithChildren,
   SettingsIndexRoute: SettingsIndexRoute,
   SettingsSalesCustomerGroupsRoute: SettingsSalesCustomerGroupsRoute,

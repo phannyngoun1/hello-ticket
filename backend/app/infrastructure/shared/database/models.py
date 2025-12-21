@@ -26,6 +26,40 @@ operational_metadata = MetaData()
 # ============================================================================
 # SALES MODULE
 
+class BookingModel(SQLModel, table=True):
+    """Booking master data database model"""
+    __tablename__ = "bookings"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_bookings_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_bookings_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_bookings_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+
+
 class TestBasicModel(SQLModel, table=True):
     """TestBasic master data database model"""
     __tablename__ = "test_basics"
@@ -282,6 +316,40 @@ class CustomerTypeModel(SQLModel, table=True):
 
 # ============================================================================
 # TICKETING MODULE
+
+class ShowModel(SQLModel, table=True):
+    """Show master data database model"""
+    __tablename__ = "shows"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_shows_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_shows_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_shows_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+
 
 class EventTypeModel(SQLModel, table=True):
     """EventType master data database model"""
