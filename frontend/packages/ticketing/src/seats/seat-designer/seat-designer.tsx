@@ -207,11 +207,14 @@ export function SeatDesigner({
   });
 
   // Ensure a default section exists in UI for section-level (large) mode
+  // Only create temporary marker if no sections from API and no initialSections
   useEffect(() => {
     if (
       designMode === "section-level" &&
       sectionMarkers.length === 0 &&
-      !isLoading
+      !isLoading &&
+      !initialSections &&
+      (!sectionsData || sectionsData.length === 0)
     ) {
       const defaultSection: SectionMarker = {
         id: `section-default`,
@@ -225,7 +228,7 @@ export function SeatDesigner({
       // setSelectedSectionMarker(defaultSection);
       sectionForm.setValue("name", defaultSection.name);
     }
-  }, [designMode, isLoading, sectionMarkers.length]);
+  }, [designMode, isLoading, sectionMarkers.length, initialSections, sectionsData]);
 
   // Validate venueId and layoutId after hooks
   if (!venueId) {
@@ -316,6 +319,28 @@ export function SeatDesigner({
       // }
     }
   }, [initialSections, designMode]);
+
+  // Load existing sections from API query when initialSections not provided
+  // This ensures sections created by the backend (like default section) are loaded
+  useEffect(() => {
+    if (
+      !initialSections &&
+      sectionsData !== undefined && // sectionsData has been loaded (could be empty array)
+      designMode === "section-level"
+    ) {
+      // Always sync sectionsData to sectionMarkers, even if empty
+      // This replaces any temporary "section-default" markers with real sections
+      const markers: SectionMarker[] = sectionsData.map((section) => ({
+        id: section.id,
+        name: section.name,
+        x: section.x_coordinate || 50,
+        y: section.y_coordinate || 50,
+        imageUrl: section.image_url || undefined,
+        isNew: false,
+      }));
+      setSectionMarkers(markers);
+    }
+  }, [sectionsData, initialSections, designMode]);
 
   // Load existing seats when fetched or when initialSeats provided
   useEffect(() => {
