@@ -66,7 +66,7 @@ import {
   SectionPlacementControls,
   SectionDetailView,
   DatasheetView,
-  SelectedSectionCard,
+  SelectedSectionSheet,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -1432,6 +1432,7 @@ export function SeatDesigner({
                 panOffset={panOffset}
                 onSeatClick={handleSeatClick}
                 onSectionClick={handleKonvaSectionClick}
+                onSectionDoubleClick={handleOpenSectionDetail}
                 onSeatDragEnd={handleKonvaSeatDragEnd}
                 onImageClick={handleKonvaImageClick}
                 onWheel={handleKonvaWheel}
@@ -1608,14 +1609,21 @@ export function SeatDesigner({
         </SheetContent>
       </Sheet>
 
-      {/* Selected Section Info */}
-      {selectedSectionMarker && !viewingSection && venueType === "large" && (
-        <SelectedSectionCard
+      {/* Selected Section Sheet */}
+      {venueType === "large" && (
+        <SelectedSectionSheet
           selectedSectionMarker={selectedSectionMarker}
           seats={seats}
-          onClear={() => setSelectedSectionMarker(null)}
+          isOpen={!!selectedSectionMarker && !viewingSection}
+          onOpenChange={(open: boolean) => {
+            if (!open) {
+              setSelectedSectionMarker(null);
+            }
+          }}
           onOpenSectionDetail={handleOpenSectionDetail}
-          onUseNameForNext={(name) => sectionForm.setValue("name", name)}
+          onUseNameForNext={(name: string) =>
+            sectionForm.setValue("name", name)
+          }
           onDelete={handleDeleteSection}
         />
       )}
