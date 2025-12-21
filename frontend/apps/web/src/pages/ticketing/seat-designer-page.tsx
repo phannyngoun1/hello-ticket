@@ -1,5 +1,6 @@
 import { useParams, useSearch } from "@tanstack/react-router";
-import { SeatDesigner } from "@truths/ticketing";
+import { useEffect } from "react";
+import { SeatDesigner, useLayoutsByVenue } from "@truths/ticketing";
 import {
   useVenueService,
   useVenue,
@@ -22,26 +23,69 @@ function SeatDesignerContent({
     venueService,
     id ?? null
   );
+  const {
+    data: layouts,
+    isLoading: layoutsLoading,
+    error: layoutsError,
+  } = useLayoutsByVenue(layoutService, id ?? null);
+
+  // Prefer layoutId from route; if missing, fall back to first available layout
+  const effectiveLayoutId =
+    layoutId || (layouts && layouts.length > 0 ? layouts[0].id : undefined);
 
   // Use combined endpoint to fetch layout with seats in one request
   const { data: layoutWithSeats, isLoading: layoutLoading } =
-    useLayoutWithSeats(layoutService, layoutId ?? null);
+    useLayoutWithSeats(layoutService, effectiveLayoutId ?? null);
 
-  // Don't render SeatDesigner until we have layoutId
-  if (!layoutId) {
-    return <div className="p-4">Layout ID is required</div>;
-  }
+  // Update tab title with layout name when available
+  useEffect(() => {
+    if (!id || !effectiveLayoutId) return;
+    const layoutName =
+      layoutWithSeats?.layout.name || `Layout ${effectiveLayoutId}`;
+    const title = `Designer - ${layoutName}`;
+    window.dispatchEvent(
+      new CustomEvent("update-tab-title", {
+        detail: {
+          path: `/ticketing/venues/${id}/seats/designer`,
+          title,
+          iconName: "MapPin",
+        },
+      })
+    );
+  }, [id, effectiveLayoutId, layoutWithSeats?.layout.name]);
 
-  if (venueLoading || layoutLoading) {
+  // Loading states
+  if (venueLoading || layoutLoading || layoutsLoading) {
     return <div className="p-4">Loading layout and seats...</div>;
   }
+
+  // Handle missing layout
+  if (!effectiveLayoutId) {
+    if (layoutsError) {
+      return (
+        <div className="p-4 text-destructive">
+          Failed to load layouts:{" "}
+          {layoutsError instanceof Error
+            ? layoutsError.message
+            : "Unknown error"}
+        </div>
+      );
+    }
+    return (
+      <div className="p-4 text-muted-foreground">
+        No layouts found for this venue. Please create a layout first.
+      </div>
+    );
+  }
+
 
   return (
     <div className="container mx-auto py-6 space-y-4">
       <SeatDesigner
-        key={layoutId} // Force remount when layoutId changes to reload seats
+        key={effectiveLayoutId} // Force remount when layoutId changes to reload seats
         venueId={id}
-        layoutId={layoutId}
+        layoutId={effectiveLayoutId}
+        layoutName={layoutWithSeats?.layout.name}
         imageUrl={layoutWithSeats?.layout.image_url || venue?.image_url}
         initialSeats={layoutWithSeats?.seats}
         fileId={layoutWithSeats?.layout.file_id}
