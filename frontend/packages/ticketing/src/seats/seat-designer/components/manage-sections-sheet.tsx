@@ -4,7 +4,6 @@
  * Sheet to list, edit, and delete sections from the database (seat-level mode)
  */
 
-
 import {
   Sheet,
   SheetContent,
@@ -38,14 +37,17 @@ export function ManageSectionsSheet({
 }: ManageSectionsSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+      <SheetContent
+        side="right"
+        className="w-[400px] sm:w-[540px] flex flex-col"
+      >
         <SheetHeader>
           <SheetTitle>Manage Sections</SheetTitle>
           <SheetDescription>
             Edit or delete sections for this layout
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
               {sections?.length || 0} section(s)
@@ -54,7 +56,7 @@ export function ManageSectionsSheet({
               + New Section
             </Button>
           </div>
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-2">
             {sections && sections.length > 0 ? (
               sections.map((section) => (
                 <Card key={section.id} className="p-3">

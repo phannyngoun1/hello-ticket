@@ -31,7 +31,7 @@ export function SectionFormSheet({
 }: SectionFormSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
         <SheetHeader>
           <SheetTitle>
             {editingSectionId ? "Edit Section" : "New Section"}
@@ -42,7 +42,7 @@ export function SectionFormSheet({
               : "Create a new section for your layout"}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
           <div>
             <Label htmlFor="section-name">Section Name</Label>
             <Controller

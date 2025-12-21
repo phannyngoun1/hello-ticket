@@ -441,6 +441,8 @@ export function SeatDesigner({
       try {
         setIsUploadingImage(true);
         const response = await uploadService.uploadImage(file);
+        
+        // Update local state immediately for UI feedback
         setSectionMarkers((prev) =>
           prev.map((s) =>
             s.id === sectionId ? { ...s, imageUrl: response.url } : s
@@ -451,6 +453,26 @@ export function SeatDesigner({
           setViewingSection((prev) =>
             prev ? { ...prev, imageUrl: response.url } : null
           );
+        }
+
+        // Save file_id to the section in the database
+        // Try to get section from sectionsData first (has real coordinates), otherwise use sectionMarkers
+        const sectionFromData = sectionsData?.find((s) => s.id === sectionId);
+        const sectionFromMarkers = sectionMarkers.find((s) => s.id === sectionId);
+        
+        if (sectionFromData || sectionFromMarkers) {
+          const section = sectionFromData || sectionFromMarkers;
+          await sectionService.update(sectionId, {
+            name: section.name,
+            x_coordinate: sectionFromData ? sectionFromData.x_coordinate : sectionFromMarkers?.x,
+            y_coordinate: sectionFromData ? sectionFromData.y_coordinate : sectionFromMarkers?.y,
+            file_id: response.id, // Save the file_id
+          });
+          
+          // Invalidate sections query to refresh data
+          queryClient.invalidateQueries({
+            queryKey: ["sections", "layout", layoutId],
+          });
         }
 
         // Force container dimension re-measurement after image upload
@@ -779,11 +801,13 @@ export function SeatDesigner({
       name: string;
       x?: number;
       y?: number;
+      file_id?: string;
     }) => {
       return await sectionService.update(input.sectionId, {
         name: input.name,
         x_coordinate: input.x,
         y_coordinate: input.y,
+        file_id: input.file_id,
       });
     },
     onSuccess: (section) => {
@@ -1247,47 +1271,137 @@ export function SeatDesigner({
   // If viewing a section detail (large venue mode), show section detail view
   if (venueType === "large" && viewingSection) {
     return (
-      <SectionDetailView
-        viewingSection={viewingSection}
-        className={className}
-        displayedSeats={displayedSeats}
-        selectedSeat={selectedSeat}
-        seatPlacementForm={seatPlacementForm}
-        uniqueSections={getUniqueSections()}
-        sectionsData={sectionsData}
-        sectionSelectValue={sectionSelectValue}
-        onSectionSelectValueChange={setSectionSelectValue}
-        containerRef={containerRef}
-        dimensionsReady={dimensionsReady}
-        containerDimensions={containerDimensions}
-        zoomLevel={zoomLevel}
-        panOffset={panOffset}
-        isPlacingSeats={isPlacingSeats}
-        isUploadingImage={isUploadingImage}
-        onBack={() => {
-          setViewingSection(null);
-          // Reset zoom when going back to main floor plan
-          setZoomLevel(1);
-          setPanOffset({ x: 0, y: 0 });
-        }}
-        onSave={handleSave}
-        onClearSectionSeats={handleClearSectionSeats}
-        onSectionImageSelect={handleSectionImageSelect}
-        onSeatClick={handleSeatClick}
-        onSeatDragEnd={handleKonvaSeatDragEnd}
-        onImageClick={handleKonvaImageClick}
-        onWheel={handleKonvaWheel}
-        onPan={handlePan}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
-        onNewSection={() => {
-          setIsSectionFormOpen(true);
-          setEditingSectionId(null);
-          sectionForm.reset({ name: "" });
-        }}
-        saveSeatsMutationPending={saveSeatsMutation.isPending}
-      />
+      <>
+        <SectionDetailView
+          viewingSection={viewingSection}
+          className={className}
+          displayedSeats={displayedSeats}
+          selectedSeat={selectedSeat}
+          seatPlacementForm={seatPlacementForm}
+          uniqueSections={getUniqueSections()}
+          sectionsData={sectionsData}
+          sectionSelectValue={sectionSelectValue}
+          onSectionSelectValueChange={setSectionSelectValue}
+          containerRef={containerRef}
+          dimensionsReady={dimensionsReady}
+          containerDimensions={containerDimensions}
+          zoomLevel={zoomLevel}
+          panOffset={panOffset}
+          isPlacingSeats={isPlacingSeats}
+          isUploadingImage={isUploadingImage}
+          onBack={() => {
+            setViewingSection(null);
+            // Reset zoom when going back to main floor plan
+            setZoomLevel(1);
+            setPanOffset({ x: 0, y: 0 });
+          }}
+          onSave={handleSave}
+          onClearSectionSeats={handleClearSectionSeats}
+          onSectionImageSelect={handleSectionImageSelect}
+          onSeatClick={handleSeatClick}
+          onSeatDragEnd={handleKonvaSeatDragEnd}
+          onImageClick={handleKonvaImageClick}
+          onWheel={handleKonvaWheel}
+          onPan={handlePan}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetZoom={handleResetZoom}
+          onNewSection={() => {
+            setIsSectionFormOpen(true);
+            setEditingSectionId(null);
+            sectionForm.reset({ name: "" });
+          }}
+          saveSeatsMutationPending={saveSeatsMutation.isPending}
+          seats={seats}
+          onDeleteSeat={handleDeleteSeat}
+          onSetViewingSeat={setViewingSeat}
+          onSetIsEditingViewingSeat={setIsEditingViewingSeat}
+          onSetSelectedSeat={setSelectedSeat}
+          seatEditFormReset={seatEditForm.reset}
+        />
+        {/* Seat Edit Sheet - needed for section detail view */}
+        <SeatEditSheet
+          viewingSeat={viewingSeat}
+          isOpen={!!viewingSeat}
+          onOpenChange={(open) => {
+            if (!open) {
+              setViewingSeat(null);
+              setIsEditingViewingSeat(false);
+            }
+          }}
+          isEditing={isEditingViewingSeat}
+          isPlacingSeats={isPlacingSeats}
+          form={seatEditForm}
+          uniqueSections={getUniqueSections()}
+          sectionsData={sectionsData}
+          sectionMarkers={sectionMarkers}
+          designMode={designMode}
+          isUpdating={updateSeatMutation.isPending}
+          isDeleting={deleteSeatMutation.isPending}
+          onEdit={() => {
+            if (viewingSeat) {
+              setIsEditingViewingSeat(true);
+              seatEditForm.reset({
+                section: viewingSeat.seat.section,
+                sectionId: viewingSeat.seat.sectionId,
+                row: viewingSeat.seat.row,
+                seatNumber: viewingSeat.seat.seatNumber,
+                seatType: viewingSeat.seat.seatType,
+              });
+            }
+          }}
+          onSave={(data) => {
+            if (viewingSeat && !viewingSeat.isNew) {
+              updateSeatMutation.mutate({
+                seatId: viewingSeat.id,
+                data,
+              });
+            } else if (viewingSeat && viewingSeat.isNew) {
+              // Update local state for new seats
+              setSeats((prev) =>
+                prev.map((s) =>
+                  s.id === viewingSeat.id ? { ...s, seat: data } : s
+                )
+              );
+              setViewingSeat(null);
+              setIsEditingViewingSeat(false);
+              seatEditForm.reset();
+            }
+          }}
+          onCancel={() => {
+            setViewingSeat(null);
+            setIsEditingViewingSeat(false);
+            seatEditForm.reset();
+          }}
+          onDelete={() => {
+            if (viewingSeat) {
+              handleDeleteSeat(viewingSeat);
+            }
+          }}
+        />
+        
+        {/* Save Confirmation Dialog - needed for section detail view */}
+        <ConfirmationDialog
+          open={showSaveConfirmDialog}
+          onOpenChange={(open) => !open && setShowSaveConfirmDialog(false)}
+          title="Save Seat Layout"
+          description={
+            seats.length > 0
+              ? `Are you sure you want to save ${seats.length} seat${seats.length === 1 ? "" : "s"}? This will update the layout with your current seat placements across all sections.`
+              : "Are you sure you want to save? This will update the layout."
+          }
+          confirmAction={{
+            label: "Save",
+            variant: "default",
+            onClick: handleConfirmSave,
+            loading: saveSeatsMutation.isPending,
+          }}
+          cancelAction={{
+            label: "Cancel",
+            onClick: () => setShowSaveConfirmDialog(false),
+          }}
+        />
+      </>
     );
   }
 
