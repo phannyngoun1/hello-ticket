@@ -9,6 +9,7 @@ class CreateSeatCommand:
     """Command to create a new seat"""
 
     venue_id: str
+    layout_id: str
     section: str
     row: str
     seat_number: str
@@ -48,10 +49,18 @@ class DeleteSeatCommand:
 
 @dataclass
 class BulkCreateSeatsCommand:
-    """Command to create multiple seats at once"""
+    """Command to handle bulk seat operations (create, update, delete)
+    
+    The 'seats' list contains all seat operations:
+    - No 'id' field: Create new seat
+    - Has 'id' field: Update existing seat
+    - Seats not in the list but existing in DB: Will be deleted
+    """
 
     venue_id: str
-    seats: list[dict]  # List of seat data dictionaries
+    layout_id: str
+    seats: list[dict]  # List of seat data dictionaries with operation type determined by presence of 'id'
+    file_id: Optional[str] = None  # Optional file ID to update the layout's image file
 
 
 @dataclass

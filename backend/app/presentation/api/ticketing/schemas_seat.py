@@ -10,6 +10,7 @@ class SeatCreateRequest(BaseModel):
     """Payload for seat creation"""
 
     venue_id: str = Field(..., description="Venue ID")
+    layout_id: str = Field(..., description="Layout ID")
     section: str = Field(..., description="Section name (e.g., 'Section A')")
     row: str = Field(..., description="Row identifier (e.g., 'Row 5')")
     seat_number: str = Field(..., description="Seat number (e.g., '12')")
@@ -42,6 +43,7 @@ class SeatResponse(BaseModel):
     id: str
     tenant_id: str
     venue_id: str
+    layout_id: str
     section: str
     row: str
     seat_number: str
@@ -64,6 +66,13 @@ class SeatListResponse(BaseModel):
 
 
 class BulkSeatCreateRequest(BaseModel):
-    """Payload for bulk seat creation"""
+    """Payload for bulk seat operations (create, update, delete)
+    
+    The 'seats' list contains all seat operations:
+    - No 'id' field: Create new seat
+    - Has 'id' field: Update existing seat  
+    - Has 'id' field + 'delete' flag: Delete seat
+    """
 
-    seats: List[Dict[str, Any]] = Field(..., description="List of seat data dictionaries")
+    seats: List[Dict[str, Any]] = Field(..., description="List of seat data dictionaries. Operation type determined by presence of 'id' and 'delete' flag")
+    file_id: Optional[str] = Field(None, description="Optional file ID to update the layout's image file")

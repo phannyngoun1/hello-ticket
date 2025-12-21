@@ -1289,6 +1289,41 @@ class VenueModel(SQLModel, table=True):
     )
 
 
+class LayoutModel(SQLModel, table=True):
+    """Layout database model - represents a seating layout for a venue"""
+    __tablename__ = "layouts"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    venue_id: str = Field(index=True, foreign_key="venues.id")
+    name: str
+    description: Optional[str] = None
+    file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Reference to uploaded file
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_layouts_venue', 'tenant_id', 'venue_id'),
+        Index('ix_layouts_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_layouts_tenant_deleted', 'tenant_id', 'is_deleted'),
+    )
+
+
 class SeatModel(SQLModel, table=True):
     """Seat master data database model"""
     __tablename__ = "seats"
@@ -1297,6 +1332,7 @@ class SeatModel(SQLModel, table=True):
     id: str = Field(primary_key=True, default_factory=generate_id)
     tenant_id: str = Field(index=True)
     venue_id: str = Field(index=True, foreign_key="venues.id")
+    layout_id: str = Field(index=True, foreign_key="layouts.id")
     section: str = Field(index=True)
     row: str = Field(index=True)
     seat_number: str = Field(index=True)
@@ -1323,7 +1359,8 @@ class SeatModel(SQLModel, table=True):
     
     __table_args__ = (
         Index('ix_seats_venue', 'tenant_id', 'venue_id'),
-        Index('ix_seats_location', 'venue_id', 'section', 'row', 'seat_number', unique=True),
+        Index('ix_seats_layout', 'tenant_id', 'layout_id'),
+        Index('ix_seats_location', 'layout_id', 'section', 'row', 'seat_number', unique=True),
         Index('ix_seats_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_seats_tenant_deleted', 'tenant_id', 'is_deleted'),
     )
@@ -1749,6 +1786,44 @@ class SequenceModel(SQLModel, table=True):
 
     __table_args__ = (
         Index('ix_sequences_tenant_type', 'tenant_id', 'sequence_type', unique=True),
+    )
+
+
+# ============================================================================
+# SHARED MODULE - FILE UPLOADS
+# ============================================================================
+
+class FileUploadModel(SQLModel, table=True):
+    """File upload database model for tracking uploaded files"""
+    __tablename__ = "file_uploads"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    filename: str  # Unique filename on disk (UUID + extension)
+    original_name: str  # Original filename from user
+    mime_type: str
+    size: int  # File size in bytes
+    url: str  # URL path to access the file
+    uploaded_by: Optional[str] = Field(default=None, index=True)  # User ID who uploaded
+    uploaded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), index=True)
+    )
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_file_uploads_tenant_id', 'tenant_id', 'uploaded_at'),
+        Index('ix_file_uploads_uploaded_by', 'tenant_id', 'uploaded_by'),
+        Index('ix_file_uploads_filename', 'tenant_id', 'filename', unique=True),
     )
 
 

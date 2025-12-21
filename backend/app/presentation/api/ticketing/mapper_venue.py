@@ -1,8 +1,12 @@
 """API mapper for Ticketing module"""
+from typing import Optional
+
 from app.domain.ticketing.venue import Venue
 from app.domain.ticketing.seat import Seat
+from app.domain.ticketing.layout import Layout
 from app.presentation.api.ticketing.schemas_venue import VenueResponse
 from app.presentation.api.ticketing.schemas_seat import SeatResponse
+from app.presentation.api.ticketing.schemas_layout import LayoutResponse
 
 
 class TicketingApiMapper:
@@ -28,6 +32,7 @@ class TicketingApiMapper:
             id=seat.id,
             tenant_id=seat.tenant_id,
             venue_id=seat.venue_id,
+            layout_id=seat.layout_id,
             section=seat.section,
             row=seat.row,
             seat_number=seat.seat_number,
@@ -37,5 +42,20 @@ class TicketingApiMapper:
             is_active=seat.is_active,
             created_at=seat.created_at,
             updated_at=seat.updated_at,
+        )
+
+    @staticmethod
+    def layout_to_response(layout: Layout, image_url: Optional[str] = None) -> LayoutResponse:
+        return LayoutResponse(
+            id=layout.id,
+            tenant_id=layout.tenant_id,
+            venue_id=layout.venue_id,
+            name=layout.name,
+            description=layout.description,
+            file_id=layout.file_id,
+            image_url=image_url,
+            is_active=layout.is_active,
+            created_at=layout.created_at,
+            updated_at=layout.updated_at,
         )
 

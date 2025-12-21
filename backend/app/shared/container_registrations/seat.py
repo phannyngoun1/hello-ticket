@@ -8,6 +8,7 @@ from punq import Container
 from app.shared.mediator import Mediator
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.domain.ticketing.venue_repositories import VenueRepository
+from app.domain.ticketing.layout_repositories import LayoutRepository
 from app.application.ticketing.handlers_seat import SeatCommandHandler, SeatQueryHandler
 from app.infrastructure.ticketing.seat_repository import SQLSeatRepository
 from app.application.ticketing.commands_seat import (
@@ -21,6 +22,7 @@ from app.application.ticketing.commands_seat import (
 from app.application.ticketing.queries_seat import (
     GetSeatByIdQuery,
     GetSeatsByVenueQuery,
+    GetSeatsByLayoutQuery,
     GetSeatByLocationQuery,
 )
 
@@ -37,17 +39,24 @@ def register_seat_container(container: Container) -> None:
     Args:
         container: The Punq container to register dependencies in
     """
-    # Register Seat repository
-    seat_repository = SQLSeatRepository()
-    container.register(SeatRepository, instance=seat_repository)
+    # Register Seat repository (reuse if already registered by layout container)
+    try:
+        # Try to resolve SeatRepository (in case it was already registered by layout container)
+        seat_repository = container.resolve(SeatRepository)
+    except Exception:
+        # If not registered yet, create and register it
+        seat_repository = SQLSeatRepository()
+        container.register(SeatRepository, instance=seat_repository)
     
-    # Get VenueRepository from container
+    # Get VenueRepository and LayoutRepository from container
     venue_repository = container.resolve(VenueRepository)
+    layout_repository = container.resolve(LayoutRepository)
     
     # Register Seat command handler
     seat_command_handler = SeatCommandHandler(
         seat_repository=seat_repository,
-        venue_repository=venue_repository
+        venue_repository=venue_repository,
+        layout_repository=layout_repository
     )
     container.register(SeatCommandHandler, instance=seat_command_handler)
     
@@ -76,4 +85,5 @@ def register_seat_mediator(mediator: Mediator) -> None:
     # Register Seat query handlers
     mediator.register_query_handler(GetSeatByIdQuery, SeatQueryHandler)
     mediator.register_query_handler(GetSeatsByVenueQuery, SeatQueryHandler)
+    mediator.register_query_handler(GetSeatsByLayoutQuery, SeatQueryHandler)
     mediator.register_query_handler(GetSeatByLocationQuery, SeatQueryHandler)

@@ -14,6 +14,7 @@ from app.application.ticketing.commands_seat import (
 from app.application.ticketing.queries_seat import (
     GetSeatByIdQuery,
     GetSeatsByVenueQuery,
+    GetSeatsByLayoutQuery,
 )
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
@@ -49,6 +50,7 @@ async def create_seat(
     try:
         command = CreateSeatCommand(
             venue_id=request.venue_id,
+            layout_id=request.layout_id,
             section=request.section,
             row=request.row,
             seat_number=request.seat_number,
@@ -64,22 +66,35 @@ async def create_seat(
 
 @router.get("", response_model=SeatListResponse)
 async def list_seats(
-    venue_id: str = Query(..., description="Filter by venue ID"),
+    venue_id: Optional[str] = Query(None, description="Filter by venue ID"),
+    layout_id: Optional[str] = Query(None, description="Filter by layout ID"),
     skip: int = Query(0, ge=0),
     limit: int = Query(1000, ge=1, le=5000),
     current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
-    """Get all seats for a venue"""
+    """Get all seats for a venue or layout"""
 
     try:
-        result = await mediator.query(
-            GetSeatsByVenueQuery(
-                venue_id=venue_id,
-                skip=skip,
-                limit=limit,
+        if not venue_id and not layout_id:
+            raise ValidationError("Either venue_id or layout_id must be provided")
+        
+        if layout_id:
+            result = await mediator.query(
+                GetSeatsByLayoutQuery(
+                    layout_id=layout_id,
+                    skip=skip,
+                    limit=limit,
+                )
             )
-        )
+        else:
+            result = await mediator.query(
+                GetSeatsByVenueQuery(
+                    venue_id=venue_id,
+                    skip=skip,
+                    limit=limit,
+                )
+            )
         items = [TicketingApiMapper.seat_to_response(seat) for seat in result.items]
         return SeatListResponse(
             items=items,
@@ -177,19 +192,31 @@ async def delete_seat(
 @router.post("/bulk", response_model=list[SeatResponse], status_code=201)
 async def bulk_create_seats(
     venue_id: str = Query(..., description="Venue ID"),
+    layout_id: Optional[str] = Query(None, description="Layout ID (required if seats array is empty or for image updates)"),
     request: BulkSeatCreateRequest = ...,
     current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
-    """Bulk create seats for a venue"""
+    """Bulk create seats for a venue. Can also update layout file_id if provided."""
 
     try:
+        # Extract layout_id from query param or first seat
+        resolved_layout_id = layout_id
+        if not resolved_layout_id and request.seats and len(request.seats) > 0:
+            resolved_layout_id = request.seats[0].get("layout_id")
+        
+        if not resolved_layout_id:
+            raise ValidationError("layout_id is required (provide as query parameter or in seat data)")
+        
         command = BulkCreateSeatsCommand(
             venue_id=venue_id,
+            layout_id=resolved_layout_id,
             seats=request.seats,
+            file_id=request.file_id,
         )
-        seats = await mediator.send(command)
-        return [TicketingApiMapper.seat_to_response(seat) for seat in seats]
+        result = await mediator.send(command)
+        # Return all created and updated seats
+        return [TicketingApiMapper.seat_to_response(seat) for seat in result]
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

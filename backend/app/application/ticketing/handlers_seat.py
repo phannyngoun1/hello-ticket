@@ -12,11 +12,13 @@ from app.application.ticketing.commands_seat import (
 from app.application.ticketing.queries_seat import (
     GetSeatByIdQuery,
     GetSeatsByVenueQuery,
+    GetSeatsByLayoutQuery,
     GetSeatByLocationQuery,
 )
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.domain.ticketing.seat import Seat, SeatType
 from app.domain.ticketing.venue_repositories import VenueRepository
+from app.domain.ticketing.layout_repositories import LayoutRepository
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
 
@@ -26,9 +28,10 @@ logger = logging.getLogger(__name__)
 class SeatCommandHandler:
     """Handles seat master data commands."""
 
-    def __init__(self, seat_repository: SeatRepository, venue_repository: VenueRepository):
+    def __init__(self, seat_repository: SeatRepository, venue_repository: VenueRepository, layout_repository: LayoutRepository):
         self._seat_repository = seat_repository
         self._venue_repository = venue_repository
+        self._layout_repository = layout_repository
 
     async def handle_create_seat(self, command: CreateSeatCommand) -> Seat:
         tenant_id = require_tenant_context()
@@ -37,6 +40,11 @@ class SeatCommandHandler:
         venue = await self._venue_repository.get_by_id(tenant_id, command.venue_id)
         if not venue:
             raise NotFoundError(f"Venue with ID '{command.venue_id}' not found")
+        
+        # Verify layout exists
+        layout = await self._layout_repository.get_by_id(tenant_id, command.layout_id)
+        if not layout:
+            raise NotFoundError(f"Layout with ID '{command.layout_id}' not found")
         
         # Check if seat already exists at this location
         existing = await self._seat_repository.get_by_venue_and_location(
@@ -54,6 +62,7 @@ class SeatCommandHandler:
         seat = Seat(
             tenant_id=tenant_id,
             venue_id=command.venue_id,
+            layout_id=command.layout_id,
             section=command.section,
             row=command.row,
             seat_number=command.seat_number,
@@ -136,33 +145,247 @@ class SeatCommandHandler:
         venue = await self._venue_repository.get_by_id(tenant_id, command.venue_id)
         if not venue:
             raise NotFoundError(f"Venue with ID '{command.venue_id}' not found")
-
-        created_seats = []
-        errors = []
-
-        for seat_data in command.seats:
-            try:
-                seat = Seat(
-                    tenant_id=tenant_id,
-                    venue_id=command.venue_id,
-                    section=seat_data.get("section", ""),
-                    row=seat_data.get("row", ""),
-                    seat_number=seat_data.get("seat_number", ""),
-                    seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
-                    x_coordinate=seat_data.get("x_coordinate"),
-                    y_coordinate=seat_data.get("y_coordinate"),
-                )
-                saved = await self._seat_repository.save(seat)
-                created_seats.append(saved)
-            except Exception as e:
-                errors.append(f"Failed to create seat: {str(e)}")
-                logger.warning("Failed to create seat: %s", str(e))
-
-        if errors and not created_seats:
-            raise BusinessRuleError(f"Failed to create seats: {'; '.join(errors)}")
         
-        logger.info("Bulk created %d seats for venue=%s", len(created_seats), command.venue_id)
-        return created_seats
+        # Verify layout exists
+        layout = await self._layout_repository.get_by_id(tenant_id, command.layout_id)
+        if not layout:
+            raise NotFoundError(f"Layout with ID '{command.layout_id}' not found")
+        
+        # Update layout file_id if provided
+        if command.file_id and layout.file_id != command.file_id:
+            layout.update_details(file_id=command.file_id)
+            await self._layout_repository.save(layout)
+            logger.info("Updated layout %s file_id to %s", command.layout_id, command.file_id)
+
+        result_seats = []
+        errors = []
+        created_count = 0
+        updated_count = 0
+        deleted_count = 0
+
+        from sqlalchemy.exc import ProgrammingError
+        
+        # Get all existing seats for this layout
+        existing_seats = await self._seat_repository.get_all_by_layout(
+            tenant_id=tenant_id,
+            layout_id=command.layout_id,
+        )
+        
+        # Extract IDs from frontend seats list (all seats with id, regardless of delete flag)
+        # These are seats that the frontend knows about
+        frontend_seat_ids = {
+            seat_data.get("id")
+            for seat_data in command.seats
+            if seat_data.get("id")
+        }
+        
+        # Delete seats that exist in database but are not in the frontend list
+        for existing_seat in existing_seats:
+            if existing_seat.id not in frontend_seat_ids:
+                try:
+                    deleted = await self._seat_repository.delete(
+                        tenant_id, existing_seat.id, hard_delete=False
+                    )
+                    if deleted:
+                        deleted_count += 1
+                        logger.info("Deleted seat %s (not in frontend list)", existing_seat.id)
+                    else:
+                        errors.append(f"Seat with ID '{existing_seat.id}' not found for deletion")
+                except Exception as e:
+                    errors.append(f"Failed to delete seat {existing_seat.id}: {str(e)}")
+                    logger.warning("Failed to delete seat %s: %s", existing_seat.id, str(e))
+        
+        # Process all seats from frontend - determine operation type by presence of 'id'
+        # Deletion is handled above by comparing existing seats with frontend list
+        for seat_data in command.seats:
+            seat_id = seat_data.get("id")
+            
+            # Update operation: has id
+            if seat_id:
+                try:
+                    seat = await self._seat_repository.get_by_id(tenant_id, seat_id)
+                    if not seat:
+                        errors.append(f"Seat with ID '{seat_id}' not found for update")
+                        continue
+                    
+                    # Update seat details
+                    update_kwargs = {}
+                    if "section" in seat_data:
+                        update_kwargs["section"] = seat_data["section"]
+                    if "row" in seat_data:
+                        update_kwargs["row"] = seat_data["row"]
+                    if "seat_number" in seat_data:
+                        update_kwargs["seat_number"] = seat_data["seat_number"]
+                    if "seat_type" in seat_data:
+                        update_kwargs["seat_type"] = SeatType(seat_data["seat_type"])
+                    if "x_coordinate" in seat_data:
+                        update_kwargs["x_coordinate"] = seat_data["x_coordinate"]
+                    if "y_coordinate" in seat_data:
+                        update_kwargs["y_coordinate"] = seat_data["y_coordinate"]
+                    
+                    seat.update_details(**update_kwargs)
+                    saved = await self._seat_repository.save(seat)
+                    result_seats.append(saved)
+                    updated_count += 1
+                except (BusinessRuleError, NotFoundError) as e:
+                    errors.append(f"Failed to update seat: {str(e)}")
+                    logger.warning("Failed to update seat: %s", str(e))
+                except Exception as e:
+                    errors.append(f"Failed to update seat: {str(e)}")
+                    logger.warning("Failed to update seat: %s", str(e))
+            
+            # Create operation: no id
+            else:
+                try:
+                    # Check if there's a soft-deleted seat at this location
+                    # If so, hard delete it first to avoid unique constraint violation
+                    section = seat_data.get("section", "")
+                    row = seat_data.get("row", "")
+                    seat_number = seat_data.get("seat_number", "")
+                    
+                    existing_deleted_seat = await self._seat_repository.get_by_layout_and_location(
+                        tenant_id=tenant_id,
+                        layout_id=command.layout_id,
+                        section=section,
+                        row=row,
+                        seat_number=seat_number,
+                        include_deleted=True,
+                    )
+                    
+                    if existing_deleted_seat:
+                        # Hard delete the soft-deleted seat to free up the unique constraint
+                        await self._seat_repository.delete(
+                            tenant_id, existing_deleted_seat.id, hard_delete=True
+                        )
+                        logger.info(
+                            "Hard deleted soft-deleted seat %s at %s %s %s to allow recreation",
+                            existing_deleted_seat.id, section, row, seat_number
+                        )
+                    
+                    seat = Seat(
+                        tenant_id=tenant_id,
+                        venue_id=command.venue_id,
+                        layout_id=command.layout_id,
+                        section=section,
+                        row=row,
+                        seat_number=seat_number,
+                        seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
+                        x_coordinate=seat_data.get("x_coordinate"),
+                        y_coordinate=seat_data.get("y_coordinate"),
+                    )
+                    saved = await self._seat_repository.save(seat)
+                    result_seats.append(saved)
+                    created_count += 1
+                except (ProgrammingError, BusinessRuleError) as e:
+                    error_msg = str(e)
+                    # Check if it's the layout_id column issue
+                    if "layout_id" in error_msg and "does not exist" in error_msg:
+                        if not result_seats:
+                            raise BusinessRuleError(
+                                "Cannot create seats: layout_id column does not exist in database. "
+                                "Please run database migration to add the layout_id column to the seats table."
+                            )
+                        errors.append("Failed to create seat: layout_id column does not exist in database")
+                        logger.warning("Failed to create seat due to missing layout_id column")
+                    # Check for unique constraint violation (IntegrityError converted to BusinessRuleError)
+                    elif "UniqueViolation" in error_msg or "duplicate key" in error_msg.lower():
+                        # Try to find and hard delete the conflicting soft-deleted seat
+                        try:
+                            conflicting_seat = await self._seat_repository.get_by_layout_and_location(
+                                tenant_id=tenant_id,
+                                layout_id=command.layout_id,
+                                section=seat_data.get("section", ""),
+                                row=seat_data.get("row", ""),
+                                seat_number=seat_data.get("seat_number", ""),
+                                include_deleted=True,
+                            )
+                            if conflicting_seat:
+                                await self._seat_repository.delete(
+                                    tenant_id, conflicting_seat.id, hard_delete=True
+                                )
+                                # Retry creating the seat
+                                seat = Seat(
+                                    tenant_id=tenant_id,
+                                    venue_id=command.venue_id,
+                                    layout_id=command.layout_id,
+                                    section=seat_data.get("section", ""),
+                                    row=seat_data.get("row", ""),
+                                    seat_number=seat_data.get("seat_number", ""),
+                                    seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
+                                    x_coordinate=seat_data.get("x_coordinate"),
+                                    y_coordinate=seat_data.get("y_coordinate"),
+                                )
+                                saved = await self._seat_repository.save(seat)
+                                result_seats.append(saved)
+                                created_count += 1
+                                logger.info("Retried creating seat after hard deleting conflicting soft-deleted seat")
+                            else:
+                                errors.append(f"Failed to create seat: {error_msg}")
+                                logger.warning("Failed to create seat: %s (no conflicting seat found)", error_msg)
+                        except Exception as retry_error:
+                            errors.append(f"Failed to create seat: {error_msg} (retry also failed: {str(retry_error)})")
+                            logger.warning("Failed to create seat: %s (retry also failed: %s)", error_msg, str(retry_error))
+                    else:
+                        errors.append(f"Failed to create seat: {error_msg}")
+                        logger.warning("Failed to create seat: %s", error_msg)
+                except Exception as e:
+                    error_msg = str(e)
+                    # Check for unique constraint violation - might be a race condition
+                    if "UniqueViolation" in error_msg or "duplicate key" in error_msg.lower():
+                        # Try to find and hard delete the conflicting seat
+                        try:
+                            conflicting_seat = await self._seat_repository.get_by_layout_and_location(
+                                tenant_id=tenant_id,
+                                layout_id=command.layout_id,
+                                section=seat_data.get("section", ""),
+                                row=seat_data.get("row", ""),
+                                seat_number=seat_data.get("seat_number", ""),
+                                include_deleted=True,
+                            )
+                            if conflicting_seat:
+                                await self._seat_repository.delete(
+                                    tenant_id, conflicting_seat.id, hard_delete=True
+                                )
+                                # Retry creating the seat
+                                seat = Seat(
+                                    tenant_id=tenant_id,
+                                    venue_id=command.venue_id,
+                                    layout_id=command.layout_id,
+                                    section=seat_data.get("section", ""),
+                                    row=seat_data.get("row", ""),
+                                    seat_number=seat_data.get("seat_number", ""),
+                                    seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
+                                    x_coordinate=seat_data.get("x_coordinate"),
+                                    y_coordinate=seat_data.get("y_coordinate"),
+                                )
+                                saved = await self._seat_repository.save(seat)
+                                result_seats.append(saved)
+                                created_count += 1
+                                logger.info("Retried creating seat after hard deleting conflicting soft-deleted seat")
+                            else:
+                                errors.append(f"Failed to create seat: {error_msg} (no conflicting seat found)")
+                                logger.warning("Failed to create seat: %s (no conflicting seat found)", error_msg)
+                        except Exception as retry_error:
+                            errors.append(f"Failed to create seat: {error_msg} (retry also failed: {str(retry_error)})")
+                            logger.warning("Failed to create seat: %s (retry also failed: %s)", error_msg, str(retry_error))
+                    else:
+                        errors.append(f"Failed to create seat: {error_msg}")
+                        logger.warning("Failed to create seat: %s", error_msg)
+
+        if errors and not result_seats and deleted_count == 0:
+            raise BusinessRuleError(f"Failed to process seats: {'; '.join(errors)}")
+        
+        if errors:
+            logger.warning("Bulk seat operation completed with %d errors: %s", len(errors), '; '.join(errors))
+        
+        logger.info(
+            "Bulk seat operation: created=%d, updated=%d, deleted=%d for venue=%s",
+            created_count,
+            updated_count,
+            deleted_count,
+            command.venue_id
+        )
+        return result_seats
 
     async def handle_delete_seats_by_venue(self, command: DeleteSeatsByVenueCommand) -> int:
         tenant_id = require_tenant_context()
@@ -190,6 +413,15 @@ class SeatQueryHandler:
         return await self._seat_repository.get_by_venue(
             tenant_id,
             query.venue_id,
+            skip=query.skip,
+            limit=query.limit,
+        )
+
+    async def handle_get_seats_by_layout(self, query: GetSeatsByLayoutQuery):
+        tenant_id = require_tenant_context()
+        return await self._seat_repository.get_by_layout(
+            tenant_id,
+            query.layout_id,
             skip=query.skip,
             limit=query.limit,
         )

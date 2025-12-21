@@ -57,6 +57,10 @@ from app.infrastructure.shared.database.models import (
     UICustomComponentModel,
     # Audit
     AuditLogModel,
+    # Ticketing
+    VenueModel,
+    LayoutModel,
+    SeatModel,
 )
 
 # Platform models (now in the same database)

@@ -43,14 +43,27 @@ import {
   Edit,
 } from "lucide-react";
 import { seatService } from "./seat-service";
-import type { CreateSeatInput } from "./types";
 import { SeatType } from "./types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlacementPanel } from "./placement-panel";
+import { uploadService } from "@truths/shared";
+import { ConfirmationDialog } from "@truths/custom-ui";
+import { toast } from "@truths/ui";
+import { LayoutCanvas } from "./layout-canvas";
+import Konva from "konva";
 
 export interface SeatDesignerProps {
   venueId: string;
+  layoutId: string;
   imageUrl?: string;
+  initialSeats?: Array<{
+    id: string;
+    section: string;
+    row: string;
+    seat_number: string;
+    seat_type: string;
+    x_coordinate?: number | null;
+    y_coordinate?: number | null;
+  }>;
   onImageUpload?: (url: string) => void;
   className?: string;
 }
@@ -83,10 +96,13 @@ interface SeatMarker {
 
 export function SeatDesigner({
   venueId,
+  layoutId,
   imageUrl: initialImageUrl,
+  initialSeats,
   onImageUpload,
   className,
-}: SeatDesignerProps) {
+  fileId: initialFileId,
+}: SeatDesignerProps & { fileId?: string }) {
   // Design mode: "seat-level" = direct seat placement, "section-level" = section-based with separate floor plans
   const [designMode, setDesignMode] = useState<DesignMode>("seat-level");
   // Keep old venueType for backward compatibility (can be removed later)
@@ -96,12 +112,23 @@ export function SeatDesigner({
   const [mainImageUrl, setMainImageUrl] = useState<string | undefined>(
     initialImageUrl
   );
+  // Store file_id for the main image
+  const [mainImageFileId, setMainImageFileId] = useState<string | undefined>(
+    initialFileId
+  );
+
+  // Update image URL when prop changes (e.g., when layout loads asynchronously)
+  useEffect(() => {
+    // Always update when initialImageUrl changes, even if it's undefined (to clear)
+    setMainImageUrl(initialImageUrl);
+  }, [initialImageUrl]);
 
   // Large venue: sections placed on main floor plan
   const [sectionMarkers, setSectionMarkers] = useState<SectionMarker[]>([]);
   const [selectedSectionMarker, setSelectedSectionMarker] =
     useState<SectionMarker | null>(null);
-  const [isPlacingSections, setIsPlacingSections] = useState(false);
+  // Always in placement mode - simplified
+  const isPlacingSections = true;
   const [currentSectionName, setCurrentSectionName] = useState("Section A");
 
   // Section detail view (when clicking a section in large venue mode)
@@ -112,67 +139,209 @@ export function SeatDesigner({
   // Seats (for small venue: all seats, for large venue: seats in viewingSection)
   const [seats, setSeats] = useState<SeatMarker[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
-  const [isPlacingSeats, setIsPlacingSeats] = useState(false);
+  // Always in placement mode - simplified
+  const isPlacingSeats = true;
   const [currentSeat, setCurrentSeat] = useState({
     section: "Section A",
     row: "Row 1",
     seatNumber: "1",
     seatType: SeatType.STANDARD,
   });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [dragStartPos, setDragStartPos] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const [viewingSeat, setViewingSeat] = useState<SeatMarker | null>(null);
   const [isEditingViewingSeat, setIsEditingViewingSeat] = useState(false);
   const [editingSeatData, setEditingSeatData] = useState<SeatInfo | null>(null);
   const [viewingSectionForView, setViewingSectionForView] =
     useState<SectionMarker | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
 
-  const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const transformWrapperRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
-
-  // Fetch existing seats
-  const { data: existingSeats, isLoading } = useQuery({
-    queryKey: ["seats", venueId],
-    queryFn: () => seatService.getByVenue(venueId),
-    enabled: !!venueId,
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 800,
+    height: 600,
   });
 
-  // Validate venueId after hooks
+  // Fetch existing seats only if initialSeats not provided (for backward compatibility)
+  const {
+    data: existingSeats,
+    isLoading,
+    error: seatsError,
+  } = useQuery({
+    queryKey: ["seats", layoutId],
+    queryFn: () => seatService.getByLayout(layoutId),
+    enabled: !!layoutId && !initialSeats, // Only fetch if initialSeats not provided
+    retry: false, // Don't retry if column doesn't exist
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: false,
+  });
+
+  // Validate venueId and layoutId after hooks
   if (!venueId) {
     return <div className="p-4 text-destructive">Venue ID is required</div>;
   }
 
-  // Load existing seats when fetched
+  if (!layoutId) {
+    return <div className="p-4 text-destructive">Layout ID is required</div>;
+  }
+
+  // Track container dimensions for Konva canvas
   useEffect(() => {
-    if (existingSeats?.items) {
-      const markers: SeatMarker[] = existingSeats.items.map((seat) => ({
-        id: seat.id,
-        x: seat.x_coordinate || 0,
-        y: seat.y_coordinate || 0,
-        seat: {
-          section: seat.section,
-          row: seat.row,
-          seatNumber: seat.seat_number,
-          seatType: seat.seat_type,
-        },
-      }));
-      setSeats(markers);
+    let timeoutId: NodeJS.Timeout;
+    let rafId: number;
+    let isUpdating = false;
+    let updateCount = 0;
+    let lastUpdateTime = Date.now();
+
+    const updateDimensions = () => {
+      if (isUpdating || !containerRef.current) return;
+
+      // Safety check: if updating too frequently, skip
+      const now = Date.now();
+      if (now - lastUpdateTime < 50) {
+        return;
+      }
+
+      // Safety check: if too many updates in short time, something is wrong
+      if (updateCount > 10) {
+        console.warn("Too many dimension updates, stopping to prevent loop");
+        return;
+      }
+      updateCount++;
+      setTimeout(() => {
+        updateCount = Math.max(0, updateCount - 1);
+      }, 1000);
+
+      isUpdating = true;
+      lastUpdateTime = now;
+      const rect = containerRef.current.getBoundingClientRect();
+      let width = Math.floor(rect.width);
+      let height = Math.floor(rect.height);
+
+      // Cap dimensions at reasonable maximums to prevent infinite expansion
+      const MAX_WIDTH = 5000;
+      const MAX_HEIGHT = 5000;
+      width = Math.min(width, MAX_WIDTH);
+      height = Math.min(height, MAX_HEIGHT);
+
+      // Ensure minimum dimensions
+      if (width <= 0) width = 800;
+      if (height <= 0) height = 600;
+
+      // Only update if dimensions actually changed significantly (more than 2px) to prevent loops
+      setContainerDimensions((prev) => {
+        const widthDiff = Math.abs(prev.width - width);
+        const heightDiff = Math.abs(prev.height - height);
+
+        // Only update if change is significant (more than 2px)
+        if (widthDiff <= 2 && heightDiff <= 2) {
+          isUpdating = false;
+          return prev;
+        }
+
+        // Prevent runaway growth - if growing by more than 100px at once, cap it
+        if (width > prev.width + 100) {
+          width = prev.width + 100;
+        }
+        if (height > prev.height + 100) {
+          height = prev.height + 100;
+        }
+
+        isUpdating = false;
+        return { width, height };
+      });
+    };
+
+    // Use requestAnimationFrame to batch updates and prevent loops
+    const scheduleUpdate = () => {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(() => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(updateDimensions, 150);
+      });
+    };
+
+    // Initial measurement
+    if (containerRef.current) {
+      updateDimensions();
+
+      // Use ResizeObserver but throttle updates more aggressively
+      const resizeObserver = new ResizeObserver(scheduleUpdate);
+      resizeObserver.observe(containerRef.current);
+
+      window.addEventListener("resize", scheduleUpdate);
+      return () => {
+        isUpdating = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        clearTimeout(timeoutId);
+        resizeObserver.disconnect();
+        window.removeEventListener("resize", scheduleUpdate);
+      };
+    } else {
+      // Fallback to window resize if container not ready
+      updateDimensions();
+      window.addEventListener("resize", scheduleUpdate);
+      return () => {
+        isUpdating = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        clearTimeout(timeoutId);
+        window.removeEventListener("resize", scheduleUpdate);
+      };
     }
-  }, [existingSeats]);
+  }, []);
+
+  // Load existing seats when fetched or when initialSeats provided
+  useEffect(() => {
+    // If initialSeats is provided, use it directly (from combined endpoint)
+    if (initialSeats) {
+      if (initialSeats.length > 0) {
+        const markers: SeatMarker[] = initialSeats.map((seat) => ({
+          id: seat.id,
+          x: seat.x_coordinate || 0,
+          y: seat.y_coordinate || 0,
+          seat: {
+            section: seat.section,
+            row: seat.row,
+            seatNumber: seat.seat_number,
+            seatType: seat.seat_type as SeatType,
+          },
+        }));
+        setSeats(markers);
+      } else {
+        // Layout exists but has no seats yet - start with empty array
+        setSeats([]);
+      }
+    } else if (existingSeats) {
+      // Fallback to query result if initialSeats not provided
+      if (existingSeats.items && existingSeats.items.length > 0) {
+        const markers: SeatMarker[] = existingSeats.items.map((seat) => ({
+          id: seat.id,
+          x: seat.x_coordinate || 0,
+          y: seat.y_coordinate || 0,
+          seat: {
+            section: seat.section,
+            row: seat.row,
+            seatNumber: seat.seat_number,
+            seatType: seat.seat_type,
+          },
+        }));
+        setSeats(markers);
+      } else {
+        // Layout exists but has no seats yet - start with empty array
+        setSeats([]);
+      }
+    } else if (!isLoading && !seatsError && !initialSeats) {
+      // Query completed but no data - reset seats (only if not using initialSeats)
+      setSeats([]);
+    }
+  }, [existingSeats, initialSeats, isLoading, seatsError]);
 
   // Get seats for current context
   const displayedSeats =
@@ -183,44 +352,55 @@ export function SeatDesigner({
         : [];
 
   // Handle main image upload
-  const handleMainImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageSelect = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const preview = reader.result as string;
-        setMainImageUrl(preview);
+      try {
+        setIsUploadingImage(true);
+        const response = await uploadService.uploadImage(file);
+        setMainImageUrl(response.url);
+        setMainImageFileId(response.id); // Store file_id
         if (onImageUpload) {
-          onImageUpload(preview);
+          onImageUpload(response.url);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Failed to upload image:", error);
+        alert("Failed to upload image. Please try again.");
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
   // Handle section image upload (for large venue mode)
-  const handleSectionImageSelect = (
+  const handleSectionImageSelect = async (
     sectionId: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const preview = reader.result as string;
+      try {
+        setIsUploadingImage(true);
+        const response = await uploadService.uploadImage(file);
         setSectionMarkers((prev) =>
           prev.map((s) =>
-            s.id === sectionId ? { ...s, imageUrl: preview } : s
+            s.id === sectionId ? { ...s, imageUrl: response.url } : s
           )
         );
         // Update viewingSection if it's the same section being viewed
         if (viewingSection?.id === sectionId) {
           setViewingSection((prev) =>
-            prev ? { ...prev, imageUrl: preview } : null
+            prev ? { ...prev, imageUrl: response.url } : null
           );
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error("Failed to upload image:", error);
+        alert("Failed to upload image. Please try again.");
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
@@ -235,8 +415,6 @@ export function SeatDesigner({
       setSeats([]);
     }
     setSelectedSeat(null);
-    setIsPlacingSeats(false);
-    setIsPlacingSections(false);
   };
 
   // Clear seats in current section (for section detail view)
@@ -246,7 +424,6 @@ export function SeatDesigner({
         prev.filter((s) => s.seat.section !== viewingSection.name)
       );
       setSelectedSeat(null);
-      setIsPlacingSeats(false);
     }
   };
 
@@ -264,283 +441,134 @@ export function SeatDesigner({
     setPanOffset({ x: 0, y: 0 });
   };
 
-  // Track spacebar state
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.key === " ") {
-        setIsSpacePressed(true);
+  // Handle Konva image click - uses percentage coordinates from LayoutCanvas
+  const handleKonvaImageClick = useCallback(
+    (
+      _e: Konva.KonvaEventObject<MouseEvent>,
+      percentageCoords?: { x: number; y: number }
+    ) => {
+      if (!percentageCoords) return;
+
+      const { x, y } = percentageCoords;
+
+      // Section detail view - place seats
+      if (venueType === "large" && viewingSection && isPlacingSeats) {
+        const newSeat: SeatMarker = {
+          id: `temp-${Date.now()}`,
+          x: Math.max(0, Math.min(100, x)),
+          y: Math.max(0, Math.min(100, y)),
+          seat: {
+            section: viewingSection.name,
+            row: currentSeat.row,
+            seatNumber: currentSeat.seatNumber,
+            seatType: currentSeat.seatType,
+          },
+          isNew: true,
+        };
+        setSeats((prev) => [...prev, newSeat]);
+        setCurrentSeat({
+          ...currentSeat,
+          seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
+        });
       }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space" || e.key === " ") {
-        setIsSpacePressed(false);
+      // Main floor - place sections
+      else if (venueType === "large" && isPlacingSections) {
+        const newSection: SectionMarker = {
+          id: `section-${Date.now()}`,
+          name: currentSectionName,
+          x: Math.max(0, Math.min(100, x)),
+          y: Math.max(0, Math.min(100, y)),
+          isNew: true,
+        };
+        setSectionMarkers((prev) => [...prev, newSection]);
+        setCurrentSectionName((prevName) => {
+          const match = prevName.match(/Section ([A-Z])/);
+          const nextLetter = match
+            ? String.fromCharCode(match[1].charCodeAt(0) + 1)
+            : "B";
+          return `Section ${nextLetter}`;
+        });
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-
-  // Pan functionality - allow dragging with modifiers or alternative buttons (works in placement mode too)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const isPlacementMode =
-      (venueType === "small" && isPlacingSeats) ||
-      (venueType === "large" && isPlacingSections) ||
-      (venueType === "large" && viewingSection && isPlacingSeats);
-
-    // Store initial mouse position for drag detection
-    if (e.button === 0) {
-      setDragStartPos({ x: e.clientX, y: e.clientY });
-    }
-
-    // Allow panning with:
-    // - Middle mouse button (always)
-    // - Right mouse button (always)
-    // - Ctrl+Left click (always)
-    // - Space+Left click (always)
-    // - Left click when zoomed AND not in placement mode (to avoid conflicts)
-    const canPan =
-      e.button === 1 || // Middle mouse button (always works)
-      e.button === 2 || // Right mouse button (always works)
-      (e.button === 0 && e.ctrlKey) || // Ctrl+Left click (always works)
-      (e.button === 0 && isSpacePressed) || // Space+Left click (always works)
-      (e.button === 0 && zoomLevel > 1 && !isPlacementMode); // Left click when zoomed (only when not placing)
-
-    if (canPan) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    }
-  };
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      // Check if user is dragging (mouse moved significantly from start)
-      if (dragStartPos && !isPanning) {
-        const dragDistance = Math.sqrt(
-          Math.pow(e.clientX - dragStartPos.x, 2) +
-            Math.pow(e.clientY - dragStartPos.y, 2)
-        );
-
-        // If dragged more than 5 pixels, disable placement mode and enable panning
-        if (dragDistance > 5) {
-          const isPlacementMode =
-            (venueType === "small" && isPlacingSeats) ||
-            (venueType === "large" && isPlacingSections) ||
-            (venueType === "large" && viewingSection && isPlacingSeats);
-
-          if (isPlacementMode) {
-            // Disable placement mode
-            setIsPlacingSeats(false);
-            setIsPlacingSections(false);
-            // Enable panning
-            setIsPanning(true);
-            setPanStart({
-              x: e.clientX - panOffset.x,
-              y: e.clientY - panOffset.y,
-            });
-            setDragStartPos(null);
-            return;
-          }
-        }
-      }
-
-      if (isPanning) {
-        setPanOffset({
-          x: e.clientX - panStart.x,
-          y: e.clientY - panStart.y,
+      // Small venue - place seats
+      else if (venueType === "small" && isPlacingSeats) {
+        const newSeat: SeatMarker = {
+          id: `temp-${Date.now()}`,
+          x: Math.max(0, Math.min(100, x)),
+          y: Math.max(0, Math.min(100, y)),
+          seat: currentSeat,
+          isNew: true,
+        };
+        setSeats((prev) => [...prev, newSeat]);
+        setCurrentSeat({
+          ...currentSeat,
+          seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
         });
       }
     },
     [
-      isPanning,
-      panStart,
-      dragStartPos,
-      panOffset,
       venueType,
+      viewingSection,
       isPlacingSeats,
       isPlacingSections,
-      viewingSection,
+      currentSeat,
+      currentSectionName,
     ]
   );
 
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-    setDragStartPos(null);
-  }, []);
-
-  useEffect(() => {
-    // Always listen for mouse events to detect dragging in placement mode
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [handleMouseMove, handleMouseUp]);
-
-  // Convert click coordinates to percentage (accounting for zoom and pan)
-  const getCoordinatesFromClick = useCallback(
-    (e: React.MouseEvent<HTMLImageElement>) => {
-      const img = imageRef.current;
-      const container = containerRef.current;
-      if (!img || !container) return { x: 0, y: 0 };
-
-      const containerRect = container.getBoundingClientRect();
-
-      // Get natural image dimensions
-      const naturalWidth = img.naturalWidth || img.width;
-      const naturalHeight = img.naturalHeight || img.height;
-
-      if (naturalWidth === 0 || naturalHeight === 0) {
-        // Image not loaded yet, use fallback
-        return { x: 50, y: 50 };
+  // Handle Konva wheel event for zoom (only when Space is pressed)
+  const handleKonvaWheel = useCallback(
+    (e: Konva.KonvaEventObject<WheelEvent>, isSpacePressed: boolean) => {
+      // Only zoom if Space key is held
+      if (isSpacePressed) {
+        e.evt.preventDefault();
+        const delta = e.evt.deltaY > 0 ? -0.1 : 0.1;
+        setZoomLevel((prev) => Math.max(0.5, Math.min(3, prev + delta)));
       }
-
-      // Calculate displayed image dimensions (before transform)
-      // Image has w-full, so it fills container width
-      const containerWidth = containerRect.width;
-      const containerHeight = containerRect.height;
-      const aspectRatio = naturalHeight / naturalWidth;
-      const displayedWidth = containerWidth;
-      const displayedHeight = containerWidth * aspectRatio;
-
-      // Click position relative to container
-      const clickX = e.clientX - containerRect.left;
-      const clickY = e.clientY - containerRect.top;
-
-      // Container center (transform origin point)
-      const centerX = containerWidth / 2;
-      const centerY = containerHeight / 2;
-
-      // Calculate position relative to container center
-      const relativeToCenterX = clickX - centerX;
-      const relativeToCenterY = clickY - centerY;
-
-      // Reverse the transform
-      // Transform order: translate(panOffset) then scale(zoomLevel) from center
-      // To reverse: first unscale (divide by zoomLevel), then untranslate (subtract panOffset)
-      const beforeZoomX = relativeToCenterX / zoomLevel;
-      const beforeZoomY = relativeToCenterY / zoomLevel;
-
-      const beforePanX = beforeZoomX - panOffset.x;
-      const beforePanY = beforeZoomY - panOffset.y;
-
-      // Now we have coordinates relative to container center in original (untransformed) space
-      // Convert to position relative to image top-left corner
-      // Image is centered in container, so add half image dimensions
-      const imageX = beforePanX + displayedWidth / 2;
-      const imageY = beforePanY + displayedHeight / 2;
-
-      // Convert to percentage
-      const x = (imageX / displayedWidth) * 100;
-      const y = (imageY / displayedHeight) * 100;
-
-      return {
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y)),
-      };
+      // If Space is not pressed, allow normal scrolling (don't preventDefault)
     },
-    [zoomLevel, panOffset]
+    []
   );
 
-  // Handle main image click - place sections (large venue) or seats (small venue)
-  const handleMainImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    // Don't place if user was dragging
-    if (isPanning || dragStartPos || selectedSectionMarker) {
-      return;
-    }
+  // Handle pan events from canvas
+  const handlePan = useCallback((delta: { x: number; y: number }) => {
+    setPanOffset((prev) => ({
+      x: prev.x + delta.x,
+      y: prev.y + delta.y,
+    }));
+  }, []);
 
-    if (venueType === "large" && isPlacingSections) {
-      // Place section marker on main floor plan
-      const { x, y } = getCoordinatesFromClick(e);
-      const newSection: SectionMarker = {
-        id: `section-${Date.now()}`,
-        name: currentSectionName,
-        x,
-        y,
-        isNew: true,
-      };
-      setSectionMarkers([...sectionMarkers, newSection]);
-      setCurrentSectionName(
-        `Section ${String.fromCharCode(65 + sectionMarkers.length + 1)}`
+  // Handle seat drag end from Konva
+  const handleKonvaSeatDragEnd = useCallback(
+    (seatId: string, newX: number, newY: number) => {
+      setSeats((prev) =>
+        prev.map((seat) =>
+          seat.id === seatId
+            ? {
+                ...seat,
+                x: Math.max(0, Math.min(100, newX)),
+                y: Math.max(0, Math.min(100, newY)),
+              }
+            : seat
+        )
       );
-    } else if (venueType === "small" && isPlacingSeats) {
-      // Place seat on main floor plan (small venue)
+    },
+    []
+  );
 
-      // Don't place if a seat is selected
-      if (selectedSeat) {
-        return;
-      }
+  // Handle section click from Konva
+  const handleKonvaSectionClick = useCallback((section: SectionMarker) => {
+    // Select for editing
+    setSelectedSectionMarker(section);
+  }, []);
 
-      const { x, y } = getCoordinatesFromClick(e);
-      const newSeat: SeatMarker = {
-        id: `temp-${Date.now()}`,
-        x,
-        y,
-        seat: currentSeat,
-        isNew: true,
-      };
-      setSeats([...seats, newSeat]);
-      setSelectedSeat(null); // Clear selection when placing new seat
-      setCurrentSeat({
-        ...currentSeat,
-        seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
-      });
-    }
-  };
-
-  // Handle section image click - place seats on section floor plan
-  const handleSectionImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    if (!viewingSection) return;
-
-    // Don't place if user was dragging
-    if (isPanning || dragStartPos) {
-      return;
-    }
-
-    // Don't place if a seat is selected
-    if (selectedSeat) {
-      return;
-    }
-
-    const { x, y } = getCoordinatesFromClick(e);
-    const newSeat: SeatMarker = {
-      id: `temp-${Date.now()}`,
-      x,
-      y,
-      seat: {
-        section: viewingSection.name,
-        row: currentSeat.row,
-        seatNumber: currentSeat.seatNumber,
-        seatType: currentSeat.seatType,
-      },
-      isNew: true,
-    };
-    setSeats([...seats, newSeat]);
-    setSelectedSeat(null); // Clear selection when placing new seat
-    setCurrentSeat({
-      ...currentSeat,
-      seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
-    });
-  };
-
-  // Handle section marker click - select section for editing or viewing
+  // Handle seat marker click - used elsewhere in the component
   const handleSectionMarkerClick = (
     section: SectionMarker,
     e: React.MouseEvent
   ) => {
     e.stopPropagation();
 
-    // Enable placement mode for editing
-    setIsPlacingSections(true);
+    // Select for editing
     setSelectedSectionMarker(section);
   };
 
@@ -556,18 +584,11 @@ export function SeatDesigner({
 
   // Handle seat marker click
   const handleSeatClick = (seat: SeatMarker) => {
-    // If in placement mode, show in Sheet for viewing/deleting
-    if (isPlacingSeats) {
-      setSelectedSeat(seat);
-      setViewingSeat(seat);
-      setIsEditingViewingSeat(false);
-      setEditingSeatData(null);
-    } else {
-      // Not in placement mode: show view-only Sheet
-      setViewingSeat(seat);
-      setIsEditingViewingSeat(false);
-      setEditingSeatData(null);
-    }
+    // Show seat details in Sheet for viewing/editing/deleting
+    setSelectedSeat(seat);
+    setViewingSeat(seat);
+    setIsEditingViewingSeat(false);
+    setEditingSeatData(null);
   };
 
   // // Sync form fields with selected seat
@@ -627,97 +648,120 @@ export function SeatDesigner({
     }
   }, [currentSectionName, selectedSectionMarker, isPlacingSections]);
 
-  // Handle seat drag start
-  const handleSeatDragStart = (seat: SeatMarker, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDragging(true);
-    setSelectedSeat(seat);
-    const img = imageRef.current;
-    if (img) {
-      const rect = img.getBoundingClientRect();
-      setDragOffset({
-        x: e.clientX - rect.left - (seat.x / 100) * rect.width,
-        y: e.clientY - rect.top - (seat.y / 100) * rect.height,
-      });
-    }
-  };
-
-  // Handle seat drag
-  const handleSeatDrag = useCallback(
-    (e: MouseEvent) => {
-      if (!isDragging || !selectedSeat || !imageRef.current) return;
-
-      const img = imageRef.current;
-      const rect = img.getBoundingClientRect();
-      const x = ((e.clientX - rect.left - dragOffset.x) / rect.width) * 100;
-      const y = ((e.clientY - rect.top - dragOffset.y) / rect.height) * 100;
-
-      setSeats((prev) =>
-        prev.map((seat) =>
-          seat.id === selectedSeat.id
-            ? {
-                ...seat,
-                x: Math.max(0, Math.min(100, x)),
-                y: Math.max(0, Math.min(100, y)),
-              }
-            : seat
-        )
-      );
-    },
-    [isDragging, selectedSeat, dragOffset]
-  );
-
-  // Handle drag end
-  const handleSeatDragEnd = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleSeatDrag);
-      document.addEventListener("mouseup", handleSeatDragEnd);
-      return () => {
-        document.removeEventListener("mousemove", handleSeatDrag);
-        document.removeEventListener("mouseup", handleSeatDragEnd);
-      };
-    }
-  }, [isDragging, handleSeatDrag, handleSeatDragEnd]);
-
   // Save seats mutation
   const saveSeatsMutation = useMutation({
     mutationFn: async (seatsToSave: SeatMarker[]) => {
-      const newSeats = seatsToSave.filter((s) => s.isNew);
-      const updatedSeats = seatsToSave.filter((s) => !s.isNew);
+      // Check if image has changed (new file_id uploaded)
+      const imageChanged = mainImageFileId && mainImageFileId !== initialFileId;
 
-      // Create new seats
-      if (newSeats.length > 0) {
-        const createInputs: CreateSeatInput[] = newSeats.map((seat) => ({
-          venue_id: venueId,
-          section: seat.seat.section,
-          row: seat.seat.row,
-          seat_number: seat.seat.seatNumber,
-          seat_type: seat.seat.seatType,
-          x_coordinate: seat.x,
-          y_coordinate: seat.y,
-        }));
-        await seatService.bulkCreate(venueId, createInputs);
-      }
+      // Prepare seats array with operation type determined by presence of 'id'
+      // No 'id' = create, Has 'id' = update
+      const seatsData = seatsToSave.map((seat) => {
+        if (seat.isNew) {
+          // Create: no id field
+          return {
+            venue_id: venueId,
+            layout_id: layoutId,
+            section: seat.seat.section,
+            row: seat.seat.row,
+            seat_number: seat.seat.seatNumber,
+            seat_type: seat.seat.seatType,
+            x_coordinate: seat.x,
+            y_coordinate: seat.y,
+          };
+        } else {
+          // Update: has id field
+          return {
+            id: seat.id,
+            x_coordinate: seat.x,
+            y_coordinate: seat.y,
+          };
+        }
+      });
 
-      // Update existing seats
-      for (const seat of updatedSeats) {
-        await seatService.updateCoordinates(seat.id, seat.x, seat.y);
+      // Use bulk operations if we have any operations or image changed
+      if (seatsData.length > 0 || imageChanged) {
+        await seatService.bulkOperations({
+          venueId,
+          seats: seatsData,
+          fileId: imageChanged ? mainImageFileId : undefined,
+          layoutId,
+        });
       }
     },
     onSuccess: () => {
+      // Invalidate seat queries
+      queryClient.invalidateQueries({ queryKey: ["seats", layoutId] });
       queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
+
+      // Invalidate layout queries (layout might have been updated with new file_id)
+      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId] });
+      queryClient.invalidateQueries({
+        queryKey: ["layouts", layoutId, "with-seats"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["layouts", "venue", venueId],
+      });
+
       setSeats((prev) => prev.map((s) => ({ ...s, isNew: false })));
+
+      // Clear all placements after successful save
+      if (venueType === "small") {
+        // Clear all seats for small venue
+        setSeats([]);
+      } else {
+        // Clear all sections and their seats for large venue
+        setSectionMarkers([]);
+        setSeats([]);
+      }
+      setSelectedSeat(null);
+
+      // Close confirmation dialog
+      setShowSaveConfirmDialog(false);
+
+      // Show success message
+      toast({
+        title: "Seats Saved",
+        description: "Seat layout has been saved successfully.",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      // Close confirmation dialog on error
+      setShowSaveConfirmDialog(false);
+
+      // Extract error message
+      let errorMessage = "Failed to save seats. Please try again.";
+
+      if (error?.message) {
+        // Try to parse JSON error message
+        try {
+          const errorData = JSON.parse(error.message);
+          errorMessage = errorData.detail || errorData.message || error.message;
+        } catch {
+          // If not JSON, use message directly
+          errorMessage = error.message;
+        }
+      }
+
+      // Show error toast
+      toast({
+        title: "Save Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
   // Delete seat mutation
   const deleteSeatMutation = useMutation({
     mutationFn: async (seatId: string) => {
-      await seatService.delete(seatId);
+      // Use bulk operations: seat with id and delete flag
+      await seatService.bulkOperations({
+        venueId,
+        seats: [{ id: seatId, delete: true }],
+        layoutId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
@@ -751,6 +795,11 @@ export function SeatDesigner({
   });
 
   const handleSave = () => {
+    setShowSaveConfirmDialog(true);
+  };
+
+  const handleConfirmSave = () => {
+    setShowSaveConfirmDialog(false);
     saveSeatsMutation.mutate(seats);
   };
 
@@ -847,9 +896,8 @@ export function SeatDesigner({
     };
   }, []);
 
-  if (isLoading) {
-    return <div className="p-4">Loading seats...</div>;
-  }
+  // Don't block rendering while loading seats - show the designer and let seats load in the background
+  // The useEffect will update seats when they're loaded
 
   // If viewing a section detail (large venue mode), show section detail view
   if (venueType === "large" && viewingSection) {
@@ -877,14 +925,6 @@ export function SeatDesigner({
               </h3>
             </div>
             <div className="flex gap-2">
-              <Button
-                variant={isPlacingSeats ? "default" : "outline"}
-                onClick={() => setIsPlacingSeats(!isPlacingSeats)}
-                size="sm"
-                disabled={!viewingSection.imageUrl}
-              >
-                {isPlacingSeats ? "Stop Placing" : "Place Seats"}
-              </Button>
               <Button
                 onClick={handleSave}
                 disabled={saveSeatsMutation.isPending}
@@ -947,7 +987,9 @@ export function SeatDesigner({
                 className="cursor-pointer"
               >
                 <span className="text-sm font-medium text-gray-700">
-                  Upload Floor Plan Image for {viewingSection.name}
+                  {isUploadingImage
+                    ? "Uploading..."
+                    : `Upload Floor Plan Image for ${viewingSection.name}`}
                 </span>
                 <Input
                   id={`section-image-${viewingSection.id}`}
@@ -957,6 +999,7 @@ export function SeatDesigner({
                     handleSectionImageSelect(viewingSection.id, e)
                   }
                   className="hidden"
+                  disabled={isUploadingImage}
                 />
               </Label>
             </Card>
@@ -964,77 +1007,103 @@ export function SeatDesigner({
 
           {/* Section Image with Seat Markers */}
           {viewingSection.imageUrl && (
-            <div className="flex gap-4">
+            <div className="space-y-4">
+              {/* Seat Placement Controls Panel - On Top */}
+              <Card className="p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Section / Row / Seat #</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        value={currentSeat.section}
+                        onChange={(e) =>
+                          setCurrentSeat({
+                            ...currentSeat,
+                            section: e.target.value,
+                          })
+                        }
+                        className="h-8 text-sm flex-1"
+                        disabled={!!viewingSection}
+                        placeholder="Section"
+                      />
+                      <Input
+                        value={currentSeat.row}
+                        onChange={(e) =>
+                          setCurrentSeat({
+                            ...currentSeat,
+                            row: e.target.value,
+                          })
+                        }
+                        className="h-8 text-sm w-16"
+                        placeholder="Row"
+                      />
+                      <Input
+                        value={currentSeat.seatNumber}
+                        onChange={(e) =>
+                          setCurrentSeat({
+                            ...currentSeat,
+                            seatNumber: e.target.value,
+                          })
+                        }
+                        className="h-8 text-sm w-16"
+                        placeholder="#"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Type</Label>
+                    <Select
+                      value={currentSeat.seatType}
+                      onValueChange={(value) =>
+                        setCurrentSeat({
+                          ...currentSeat,
+                          seatType: value as SeatType,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="mt-1 h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(SeatType).map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Canvas Container */}
               <div
                 ref={containerRef}
-                className={`relative border rounded-lg overflow-hidden bg-gray-100 ${
-                  isPlacingSeats || displayedSeats.length > 0
-                    ? "flex-1"
-                    : "w-full"
-                }`}
-                style={{ minHeight: "400px" }}
-                onMouseDown={handleMouseDown}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  const delta = e.deltaY > 0 ? -0.1 : 0.1;
-                  setZoomLevel((prev) =>
-                    Math.max(0.5, Math.min(3, prev + delta))
-                  );
-                }}
-                onContextMenu={(e) => {
-                  // Prevent context menu when right-clicking to pan
-                  if (zoomLevel > 1) {
-                    e.preventDefault();
-                  }
+                className="relative border rounded-lg overflow-hidden bg-gray-100"
+                style={{
+                  minHeight: "400px",
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
                 }}
               >
-                <div
-                  ref={transformWrapperRef}
-                  className="relative w-full h-full"
-                  style={{
-                    transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                    transformOrigin: "center center",
-                    transition: isPanning ? "none" : "transform 0.1s",
-                  }}
-                >
-                  <img
-                    ref={imageRef}
-                    src={viewingSection.imageUrl}
-                    alt={`${viewingSection.name} layout`}
-                    className={`w-full h-auto ${
-                      isPlacingSeats
-                        ? "cursor-crosshair"
-                        : zoomLevel > 1
-                          ? "cursor-move"
-                          : "cursor-default"
-                    }`}
-                    onClick={handleSectionImageClick}
-                    draggable={false}
-                    onDragStart={(e) => e.preventDefault()}
-                  />
-                  {displayedSeats.map((seat) => (
-                    <div
-                      key={seat.id}
-                      className={`absolute w-6 h-6 rounded-full border-2 cursor-move transition-all ${
-                        selectedSeat?.id === seat.id
-                          ? "bg-blue-500 border-blue-700 scale-125 shadow-lg ring-2 ring-blue-300 ring-offset-2"
-                          : seat.seat.seatType === SeatType.VIP
-                            ? "bg-yellow-400 border-yellow-600 hover:scale-110"
-                            : seat.seat.seatType === SeatType.WHEELCHAIR
-                              ? "bg-green-400 border-green-600 hover:scale-110"
-                              : "bg-gray-300 border-gray-500 hover:scale-110"
-                      }`}
-                      style={{
-                        left: `${seat.x}%`,
-                        top: `${seat.y}%`,
-                        transform: "translate(-50%, -50%)",
-                      }}
-                      onClick={() => handleSeatClick(seat)}
-                      onMouseDown={(e) => handleSeatDragStart(seat, e)}
-                      title={`${seat.seat.section} ${seat.seat.row} ${seat.seat.seatNumber} (${seat.seat.seatType})`}
-                    />
-                  ))}
-                </div>
+                <LayoutCanvas
+                  imageUrl={viewingSection.imageUrl}
+                  seats={displayedSeats}
+                  selectedSeatId={selectedSeat?.id || null}
+                  isPlacingSeats={isPlacingSeats}
+                  isPlacingSections={false}
+                  zoomLevel={zoomLevel}
+                  panOffset={panOffset}
+                  onSeatClick={handleSeatClick}
+                  onSeatDragEnd={handleKonvaSeatDragEnd}
+                  onImageClick={handleKonvaImageClick}
+                  onWheel={handleKonvaWheel}
+                  onPan={handlePan}
+                  containerWidth={containerDimensions.width}
+                  containerHeight={containerDimensions.height}
+                  venueType="small"
+                />
                 {/* Zoom Controls */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                   <Button
@@ -1071,88 +1140,6 @@ export function SeatDesigner({
                   </div>
                 </div>
               </div>
-
-              {/* Right Side Panel - Seat Placement Controls */}
-              {isPlacingSeats && (
-                <PlacementPanel
-                  title="Place Seat"
-                  isEditing={false}
-                  onClose={() => {
-                    setIsPlacingSeats(false);
-                    setSelectedSeat(null);
-                  }}
-                  onDelete={undefined}
-                  isDeleting={false}
-                  instructionText="Click on the image to place a seat with these settings."
-                >
-                  <div className="text-xs font-semibold text-muted-foreground mb-3">
-                    New Seat Settings
-                  </div>
-                  <div>
-                    <Label>Section</Label>
-                    <Input
-                      value={currentSeat.section}
-                      onChange={(e) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          section: e.target.value,
-                        })
-                      }
-                      className="mt-1"
-                      disabled={!!viewingSection}
-                    />
-                  </div>
-                  <div>
-                    <Label>Row</Label>
-                    <Input
-                      value={currentSeat.row}
-                      onChange={(e) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          row: e.target.value,
-                        })
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Seat #</Label>
-                    <Input
-                      value={currentSeat.seatNumber}
-                      onChange={(e) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          seatNumber: e.target.value,
-                        })
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label>Type</Label>
-                    <Select
-                      value={currentSeat.seatType}
-                      onValueChange={(value) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          seatType: value as SeatType,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(SeatType).map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </PlacementPanel>
-              )}
             </div>
           )}
         </div>
@@ -1163,7 +1150,19 @@ export function SeatDesigner({
   const designerContent = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Seat Designer</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Seat Designer</h3>
+          {isLoading && (
+            <span className="text-xs text-muted-foreground">
+              Loading seats...
+            </span>
+          )}
+          {seatsError && (
+            <span className="text-xs text-destructive">
+              Error loading seats
+            </span>
+          )}
+        </div>
         <div className="flex gap-2">
           {/* Design Mode Selector */}
           <Select
@@ -1178,28 +1177,6 @@ export function SeatDesigner({
               <SelectItem value="section-level">Section Level</SelectItem>
             </SelectContent>
           </Select>
-
-          {venueType === "small" && (
-            <Button
-              variant={isPlacingSeats ? "default" : "outline"}
-              onClick={() => setIsPlacingSeats(!isPlacingSeats)}
-              size="sm"
-              disabled={!mainImageUrl}
-            >
-              {isPlacingSeats ? "Stop Placing" : "Place Seats"}
-            </Button>
-          )}
-
-          {venueType === "large" && (
-            <Button
-              variant={isPlacingSections ? "default" : "outline"}
-              onClick={() => setIsPlacingSections(!isPlacingSections)}
-              size="sm"
-              disabled={!mainImageUrl}
-            >
-              {isPlacingSections ? "Stop Placing Sections" : "Place Sections"}
-            </Button>
-          )}
 
           {/* Datasheet Toggle Button */}
           {((venueType === "large" && sectionMarkers.length > 0) ||
@@ -1235,43 +1212,45 @@ export function SeatDesigner({
               <Maximize className="h-4 w-4" />
             )}
           </Button>
-          {mainImageUrl && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleClearAllPlacements}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Placements
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <Label htmlFor="change-main-image" className="cursor-pointer">
-                  <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
-                    asChild
-                  >
-                    <div>
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Change Image
-                      <Input
-                        id="change-main-image"
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          handleMainImageSelect(e);
-                          e.target.value = ""; // Reset input
-                        }}
-                        className="hidden"
-                      />
-                    </div>
+          {mainImageUrl &&
+            (isPlacingSeats ||
+              (venueType === "large" && isPlacingSections)) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleClearAllPlacements}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All Placements
                   </DropdownMenuItem>
-                </Label>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                  <DropdownMenuSeparator />
+                  <Label htmlFor="change-main-image" className="cursor-pointer">
+                    <DropdownMenuItem
+                      onSelect={(e) => e.preventDefault()}
+                      asChild
+                    >
+                      <div>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Change Image
+                        <Input
+                          id="change-main-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            handleMainImageSelect(e);
+                            e.target.value = ""; // Reset input
+                          }}
+                          className="hidden"
+                        />
+                      </div>
+                    </DropdownMenuItem>
+                  </Label>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
         </div>
       </div>
 
@@ -1281,8 +1260,9 @@ export function SeatDesigner({
           <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
           <Label htmlFor="main-image-upload" className="cursor-pointer">
             <span className="text-sm font-medium text-gray-700">
-              Upload {designMode === "seat-level" ? "Venue" : "Main"} Floor Plan
-              Image
+              {isUploadingImage
+                ? "Uploading..."
+                : `Upload ${designMode === "seat-level" ? "Venue" : "Main"} Floor Plan Image`}
             </span>
             <Input
               id="main-image-upload"
@@ -1290,6 +1270,7 @@ export function SeatDesigner({
               accept="image/*"
               onChange={handleMainImageSelect}
               className="hidden"
+              disabled={isUploadingImage}
             />
           </Label>
         </Card>
@@ -1297,97 +1278,137 @@ export function SeatDesigner({
 
       {/* Main Floor Plan Image */}
       {mainImageUrl && (
-        <div className="flex gap-4">
+        <div className="space-y-4">
+          {/* Seat Placement Controls Panel - On Top (Small Venue) */}
+          {venueType === "small" && (
+            <Card className="p-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Section / Row / Seat #</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input
+                      value={currentSeat.section}
+                      onChange={(e) =>
+                        setCurrentSeat({
+                          ...currentSeat,
+                          section: e.target.value,
+                        })
+                      }
+                      className="h-8 text-sm flex-1"
+                      placeholder="Section"
+                    />
+                    <Input
+                      value={currentSeat.row}
+                      onChange={(e) =>
+                        setCurrentSeat({ ...currentSeat, row: e.target.value })
+                      }
+                      className="h-8 text-sm w-16"
+                      placeholder="Row"
+                    />
+                    <Input
+                      value={currentSeat.seatNumber}
+                      onChange={(e) =>
+                        setCurrentSeat({
+                          ...currentSeat,
+                          seatNumber: e.target.value,
+                        })
+                      }
+                      className="h-8 text-sm w-16"
+                      placeholder="#"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Type</Label>
+                  <Select
+                    value={currentSeat.seatType}
+                    onValueChange={(value) =>
+                      setCurrentSeat({
+                        ...currentSeat,
+                        seatType: value as SeatType,
+                      })
+                    }
+                  >
+                    <SelectTrigger className="mt-1 h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(SeatType).map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Section Placement Controls Panel - On Top (Large Venue) */}
+          {venueType === "large" && (
+            <Card className="p-3">
+              {selectedSectionMarker && (
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-muted-foreground">
+                    Editing: {selectedSectionMarker.name}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      handleDeleteSection(selectedSectionMarker);
+                      setSelectedSectionMarker(null);
+                    }}
+                    className="h-6 px-2"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+              <div>
+                <Label className="text-xs">Section Name</Label>
+                <Input
+                  value={currentSectionName}
+                  onChange={(e) => setCurrentSectionName(e.target.value)}
+                  className="mt-1 h-8 text-sm"
+                  placeholder="e.g., Section A"
+                />
+              </div>
+            </Card>
+          )}
+
+          {/* Canvas Container */}
           <div
             ref={containerRef}
-            className={`relative border rounded-lg overflow-hidden bg-gray-100 ${
-              (venueType === "small" && isPlacingSeats) ||
-              (venueType === "large" && isPlacingSections)
-                ? "flex-1"
-                : "w-full"
-            }`}
-            style={{ minHeight: "400px" }}
-            onMouseDown={handleMouseDown}
-            onWheel={(e) => {
-              e.preventDefault();
-              const delta = e.deltaY > 0 ? -0.1 : 0.1;
-              setZoomLevel((prev) => Math.max(0.5, Math.min(3, prev + delta)));
+            className="relative border rounded-lg overflow-hidden bg-gray-100"
+            style={{
+              minHeight: "400px",
+              minWidth: 0,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <div
-              ref={transformWrapperRef}
-              className="relative w-full h-full"
-              style={{
-                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-                transformOrigin: "center center",
-                transition: isPanning ? "none" : "transform 0.1s",
-              }}
-            >
-              <img
-                ref={imageRef}
-                src={mainImageUrl}
-                alt={venueType === "small" ? "Venue layout" : "Main floor plan"}
-                className={`w-full h-auto ${
-                  (venueType === "small" && isPlacingSeats) ||
-                  (venueType === "large" && isPlacingSections)
-                    ? "cursor-crosshair"
-                    : zoomLevel > 1
-                      ? "cursor-move"
-                      : "cursor-default"
-                }`}
-                onClick={handleMainImageClick}
-                draggable={false}
-                onDragStart={(e) => e.preventDefault()}
-              />
-
-              {/* Small Venue: Show all seats */}
-              {venueType === "small" &&
-                displayedSeats.map((seat) => (
-                  <div
-                    key={seat.id}
-                    className={`absolute w-6 h-6 rounded-full border-2 cursor-move transition-all ${
-                      selectedSeat?.id === seat.id
-                        ? "bg-blue-500 border-blue-700 scale-125 shadow-lg ring-2 ring-blue-300 ring-offset-2"
-                        : seat.seat.seatType === SeatType.VIP
-                          ? "bg-yellow-400 border-yellow-600 hover:scale-110"
-                          : seat.seat.seatType === SeatType.WHEELCHAIR
-                            ? "bg-green-400 border-green-600 hover:scale-110"
-                            : "bg-gray-300 border-gray-500 hover:scale-110"
-                    }`}
-                    style={{
-                      left: `${seat.x}%`,
-                      top: `${seat.y}%`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                    onClick={() => handleSeatClick(seat)}
-                    onMouseDown={(e) => handleSeatDragStart(seat, e)}
-                    title={`${seat.seat.section} ${seat.seat.row} ${seat.seat.seatNumber} (${seat.seat.seatType})`}
-                  />
-                ))}
-
-              {/* Large Venue: Show section markers */}
-              {venueType === "large" &&
-                sectionMarkers.map((section) => (
-                  <div
-                    key={section.id}
-                    className={`absolute px-3 py-1 rounded border-2 cursor-pointer transition-all ${
-                      selectedSectionMarker?.id === section.id
-                        ? "bg-blue-500 border-blue-700 text-white scale-110 shadow-lg ring-2 ring-blue-300 ring-offset-2"
-                        : "bg-white border-blue-500 text-blue-700 hover:bg-blue-50 hover:scale-105"
-                    }`}
-                    style={{
-                      left: `${section.x}%`,
-                      top: `${section.y}%`,
-                      transform: "translate(-50%, -50%)",
-                    }}
-                    onClick={(e) => handleSectionMarkerClick(section, e)}
-                    title={`${section.name} - Click to add floor plan and seats`}
-                  >
-                    <span className="text-sm font-medium">{section.name}</span>
-                  </div>
-                ))}
-            </div>
-
+            <LayoutCanvas
+              imageUrl={mainImageUrl}
+              seats={venueType === "small" ? displayedSeats : []}
+              sections={venueType === "large" ? sectionMarkers : []}
+              selectedSeatId={selectedSeat?.id || null}
+              selectedSectionId={selectedSectionMarker?.id || null}
+              isPlacingSeats={venueType === "small" && isPlacingSeats}
+              isPlacingSections={venueType === "large" && isPlacingSections}
+              zoomLevel={zoomLevel}
+              panOffset={panOffset}
+              onSeatClick={handleSeatClick}
+              onSectionClick={handleKonvaSectionClick}
+              onSeatDragEnd={handleKonvaSeatDragEnd}
+              onImageClick={handleKonvaImageClick}
+              onWheel={handleKonvaWheel}
+              onPan={handlePan}
+              containerWidth={containerDimensions.width}
+              containerHeight={containerDimensions.height}
+              venueType={venueType}
+            />
             {/* Zoom Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
               <Button
@@ -1424,126 +1445,15 @@ export function SeatDesigner({
               </div>
             </div>
           </div>
-
-          {/* Right Side Panel - Small Venue: Seat Placement Controls */}
-          {venueType === "small" && isPlacingSeats && (
-            <PlacementPanel
-              title="Place Seat"
-              isEditing={false}
-              onClose={() => {
-                setIsPlacingSeats(false);
-                setSelectedSeat(null);
-              }}
-              onDelete={undefined}
-              isDeleting={false}
-              instructionText="Click on the image to place a seat with these settings."
-            >
-              <div className="text-xs font-semibold text-muted-foreground mb-3">
-                New Seat Settings
-              </div>
-              <div>
-                <Label>Section</Label>
-                <Input
-                  value={currentSeat.section}
-                  onChange={(e) =>
-                    setCurrentSeat({
-                      ...currentSeat,
-                      section: e.target.value,
-                    })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Row</Label>
-                <Input
-                  value={currentSeat.row}
-                  onChange={(e) =>
-                    setCurrentSeat({ ...currentSeat, row: e.target.value })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Seat #</Label>
-                <Input
-                  value={currentSeat.seatNumber}
-                  onChange={(e) =>
-                    setCurrentSeat({
-                      ...currentSeat,
-                      seatNumber: e.target.value,
-                    })
-                  }
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label>Type</Label>
-                <Select
-                  value={currentSeat.seatType}
-                  onValueChange={(value) =>
-                    setCurrentSeat({
-                      ...currentSeat,
-                      seatType: value as SeatType,
-                    })
-                  }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(SeatType).map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </PlacementPanel>
-          )}
-
-          {/* Right Side Panel - Large Venue: Section Placement Controls */}
-          {venueType === "large" && isPlacingSections && (
-            <PlacementPanel
-              title={selectedSectionMarker ? "Edit Section" : "Place Section"}
-              isEditing={!!selectedSectionMarker}
-              editingInfo={
-                selectedSectionMarker
-                  ? `Editing: ${selectedSectionMarker.name}`
-                  : undefined
-              }
-              onClose={() => {
-                setIsPlacingSections(false);
-                setSelectedSectionMarker(null);
-              }}
-              onDelete={
-                selectedSectionMarker
-                  ? () => {
-                      handleDeleteSection(selectedSectionMarker);
-                      setSelectedSectionMarker(null);
-                    }
-                  : undefined
-              }
-              instructionText="Click on the floor plan image to place this section. After placing, click the section to add its floor plan and seats."
-            >
-              <div>
-                <Label>Section Name</Label>
-                <Input
-                  value={currentSectionName}
-                  onChange={(e) => setCurrentSectionName(e.target.value)}
-                  className="mt-1"
-                  placeholder="e.g., Section A"
-                />
-              </div>
-            </PlacementPanel>
-          )}
         </div>
       )}
 
       {/* Datasheet Sheet */}
       <Sheet open={isDatasheetOpen} onOpenChange={setIsDatasheetOpen}>
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+        <SheetContent
+          side="right"
+          className="w-[400px] sm:w-[540px] flex flex-col"
+        >
           <SheetHeader>
             <SheetTitle>
               {viewingSection
@@ -1561,14 +1471,14 @@ export function SeatDesigner({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="mt-6 flex-1 overflow-y-auto">
+          <div className="mt-6 flex-1 overflow-y-auto min-h-0">
             {viewingSection ? (
               // Section detail view - show seats in this section
               <div className="space-y-2">
                 {displayedSeats.map((seat) => (
                   <div
                     key={seat.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`group p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedSeat?.id === seat.id
                         ? "bg-blue-50 border-blue-500"
                         : "bg-background border-border hover:bg-muted"
@@ -1594,7 +1504,7 @@ export function SeatDesigner({
                           {seat.seat.seatType}
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isPlacingSeats && (
                           <Button
                             variant="ghost"
@@ -1687,7 +1597,7 @@ export function SeatDesigner({
                 {seats.map((seat) => (
                   <div
                     key={seat.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    className={`group p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedSeat?.id === seat.id
                         ? "bg-blue-50 border-blue-500"
                         : "bg-background border-border hover:bg-muted"
@@ -1714,7 +1624,7 @@ export function SeatDesigner({
                           {seat.seat.seatType}
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         {isPlacingSeats && (
                           <Button
                             variant="ghost"
@@ -2089,9 +1999,8 @@ export function SeatDesigner({
           {designMode === "seat-level" && (
             <>
               <p>
-                {isPlacingSeats
-                  ? "Click on the image to place seats. Adjust section, row, seat number, and type above."
-                  : "Click 'Place Seats' to start adding seats, or click existing seats to edit them."}
+                Click on the image to place seats. Adjust section, row, seat
+                number, and type above.
               </p>
               <p>Drag seats to reposition them.</p>
             </>
@@ -2099,9 +2008,8 @@ export function SeatDesigner({
           {designMode === "section-level" && (
             <>
               <p>
-                {isPlacingSections
-                  ? "Click on the image to place sections. After placing, click a section to add its floor plan and seats."
-                  : "Click 'Place Sections' to start adding sections, or click existing sections to add their floor plans."}
+                Click on the image to place sections. After placing, click a
+                section to add its floor plan and seats.
               </p>
               <p>
                 {sectionMarkers.length > 0 &&
@@ -2120,21 +2028,45 @@ export function SeatDesigner({
   );
 
   return (
-    <div
-      ref={fullscreenRef}
-      className={
-        isFullscreen ? "h-screen w-screen bg-background overflow-auto" : ""
-      }
-    >
-      {isFullscreen ? (
-        <div className="h-full w-full flex flex-col bg-background p-6">
-          {designerContent}
-        </div>
-      ) : (
-        <Card className={className}>
-          <div className="p-6">{designerContent}</div>
-        </Card>
-      )}
-    </div>
+    <>
+      <div
+        ref={fullscreenRef}
+        className={
+          isFullscreen ? "h-screen w-screen bg-background overflow-auto" : ""
+        }
+      >
+        {isFullscreen ? (
+          <div className="h-full w-full flex flex-col bg-background p-6">
+            {designerContent}
+          </div>
+        ) : (
+          <Card className={className}>
+            <div className="p-6">{designerContent}</div>
+          </Card>
+        )}
+      </div>
+
+      {/* Save Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showSaveConfirmDialog}
+        onOpenChange={setShowSaveConfirmDialog}
+        title="Save Seat Layout"
+        description={
+          seats.length > 0
+            ? `Are you sure you want to save ${seats.length} seat${seats.length === 1 ? "" : "s"}? This will update the layout with your current seat placements.`
+            : "Are you sure you want to save? This will update the layout."
+        }
+        confirmAction={{
+          label: "Save",
+          variant: "default",
+          onClick: handleConfirmSave,
+          loading: saveSeatsMutation.isPending,
+        }}
+        cancelAction={{
+          label: "Cancel",
+          onClick: () => setShowSaveConfirmDialog(false),
+        }}
+      />
+    </>
   );
 }

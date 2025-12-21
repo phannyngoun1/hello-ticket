@@ -22,6 +22,7 @@ from app.presentation.core import (
     workflow_router,
     external_api_router,
     company_address_router,
+    upload_router,
 )
 from app.presentation.inventory import inventory_router
 from app.presentation.sales import sales_router
@@ -46,6 +47,7 @@ ROUTERS = [
     api_key_router,
     external_api_router,
     company_address_router,  # Company addresses
+    upload_router,  # File upload management
     cache_router,
     audit_router,  # Audit logs and user activity
     user_preferences_router,  # User preferences management

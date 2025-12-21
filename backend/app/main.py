@@ -7,6 +7,8 @@ import os
 import logging
 import warnings
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 # Suppress pkg_resources deprecation warning from punq
 # This is a known issue in punq 0.6.2, waiting for upstream fix
@@ -235,6 +237,13 @@ register_exception_handlers(app)
 
 # Register all routers
 register_routers(app)
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Mount static files for uploads
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")

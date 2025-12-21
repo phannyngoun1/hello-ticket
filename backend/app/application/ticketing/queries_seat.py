@@ -1,6 +1,5 @@
-"""Ticketing seat queries for CQRS pattern."""
+"""Ticketing seat queries for CQRS pattern"""
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -15,6 +14,15 @@ class GetSeatsByVenueQuery:
     """Query to retrieve all seats for a venue."""
 
     venue_id: str
+    skip: int = 0
+    limit: int = 1000
+
+
+@dataclass
+class GetSeatsByLayoutQuery:
+    """Query to retrieve all seats for a layout."""
+
+    layout_id: str
     skip: int = 0
     limit: int = 1000
 

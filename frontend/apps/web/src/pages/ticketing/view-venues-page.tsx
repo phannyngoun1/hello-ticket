@@ -8,6 +8,7 @@ import {
 import {
   VenueDetail,
   VenueProvider,
+  LayoutProvider,
   useVenue,
   useVenueService,
 } from "@truths/ticketing";
@@ -50,10 +51,11 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
       loading={isLoading}
       error={error as Error | null}
       editable={true}
-      onNavigateToSeatDesigner={(venueId) => {
+      onNavigateToSeatDesigner={(venueId, layoutId) => {
         navigate({
           to: "/ticketing/venues/$id/seats/designer",
           params: { id: venueId },
+          search: { layoutId },
         });
       }}
     />
@@ -70,9 +72,18 @@ export function ViewVenuePage() {
     },
   };
 
+  const layoutServiceConfig = {
+    apiClient: api,
+    endpoints: {
+      layouts: "/api/v1/ticketing/layouts",
+    },
+  };
+
   return (
     <VenueProvider config={serviceConfig}>
-      <VenueDetailContent id={id} />
+      <LayoutProvider config={layoutServiceConfig}>
+        <VenueDetailContent id={id} />
+      </LayoutProvider>
     </VenueProvider>
   );
 }
