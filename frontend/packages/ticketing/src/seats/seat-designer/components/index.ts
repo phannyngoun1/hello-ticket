@@ -32,5 +32,5 @@ export { DatasheetView } from "./datasheet-view";
 export type { DatasheetViewProps } from "./datasheet-view";
 
 export { SelectedSectionSheet } from "./selected-section-sheet";
+export * from "./manage-sections-sheet";
 export type { SelectedSectionSheetProps } from "./selected-section-sheet";
-

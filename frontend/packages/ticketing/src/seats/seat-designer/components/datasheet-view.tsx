@@ -1,13 +1,24 @@
 /**
  * Datasheet View Component
- * 
+ *
  * Sheet component for displaying seats or sections in a list/datasheet format
  */
 
-import { Button, Card, Input, Label, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@truths/ui";
+import {
+  Button,
+  Card,
+  Input,
+  Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@truths/ui";
 import { Controller, UseFormReturn } from "react-hook-form";
-import { Edit, Trash2 } from "lucide-react";
-import type { SectionMarker, SeatMarker, SeatFormData } from "../types";
+import { Edit, FolderOpen, Trash2 } from "lucide-react";
+import type { SectionMarker, SeatMarker } from "../types";
+import type { SeatFormData } from "../form-schemas";
 
 export interface DatasheetViewProps {
   isOpen: boolean;
@@ -174,18 +185,6 @@ export function DatasheetView({
           ) : venueType === "large" ? (
             // Large venue main view - show sections
             <div className="space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium">Sections</p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onOpenNewSectionForm}
-                  className="h-7 px-3"
-                >
-                  Add section
-                </Button>
-              </div>
-
               {isSectionFormOpen && (
                 <Card className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -249,9 +248,7 @@ export function DatasheetView({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="font-medium text-sm">
-                        {section.name}
-                      </div>
+                      <div className="font-medium text-sm">{section.name}</div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {section.imageUrl
                           ? "Floor plan added"
@@ -267,7 +264,7 @@ export function DatasheetView({
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -276,7 +273,7 @@ export function DatasheetView({
                         }}
                         className="h-7 px-3"
                       >
-                        Open
+                        <FolderOpen className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -389,4 +386,3 @@ export function DatasheetView({
     </Sheet>
   );
 }
-

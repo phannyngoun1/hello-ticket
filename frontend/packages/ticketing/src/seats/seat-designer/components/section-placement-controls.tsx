@@ -4,6 +4,8 @@
  * Controls for placing sections in section-level design mode
  */
 
+
+
 import { Button, Card, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@truths/ui";
 import { Trash2 } from "lucide-react";
 import type { SectionMarker } from "../types";
@@ -69,11 +71,7 @@ export function SectionPlacementControls({
                 {section.name}
               </SelectItem>
             ))}
-            <SelectItem value="new-section">
-              <div className="flex items-center gap-2 font-medium text-primary">
-                <span>+ New Section</span>
-              </div>
-            </SelectItem>
+            
           </SelectContent>
         </Select>
       </div>
