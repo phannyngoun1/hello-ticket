@@ -17,11 +17,6 @@ import {
   Card,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -34,20 +29,17 @@ import {
   SheetTitle,
 } from "@truths/ui";
 import {
-  Upload,
   Trash2,
   Save,
-  X,
   Maximize,
   Minimize,
   MoreVertical,
   Image as ImageIcon,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
   List,
   Edit,
 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { seatService } from "../seat-service";
 import { sectionService } from "../../sections/section-service";
 import { SeatType } from "../types";
@@ -58,6 +50,24 @@ import { toast } from "@truths/ui";
 import { LayoutCanvas } from "./layout-canvas";
 import Konva from "konva";
 import { getUniqueSections as getUniqueSectionsUtil } from "./utils";
+import {
+  sectionFormSchema,
+  seatFormSchema,
+  type SectionFormData,
+  type SeatFormData,
+} from "./form-schemas";
+import {
+  ZoomControls,
+  ImageUploadCard,
+  InstructionsPanel,
+  SectionFormSheet,
+  SeatEditSheet,
+  SeatPlacementControls,
+  SectionPlacementControls,
+  SectionDetailView,
+  DatasheetView,
+  SelectedSectionCard,
+} from "./components";
 
 // Import types from the seat-designer folder
 import type {
@@ -104,10 +114,17 @@ export function SeatDesigner({
     useState<SectionMarker | null>(null);
   // Always in placement mode - simplified
   const isPlacingSections = true;
-  const [currentSectionName, setCurrentSectionName] = useState("Section A");
   const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+
+  // Section Form
+  const sectionForm = useForm<SectionFormData>({
+    resolver: zodResolver(sectionFormSchema),
+    defaultValues: {
+      name: "Section A",
+    },
+  });
 
   // Section detail view (when clicking a section in large venue mode)
   const [viewingSection, setViewingSection] = useState<SectionMarker | null>(
@@ -119,13 +136,19 @@ export function SeatDesigner({
   const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
   // Always in placement mode - simplified
   const isPlacingSeats = true;
-  const [currentSeat, setCurrentSeat] = useState<SeatInfo>({
-    section: "Section A",
-    sectionId: undefined,
-    row: "Row 1",
-    seatNumber: "1",
-    seatType: SeatType.STANDARD,
+
+  // Seat Placement Form (for placing new seats)
+  const seatPlacementForm = useForm<SeatFormData>({
+    resolver: zodResolver(seatFormSchema),
+    defaultValues: {
+      section: "Section A",
+      sectionId: undefined,
+      row: "Row 1",
+      seatNumber: "1",
+      seatType: SeatType.STANDARD,
+    },
   });
+
   const [sectionSelectValue, setSectionSelectValue] = useState<string>("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -133,7 +156,18 @@ export function SeatDesigner({
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const [viewingSeat, setViewingSeat] = useState<SeatMarker | null>(null);
   const [isEditingViewingSeat, setIsEditingViewingSeat] = useState(false);
-  const [editingSeatData, setEditingSeatData] = useState<SeatInfo | null>(null);
+
+  // Seat Edit Form (for editing existing seats)
+  const seatEditForm = useForm<SeatFormData>({
+    resolver: zodResolver(seatFormSchema),
+    defaultValues: {
+      section: "",
+      sectionId: undefined,
+      row: "",
+      seatNumber: "",
+      seatType: SeatType.STANDARD,
+    },
+  });
   const [viewingSectionForView, setViewingSectionForView] =
     useState<SectionMarker | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -191,7 +225,7 @@ export function SeatDesigner({
       };
       setSectionMarkers([defaultSection]);
       setSelectedSectionMarker(defaultSection);
-      setCurrentSectionName(defaultSection.name);
+      sectionForm.setValue("name", defaultSection.name);
     }
   }, [designMode, isLoading, sectionMarkers.length]);
 
@@ -280,7 +314,7 @@ export function SeatDesigner({
       // Select first section if available and none is selected
       if (markers.length > 0) {
         setSelectedSectionMarker((prev) => prev || markers[0]);
-        setCurrentSectionName((prev) => prev || markers[0].name);
+        sectionForm.setValue("name", markers[0].name);
       }
     }
   }, [initialSections, designMode]);
@@ -463,56 +497,63 @@ export function SeatDesigner({
 
       // Section detail view - place seats
       if (venueType === "large" && viewingSection && isPlacingSeats) {
+        const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
           x: Math.max(0, Math.min(100, x)),
           y: Math.max(0, Math.min(100, y)),
           seat: {
             section: viewingSection.name,
-            row: currentSeat.row,
-            seatNumber: currentSeat.seatNumber,
-            seatType: currentSeat.seatType,
+            sectionId: seatValues.sectionId,
+            row: seatValues.row,
+            seatNumber: seatValues.seatNumber,
+            seatType: seatValues.seatType,
           },
           isNew: true,
         };
         setSeats((prev) => [...prev, newSeat]);
-        setCurrentSeat({
-          ...currentSeat,
-          seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
-        });
+        // Increment seat number for next placement
+        const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
+        seatPlacementForm.setValue("seatNumber", nextSeatNumber);
       }
       // Main floor - place sections (create locally, will be saved via form or bulk save)
       else if (venueType === "large" && isPlacingSections) {
+        const sectionName = sectionForm.getValues().name;
         const newSection: SectionMarker = {
           id: `section-${Date.now()}`,
-          name: currentSectionName,
+          name: sectionName,
           x: Math.max(0, Math.min(100, x)),
           y: Math.max(0, Math.min(100, y)),
           isNew: true,
         };
         setSectionMarkers((prev) => [...prev, newSection]);
-        setCurrentSectionName((prevName) => {
-          const match = prevName.match(/Section ([A-Z])/);
-          const nextLetter = match
-            ? String.fromCharCode(match[1].charCodeAt(0) + 1)
-            : "B";
-          return `Section ${nextLetter}`;
-        });
+        // Auto-increment section name
+        const match = sectionName.match(/Section ([A-Z])/);
+        const nextLetter = match
+          ? String.fromCharCode(match[1].charCodeAt(0) + 1)
+          : "B";
+        sectionForm.setValue("name", `Section ${nextLetter}`);
       }
       // Small venue - place seats
       else if (venueType === "small" && isPlacingSeats) {
+        const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
           x: Math.max(0, Math.min(100, x)),
           y: Math.max(0, Math.min(100, y)),
-          seat: currentSeat,
+          seat: {
+            section: seatValues.section,
+            sectionId: seatValues.sectionId,
+            row: seatValues.row,
+            seatNumber: seatValues.seatNumber,
+            seatType: seatValues.seatType,
+          },
           isNew: true,
         };
         setSeats((prev) => [...prev, newSeat]);
-        setCurrentSeat({
-          ...currentSeat,
-          seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
-        });
+        // Increment seat number for next placement
+        const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
+        seatPlacementForm.setValue("seatNumber", nextSeatNumber);
       }
     },
     [
@@ -520,8 +561,8 @@ export function SeatDesigner({
       viewingSection,
       isPlacingSeats,
       isPlacingSections,
-      currentSeat,
-      currentSectionName,
+      seatPlacementForm,
+      sectionForm,
     ]
   );
 
@@ -585,7 +626,8 @@ export function SeatDesigner({
   // Handle section double-click or button click to open section detail view
   const handleOpenSectionDetail = (section: SectionMarker) => {
     setViewingSection(section);
-    setCurrentSeat({ ...currentSeat, section: section.name });
+    // Update seat placement form with section name
+    seatPlacementForm.setValue("section", section.name);
     setSelectedSectionMarker(null);
     // Reset zoom when switching sections
     setZoomLevel(1);
@@ -598,35 +640,49 @@ export function SeatDesigner({
     setSelectedSeat(seat);
     setViewingSeat(seat);
     setIsEditingViewingSeat(false);
-    setEditingSeatData(null);
+    seatEditForm.reset();
   };
 
   // Section form helpers (Sheet)
   const handleOpenNewSectionForm = () => {
     setEditingSectionId(null);
     const nextName = `Section ${sectionMarkers.length + 1}`;
-    setCurrentSectionName(nextName);
+    sectionForm.reset({ name: nextName });
     setIsSectionFormOpen(true);
   };
 
   const handleEditSectionFromSheet = (section: SectionMarker) => {
     setEditingSectionId(section.id);
-    setCurrentSectionName(section.name);
+    sectionForm.reset({ name: section.name });
     setIsSectionFormOpen(true);
   };
 
   // Edit section from sectionsData (for seat-level mode)
   const handleEditSectionFromData = (section: { id: string; name: string }) => {
     setEditingSectionId(section.id);
-    setCurrentSectionName(section.name);
+    sectionForm.reset({ name: section.name });
     setIsSectionFormOpen(true);
     setIsManageSectionsOpen(false);
   };
 
-  // Sync sectionSelectValue with currentSeat.section
+  // Sync sectionSelectValue with seat placement form section
+  const watchedSection = seatPlacementForm.watch("section");
   useEffect(() => {
-    setSectionSelectValue(currentSeat.section || "");
-  }, [currentSeat.section]);
+    setSectionSelectValue(watchedSection || "");
+  }, [watchedSection]);
+
+  // Sync seat edit form when viewingSeat changes (only when entering edit mode)
+  useEffect(() => {
+    if (viewingSeat && isEditingViewingSeat) {
+      seatEditForm.reset({
+        section: viewingSeat.seat.section,
+        sectionId: viewingSeat.seat.sectionId,
+        row: viewingSeat.seat.row,
+        seatNumber: viewingSeat.seat.seatNumber,
+        seatType: viewingSeat.seat.seatType,
+      });
+    }
+  }, [viewingSeat?.id, isEditingViewingSeat]);
 
   // Get unique sections using utility function
   const getUniqueSections = (): string[] => {
@@ -652,12 +708,9 @@ export function SeatDesigner({
       return result;
     },
     onSuccess: (section) => {
-      // Always update currentSeat with the new section name and ID
-      setCurrentSeat((prev) => ({
-        ...prev,
-        section: section.name,
-        sectionId: section.id,
-      }));
+      // Always update seat placement form with the new section name and ID
+      seatPlacementForm.setValue("section", section.name);
+      seatPlacementForm.setValue("sectionId", section.id);
 
       // Only update sectionMarkers in section-level mode
       if (designMode === "section-level") {
@@ -675,7 +728,7 @@ export function SeatDesigner({
 
       setIsSectionFormOpen(false);
       setEditingSectionId(null);
-      setCurrentSectionName("");
+      sectionForm.reset({ name: "" });
       toast({ title: "Section created successfully" });
       // Invalidate sections query
       queryClient.invalidateQueries({
@@ -736,10 +789,14 @@ export function SeatDesigner({
           prev ? { ...prev, name: section.name } : null
         );
       }
-      setCurrentSeat((prev) => ({ ...prev, section: section.name }));
+      // Update seat placement form if section name matches
+      const currentSectionInForm = seatPlacementForm.getValues().section;
+      if (currentSectionInForm === section.name) {
+        // Section name unchanged, but sectionId might need updating
+      }
       setIsSectionFormOpen(false);
       setEditingSectionId(null);
-      setCurrentSectionName("");
+      sectionForm.reset({ name: "" });
       toast({ title: "Section updated successfully" });
       // Invalidate sections query
       queryClient.invalidateQueries({
@@ -757,8 +814,8 @@ export function SeatDesigner({
     },
   });
 
-  const handleSaveSectionForm = () => {
-    const name = currentSectionName.trim() || "Section";
+  const handleSaveSectionForm = sectionForm.handleSubmit((data) => {
+    const name = data.name.trim() || "Section";
 
     if (editingSectionId) {
       // Find section in sectionMarkers (section-level mode) or sectionsData (seat-level mode)
@@ -799,12 +856,12 @@ export function SeatDesigner({
         y: designMode === "section-level" ? 50 : undefined,
       });
     }
-  };
+  });
 
   const handleCancelSectionForm = () => {
     setIsSectionFormOpen(false);
     setEditingSectionId(null);
-    setCurrentSectionName("");
+    sectionForm.reset({ name: "" });
   };
 
   // // Sync form fields with selected seat
@@ -838,31 +895,12 @@ export function SeatDesigner({
   //   }
   // }, [selectedSeat]);
 
-  // Sync form field with selected section
+  // Sync section form with selected section (for section-level mode)
   useEffect(() => {
     if (selectedSectionMarker && isPlacingSections) {
-      setCurrentSectionName(selectedSectionMarker.name);
+      sectionForm.setValue("name", selectedSectionMarker.name);
     }
-  }, [selectedSectionMarker, isPlacingSections]);
-
-  // Update selected section name when form value changes
-  useEffect(() => {
-    if (selectedSectionMarker && isPlacingSections) {
-      if (selectedSectionMarker.name !== currentSectionName) {
-        const updatedSection = {
-          ...selectedSectionMarker,
-          name: currentSectionName,
-        };
-
-        setSectionMarkers((prev) =>
-          prev.map((section) =>
-            section.id === selectedSectionMarker.id ? updatedSection : section
-          )
-        );
-        setSelectedSectionMarker(updatedSection);
-      }
-    }
-  }, [currentSectionName, selectedSectionMarker, isPlacingSections]);
+  }, [selectedSectionMarker, isPlacingSections, sectionForm]);
 
   // Save seats mutation
   const saveSeatsMutation = useMutation({
@@ -1016,7 +1054,7 @@ export function SeatDesigner({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
       setIsEditingViewingSeat(false);
-      setEditingSeatData(null);
+      seatEditForm.reset();
       setViewingSeat(null);
       setSelectedSeat(null);
     },
@@ -1175,281 +1213,47 @@ export function SeatDesigner({
   // If viewing a section detail (large venue mode), show section detail view
   if (venueType === "large" && viewingSection) {
     return (
-      <Card className={className}>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setViewingSection(null);
-                  // Reset zoom when going back to main floor plan
-                  setZoomLevel(1);
-                  setPanOffset({ x: 0, y: 0 });
-                }}
-                className="mb-2"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Back to Main Floor Plan
-              </Button>
-              <h3 className="text-lg font-semibold">
-                Section: {viewingSection.name}
-              </h3>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleSave}
-                disabled={saveSeatsMutation.isPending}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleClearSectionSeats}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All Seats
-                  </DropdownMenuItem>
-                  {viewingSection.imageUrl && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <Label
-                        htmlFor={`change-section-image-${viewingSection.id}`}
-                        className="cursor-pointer"
-                      >
-                        <DropdownMenuItem
-                          onSelect={(e) => e.preventDefault()}
-                          asChild
-                        >
-                          <div>
-                            <ImageIcon className="h-4 w-4 mr-2" />
-                            Change Image
-                            <Input
-                              id={`change-section-image-${viewingSection.id}`}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                handleSectionImageSelect(viewingSection.id, e);
-                                e.target.value = ""; // Reset input
-                              }}
-                              className="hidden"
-                            />
-                          </div>
-                        </DropdownMenuItem>
-                      </Label>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Section Image Upload */}
-          {!viewingSection.imageUrl && (
-            <Card className="p-8 text-center">
-              <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <Label
-                htmlFor={`section-image-${viewingSection.id}`}
-                className="cursor-pointer"
-              >
-                <span className="text-sm font-medium text-gray-700">
-                  {isUploadingImage
-                    ? "Uploading..."
-                    : `Upload Floor Plan Image for ${viewingSection.name}`}
-                </span>
-                <Input
-                  id={`section-image-${viewingSection.id}`}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleSectionImageSelect(viewingSection.id, e)
-                  }
-                  className="hidden"
-                  disabled={isUploadingImage}
-                />
-              </Label>
-            </Card>
-          )}
-
-          {/* Section Image with Seat Markers */}
-          {viewingSection.imageUrl && (
-            <div className="space-y-4">
-              {/* Seat Placement Controls Panel - On Top */}
-              <Card className="p-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Section / Row / Seat #</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Select
-                        value={
-                          viewingSection
-                            ? viewingSection.name
-                            : currentSeat.section || ""
-                        }
-                        onValueChange={(value) => {
-                          if (value === "new-section") {
-                            setIsSectionFormOpen(true);
-                            setEditingSectionId(null);
-                            setCurrentSectionName("");
-                          } else {
-                            setCurrentSeat({
-                              ...currentSeat,
-                              section: value,
-                            });
-                          }
-                        }}
-                        disabled={!!viewingSection}
-                      >
-                        <SelectTrigger className="h-8 text-sm flex-1">
-                          <SelectValue placeholder="Section" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getUniqueSections().map((section) => (
-                            <SelectItem key={section} value={section}>
-                              {section}
-                            </SelectItem>
-                          ))}
-                          {!viewingSection && (
-                            <SelectItem value="new-section">
-                              <div className="flex items-center gap-2 font-medium text-primary">
-                                <span>+ New Section</span>
-                              </div>
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <Input
-                        value={currentSeat.row}
-                        onChange={(e) =>
-                          setCurrentSeat({
-                            ...currentSeat,
-                            row: e.target.value,
-                          })
-                        }
-                        className="h-8 text-sm w-16"
-                        placeholder="Row"
-                      />
-                      <Input
-                        value={currentSeat.seatNumber}
-                        onChange={(e) =>
-                          setCurrentSeat({
-                            ...currentSeat,
-                            seatNumber: e.target.value,
-                          })
-                        }
-                        className="h-8 text-sm w-16"
-                        placeholder="#"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs">Type</Label>
-                    <Select
-                      value={currentSeat.seatType}
-                      onValueChange={(value) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          seatType: value as SeatType,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1 h-8 text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.values(SeatType).map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Canvas Container */}
-              <div
-                ref={containerRef}
-                className="relative border rounded-lg overflow-hidden bg-gray-100 flex-1"
-                style={{
-                  minHeight: "600px",
-                  minWidth: 0,
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                }}
-              >
-                {dimensionsReady ? (
-                  <LayoutCanvas
-                    imageUrl={viewingSection.imageUrl}
-                    seats={displayedSeats}
-                    selectedSeatId={selectedSeat?.id || null}
-                    isPlacingSeats={isPlacingSeats}
-                    isPlacingSections={false}
-                    zoomLevel={zoomLevel}
-                    panOffset={panOffset}
-                    onSeatClick={handleSeatClick}
-                    onSeatDragEnd={handleKonvaSeatDragEnd}
-                    onImageClick={handleKonvaImageClick}
-                    onWheel={handleKonvaWheel}
-                    onPan={handlePan}
-                    containerWidth={containerDimensions.width}
-                    containerHeight={containerDimensions.height}
-                    venueType="small"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
-                    Initializing canvas...
-                  </div>
-                )}
-                {/* Zoom Controls */}
-                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleZoomIn}
-                    disabled={zoomLevel >= 3}
-                    title="Zoom In"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleZoomOut}
-                    disabled={zoomLevel <= 0.5}
-                    title="Zoom Out"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleResetZoom}
-                    disabled={
-                      zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0
-                    }
-                    title="Reset Zoom"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                  <div className="text-xs text-center text-muted-foreground bg-background/80 px-2 py-1 rounded">
-                    {Math.round(zoomLevel * 100)}%
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </Card>
+      <SectionDetailView
+        viewingSection={viewingSection}
+        className={className}
+        displayedSeats={displayedSeats}
+        selectedSeat={selectedSeat}
+        seatPlacementForm={seatPlacementForm}
+        uniqueSections={getUniqueSections()}
+        sectionsData={sectionsData}
+        sectionSelectValue={sectionSelectValue}
+        onSectionSelectValueChange={setSectionSelectValue}
+        containerRef={containerRef}
+        dimensionsReady={dimensionsReady}
+        containerDimensions={containerDimensions}
+        zoomLevel={zoomLevel}
+        panOffset={panOffset}
+        isPlacingSeats={isPlacingSeats}
+        isUploadingImage={isUploadingImage}
+        onBack={() => {
+          setViewingSection(null);
+          // Reset zoom when going back to main floor plan
+          setZoomLevel(1);
+          setPanOffset({ x: 0, y: 0 });
+        }}
+        onSave={handleSave}
+        onClearSectionSeats={handleClearSectionSeats}
+        onSectionImageSelect={handleSectionImageSelect}
+        onSeatClick={handleSeatClick}
+        onSeatDragEnd={handleKonvaSeatDragEnd}
+        onImageClick={handleKonvaImageClick}
+        onWheel={handleKonvaWheel}
+        onPan={handlePan}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetZoom={handleResetZoom}
+        onNewSection={() => {
+          setIsSectionFormOpen(true);
+          setEditingSectionId(null);
+          sectionForm.reset({ name: "" });
+        }}
+        saveSeatsMutationPending={saveSeatsMutation.isPending}
+      />
     );
   }
 
@@ -1550,24 +1354,12 @@ export function SeatDesigner({
 
       {/* Main Image Upload */}
       {!mainImageUrl && (
-        <Card className="p-8 text-center">
-          <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <Label htmlFor="main-image-upload" className="cursor-pointer">
-            <span className="text-sm font-medium text-gray-700">
-              {isUploadingImage
-                ? "Uploading..."
-                : `Upload ${designMode === "seat-level" ? "Venue" : "Main"} Floor Plan Image`}
-            </span>
-            <Input
-              id="main-image-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleMainImageSelect}
-              className="hidden"
-              disabled={isUploadingImage}
-            />
-          </Label>
-        </Card>
+        <ImageUploadCard
+          id="main-image-upload"
+          label={`Upload ${designMode === "seat-level" ? "Venue" : "Main"} Floor Plan Image`}
+          isUploading={isUploadingImage}
+          onFileSelect={handleMainImageSelect}
+        />
       )}
 
       {/* Main Floor Plan Image */}
@@ -1575,163 +1367,45 @@ export function SeatDesigner({
         <div className="space-y-4">
           {/* Seat Placement Controls Panel - On Top (Small Venue) */}
           {venueType === "small" && (
-            <Card className="p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Section / Row / Seat #</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Select
-                      value={sectionSelectValue || currentSeat.section || ""}
-                      onValueChange={(value) => {
-                        if (value === "new-section") {
-                          setIsSectionFormOpen(true);
-                          setEditingSectionId(null);
-                          setCurrentSectionName("");
-                          // Reset select to current section
-                          setSectionSelectValue(currentSeat.section || "");
-                        } else if (value === "manage-sections") {
-                          setIsManageSectionsOpen(true);
-                          // Reset select to current section
-                          setSectionSelectValue(currentSeat.section || "");
-                        } else {
-                          setCurrentSeat({
-                            ...currentSeat,
-                            section: value,
-                          });
-                          setSectionSelectValue(value);
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-8 text-sm flex-1">
-                        <SelectValue placeholder="Section" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getUniqueSections().map((section) => (
-                          <SelectItem key={section} value={section}>
-                            {section}
-                          </SelectItem>
-                        ))}
-                        <div className="h-px bg-border my-1 mx-2" />
-                        <SelectItem value="new-section">
-                          <div className="flex items-center gap-2 font-medium text-primary">
-                            <span>+ New Section</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="manage-sections">
-                          <div className="flex items-center gap-2 font-medium">
-                            <Edit className="h-3 w-3" />
-                            <span>Manage Sections</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={currentSeat.row}
-                      onChange={(e) =>
-                        setCurrentSeat({ ...currentSeat, row: e.target.value })
-                      }
-                      className="h-8 text-sm w-16"
-                      placeholder="Row"
-                    />
-                    <Input
-                      value={currentSeat.seatNumber}
-                      onChange={(e) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          seatNumber: e.target.value,
-                        })
-                      }
-                      className="h-8 text-sm w-16"
-                      placeholder="#"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs">Type</Label>
-                  <Select
-                    value={currentSeat.seatType}
-                    onValueChange={(value) =>
-                      setCurrentSeat({
-                        ...currentSeat,
-                        seatType: value as SeatType,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="mt-1 h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(SeatType).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </Card>
+            <SeatPlacementControls
+              form={seatPlacementForm}
+              uniqueSections={getUniqueSections()}
+              sectionsData={sectionsData}
+              sectionSelectValue={sectionSelectValue}
+              onSectionSelectValueChange={setSectionSelectValue}
+              onNewSection={() => {
+                setIsSectionFormOpen(true);
+                setEditingSectionId(null);
+                sectionForm.reset({ name: "" });
+              }}
+              onManageSections={() => setIsManageSectionsOpen(true)}
+            />
           )}
 
           {/* Section Placement Controls Panel - On Top (Large Venue) */}
           {venueType === "large" && (
-            <Card className="p-3">
-              {selectedSectionMarker && (
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-muted-foreground">
-                    Editing: {selectedSectionMarker.name}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      handleDeleteSection(selectedSectionMarker);
-                      setSelectedSectionMarker(null);
-                    }}
-                    className="h-6 px-2"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-              <div>
-                <Label className="text-xs">Section</Label>
-                <Select
-                  value={selectedSectionMarker?.id || ""}
-                  onValueChange={(value) => {
-                    if (value === "new-section") {
-                      setIsSectionFormOpen(true);
-                      setEditingSectionId(null);
-                      setCurrentSectionName("");
-                    } else {
-                      const section = sectionMarkers.find(
-                        (s) => s.id === value
-                      );
-                      if (section) {
-                        setSelectedSectionMarker(section);
-                        setCurrentSectionName(section.name);
-                      }
-                    }
-                  }}
-                >
-                  <SelectTrigger className="mt-1 h-8 text-sm">
-                    <SelectValue placeholder="Select or create section" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sectionMarkers.map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new-section">
-                      <div className="flex items-center gap-2 font-medium text-primary">
-                        <span>+ New Section</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </Card>
+            <SectionPlacementControls
+              selectedSectionMarker={selectedSectionMarker}
+              sectionMarkers={sectionMarkers}
+              sectionFormName={sectionForm.getValues().name}
+              onSectionSelect={(sectionId) => {
+                const section = sectionMarkers.find((s) => s.id === sectionId);
+                if (section) {
+                  setSelectedSectionMarker(section);
+                  sectionForm.setValue("name", section.name);
+                }
+              }}
+              onNewSection={() => {
+                setIsSectionFormOpen(true);
+                setEditingSectionId(null);
+                sectionForm.reset({ name: "" });
+              }}
+              onDeleteSection={(section) => {
+                handleDeleteSection(section);
+                setSelectedSectionMarker(null);
+              }}
+              onUseSectionName={(name) => sectionForm.setValue("name", name)}
+            />
           )}
 
           {/* Canvas Container */}
@@ -1772,580 +1446,114 @@ export function SeatDesigner({
               </div>
             )}
             {/* Zoom Controls */}
-            <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleZoomIn}
-                disabled={zoomLevel >= 3}
-                title="Zoom In"
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleZoomOut}
-                disabled={zoomLevel <= 0.5}
-                title="Zoom Out"
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetZoom}
-                disabled={
-                  zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0
-                }
-                title="Reset Zoom"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <div className="text-xs text-center text-muted-foreground bg-background/80 px-2 py-1 rounded">
-                {Math.round(zoomLevel * 100)}%
-              </div>
-            </div>
+            <ZoomControls
+              zoomLevel={zoomLevel}
+              panOffset={panOffset}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onResetZoom={handleResetZoom}
+            />
           </div>
         </div>
       )}
 
       {/* Datasheet Sheet */}
-      <Sheet open={isDatasheetOpen} onOpenChange={setIsDatasheetOpen}>
-        <SheetContent
-          side="right"
-          className="w-[400px] sm:w-[540px] flex flex-col"
-        >
-          <SheetHeader>
-            <SheetTitle>
-              {viewingSection
-                ? `Seats - ${viewingSection.name}`
-                : venueType === "large"
-                  ? "Sections"
-                  : "Seats"}
-            </SheetTitle>
-            <SheetDescription>
-              {viewingSection
-                ? `${displayedSeats.length} seat(s) in ${viewingSection.name}`
-                : venueType === "large"
-                  ? `${sectionMarkers.length} section(s) placed`
-                  : `${seats.length} seat(s) placed`}
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="mt-6 flex-1 overflow-y-auto min-h-0">
-            {viewingSection ? (
-              // Section detail view - show seats in this section
-              <div className="space-y-2">
-                {displayedSeats.map((seat) => (
-                  <div
-                    key={seat.id}
-                    className={`group p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedSeat?.id === seat.id
-                        ? "bg-blue-50 border-blue-500"
-                        : "bg-background border-border hover:bg-muted"
-                    }`}
-                    onClick={() => {
-                      if (isPlacingSeats) {
-                        // In placement mode: select seat for editing
-                        setSelectedSeat(seat);
-                        setIsDatasheetOpen(false);
-                      } else {
-                        // Not in placement mode: show view-only Sheet
-                        setViewingSeat(seat);
-                        setIsDatasheetOpen(false);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {seat.seat.row} {seat.seat.seatNumber}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {seat.seat.seatType}
-                        </div>
-                      </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {isPlacingSeats && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewingSeat(seat);
-                              setIsEditingViewingSeat(true);
-                              setEditingSeatData(seat.seat);
-                              setIsDatasheetOpen(false);
-                            }}
-                            className="h-6 w-6 p-0"
-                            title="Edit seat"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {isPlacingSeats && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSeat(seat);
-                            }}
-                            className="h-6 w-6 p-0"
-                            title="Delete seat"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : venueType === "large" ? (
-              // Large venue main view - show sections
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-medium">Sections</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleOpenNewSectionForm}
-                    className="h-7 px-3"
-                  >
-                    Add section
-                  </Button>
-                </div>
-
-                {isSectionFormOpen && (
-                  <Card className="p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">
-                        {editingSectionId ? "Update section" : "New section"}
-                      </p>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2"
-                          onClick={handleCancelSectionForm}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-7 px-3"
-                          onClick={handleSaveSectionForm}
-                          disabled={
-                            !currentSectionName.trim() ||
-                            createSectionMutation.isPending ||
-                            updateSectionMutation.isPending
-                          }
-                        >
-                          {editingSectionId ? "Update" : "Create"}
-                        </Button>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-xs">Section Name</Label>
-                      <Input
-                        value={currentSectionName}
-                        onChange={(e) => setCurrentSectionName(e.target.value)}
-                        className="mt-1 h-8 text-sm"
-                        placeholder="e.g., Section A"
-                        autoFocus
-                      />
-                    </div>
-                  </Card>
-                )}
-
-                {sectionMarkers.map((section) => (
-                  <div
-                    key={section.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedSectionMarker?.id === section.id
-                        ? "bg-blue-50 border-blue-500"
-                        : "bg-background border-border hover:bg-muted"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleSectionMarkerClick(section, e);
-                      setIsDatasheetOpen(false);
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {section.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {section.imageUrl
-                            ? "Floor plan added"
-                            : "No floor plan"}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {
-                            seats.filter((s) => s.seat.section === section.name)
-                              .length
-                          }{" "}
-                          seat(s)
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenSectionDetail(section);
-                            setIsDatasheetOpen(false);
-                          }}
-                          className="h-7 px-3"
-                        >
-                          Open
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditSectionFromSheet(section);
-                          }}
-                          className="h-7 px-2"
-                          title="Edit section"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteSection(section);
-                          }}
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                          title="Delete section"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              // Small venue - show all seats
-              <div className="space-y-2">
-                {seats.map((seat) => (
-                  <div
-                    key={seat.id}
-                    className={`group p-3 rounded-lg border cursor-pointer transition-colors ${
-                      selectedSeat?.id === seat.id
-                        ? "bg-blue-50 border-blue-500"
-                        : "bg-background border-border hover:bg-muted"
-                    }`}
-                    onClick={() => {
-                      if (isPlacingSeats) {
-                        // In placement mode: select seat for editing
-                        setSelectedSeat(seat);
-                        setIsDatasheetOpen(false);
-                      } else {
-                        // Not in placement mode: show view-only Sheet
-                        setViewingSeat(seat);
-                        setIsDatasheetOpen(false);
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {seat.seat.section} {seat.seat.row}{" "}
-                          {seat.seat.seatNumber}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {seat.seat.seatType}
-                        </div>
-                      </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {isPlacingSeats && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setViewingSeat(seat);
-                              setIsEditingViewingSeat(true);
-                              setEditingSeatData(seat.seat);
-                              setIsDatasheetOpen(false);
-                            }}
-                            className="h-6 w-6 p-0"
-                            title="Edit seat"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        {isPlacingSeats && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSeat(seat);
-                            }}
-                            className="h-6 w-6 p-0"
-                            title="Delete seat"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      <DatasheetView
+        isOpen={isDatasheetOpen}
+        onOpenChange={setIsDatasheetOpen}
+        viewingSection={viewingSection}
+        venueType={venueType}
+        displayedSeats={displayedSeats}
+        seats={seats}
+        sectionMarkers={sectionMarkers}
+        selectedSeat={selectedSeat}
+        isPlacingSeats={isPlacingSeats}
+        isSectionFormOpen={isSectionFormOpen}
+        editingSectionId={editingSectionId}
+        sectionForm={sectionForm}
+        selectedSectionMarker={selectedSectionMarker}
+        createSectionMutationPending={createSectionMutation.isPending}
+        updateSectionMutationPending={updateSectionMutation.isPending}
+        onSeatClick={handleSeatClick}
+        onDeleteSeat={handleDeleteSeat}
+        onOpenNewSectionForm={handleOpenNewSectionForm}
+        onCancelSectionForm={handleCancelSectionForm}
+        onSaveSectionForm={handleSaveSectionForm}
+        onSectionMarkerClick={handleSectionMarkerClick}
+        onOpenSectionDetail={handleOpenSectionDetail}
+        onEditSectionFromSheet={handleEditSectionFromSheet}
+        onDeleteSection={handleDeleteSection}
+        onSetViewingSeat={setViewingSeat}
+        onSetIsEditingViewingSeat={setIsEditingViewingSeat}
+        onSetSelectedSeat={setSelectedSeat}
+        onSetIsDatasheetOpen={setIsDatasheetOpen}
+        seatEditFormReset={seatEditForm.reset}
+      />
 
       {/* Seat View Sheet - View/Delete/Edit seat */}
-      <Sheet
-        open={!!viewingSeat}
+      <SeatEditSheet
+        viewingSeat={viewingSeat}
+        isOpen={!!viewingSeat}
         onOpenChange={(open) => {
           if (!open) {
             setViewingSeat(null);
             setSelectedSeat(null);
             setIsEditingViewingSeat(false);
-            setEditingSeatData(null);
+            seatEditForm.reset();
           }
         }}
-      >
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-          {viewingSeat && (
-            <>
-              <SheetHeader>
-                <SheetTitle>Seat Information</SheetTitle>
-                <SheetDescription>
-                  {isPlacingSeats
-                    ? isEditingViewingSeat
-                      ? "Edit seat details"
-                      : "View or edit this seat"
-                    : "View seat details (read-only)"}
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 space-y-4">
-                {isEditingViewingSeat ? (
-                  // Edit mode
-                  <>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Section</Label>
-                        <Select
-                          value={editingSeatData?.section || ""}
-                          onValueChange={(value) => {
-                            // Find the section_id for the selected section name
-                            let sectionId = editingSeatData?.sectionId;
-                            if (sectionsData && designMode === "seat-level") {
-                              const section = sectionsData.find(
-                                (s) => s.name === value
-                              );
-                              sectionId = section?.id;
-                            } else if (designMode === "section-level") {
-                              const section = sectionMarkers.find(
-                                (s) => s.name === value
-                              );
-                              sectionId = section?.id;
-                            }
-
-                            setEditingSeatData({
-                              ...(editingSeatData || viewingSeat.seat),
-                              section: value,
-                              sectionId: sectionId,
-                            });
-                          }}
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Select section" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getUniqueSections().map((section) => (
-                              <SelectItem key={section} value={section}>
-                                {section}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Row</Label>
-                        <Input
-                          value={editingSeatData?.row || ""}
-                          onChange={(e) =>
-                            setEditingSeatData({
-                              ...(editingSeatData || viewingSeat.seat),
-                              row: e.target.value,
-                            })
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Seat Number</Label>
-                        <Input
-                          value={editingSeatData?.seatNumber || ""}
-                          onChange={(e) =>
-                            setEditingSeatData({
-                              ...(editingSeatData || viewingSeat.seat),
-                              seatNumber: e.target.value,
-                            })
-                          }
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Type</Label>
-                        <Select
-                          value={
-                            editingSeatData?.seatType ||
-                            viewingSeat.seat.seatType
-                          }
-                          onValueChange={(value) =>
-                            setEditingSeatData({
-                              ...(editingSeatData || viewingSeat.seat),
-                              seatType: value as SeatType,
-                            })
-                          }
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.values(SeatType).map((type) => (
-                              <SelectItem key={type} value={type}>
-                                {type}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 pt-4 border-t">
-                      <Button
-                        variant="default"
-                        className="flex-1"
-                        onClick={() => {
-                          if (editingSeatData && !viewingSeat.isNew) {
-                            updateSeatMutation.mutate({
-                              seatId: viewingSeat.id,
-                              data: editingSeatData,
-                            });
-                          } else if (editingSeatData && viewingSeat.isNew) {
-                            // Update local state for new seats
-                            setSeats((prev) =>
-                              prev.map((s) =>
-                                s.id === viewingSeat.id
-                                  ? { ...s, seat: editingSeatData }
-                                  : s
-                              )
-                            );
-                            setViewingSeat(null);
-                            setSelectedSeat(null);
-                            setIsEditingViewingSeat(false);
-                            setEditingSeatData(null);
-                          }
-                        }}
-                        disabled={updateSeatMutation.isPending}
-                      >
-                        {updateSeatMutation.isPending ? "Saving..." : "Save"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => {
-                          setIsEditingViewingSeat(false);
-                          setEditingSeatData(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  // View mode
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-muted-foreground">Section</Label>
-                        <div className="mt-1 text-sm font-medium">
-                          {viewingSeat.seat.section}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Row</Label>
-                        <div className="mt-1 text-sm font-medium">
-                          {viewingSeat.seat.row}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">
-                          Seat Number
-                        </Label>
-                        <div className="mt-1 text-sm font-medium">
-                          {viewingSeat.seat.seatNumber}
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-muted-foreground">Type</Label>
-                        <div className="mt-1 text-sm font-medium">
-                          {viewingSeat.seat.seatType}
-                        </div>
-                      </div>
-                      <div className="col-span-2">
-                        <Label className="text-muted-foreground">
-                          Position
-                        </Label>
-                        <div className="mt-1 text-sm font-medium">
-                          X: {viewingSeat.x.toFixed(2)}%, Y:{" "}
-                          {viewingSeat.y.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                    {isPlacingSeats && (
-                      <div className="pt-4 border-t space-y-2">
-                        <Button
-                          variant="outline"
-                          className="w-full"
-                          onClick={() => {
-                            setIsEditingViewingSeat(true);
-                            setEditingSeatData(viewingSeat.seat);
-                          }}
-                        >
-                          Edit Seat
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="w-full"
-                          onClick={() => {
-                            handleDeleteSeat(viewingSeat);
-                            setViewingSeat(null);
-                            setSelectedSeat(null);
-                          }}
-                          disabled={deleteSeatMutation.isPending}
-                        >
-                          {deleteSeatMutation.isPending
-                            ? "Deleting..."
-                            : "Delete Seat"}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+        isEditing={isEditingViewingSeat}
+        isPlacingSeats={isPlacingSeats}
+        form={seatEditForm}
+        uniqueSections={getUniqueSections()}
+        sectionsData={sectionsData}
+        sectionMarkers={sectionMarkers}
+        designMode={designMode}
+        isUpdating={updateSeatMutation.isPending}
+        isDeleting={deleteSeatMutation.isPending}
+        onEdit={() => {
+          if (viewingSeat) {
+            setIsEditingViewingSeat(true);
+            seatEditForm.reset({
+              section: viewingSeat.seat.section,
+              sectionId: viewingSeat.seat.sectionId,
+              row: viewingSeat.seat.row,
+              seatNumber: viewingSeat.seat.seatNumber,
+              seatType: viewingSeat.seat.seatType,
+            });
+          }
+        }}
+        onSave={(data) => {
+          if (viewingSeat && !viewingSeat.isNew) {
+            updateSeatMutation.mutate({
+              seatId: viewingSeat.id,
+              data,
+            });
+          } else if (viewingSeat && viewingSeat.isNew) {
+            // Update local state for new seats
+            setSeats((prev) =>
+              prev.map((s) =>
+                s.id === viewingSeat.id ? { ...s, seat: data } : s
+              )
+            );
+            setViewingSeat(null);
+            setSelectedSeat(null);
+            setIsEditingViewingSeat(false);
+            seatEditForm.reset();
+          }
+        }}
+        onCancel={() => {
+          setIsEditingViewingSeat(false);
+          seatEditForm.reset();
+        }}
+        onDelete={() => {
+          if (viewingSeat) {
+            handleDeleteSeat(viewingSeat);
+            setViewingSeat(null);
+            setSelectedSeat(null);
+          }
+        }}
+      />
 
       {/* Section View Sheet - Read-only view when not in placement mode */}
       <Sheet
@@ -2402,95 +1610,23 @@ export function SeatDesigner({
 
       {/* Selected Section Info */}
       {selectedSectionMarker && !viewingSection && venueType === "large" && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="font-medium">Selected Section</h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedSectionMarker(null)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="text-gray-500">Name:</span>{" "}
-              {selectedSectionMarker.name}
-            </div>
-            <div>
-              <span className="text-gray-500">Floor Plan:</span>{" "}
-              {selectedSectionMarker.imageUrl ? "Added" : "Not added"}
-            </div>
-            <div>
-              <span className="text-gray-500">Seats:</span>{" "}
-              {
-                seats.filter(
-                  (s) => s.seat.section === selectedSectionMarker.name
-                ).length
-              }{" "}
-              seat(s)
-            </div>
-          </div>
-          <div className="flex gap-2 mt-4">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => handleOpenSectionDetail(selectedSectionMarker)}
-            >
-              Open Section Detail
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setCurrentSectionName(selectedSectionMarker.name);
-              }}
-            >
-              Use Name for Next
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDeleteSection(selectedSectionMarker)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          </div>
-        </Card>
+        <SelectedSectionCard
+          selectedSectionMarker={selectedSectionMarker}
+          seats={seats}
+          onClear={() => setSelectedSectionMarker(null)}
+          onOpenSectionDetail={handleOpenSectionDetail}
+          onUseNameForNext={(name) => sectionForm.setValue("name", name)}
+          onDelete={handleDeleteSection}
+        />
       )}
 
       {/* Instructions */}
       {mainImageUrl && (
-        <div className="text-sm text-gray-500 space-y-1">
-          {designMode === "seat-level" && (
-            <>
-              <p>
-                Click on the image to place seats. Adjust section, row, seat
-                number, and type above.
-              </p>
-              <p>Drag seats to reposition them.</p>
-            </>
-          )}
-          {designMode === "section-level" && (
-            <>
-              <p>
-                Click on the image to place sections. After placing, click a
-                section to add its floor plan and seats.
-              </p>
-              <p>
-                {sectionMarkers.length > 0 &&
-                  `${sectionMarkers.length} section(s) placed. Click any section to add its floor plan.`}
-              </p>
-            </>
-          )}
-          {!isFullscreen && (
-            <p className="text-xs mt-2">
-              💡 Tip: Use the fullscreen button for a larger workspace
-            </p>
-          )}
-        </div>
+        <InstructionsPanel
+          designMode={designMode}
+          sectionCount={sectionMarkers.length}
+          isFullscreen={isFullscreen}
+        />
       )}
     </div>
   );
@@ -2580,7 +1716,7 @@ export function SeatDesigner({
                   size="sm"
                   onClick={() => {
                     setEditingSectionId(null);
-                    setCurrentSectionName("");
+                    sectionForm.reset({ name: "" });
                     setIsSectionFormOpen(true);
                     setIsManageSectionsOpen(false);
                   }}
@@ -2639,66 +1775,22 @@ export function SeatDesigner({
       )}
 
       {/* New Section Sheet */}
-      <Sheet
+      <SectionFormSheet
         open={isSectionFormOpen}
         onOpenChange={(open) => {
           if (!open) {
             setIsSectionFormOpen(false);
             setEditingSectionId(null);
-            setCurrentSectionName("");
+            sectionForm.reset({ name: "" });
           }
         }}
-      >
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-          <SheetHeader>
-            <SheetTitle>
-              {editingSectionId ? "Edit Section" : "New Section"}
-            </SheetTitle>
-            <SheetDescription>
-              {editingSectionId
-                ? "Update the section details"
-                : "Create a new section for your layout"}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div>
-              <Label htmlFor="section-name">Section Name</Label>
-              <Input
-                id="section-name"
-                value={currentSectionName}
-                onChange={(e) => setCurrentSectionName(e.target.value)}
-                className="mt-1.5"
-                placeholder="e.g., Section A, VIP Area, General Admission"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsSectionFormOpen(false);
-                  setEditingSectionId(null);
-                  setCurrentSectionName("");
-                }}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSaveSectionForm}
-                disabled={
-                  !currentSectionName.trim() ||
-                  createSectionMutation.isPending ||
-                  updateSectionMutation.isPending
-                }
-                className="flex-1"
-              >
-                {editingSectionId ? "Update" : "Create"}
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+        form={sectionForm}
+        editingSectionId={editingSectionId}
+        isCreating={createSectionMutation.isPending}
+        isUpdating={updateSectionMutation.isPending}
+        onSave={handleSaveSectionForm}
+        onCancel={handleCancelSectionForm}
+      />
     </>
   );
 }
