@@ -1,14 +1,12 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUserService } from "@truths/account";
-import { useItemService } from "@truths/inventory";
 import { authService } from "../services/auth-service";
 import { NavigationService } from "../services/navigation-service";
 import { useNavigation } from "./use-navigation";
 import { useFetchFunctions } from "../services/command-palette/fetch-functions";
 import {
   createUserEntityType,
-  createItemEntityType,
   createCustomerEntityType,
 } from "../services/command-palette/entity-type-factories";
 import { processNavigationItems } from "../services/command-palette/navigation-utils";
@@ -30,7 +28,6 @@ export function useAppCommandPalette(
   const navigate = useNavigate();
   const userService = useUserService();
   const navService = useMemo(() => new NavigationService(), []);
-  const itemService = useItemService();
   const customerService = useCustomerService();
 
   // Fetch current user to get userId for user-specific cache management
@@ -43,22 +40,19 @@ export function useAppCommandPalette(
   const userId = currentUser?.id || currentUser?.sub || undefined;
   const { data: navItems } = useNavigation(navService, { enabled: !!userId });
 
-  const { fetchUsers, fetchInventoryItems, fetchCustomers } =
+  const { fetchUsers, fetchCustomers } =
     useFetchFunctions(
       userService,
-      itemService,
       customerService
     );
 
   const dataTypes = useMemo(
     () => [
       createUserEntityType(fetchUsers),
-      createItemEntityType(fetchInventoryItems),
       createCustomerEntityType(fetchCustomers),
     ],
     [
       fetchUsers,
-      fetchInventoryItems,
       fetchCustomers,
     ]
   );

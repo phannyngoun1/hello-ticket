@@ -4,7 +4,7 @@
  * Encapsulates all layout API operations and data transformations.
  */
 
-import type { Layout, CreateLayoutInput, UpdateLayoutInput } from "./types";
+import type { Layout, CreateLayoutInput, UpdateLayoutInput, Section } from "./types";
 import type { Seat } from "../seats/types";
 import { ServiceConfig } from "@truths/shared";
 
@@ -16,6 +16,7 @@ interface LayoutDTO {
   description?: string | null;
   image_url?: string | null; // URL to the layout image file (from file_id)
   file_id?: string | null;
+  design_mode?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,7 @@ function transformLayout(dto: LayoutDTO): Layout {
     description: dto.description || undefined,
     image_url: dto.image_url || undefined, // Now populated from backend when file_id exists
     file_id: dto.file_id || undefined,
+    design_mode: (dto.design_mode || "seat-level") as "seat-level" | "section-level",
     is_active: dto.is_active,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : new Date(),
@@ -123,6 +125,7 @@ export class LayoutService {
   async fetchLayoutWithSeats(id: string): Promise<{
     layout: Layout;
     seats: Seat[];
+    sections: Section[];
   }> {
     try {
       const response = await this.apiClient.get<{
@@ -132,12 +135,26 @@ export class LayoutService {
           tenant_id: string;
           venue_id: string;
           layout_id: string;
-          section: string;
+          section_id: string;
+          section_name?: string;
           row: string;
           seat_number: string;
           seat_type: string;
           x_coordinate?: number | null;
           y_coordinate?: number | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+        sections: Array<{
+          id: string;
+          tenant_id: string;
+          layout_id: string;
+          name: string;
+          x_coordinate?: number | null;
+          y_coordinate?: number | null;
+          file_id?: string | null;
+          image_url?: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -153,7 +170,8 @@ export class LayoutService {
           tenant_id: seat.tenant_id,
           venue_id: seat.venue_id,
           layout_id: seat.layout_id,
-          section: seat.section,
+          section_id: seat.section_id,
+          section_name: seat.section_name,
           row: seat.row,
           seat_number: seat.seat_number,
           seat_type: seat.seat_type as any,
@@ -162,6 +180,19 @@ export class LayoutService {
           is_active: seat.is_active,
           created_at: seat.created_at ? new Date(seat.created_at) : new Date(),
           updated_at: seat.updated_at ? new Date(seat.updated_at) : new Date(),
+        })),
+        sections: (response.sections || []).map((section) => ({
+          id: section.id,
+          tenant_id: section.tenant_id,
+          layout_id: section.layout_id,
+          name: section.name,
+          x_coordinate: section.x_coordinate ?? undefined,
+          y_coordinate: section.y_coordinate ?? undefined,
+          file_id: section.file_id ?? undefined,
+          image_url: section.image_url ?? undefined,
+          is_active: section.is_active,
+          created_at: section.created_at ? new Date(section.created_at) : new Date(),
+          updated_at: section.updated_at ? new Date(section.updated_at) : new Date(),
         })),
       };
     } catch (error) {

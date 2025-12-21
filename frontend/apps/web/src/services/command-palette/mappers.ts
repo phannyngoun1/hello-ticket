@@ -1,5 +1,4 @@
 import type { User as UserType } from "@truths/account";
-import type { Item } from "@truths/inventory";
 import type {
     CommandPaletteItem,
     CommandPaletteUser,
@@ -32,13 +31,6 @@ const mapperRegistry = {
         },
         fallbackName: "Unknown User",
     } satisfies MapperConfig<UserType>,
-
-    item: {
-        extractName: (item: Item): string => {
-            return item.name || item.code || item.sku || "Item";
-        },
-        fallbackName: "Item",
-    } satisfies MapperConfig<Item>,
 
 } as const;
 
@@ -73,19 +65,9 @@ export const mapUserToCommandPaletteItem = (
 };
 
 /**
- * Map an item to a CommandPaletteItem
- */
-export const mapItemToDataItem = (
-    item: Item
-): CommandPaletteItem<Item> => {
-    return mapToCommandPaletteItem(item, "item");
-};
-
-/**
  * Export the name extractors for use in other contexts (e.g., display logic)
  */
 export const nameExtractors = {
     user: mapperRegistry.user.extractName,
-    item: mapperRegistry.item.extractName,
 } as const;
 

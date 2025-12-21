@@ -10,7 +10,7 @@ class CreateSeatCommand:
 
     venue_id: str
     layout_id: str
-    section: str
+    section_id: str
     row: str
     seat_number: str
     seat_type: SeatType = SeatType.STANDARD
@@ -23,7 +23,7 @@ class UpdateSeatCommand:
     """Command to update seat details"""
 
     seat_id: str
-    section: Optional[str] = None
+    section_id: Optional[str] = None
     row: Optional[str] = None
     seat_number: Optional[str] = None
     seat_type: Optional[SeatType] = None

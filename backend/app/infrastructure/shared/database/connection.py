@@ -8,20 +8,12 @@ from dotenv import load_dotenv
 from sqlmodel import SQLModel, create_engine, Session
 from typing import Generator
 from app.infrastructure.shared.database.models import (
-    # Inventory master data
-    ItemModel, UnitOfMeasureModel, BarcodeModel, ItemSupplierModel,
-    # Inventory identification
-    SerialModel, InventoryTrackingModel,
-    # Inventory balances & reservations
-    InventoryBalanceModel, InventoryReservationModel,
-    # Inventory transactions
-    InventoryTransactionModel,
-    # Inventory costing
-    CostLayerModel, StandardCostModel, CostVarianceModel,
-    # Warehouse structure
-    StoreLocationModel, PutawayRuleModel, PickingRuleModel,
     # Sales master data
     TestEntityModel, TestModel, CustomerTypeModel,
+    CustomerGroupModel, TestTreeBackendModel, TestTreeModel, TestBasicModel,
+    # Ticketing master data
+    VenueModel, LayoutModel, SectionModel, SeatModel,
+    OrganizerModel, EventTypeModel,
     # Legacy models
     UserCacheModel,
     # UI Builder
@@ -29,25 +21,7 @@ from app.infrastructure.shared.database.models import (
     # Audit
     AuditLogModel,
     operational_metadata
-,
-    # Sales master data
-    CustomerGroupModel,
-    # Sales master data
-    TestTreeBackendModel,
-    # Sales master data
-    TestTreeModel,
-    # Sales master data
-    TestBasicModel,
-    # Warehouse master data
-    VehicleModel,
-    # Warehouse master data
-    EmployeeModel,
-    # Ticketing master data
-    VenueModel,
-    # Ticketing master data
-    OrganizerModel,
-    # Ticketing master data
-    EventTypeModel)
+)
 
 # Load environment variables from .env file
 try:

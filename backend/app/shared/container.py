@@ -15,7 +15,6 @@ from app.shared.container_registrations.session import register_session_containe
 from app.shared.container_registrations.auth import register_auth_container
 from app.shared.container_registrations.audit import register_audit_container
 from app.shared.container_registrations.code_generator import register_code_generator_container
-from app.shared.container_registrations.inventory import register_inventory_container, register_inventory_mediator
 from app.shared.container_registrations.customer import register_customer_container, register_customer_mediator
 from app.shared.container_registrations.customer_type import register_customer_type_container, register_customer_type_mediator
 from app.shared.container_registrations.customer_group import register_customer_group_container, register_customer_group_mediator
@@ -45,7 +44,6 @@ def setup_container() -> Container:
     register_code_generator_container(container)
     
     # Domain modules
-    register_inventory_container(container)
     register_customer_container(container)
 
     # Sales modules
@@ -89,7 +87,6 @@ def setup_mediator(container: Container) -> Mediator:
     
     # Register module mediators
     register_user_mediator(mediator)
-    register_inventory_mediator(mediator)
     register_customer_mediator(mediator)
     register_customer_type_mediator(mediator)
     register_customer_group_mediator(mediator)

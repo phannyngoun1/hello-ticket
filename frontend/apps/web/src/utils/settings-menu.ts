@@ -17,7 +17,6 @@ export interface SettingsMenuItem {
 // Icon mapping for different modules
 const moduleIcons: Record<string, ComponentType<{ className?: string }>> = {
     sales: TrendingUp,
-    inventory: Package,
     default: Package,
 };
 
@@ -30,10 +29,8 @@ const routeIcons: Record<string, ComponentType<{ className?: string }>> = {
     language: Globe,
     security: Key,
     'company-addresses': MapPin,
-    inventory: Package,
     sales: TrendingUp,
     units: Ruler,
-    lots: Package,
     'customer-types': User,
 };
 
@@ -95,27 +92,15 @@ const staticMenuItems: SettingsMenuItem[] = [
  */
 function getSettingsRoutesFromRouteTree(): string[] {
     // These routes are extracted from FileRoutesByFullPath in routeTree.gen.ts
-    // Lines 298-308 show the settings routes:
-    // - '/settings/inventory/lots'
-    // - '/settings/inventory/units'
-    // - '/settings/inventory/warehouses'
-    // - '/settings/sales/customer-types'
-    // - '/settings/warehouse/store-locations'
-    // - '/settings/inventory' (index route)
-    // - '/settings/warehouse' (index route)
-
     // Dynamic settings routes (excluding static ones like profile, account, etc.)
     return [
-        '/settings/inventory',
-        '/settings/inventory/units',
-        '/settings/inventory/lots',
         '/settings/sales/customer-types',
     ].sort();
 }
 
 /**
  * Generate menu structure from routes
- * Groups routes by module (e.g., /settings/sales/*, /settings/inventory/*)
+ * Groups routes by module (e.g., /settings/sales/*)
  */
 export function generateSettingsMenu(
     routes: string[] | null = null,

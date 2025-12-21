@@ -21,10 +21,8 @@ from app.presentation.core import (
     integration_router,
     workflow_router,
     external_api_router,
-    company_address_router,
     upload_router,
 )
-from app.presentation.inventory import inventory_router
 from app.presentation.sales import sales_router
 from app.presentation.shared.dependencies import get_mediator_dependency    
 from app.presentation.shared.routes import enum_router
@@ -40,13 +38,11 @@ ROUTERS = [
     user_router,
     group_router,  # Group management (RBAC)
     role_router,  # Custom role management (RBAC)
-    inventory_router,  # Inventory management
     sales_router,  # Sales (customers)
     integration_router,
     workflow_router,
     api_key_router,
     external_api_router,
-    company_address_router,  # Company addresses
     upload_router,  # File upload management
     cache_router,
     audit_router,  # Audit logs and user activity

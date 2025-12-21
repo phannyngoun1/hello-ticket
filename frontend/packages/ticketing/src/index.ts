@@ -22,6 +22,9 @@ export * from './seats';
 // Layouts Management
 export * from './layouts';
 
+// Sections Management
+export * from './sections';
+
 // Register all ticketing components
 import { registerTicketingComponent } from './registry';
 

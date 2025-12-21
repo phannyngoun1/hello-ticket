@@ -20,6 +20,7 @@ class Layout(AggregateRoot):
         layout_id: Optional[str] = None,
         description: Optional[str] = None,
         file_id: Optional[str] = None,
+        design_mode: str = "seat-level",
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
         created_at: Optional[datetime] = None,
@@ -34,6 +35,7 @@ class Layout(AggregateRoot):
         self.name = self._validate_name(name)
         self.description = description
         self.file_id = file_id
+        self.design_mode = self._validate_design_mode(design_mode)
         self.is_active = is_active
         self.attributes = attributes or {}
         self._version = version
@@ -80,6 +82,13 @@ class Layout(AggregateRoot):
         if len(name) > 200:
             raise ValidationError("Layout name cannot exceed 200 characters")
         return name
+
+    def _validate_design_mode(self, design_mode: str) -> str:
+        """Validate design mode."""
+        valid_modes = ["seat-level", "section-level"]
+        if design_mode not in valid_modes:
+            raise ValidationError(f"Design mode must be one of {valid_modes}")
+        return design_mode
 
     def _validate(self) -> None:
         """Validate layout data and business rules."""

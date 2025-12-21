@@ -19,7 +19,6 @@ export default defineConfig(({ mode }) => ({
             '@truths/api': path.resolve(__dirname, '../../packages/api/src'),
             '@truths/shared': path.resolve(__dirname, '../../packages/shared/src'),
             '@truths/custom-ui': path.resolve(__dirname, '../../packages/custom-ui/src'),
-            '@truths/inventory': path.resolve(__dirname, '../../packages/inventory/src'),
             '@truths/purchasing': path.resolve(__dirname, '../../packages/purchasing/src'),
             '@truths/warehouse': path.resolve(__dirname, '../../packages/warehouse/src'),
             '@truths/ticketing': path.resolve(__dirname, '../../packages/ticketing/src'),
