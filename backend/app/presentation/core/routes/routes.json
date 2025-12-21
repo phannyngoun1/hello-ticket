@@ -25,6 +25,16 @@
     ],
     "children": [
       {
+        "label": "Bookings",
+        "path": "/sales/bookings",
+        "icon": "Calendar",
+        "description": "Manage bookings and related data.",
+        "keywords": [
+          "booking",
+          "bookings"
+        ]
+      },
+      {
         "label": "Customers",
         "path": "/sales/customers",
         "icon": "Users",
@@ -57,6 +67,16 @@
       "venues"
     ],
     "children": [
+      {
+        "label": "Shows",
+        "path": "/ticketing/shows",
+        "icon": "Calendar",
+        "description": "Manage shows and related data.",
+        "keywords": [
+          "show",
+          "shows"
+        ]
+      },
       {
         "label": "Venues",
         "path": "/ticketing/venues",

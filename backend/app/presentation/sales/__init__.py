@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from .booking_routes import router as booking_router
 from .test_basic_routes import router as test_basic_router
 from .test_routes import router as test_router
 from .test_basic_routes import router as test_basic_router
@@ -16,7 +17,7 @@ router.include_router(test_tree_router)
 router.include_router(customer_group_router)
 router.include_router(test_router)
 router.include_router(test_basic_router)
-
+router.include_router(booking_router)
 # Export as sales_router for consistency
 sales_router = router
 

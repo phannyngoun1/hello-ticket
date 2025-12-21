@@ -21,7 +21,11 @@ from app.infrastructure.shared.database.models import (
     # Audit
     AuditLogModel,
     operational_metadata
-)
+,
+    # Sales master data
+    BookingModel,
+    # Ticketing master data
+    ShowModel)
 
 # Load environment variables from .env file
 try:
