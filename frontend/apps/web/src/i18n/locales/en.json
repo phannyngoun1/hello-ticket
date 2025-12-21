@@ -127,12 +127,7 @@
         "security": "Security",
         "securityDesc": "Password and security",
         "companyAddresses": "Company Addresses",
-        "companyAddressesDesc": "Manage company addresses and locations",
-        "inventory": "Inventory",
-        "inventoryDesc": "Manage inventory master data",
-        "unitsOfMeasure": "Units of Measure",
-        "warehouses": "Warehouses",
-        "lotSettings": "Lot Settings"
+        "companyAddressesDesc": "Manage company addresses and locations"
       },
       "profile": {
         "title": "Profile Settings",
@@ -207,35 +202,6 @@
         "twoFactor": "Two-Factor Authentication",
         "twoFactorDesc": "Add an extra layer of security to your account",
         "enableTwoFactor": "Enable Two-Factor Authentication"
-      },
-      "inventory": {
-        "uom": {
-          "title": "Units of Measure",
-          "description": "Manage units of measure and conversions",
-          "list": "UOM List",
-          "code": "Code",
-          "name": "Name",
-          "baseUom": "Base UOM",
-          "conversionFactor": "Conversion Factor",
-          "deleted": "Unit of measure deleted successfully",
-          "confirmDelete": "Are you sure you want to delete unit of measure {{code}}?"
-        },
-        "warehouses": {
-          "title": "Warehouses",
-          "description": "Manage warehouse locations",
-          "list": "Warehouse List",
-          "code": "Code",
-          "name": "Name",
-          "address": "Address",
-          "deleted": "Warehouse deleted successfully",
-          "confirmDelete": "Are you sure you want to delete warehouse {{code}}?"
-        },
-        "lots": {
-          "title": "Lot Settings",
-          "description": "Configure lot tracking settings",
-          "configuration": "Lot Configuration",
-          "configurationDesc": "Settings for lot tracking and management"
-        }
       }
     }
   }

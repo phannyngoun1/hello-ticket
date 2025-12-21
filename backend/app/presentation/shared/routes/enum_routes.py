@@ -14,9 +14,6 @@ from app.shared.enums import (
     UnitOfMeasureEnum,
     CustomerTypeEnum,
     TransactionTypeEnum,
-    InventoryStatusEnum,
-    ProcessingStatusEnum,
-    SerialStatusEnum,
     get_enum_values,
     get_enum_names,
     is_valid_enum_value,
@@ -43,9 +40,6 @@ ENUM_REGISTRY: Dict[str, Type[Enum]] = {
     "unit_of_measure": UnitOfMeasureEnum,
     "customer_type": CustomerTypeEnum,
     "transaction_type": TransactionTypeEnum,
-    "inventory_status": InventoryStatusEnum,
-    "processing_status": ProcessingStatusEnum,
-    "serial_status": SerialStatusEnum,
 }
 
 

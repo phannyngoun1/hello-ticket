@@ -49,6 +49,7 @@ import {
   Edit,
 } from "lucide-react";
 import { seatService } from "./seat-service";
+import { sectionService } from "../sections/section-service";
 import { SeatType } from "./types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { uploadService } from "@truths/shared";
@@ -62,20 +63,28 @@ export interface SeatDesignerProps {
   layoutId: string;
   layoutName?: string;
   imageUrl?: string;
+  designMode?: "seat-level" | "section-level"; // Design mode from layout
   initialSeats?: Array<{
     id: string;
-    section: string;
+    section_id: string;
+    section_name?: string;
     row: string;
     seat_number: string;
     seat_type: string;
     x_coordinate?: number | null;
     y_coordinate?: number | null;
   }>;
+  initialSections?: Array<{
+    id: string;
+    name: string;
+    x_coordinate?: number | null;
+    y_coordinate?: number | null;
+    file_id?: string | null;
+    image_url?: string | null;
+  }>;
   onImageUpload?: (url: string) => void;
   className?: string;
 }
-
-type DesignMode = "seat-level" | "section-level";
 
 interface SectionMarker {
   id: string;
@@ -87,7 +96,8 @@ interface SectionMarker {
 }
 
 interface SeatInfo {
-  section: string;
+  section: string; // Still use section name for UI display
+  sectionId?: string; // Add section_id for backend reference
   row: string;
   seatNumber: string;
   seatType: SeatType;
@@ -106,13 +116,13 @@ export function SeatDesigner({
   layoutId,
   layoutName,
   imageUrl: initialImageUrl,
+  designMode = "seat-level", // Design mode from layout (defaults to seat-level for backward compatibility)
   initialSeats,
+  initialSections,
   onImageUpload,
   className,
   fileId: initialFileId,
 }: SeatDesignerProps & { fileId?: string }) {
-  // Design mode: "seat-level" = direct seat placement, "section-level" = section-based with separate floor plans
-  const [designMode, setDesignMode] = useState<DesignMode>("seat-level");
   // Keep old venueType for backward compatibility (can be removed later)
   const venueType = designMode === "seat-level" ? "small" : "large";
 
@@ -151,8 +161,9 @@ export function SeatDesigner({
   const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
   // Always in placement mode - simplified
   const isPlacingSeats = true;
-  const [currentSeat, setCurrentSeat] = useState({
+  const [currentSeat, setCurrentSeat] = useState<SeatInfo>({
     section: "Section A",
+    sectionId: undefined,
     row: "Row 1",
     seatNumber: "1",
     seatType: SeatType.STANDARD,
@@ -189,6 +200,15 @@ export function SeatDesigner({
     enabled: !!layoutId && !initialSeats, // Only fetch if initialSeats not provided
     retry: false, // Don't retry if column doesn't exist
     refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch sections for the layout (needed for seat-level mode select box)
+  const { data: sectionsData } = useQuery({
+    queryKey: ["sections", "layout", layoutId],
+    queryFn: () => sectionService.getByLayout(layoutId),
+    enabled: !!layoutId && designMode === "seat-level",
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
@@ -282,6 +302,26 @@ export function SeatDesigner({
     };
   }, [dimensionsReady]);
 
+  // Load existing sections when initialSections provided
+  useEffect(() => {
+    if (initialSections && designMode === "section-level") {
+      const markers: SectionMarker[] = initialSections.map((section) => ({
+        id: section.id,
+        name: section.name,
+        x: section.x_coordinate || 50,
+        y: section.y_coordinate || 50,
+        imageUrl: section.image_url || undefined,
+        isNew: false,
+      }));
+      setSectionMarkers(markers);
+      // Select first section if available and none is selected
+      if (markers.length > 0) {
+        setSelectedSectionMarker((prev) => prev || markers[0]);
+        setCurrentSectionName((prev) => prev || markers[0].name);
+      }
+    }
+  }, [initialSections, designMode]);
+
   // Load existing seats when fetched or when initialSeats provided
   useEffect(() => {
     // If initialSeats is provided, use it directly (from combined endpoint)
@@ -292,7 +332,8 @@ export function SeatDesigner({
           x: seat.x_coordinate || 0,
           y: seat.y_coordinate || 0,
           seat: {
-            section: seat.section,
+            section: seat.section_name || seat.section_id || "Unknown",
+            sectionId: seat.section_id,
             row: seat.row,
             seatNumber: seat.seat_number,
             seatType: seat.seat_type as SeatType,
@@ -311,7 +352,8 @@ export function SeatDesigner({
           x: seat.x_coordinate || 0,
           y: seat.y_coordinate || 0,
           seat: {
-            section: seat.section,
+            section: seat.section_name || seat.section_id || "Unknown",
+            sectionId: seat.section_id,
             row: seat.row,
             seatNumber: seat.seat_number,
             seatType: seat.seat_type,
@@ -476,7 +518,7 @@ export function SeatDesigner({
           seatNumber: String(parseInt(currentSeat.seatNumber) + 1),
         });
       }
-      // Main floor - place sections
+      // Main floor - place sections (create locally, will be saved via form or bulk save)
       else if (venueType === "large" && isPlacingSections) {
         const newSection: SectionMarker = {
           id: `section-${Date.now()}`,
@@ -610,57 +652,177 @@ export function SeatDesigner({
     setIsSectionFormOpen(true);
   };
 
-  const handleSaveSectionForm = () => {
-    const name = currentSectionName.trim() || "Section";
-    if (editingSectionId) {
-      // Update existing section name and sync seats
-      let previousName: string | undefined;
-      setSectionMarkers((prev) =>
-        prev.map((s) => {
-          if (s.id === editingSectionId) {
-            previousName = s.name;
-            return { ...s, name };
-          }
-          return s;
-        })
-      );
-      if (previousName && previousName !== name) {
-        setSeats((prev) =>
-          prev.map((seat) =>
-            seat.seat.section === previousName
-              ? { ...seat, seat: { ...seat.seat, section: name } }
-              : seat
-          )
-        );
+  // Get unique sections from existing seats and API
+  const getUniqueSections = (): string[] => {
+    const sections = new Set<string>();
+
+    // Add sections from existing seats
+    seats.forEach((seat) => {
+      if (seat.seat.section) {
+        sections.add(seat.seat.section);
       }
-      if (viewingSection?.id === editingSectionId) {
-        setViewingSection((prev) => (prev ? { ...prev, name } : null));
-      }
-      setSelectedSectionMarker((prev) =>
-        prev && prev.id === editingSectionId ? { ...prev, name } : prev
-      );
-    } else {
-      // Create new section in UI state (no backend write yet)
-      const newSection: SectionMarker = {
-        id: `section-${Date.now()}`,
-        name,
-        x: 50,
-        y: 50,
-        isNew: true,
-      };
-      setSectionMarkers((prev) => [...prev, newSection]);
-      setSelectedSectionMarker(newSection);
+    });
+
+    // Add sections from API (for seat-level mode)
+    if (sectionsData && designMode === "seat-level") {
+      sectionsData.forEach((section) => {
+        sections.add(section.name);
+      });
     }
 
-    // Keep seat form in sync with latest section name
-    setCurrentSeat((prev) => ({ ...prev, section: name }));
-    setIsSectionFormOpen(false);
-    setEditingSectionId(null);
+    return Array.from(sections).sort();
+  };
+
+  // Section mutations
+  const createSectionMutation = useMutation({
+    mutationFn: async (input: { name: string; x?: number; y?: number }) => {
+      console.log("createSectionMutation.mutationFn called with:", input);
+      const result = await sectionService.create({
+        layout_id: layoutId,
+        name: input.name,
+        x_coordinate: input.x,
+        y_coordinate: input.y,
+      });
+      console.log("createSectionMutation.mutationFn result:", result);
+      return result;
+    },
+    onSuccess: (section) => {
+      // Always update currentSeat with the new section name and ID
+      setCurrentSeat((prev) => ({
+        ...prev,
+        section: section.name,
+        sectionId: section.id,
+      }));
+
+      // Only update sectionMarkers in section-level mode
+      if (designMode === "section-level") {
+        const newSectionMarker: SectionMarker = {
+          id: section.id,
+          name: section.name,
+          x: section.x_coordinate || 50,
+          y: section.y_coordinate || 50,
+          imageUrl: section.image_url || undefined,
+          isNew: false,
+        };
+        setSectionMarkers((prev) => [...prev, newSectionMarker]);
+        setSelectedSectionMarker(newSectionMarker);
+      }
+
+      setIsSectionFormOpen(false);
+      setEditingSectionId(null);
+      setCurrentSectionName("");
+      toast({ title: "Section created successfully" });
+      // Invalidate sections query
+      queryClient.invalidateQueries({
+        queryKey: ["sections", "layout", layoutId],
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to create section:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to create section",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateSectionMutation = useMutation({
+    mutationFn: async (input: {
+      sectionId: string;
+      name: string;
+      x?: number;
+      y?: number;
+    }) => {
+      return await sectionService.update(input.sectionId, {
+        name: input.name,
+        x_coordinate: input.x,
+        y_coordinate: input.y,
+      });
+    },
+    onSuccess: (section) => {
+      // Update sectionMarkers
+      setSectionMarkers((prev) =>
+        prev.map((s) =>
+          s.id === section.id
+            ? {
+                ...s,
+                name: section.name,
+                x: section.x_coordinate || s.x,
+                y: section.y_coordinate || s.y,
+                imageUrl: section.image_url || s.imageUrl,
+              }
+            : s
+        )
+      );
+      setSelectedSectionMarker((prev) =>
+        prev && prev.id === section.id
+          ? {
+              ...prev,
+              name: section.name,
+              x: section.x_coordinate || prev.x,
+              y: section.y_coordinate || prev.y,
+            }
+          : prev
+      );
+      if (viewingSection?.id === section.id) {
+        setViewingSection((prev) =>
+          prev ? { ...prev, name: section.name } : null
+        );
+      }
+      setCurrentSeat((prev) => ({ ...prev, section: section.name }));
+      setIsSectionFormOpen(false);
+      setEditingSectionId(null);
+      setCurrentSectionName("");
+      toast({ title: "Section updated successfully" });
+      // Invalidate sections query
+      queryClient.invalidateQueries({
+        queryKey: ["sections", "layout", layoutId],
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update section:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update section",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveSectionForm = () => {
+    const name = currentSectionName.trim() || "Section";
+    const section = sectionMarkers.find((s) => s.id === editingSectionId);
+
+    if (editingSectionId && section) {
+      // Update existing section
+      updateSectionMutation.mutate({
+        sectionId: editingSectionId,
+        name,
+        x: section.x,
+        y: section.y,
+      });
+    } else {
+      // Create new section - always call API since seats need section_id
+      console.log("Creating section via API:", {
+        name,
+        layoutId,
+        designMode,
+      });
+      createSectionMutation.mutate({
+        name,
+        x: designMode === "section-level" ? 50 : undefined,
+        y: designMode === "section-level" ? 50 : undefined,
+      });
+    }
   };
 
   const handleCancelSectionForm = () => {
     setIsSectionFormOpen(false);
     setEditingSectionId(null);
+    setCurrentSectionName("");
   };
 
   // // Sync form fields with selected seat
@@ -851,7 +1013,7 @@ export function SeatDesigner({
       data: SeatInfo;
     }) => {
       return await seatService.update(seatId, {
-        section: data.section,
+        section_id: data.sectionId || data.section, // Send section_id if available, fallback to section name
         row: data.row,
         seat_number: data.seatNumber,
         seat_type: data.seatType,
@@ -1086,18 +1248,44 @@ export function SeatDesigner({
                   <div>
                     <Label className="text-xs">Section / Row / Seat #</Label>
                     <div className="flex gap-2 mt-1">
-                      <Input
-                        value={currentSeat.section}
-                        onChange={(e) =>
-                          setCurrentSeat({
-                            ...currentSeat,
-                            section: e.target.value,
-                          })
+                      <Select
+                        value={
+                          viewingSection
+                            ? viewingSection.name
+                            : currentSeat.section || ""
                         }
-                        className="h-8 text-sm flex-1"
+                        onValueChange={(value) => {
+                          if (value === "new-section") {
+                            setIsSectionFormOpen(true);
+                            setEditingSectionId(null);
+                            setCurrentSectionName("");
+                          } else {
+                            setCurrentSeat({
+                              ...currentSeat,
+                              section: value,
+                            });
+                          }
+                        }}
                         disabled={!!viewingSection}
-                        placeholder="Section"
-                      />
+                      >
+                        <SelectTrigger className="h-8 text-sm flex-1">
+                          <SelectValue placeholder="Section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getUniqueSections().map((section) => (
+                            <SelectItem key={section} value={section}>
+                              {section}
+                            </SelectItem>
+                          ))}
+                          {!viewingSection && (
+                            <SelectItem value="new-section">
+                              <div className="flex items-center gap-2 font-medium text-primary">
+                                <span>+ New Section</span>
+                              </div>
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
                       <Input
                         value={currentSeat.row}
                         onChange={(e) =>
@@ -1245,20 +1433,6 @@ export function SeatDesigner({
           )}
         </div>
         <div className="flex gap-2">
-          {/* Design Mode Selector */}
-          <Select
-            value={designMode}
-            onValueChange={(v) => setDesignMode(v as DesignMode)}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="seat-level">Seat Level</SelectItem>
-              <SelectItem value="section-level">Section Level</SelectItem>
-            </SelectContent>
-          </Select>
-
           {/* Datasheet Toggle Button */}
           {((venueType === "large" && sectionMarkers.length > 0) ||
             (venueType === "small" && seats.length > 0) ||
@@ -1367,17 +1541,37 @@ export function SeatDesigner({
                 <div>
                   <Label className="text-xs">Section / Row / Seat #</Label>
                   <div className="flex gap-2 mt-1">
-                    <Input
-                      value={currentSeat.section}
-                      onChange={(e) =>
-                        setCurrentSeat({
-                          ...currentSeat,
-                          section: e.target.value,
-                        })
-                      }
-                      className="h-8 text-sm flex-1"
-                      placeholder="Section"
-                    />
+                    <Select
+                      value={currentSeat.section || ""}
+                      onValueChange={(value) => {
+                        if (value === "new-section") {
+                          setIsSectionFormOpen(true);
+                          setEditingSectionId(null);
+                          setCurrentSectionName("");
+                        } else {
+                          setCurrentSeat({
+                            ...currentSeat,
+                            section: value,
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm flex-1">
+                        <SelectValue placeholder="Section" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getUniqueSections().map((section) => (
+                          <SelectItem key={section} value={section}>
+                            {section}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="new-section">
+                          <div className="flex items-center gap-2 font-medium text-primary">
+                            <span>+ New Section</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Input
                       value={currentSeat.row}
                       onChange={(e) =>
@@ -1448,13 +1642,41 @@ export function SeatDesigner({
                 </div>
               )}
               <div>
-                <Label className="text-xs">Section Name</Label>
-                <Input
-                  value={currentSectionName}
-                  onChange={(e) => setCurrentSectionName(e.target.value)}
-                  className="mt-1 h-8 text-sm"
-                  placeholder="e.g., Section A"
-                />
+                <Label className="text-xs">Section</Label>
+                <Select
+                  value={selectedSectionMarker?.id || ""}
+                  onValueChange={(value) => {
+                    if (value === "new-section") {
+                      setIsSectionFormOpen(true);
+                      setEditingSectionId(null);
+                      setCurrentSectionName("");
+                    } else {
+                      const section = sectionMarkers.find(
+                        (s) => s.id === value
+                      );
+                      if (section) {
+                        setSelectedSectionMarker(section);
+                        setCurrentSectionName(section.name);
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="mt-1 h-8 text-sm">
+                    <SelectValue placeholder="Select or create section" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sectionMarkers.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new-section">
+                      <div className="flex items-center gap-2 font-medium text-primary">
+                        <span>+ New Section</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </Card>
           )}
@@ -1662,7 +1884,11 @@ export function SeatDesigner({
                           size="sm"
                           className="h-7 px-3"
                           onClick={handleSaveSectionForm}
-                          disabled={!currentSectionName.trim()}
+                          disabled={
+                            !currentSectionName.trim() ||
+                            createSectionMutation.isPending ||
+                            updateSectionMutation.isPending
+                          }
                         >
                           {editingSectionId ? "Update" : "Create"}
                         </Button>
@@ -2231,6 +2457,68 @@ export function SeatDesigner({
           onClick: () => setShowSaveConfirmDialog(false),
         }}
       />
+
+      {/* New Section Sheet */}
+      <Sheet
+        open={isSectionFormOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsSectionFormOpen(false);
+            setEditingSectionId(null);
+            setCurrentSectionName("");
+          }
+        }}
+      >
+        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+          <SheetHeader>
+            <SheetTitle>
+              {editingSectionId ? "Edit Section" : "New Section"}
+            </SheetTitle>
+            <SheetDescription>
+              {editingSectionId
+                ? "Update the section details"
+                : "Create a new section for your layout"}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div>
+              <Label htmlFor="section-name">Section Name</Label>
+              <Input
+                id="section-name"
+                value={currentSectionName}
+                onChange={(e) => setCurrentSectionName(e.target.value)}
+                className="mt-1.5"
+                placeholder="e.g., Section A, VIP Area, General Admission"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsSectionFormOpen(false);
+                  setEditingSectionId(null);
+                  setCurrentSectionName("");
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveSectionForm}
+                disabled={
+                  !currentSectionName.trim() ||
+                  createSectionMutation.isPending ||
+                  updateSectionMutation.isPending
+                }
+                className="flex-1"
+              >
+                {editingSectionId ? "Update" : "Create"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }

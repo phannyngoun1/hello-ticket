@@ -26,7 +26,7 @@ class Seat(AggregateRoot):
         tenant_id: str,
         venue_id: str,
         layout_id: str,
-        section: str,
+        section_id: str,
         row: str,
         seat_number: str,
         seat_type: SeatType = SeatType.STANDARD,
@@ -45,7 +45,7 @@ class Seat(AggregateRoot):
         self.tenant_id = tenant_id
         self.venue_id = venue_id
         self.layout_id = layout_id
-        self.section = self._validate_section(section)
+        self.section_id = self._validate_section_id(section_id)
         self.row = self._validate_row(row)
         self.seat_number = self._validate_seat_number(seat_number)
         self.seat_type = seat_type
@@ -62,7 +62,7 @@ class Seat(AggregateRoot):
     def update_details(
         self,
         *,
-        section: Optional[str] = None,
+        section_id: Optional[str] = None,
         row: Optional[str] = None,
         seat_number: Optional[str] = None,
         seat_type: Optional[SeatType] = None,
@@ -70,8 +70,8 @@ class Seat(AggregateRoot):
         y_coordinate: Optional[float] = None,
     ) -> None:
         """Update seat details with validation."""
-        if section is not None:
-            self.section = self._validate_section(section)
+        if section_id is not None:
+            self.section_id = self._validate_section_id(section_id)
         if row is not None:
             self.row = self._validate_row(row)
         if seat_number is not None:
@@ -104,11 +104,11 @@ class Seat(AggregateRoot):
         self.is_active = False
         self._touch()
 
-    def _validate_section(self, section: str) -> str:
-        """Validate section name."""
-        if not section or not section.strip():
-            raise ValidationError("Seat section is required")
-        return section.strip()
+    def _validate_section_id(self, section_id: str) -> str:
+        """Validate section ID."""
+        if not section_id or not section_id.strip():
+            raise ValidationError("Seat section_id is required")
+        return section_id.strip()
 
     def _validate_row(self, row: str) -> str:
         """Validate row identifier."""

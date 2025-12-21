@@ -78,7 +78,6 @@ function SeatDesignerContent({
     );
   }
 
-
   return (
     <div className="container mx-auto py-6 space-y-4">
       <SeatDesigner
@@ -87,7 +86,9 @@ function SeatDesignerContent({
         layoutId={effectiveLayoutId}
         layoutName={layoutWithSeats?.layout.name}
         imageUrl={layoutWithSeats?.layout.image_url || venue?.image_url}
+        designMode={layoutWithSeats?.layout.design_mode}
         initialSeats={layoutWithSeats?.seats}
+        initialSections={layoutWithSeats?.sections}
         fileId={layoutWithSeats?.layout.file_id}
       />
     </div>

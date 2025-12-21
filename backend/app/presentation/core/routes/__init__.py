@@ -18,7 +18,6 @@ from .navigation_routes import router as navigation_router
 from .integration_routes import router as integration_router
 from .workflow_routes import router as workflow_router
 from .external_api_routes import router as external_api_router
-from .company_address_routes import router as company_address_router
 from .upload_routes import router as upload_router
 from .rbac import role_router, group_router
 
@@ -37,7 +36,6 @@ __all__ = [
     "integration_router",
     "workflow_router",
     "external_api_router",
-    "company_address_router",
     "upload_router",
     "role_router",
     "group_router",

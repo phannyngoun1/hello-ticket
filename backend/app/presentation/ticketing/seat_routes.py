@@ -51,7 +51,7 @@ async def create_seat(
         command = CreateSeatCommand(
             venue_id=request.venue_id,
             layout_id=request.layout_id,
-            section=request.section,
+            section_id=request.section_id,
             row=request.row,
             seat_number=request.seat_number,
             seat_type=request.seat_type,
@@ -95,7 +95,26 @@ async def list_seats(
                     limit=limit,
                 )
             )
-        items = [TicketingApiMapper.seat_to_response(seat) for seat in result.items]
+        
+        # Fetch section names for all seats
+        from app.infrastructure.shared.database.models import SectionModel
+        from app.infrastructure.shared.database.connection import get_session_sync
+        from sqlmodel import select
+        
+        section_map = {}
+        if result.items:
+            section_ids = {seat.section_id for seat in result.items}
+            with get_session_sync() as session:
+                statement = select(SectionModel).where(SectionModel.id.in_(section_ids))
+                sections = session.exec(statement).all()
+                section_map = {section.id: section.name for section in sections}
+        
+        items = []
+        for seat in result.items:
+            seat_response = TicketingApiMapper.seat_to_response(seat)
+            seat_response.section_name = section_map.get(seat.section_id, "Unknown")
+            items.append(seat_response)
+        
         return SeatListResponse(
             items=items,
             skip=skip,
@@ -134,7 +153,7 @@ async def update_seat(
     try:
         command = UpdateSeatCommand(
             seat_id=seat_id,
-            section=request.section,
+            section_id=request.section_id,
             row=request.row,
             seat_number=request.seat_number,
             seat_type=request.seat_type,

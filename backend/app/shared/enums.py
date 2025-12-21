@@ -35,35 +35,6 @@ class StatusEnum(str, Enum):
     ARCHIVED = "archived"
 
 
-class ProcessingStatusEnum(str, Enum):
-    """Status for items being processed"""
-    PENDING = "pending"
-    IN_PROGRESS = "in_progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class InventoryStatusEnum(str, Enum):
-    """Inventory item status"""
-    AVAILABLE = "available"
-    RESERVED = "reserved"
-    IN_USE = "in_use"
-    HOLD = "hold"
-    QUARANTINE = "quarantine"
-    EXPIRED = "expired"
-    SCRAPPED = "scrapped"
-    DAMAGED = "damaged"
-
-
-class SerialStatusEnum(str, Enum):
-    """Serial number tracking status"""
-    AVAILABLE = "available"
-    IN_USE = "in_use"
-    RESERVED = "reserved"
-    SCRAPPED = "scrapped"
-
-
 class SessionStatusEnum(str, Enum):
     """User session status"""
     ACTIVE = "active"

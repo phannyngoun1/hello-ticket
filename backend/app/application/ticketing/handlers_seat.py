@@ -47,23 +47,23 @@ class SeatCommandHandler:
             raise NotFoundError(f"Layout with ID '{command.layout_id}' not found")
         
         # Check if seat already exists at this location
-        existing = await self._seat_repository.get_by_venue_and_location(
+        existing = await self._seat_repository.get_by_layout_and_location(
             tenant_id,
-            command.venue_id,
-            command.section,
+            command.layout_id,
+            command.section_id,
             command.row,
             command.seat_number,
         )
         if existing:
             raise BusinessRuleError(
-                f"Seat already exists at {command.section} {command.row} {command.seat_number}"
+                f"Seat already exists at section_id {command.section_id} {command.row} {command.seat_number}"
             )
 
         seat = Seat(
             tenant_id=tenant_id,
             venue_id=command.venue_id,
             layout_id=command.layout_id,
-            section=command.section,
+            section_id=command.section_id,
             row=command.row,
             seat_number=command.seat_number,
             seat_type=command.seat_type,
@@ -83,28 +83,28 @@ class SeatCommandHandler:
             raise NotFoundError(f"Seat with ID '{command.seat_id}' not found")
 
         # If location is being updated, check for conflicts
-        if command.section or command.row or command.seat_number:
-            new_section = command.section or seat.section
+        if command.section_id or command.row or command.seat_number:
+            new_section_id = command.section_id or seat.section_id
             new_row = command.row or seat.row
             new_seat_number = command.seat_number or seat.seat_number
             
-            if (new_section != seat.section or 
+            if (new_section_id != seat.section_id or 
                 new_row != seat.row or 
                 new_seat_number != seat.seat_number):
-                existing = await self._seat_repository.get_by_venue_and_location(
+                existing = await self._seat_repository.get_by_layout_and_location(
                     tenant_id,
-                    seat.venue_id,
-                    new_section,
+                    seat.layout_id,
+                    new_section_id,
                     new_row,
                     new_seat_number,
                 )
                 if existing and existing.id != seat.id:
                     raise BusinessRuleError(
-                        f"Seat already exists at {new_section} {new_row} {new_seat_number}"
+                        f"Seat already exists at section_id {new_section_id} {new_row} {new_seat_number}"
                     )
 
         seat.update_details(
-            section=command.section,
+            section_id=command.section_id,
             row=command.row,
             seat_number=command.seat_number,
             seat_type=command.seat_type,
@@ -156,6 +156,51 @@ class SeatCommandHandler:
             layout.update_details(file_id=command.file_id)
             await self._layout_repository.save(layout)
             logger.info("Updated layout %s file_id to %s", command.layout_id, command.file_id)
+
+        # Get or create sections based on section names in the seat data
+        # Build a map of section_name -> section_id
+        from app.infrastructure.shared.database.models import SectionModel
+        from app.infrastructure.shared.database.connection import get_session_sync
+        from sqlmodel import select
+        from app.shared.utils import generate_id
+        from datetime import datetime, timezone
+        
+        section_name_to_id = {}
+        unique_section_names = {seat_data.get("section", "") for seat_data in command.seats if seat_data.get("section")}
+        
+        if unique_section_names:
+            with get_session_sync() as session:
+                # Get existing sections for this layout
+                statement = select(SectionModel).where(
+                    SectionModel.tenant_id == tenant_id,
+                    SectionModel.layout_id == command.layout_id,
+                    SectionModel.is_deleted == False
+                )
+                existing_sections = session.exec(statement).all()
+                
+                # Map existing sections
+                for section in existing_sections:
+                    section_name_to_id[section.name] = section.id
+                
+                # Create missing sections
+                for section_name in unique_section_names:
+                    if section_name and section_name not in section_name_to_id:
+                        new_section = SectionModel(
+                            id=generate_id(),
+                            tenant_id=tenant_id,
+                            layout_id=command.layout_id,
+                            name=section_name,
+                            is_active=True,
+                            is_deleted=False,
+                            version=0,
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc),
+                        )
+                        session.add(new_section)
+                        section_name_to_id[section_name] = new_section.id
+                        logger.info("Created section '%s' with ID %s for layout %s", section_name, new_section.id, command.layout_id)
+                
+                session.commit()
 
         result_seats = []
         errors = []
@@ -210,8 +255,8 @@ class SeatCommandHandler:
                     
                     # Update seat details
                     update_kwargs = {}
-                    if "section" in seat_data:
-                        update_kwargs["section"] = seat_data["section"]
+                    if "section_id" in seat_data:
+                        update_kwargs["section_id"] = seat_data["section_id"]
                     if "row" in seat_data:
                         update_kwargs["row"] = seat_data["row"]
                     if "seat_number" in seat_data:
@@ -239,14 +284,20 @@ class SeatCommandHandler:
                 try:
                     # Check if there's a soft-deleted seat at this location
                     # If so, hard delete it first to avoid unique constraint violation
-                    section = seat_data.get("section", "")
+                    section_name = seat_data.get("section", "")
+                    section_id = section_name_to_id.get(section_name, "")
                     row = seat_data.get("row", "")
                     seat_number = seat_data.get("seat_number", "")
+                    
+                    if not section_id:
+                        errors.append(f"Failed to create seat: Section '{section_name}' not found")
+                        logger.warning("Section '%s' not found in section_name_to_id map", section_name)
+                        continue
                     
                     existing_deleted_seat = await self._seat_repository.get_by_layout_and_location(
                         tenant_id=tenant_id,
                         layout_id=command.layout_id,
-                        section=section,
+                        section_id=section_id,
                         row=row,
                         seat_number=seat_number,
                         include_deleted=True,
@@ -258,15 +309,15 @@ class SeatCommandHandler:
                             tenant_id, existing_deleted_seat.id, hard_delete=True
                         )
                         logger.info(
-                            "Hard deleted soft-deleted seat %s at %s %s %s to allow recreation",
-                            existing_deleted_seat.id, section, row, seat_number
+                            "Hard deleted soft-deleted seat %s at section_id %s %s %s to allow recreation",
+                            existing_deleted_seat.id, section_id, row, seat_number
                         )
                     
                     seat = Seat(
                         tenant_id=tenant_id,
                         venue_id=command.venue_id,
                         layout_id=command.layout_id,
-                        section=section,
+                        section_id=section_id,
                         row=row,
                         seat_number=seat_number,
                         seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
@@ -291,10 +342,12 @@ class SeatCommandHandler:
                     elif "UniqueViolation" in error_msg or "duplicate key" in error_msg.lower():
                         # Try to find and hard delete the conflicting soft-deleted seat
                         try:
+                            section_name = seat_data.get("section", "")
+                            section_id = section_name_to_id.get(section_name, "")
                             conflicting_seat = await self._seat_repository.get_by_layout_and_location(
                                 tenant_id=tenant_id,
                                 layout_id=command.layout_id,
-                                section=seat_data.get("section", ""),
+                                section_id=section_id,
                                 row=seat_data.get("row", ""),
                                 seat_number=seat_data.get("seat_number", ""),
                                 include_deleted=True,
@@ -308,7 +361,7 @@ class SeatCommandHandler:
                                     tenant_id=tenant_id,
                                     venue_id=command.venue_id,
                                     layout_id=command.layout_id,
-                                    section=seat_data.get("section", ""),
+                                    section_id=section_id,
                                     row=seat_data.get("row", ""),
                                     seat_number=seat_data.get("seat_number", ""),
                                     seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
@@ -334,10 +387,12 @@ class SeatCommandHandler:
                     if "UniqueViolation" in error_msg or "duplicate key" in error_msg.lower():
                         # Try to find and hard delete the conflicting seat
                         try:
+                            section_name = seat_data.get("section", "")
+                            section_id = section_name_to_id.get(section_name, "")
                             conflicting_seat = await self._seat_repository.get_by_layout_and_location(
                                 tenant_id=tenant_id,
                                 layout_id=command.layout_id,
-                                section=seat_data.get("section", ""),
+                                section_id=section_id,
                                 row=seat_data.get("row", ""),
                                 seat_number=seat_data.get("seat_number", ""),
                                 include_deleted=True,
@@ -351,7 +406,7 @@ class SeatCommandHandler:
                                     tenant_id=tenant_id,
                                     venue_id=command.venue_id,
                                     layout_id=command.layout_id,
-                                    section=seat_data.get("section", ""),
+                                    section_id=section_id,
                                     row=seat_data.get("row", ""),
                                     seat_number=seat_data.get("seat_number", ""),
                                     seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
@@ -428,15 +483,17 @@ class SeatQueryHandler:
 
     async def handle_get_seat_by_location(self, query: GetSeatByLocationQuery) -> Seat:
         tenant_id = require_tenant_context()
-        seat = await self._seat_repository.get_by_venue_and_location(
+        seat = await self._seat_repository.get_by_layout_and_location(
             tenant_id,
+            # We need the layout_id here - let's get it from venue context or require it in the query
+            # For now, we'll need to add a method that searches by venue + section_id
             query.venue_id,
-            query.section,
+            query.section_id,
             query.row,
             query.seat_number,
         )
         if not seat:
             raise NotFoundError(
-                f"Seat not found at {query.section} {query.row} {query.seat_number}"
+                f"Seat not found at section_id {query.section_id} {query.row} {query.seat_number}"
             )
         return seat

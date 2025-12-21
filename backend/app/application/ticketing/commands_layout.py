@@ -11,6 +11,7 @@ class CreateLayoutCommand:
     name: str
     description: Optional[str] = None
     file_id: Optional[str] = None
+    design_mode: Optional[str] = "seat-level"
 
 
 @dataclass

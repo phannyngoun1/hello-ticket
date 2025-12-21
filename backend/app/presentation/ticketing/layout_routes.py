@@ -54,6 +54,7 @@ async def create_layout(
             name=request.name,
             description=request.description,
             file_id=request.file_id,
+            design_mode=request.design_mode or "seat-level",
         )
         layout = await mediator.send(command)
         
@@ -147,11 +148,58 @@ async def get_layout_with_seats(
                 image_url = file_upload.url
         
         layout_response = TicketingApiMapper.layout_to_response(layout, image_url=image_url)
-        seat_responses = [TicketingApiMapper.seat_to_response(seat) for seat in seats]
+        
+        # Fetch all sections for this layout
+        from app.infrastructure.shared.database.models import SectionModel
+        from app.infrastructure.shared.database.connection import get_session_sync
+        from sqlmodel import select
+        from app.presentation.api.ticketing.schemas_layout import SectionResponse
+        
+        section_responses = []
+        section_map = {}
+        with get_session_sync() as session:
+            # Fetch all sections for this layout
+            statement = select(SectionModel).where(
+                SectionModel.layout_id == layout_id,
+                SectionModel.is_deleted == False
+            )
+            sections = session.exec(statement).all()
+            
+            # Build section map for seat responses
+            section_map = {section.id: section.name for section in sections}
+            
+            # Build section responses
+            for section in sections:
+                section_image_url = None
+                if section.file_id:
+                    section_file_upload = await file_upload_repo.get_by_id(section.file_id)
+                    if section_file_upload:
+                        section_image_url = section_file_upload.url
+                
+                section_responses.append(SectionResponse(
+                    id=section.id,
+                    tenant_id=section.tenant_id,
+                    layout_id=section.layout_id,
+                    name=section.name,
+                    x_coordinate=section.x_coordinate,
+                    y_coordinate=section.y_coordinate,
+                    file_id=section.file_id,
+                    image_url=section_image_url,
+                    is_active=section.is_active,
+                    created_at=section.created_at,
+                    updated_at=section.updated_at,
+                ))
+        
+        seat_responses = []
+        for seat in seats:
+            seat_response = TicketingApiMapper.seat_to_response(seat)
+            seat_response.section_name = section_map.get(seat.section_id, "Unknown")
+            seat_responses.append(seat_response)
         
         return LayoutWithSeatsResponse(
             layout=layout_response,
             seats=seat_responses,
+            sections=section_responses,
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

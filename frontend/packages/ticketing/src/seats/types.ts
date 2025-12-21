@@ -16,7 +16,8 @@ export interface Seat {
     tenant_id: string;
     venue_id: string;
     layout_id: string;
-    section: string;
+    section_id: string;
+    section_name?: string;  // Section name for display
     row: string;
     seat_number: string;
     seat_type: SeatType;
@@ -30,7 +31,7 @@ export interface Seat {
 export interface CreateSeatInput {
     venue_id: string;
     layout_id: string;
-    section: string;
+    section_id: string;
     row: string;
     seat_number: string;
     seat_type?: SeatType;
@@ -39,7 +40,7 @@ export interface CreateSeatInput {
 }
 
 export interface UpdateSeatInput {
-    section?: string;
+    section_id?: string;
     row?: string;
     seat_number?: string;
     seat_type?: SeatType;

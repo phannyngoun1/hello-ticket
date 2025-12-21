@@ -29,15 +29,12 @@ import { Route as SettingsAppearanceRouteImport } from './routes/settings/appear
 import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SalesTestsRouteImport } from './routes/sales/tests'
 import { Route as SalesCustomersRouteImport } from './routes/sales/customers'
-import { Route as InventoryItemsRouteImport } from './routes/inventory/items'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as authChangePasswordRouteImport } from './routes/(auth)/change-password'
 import { Route as TicketingVenuesIndexRouteImport } from './routes/ticketing/venues/index'
 import { Route as TicketingOrganizersIndexRouteImport } from './routes/ticketing/organizers/index'
-import { Route as SettingsInventoryIndexRouteImport } from './routes/settings/inventory/index'
 import { Route as SalesTestsIndexRouteImport } from './routes/sales/tests/index'
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
-import { Route as InventoryItemsIndexRouteImport } from './routes/inventory/items/index'
 import { Route as TicketingVenuesIdRouteImport } from './routes/ticketing/venues/$id'
 import { Route as TicketingOrganizersIdRouteImport } from './routes/ticketing/organizers/$id'
 import { Route as SettingsTicketingEventTypesRouteImport } from './routes/settings/ticketing/event-types'
@@ -45,12 +42,8 @@ import { Route as SettingsSalesTestTreesRouteImport } from './routes/settings/sa
 import { Route as SettingsSalesTestBasicsRouteImport } from './routes/settings/sales/test-basics'
 import { Route as SettingsSalesCustomerTypesRouteImport } from './routes/settings/sales/customer-types'
 import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settings/sales/customer-groups'
-import { Route as SettingsInventoryWarehousesRouteImport } from './routes/settings/inventory/warehouses'
-import { Route as SettingsInventoryUnitsRouteImport } from './routes/settings/inventory/units'
-import { Route as SettingsInventoryLotsRouteImport } from './routes/settings/inventory/lots'
 import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
-import { Route as InventoryItemsIdRouteImport } from './routes/inventory/items/$id'
 import { Route as TicketingVenuesIdSeatsDesignerRouteImport } from './routes/ticketing/venues/$id/seats/designer'
 
 const UsersRoute = UsersRouteImport.update({
@@ -154,11 +147,6 @@ const SalesCustomersRoute = SalesCustomersRouteImport.update({
   path: '/sales/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InventoryItemsRoute = InventoryItemsRouteImport.update({
-  id: '/inventory/items',
-  path: '/inventory/items',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const authLoginRoute = authLoginRouteImport.update({
   id: '/(auth)/login',
   path: '/login',
@@ -180,11 +168,6 @@ const TicketingOrganizersIndexRoute =
     path: '/',
     getParentRoute: () => TicketingOrganizersRoute,
   } as any)
-const SettingsInventoryIndexRoute = SettingsInventoryIndexRouteImport.update({
-  id: '/settings/inventory/',
-  path: '/settings/inventory/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SalesTestsIndexRoute = SalesTestsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -194,11 +177,6 @@ const SalesCustomersIndexRoute = SalesCustomersIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => SalesCustomersRoute,
-} as any)
-const InventoryItemsIndexRoute = InventoryItemsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => InventoryItemsRoute,
 } as any)
 const TicketingVenuesIdRoute = TicketingVenuesIdRouteImport.update({
   id: '/$id',
@@ -238,22 +216,6 @@ const SettingsSalesCustomerGroupsRoute =
     path: '/settings/sales/customer-groups',
     getParentRoute: () => rootRouteImport,
   } as any)
-const SettingsInventoryWarehousesRoute =
-  SettingsInventoryWarehousesRouteImport.update({
-    id: '/settings/inventory/warehouses',
-    path: '/settings/inventory/warehouses',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const SettingsInventoryUnitsRoute = SettingsInventoryUnitsRouteImport.update({
-  id: '/settings/inventory/units',
-  path: '/settings/inventory/units',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsInventoryLotsRoute = SettingsInventoryLotsRouteImport.update({
-  id: '/settings/inventory/lots',
-  path: '/settings/inventory/lots',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SalesTestsIdRoute = SalesTestsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -263,11 +225,6 @@ const SalesCustomersIdRoute = SalesCustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => SalesCustomersRoute,
-} as any)
-const InventoryItemsIdRoute = InventoryItemsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => InventoryItemsRoute,
 } as any)
 const TicketingVenuesIdSeatsDesignerRoute =
   TicketingVenuesIdSeatsDesignerRouteImport.update({
@@ -285,7 +242,6 @@ export interface FileRoutesByFullPath {
   '/users': typeof UsersRouteWithChildren
   '/change-password': typeof authChangePasswordRoute
   '/login': typeof authLoginRoute
-  '/inventory/items': typeof InventoryItemsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
@@ -300,12 +256,8 @@ export interface FileRoutesByFullPath {
   '/users/$id': typeof UsersIdRoute
   '/settings': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
-  '/inventory/items/$id': typeof InventoryItemsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
-  '/settings/inventory/lots': typeof SettingsInventoryLotsRoute
-  '/settings/inventory/units': typeof SettingsInventoryUnitsRoute
-  '/settings/inventory/warehouses': typeof SettingsInventoryWarehousesRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
@@ -313,10 +265,8 @@ export interface FileRoutesByFullPath {
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
-  '/inventory/items/': typeof InventoryItemsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
-  '/settings/inventory': typeof SettingsInventoryIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
@@ -339,12 +289,8 @@ export interface FileRoutesByTo {
   '/users/$id': typeof UsersIdRoute
   '/settings': typeof SettingsIndexRoute
   '/users': typeof UsersIndexRoute
-  '/inventory/items/$id': typeof InventoryItemsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
-  '/settings/inventory/lots': typeof SettingsInventoryLotsRoute
-  '/settings/inventory/units': typeof SettingsInventoryUnitsRoute
-  '/settings/inventory/warehouses': typeof SettingsInventoryWarehousesRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
@@ -352,10 +298,8 @@ export interface FileRoutesByTo {
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
-  '/inventory/items': typeof InventoryItemsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
   '/sales/tests': typeof SalesTestsIndexRoute
-  '/settings/inventory': typeof SettingsInventoryIndexRoute
   '/ticketing/organizers': typeof TicketingOrganizersIndexRoute
   '/ticketing/venues': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
@@ -370,7 +314,6 @@ export interface FileRoutesById {
   '/users': typeof UsersRouteWithChildren
   '/(auth)/change-password': typeof authChangePasswordRoute
   '/(auth)/login': typeof authLoginRoute
-  '/inventory/items': typeof InventoryItemsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
@@ -385,12 +328,8 @@ export interface FileRoutesById {
   '/users/$id': typeof UsersIdRoute
   '/settings/': typeof SettingsIndexRoute
   '/users/': typeof UsersIndexRoute
-  '/inventory/items/$id': typeof InventoryItemsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
-  '/settings/inventory/lots': typeof SettingsInventoryLotsRoute
-  '/settings/inventory/units': typeof SettingsInventoryUnitsRoute
-  '/settings/inventory/warehouses': typeof SettingsInventoryWarehousesRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
@@ -398,10 +337,8 @@ export interface FileRoutesById {
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
-  '/inventory/items/': typeof InventoryItemsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
-  '/settings/inventory/': typeof SettingsInventoryIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
@@ -417,7 +354,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/change-password'
     | '/login'
-    | '/inventory/items'
     | '/sales/customers'
     | '/sales/tests'
     | '/settings/account'
@@ -432,12 +368,8 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/settings'
     | '/users/'
-    | '/inventory/items/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
-    | '/settings/inventory/lots'
-    | '/settings/inventory/units'
-    | '/settings/inventory/warehouses'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
     | '/settings/sales/test-basics'
@@ -445,10 +377,8 @@ export interface FileRouteTypes {
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/venues/$id'
-    | '/inventory/items/'
     | '/sales/customers/'
     | '/sales/tests/'
-    | '/settings/inventory'
     | '/ticketing/organizers/'
     | '/ticketing/venues/'
     | '/ticketing/venues/$id/seats/designer'
@@ -471,12 +401,8 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/settings'
     | '/users'
-    | '/inventory/items/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
-    | '/settings/inventory/lots'
-    | '/settings/inventory/units'
-    | '/settings/inventory/warehouses'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
     | '/settings/sales/test-basics'
@@ -484,10 +410,8 @@ export interface FileRouteTypes {
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/venues/$id'
-    | '/inventory/items'
     | '/sales/customers'
     | '/sales/tests'
-    | '/settings/inventory'
     | '/ticketing/organizers'
     | '/ticketing/venues'
     | '/ticketing/venues/$id/seats/designer'
@@ -501,7 +425,6 @@ export interface FileRouteTypes {
     | '/users'
     | '/(auth)/change-password'
     | '/(auth)/login'
-    | '/inventory/items'
     | '/sales/customers'
     | '/sales/tests'
     | '/settings/account'
@@ -516,12 +439,8 @@ export interface FileRouteTypes {
     | '/users/$id'
     | '/settings/'
     | '/users/'
-    | '/inventory/items/$id'
     | '/sales/customers/$id'
     | '/sales/tests/$id'
-    | '/settings/inventory/lots'
-    | '/settings/inventory/units'
-    | '/settings/inventory/warehouses'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
     | '/settings/sales/test-basics'
@@ -529,10 +448,8 @@ export interface FileRouteTypes {
     | '/settings/ticketing/event-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/venues/$id'
-    | '/inventory/items/'
     | '/sales/customers/'
     | '/sales/tests/'
-    | '/settings/inventory/'
     | '/ticketing/organizers/'
     | '/ticketing/venues/'
     | '/ticketing/venues/$id/seats/designer'
@@ -547,7 +464,6 @@ export interface RootRouteChildren {
   UsersRoute: typeof UsersRouteWithChildren
   authChangePasswordRoute: typeof authChangePasswordRoute
   authLoginRoute: typeof authLoginRoute
-  InventoryItemsRoute: typeof InventoryItemsRouteWithChildren
   SalesCustomersRoute: typeof SalesCustomersRouteWithChildren
   SalesTestsRoute: typeof SalesTestsRouteWithChildren
   SettingsAccountRoute: typeof SettingsAccountRoute
@@ -560,15 +476,11 @@ export interface RootRouteChildren {
   TicketingOrganizersRoute: typeof TicketingOrganizersRouteWithChildren
   TicketingVenuesRoute: typeof TicketingVenuesRouteWithChildren
   SettingsIndexRoute: typeof SettingsIndexRoute
-  SettingsInventoryLotsRoute: typeof SettingsInventoryLotsRoute
-  SettingsInventoryUnitsRoute: typeof SettingsInventoryUnitsRoute
-  SettingsInventoryWarehousesRoute: typeof SettingsInventoryWarehousesRoute
   SettingsSalesCustomerGroupsRoute: typeof SettingsSalesCustomerGroupsRoute
   SettingsSalesCustomerTypesRoute: typeof SettingsSalesCustomerTypesRoute
   SettingsSalesTestBasicsRoute: typeof SettingsSalesTestBasicsRoute
   SettingsSalesTestTreesRoute: typeof SettingsSalesTestTreesRoute
   SettingsTicketingEventTypesRoute: typeof SettingsTicketingEventTypesRoute
-  SettingsInventoryIndexRoute: typeof SettingsInventoryIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -713,13 +625,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/inventory/items': {
-      id: '/inventory/items'
-      path: '/inventory/items'
-      fullPath: '/inventory/items'
-      preLoaderRoute: typeof InventoryItemsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/(auth)/login': {
       id: '/(auth)/login'
       path: '/login'
@@ -748,13 +653,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TicketingOrganizersIndexRouteImport
       parentRoute: typeof TicketingOrganizersRoute
     }
-    '/settings/inventory/': {
-      id: '/settings/inventory/'
-      path: '/settings/inventory'
-      fullPath: '/settings/inventory'
-      preLoaderRoute: typeof SettingsInventoryIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sales/tests/': {
       id: '/sales/tests/'
       path: '/'
@@ -768,13 +666,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sales/customers/'
       preLoaderRoute: typeof SalesCustomersIndexRouteImport
       parentRoute: typeof SalesCustomersRoute
-    }
-    '/inventory/items/': {
-      id: '/inventory/items/'
-      path: '/'
-      fullPath: '/inventory/items/'
-      preLoaderRoute: typeof InventoryItemsIndexRouteImport
-      parentRoute: typeof InventoryItemsRoute
     }
     '/ticketing/venues/$id': {
       id: '/ticketing/venues/$id'
@@ -825,27 +716,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsSalesCustomerGroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings/inventory/warehouses': {
-      id: '/settings/inventory/warehouses'
-      path: '/settings/inventory/warehouses'
-      fullPath: '/settings/inventory/warehouses'
-      preLoaderRoute: typeof SettingsInventoryWarehousesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/inventory/units': {
-      id: '/settings/inventory/units'
-      path: '/settings/inventory/units'
-      fullPath: '/settings/inventory/units'
-      preLoaderRoute: typeof SettingsInventoryUnitsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/inventory/lots': {
-      id: '/settings/inventory/lots'
-      path: '/settings/inventory/lots'
-      fullPath: '/settings/inventory/lots'
-      preLoaderRoute: typeof SettingsInventoryLotsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sales/tests/$id': {
       id: '/sales/tests/$id'
       path: '/$id'
@@ -859,13 +729,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/sales/customers/$id'
       preLoaderRoute: typeof SalesCustomersIdRouteImport
       parentRoute: typeof SalesCustomersRoute
-    }
-    '/inventory/items/$id': {
-      id: '/inventory/items/$id'
-      path: '/$id'
-      fullPath: '/inventory/items/$id'
-      preLoaderRoute: typeof InventoryItemsIdRouteImport
-      parentRoute: typeof InventoryItemsRoute
     }
     '/ticketing/venues/$id/seats/designer': {
       id: '/ticketing/venues/$id/seats/designer'
@@ -888,20 +751,6 @@ const UsersRouteChildren: UsersRouteChildren = {
 }
 
 const UsersRouteWithChildren = UsersRoute._addFileChildren(UsersRouteChildren)
-
-interface InventoryItemsRouteChildren {
-  InventoryItemsIdRoute: typeof InventoryItemsIdRoute
-  InventoryItemsIndexRoute: typeof InventoryItemsIndexRoute
-}
-
-const InventoryItemsRouteChildren: InventoryItemsRouteChildren = {
-  InventoryItemsIdRoute: InventoryItemsIdRoute,
-  InventoryItemsIndexRoute: InventoryItemsIndexRoute,
-}
-
-const InventoryItemsRouteWithChildren = InventoryItemsRoute._addFileChildren(
-  InventoryItemsRouteChildren,
-)
 
 interface SalesCustomersRouteChildren {
   SalesCustomersIdRoute: typeof SalesCustomersIdRoute
@@ -978,7 +827,6 @@ const rootRouteChildren: RootRouteChildren = {
   UsersRoute: UsersRouteWithChildren,
   authChangePasswordRoute: authChangePasswordRoute,
   authLoginRoute: authLoginRoute,
-  InventoryItemsRoute: InventoryItemsRouteWithChildren,
   SalesCustomersRoute: SalesCustomersRouteWithChildren,
   SalesTestsRoute: SalesTestsRouteWithChildren,
   SettingsAccountRoute: SettingsAccountRoute,
@@ -991,15 +839,11 @@ const rootRouteChildren: RootRouteChildren = {
   TicketingOrganizersRoute: TicketingOrganizersRouteWithChildren,
   TicketingVenuesRoute: TicketingVenuesRouteWithChildren,
   SettingsIndexRoute: SettingsIndexRoute,
-  SettingsInventoryLotsRoute: SettingsInventoryLotsRoute,
-  SettingsInventoryUnitsRoute: SettingsInventoryUnitsRoute,
-  SettingsInventoryWarehousesRoute: SettingsInventoryWarehousesRoute,
   SettingsSalesCustomerGroupsRoute: SettingsSalesCustomerGroupsRoute,
   SettingsSalesCustomerTypesRoute: SettingsSalesCustomerTypesRoute,
   SettingsSalesTestBasicsRoute: SettingsSalesTestBasicsRoute,
   SettingsSalesTestTreesRoute: SettingsSalesTestTreesRoute,
   SettingsTicketingEventTypesRoute: SettingsTicketingEventTypesRoute,
-  SettingsInventoryIndexRoute: SettingsInventoryIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

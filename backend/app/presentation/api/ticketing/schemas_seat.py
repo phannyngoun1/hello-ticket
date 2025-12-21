@@ -11,7 +11,7 @@ class SeatCreateRequest(BaseModel):
 
     venue_id: str = Field(..., description="Venue ID")
     layout_id: str = Field(..., description="Layout ID")
-    section: str = Field(..., description="Section name (e.g., 'Section A')")
+    section_id: str = Field(..., description="Section ID reference")
     row: str = Field(..., description="Row identifier (e.g., 'Row 5')")
     seat_number: str = Field(..., description="Seat number (e.g., '12')")
     seat_type: SeatType = Field(SeatType.STANDARD, description="Seat type")
@@ -22,7 +22,7 @@ class SeatCreateRequest(BaseModel):
 class SeatUpdateRequest(BaseModel):
     """Payload for seat updates"""
 
-    section: Optional[str] = Field(None, description="Section name")
+    section_id: Optional[str] = Field(None, description="Section ID reference")
     row: Optional[str] = Field(None, description="Row identifier")
     seat_number: Optional[str] = Field(None, description="Seat number")
     seat_type: Optional[SeatType] = Field(None, description="Seat type")
@@ -44,7 +44,8 @@ class SeatResponse(BaseModel):
     tenant_id: str
     venue_id: str
     layout_id: str
-    section: str
+    section_id: str
+    section_name: Optional[str] = None  # Include section name for display
     row: str
     seat_number: str
     seat_type: SeatType

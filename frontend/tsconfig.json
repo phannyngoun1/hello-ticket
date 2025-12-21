@@ -52,12 +52,6 @@
       "@truths/shared/*": [
         "./packages/shared/src/*"
       ],
-      "@truths/inventory": [
-        "./packages/inventory/src"
-      ],
-      "@truths/inventory/*": [
-        "./packages/inventory/src/*"
-      ],
       "@truths/ticketing": [
         "./packages/ticketing/src"
       ],

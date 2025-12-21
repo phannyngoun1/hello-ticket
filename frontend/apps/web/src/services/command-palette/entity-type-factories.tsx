@@ -1,6 +1,5 @@
-import { User, Boxes, Users } from "lucide-react";
+import { User, Users } from "lucide-react";
 import type { DataTypeConfig, BaseDataItem } from "@truths/custom-ui";
-import type { Item } from "@truths/inventory";
 import type { CommandPaletteUser } from "./types";
 import { nameExtractors } from "./mappers";
 import { DefaultAppCommandPaletteItem } from "../../components/app-command-palette/default-app-command-palette-item";
@@ -112,29 +111,6 @@ export const createUserEntityType = (
     getSearchValue: (user) => {
       const userName = user.name ?? nameExtractors.user(user);
       return `user-${userName}-${user.email || ""}`;
-    },
-  });
-};
-
-/**
- * Create inventory item entity type configuration for command palette
- */
-export const createItemEntityType = (
-  fetcher: (query: string) => Promise<Item[]>
-): DataTypeConfig<BaseDataItem> => {
-  return createEntityType<Item>({
-    key: "items",
-    name: "Inventory Items",
-    icon: Boxes,
-    scope: "items",
-    fetcher,
-    navigateTo: "/inventory/items/$id",
-    getDisplayName: (item) => item.name || item.code || item.sku || "Item",
-    getSubtitle: (item) => item.code || item.sku || null,
-    getBadge: (item) => item.default_uom || null,
-    getSearchValue: (item) => {
-      const code = item.code || item.sku || "";
-      return `item-${code}-${item.name || ""}`;
     },
   });
 };

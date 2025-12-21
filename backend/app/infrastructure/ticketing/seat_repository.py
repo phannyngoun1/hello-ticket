@@ -226,16 +226,16 @@ class SQLSeatRepository(SeatRepository):
         self,
         tenant_id: str,
         venue_id: str,
-        section: str,
+        section_id: str,
         row: str,
         seat_number: str,
     ) -> Optional[Seat]:
-        """Get seat by venue and location"""
+        """Get seat by venue and location - DEPRECATED: Use get_by_layout_and_location instead"""
         with self._session_factory() as session:
             statement = select(SeatModel).where(
                 SeatModel.tenant_id == tenant_id,
                 SeatModel.venue_id == venue_id,
-                SeatModel.section == section,
+                SeatModel.section_id == section_id,
                 SeatModel.row == row,
                 SeatModel.seat_number == seat_number,
                 SeatModel.is_deleted == False
@@ -247,7 +247,7 @@ class SQLSeatRepository(SeatRepository):
         self,
         tenant_id: str,
         layout_id: str,
-        section: str,
+        section_id: str,
         row: str,
         seat_number: str,
         include_deleted: bool = False,
@@ -257,7 +257,7 @@ class SQLSeatRepository(SeatRepository):
             conditions = [
                 SeatModel.tenant_id == tenant_id,
                 SeatModel.layout_id == layout_id,
-                SeatModel.section == section,
+                SeatModel.section_id == section_id,
                 SeatModel.row == row,
                 SeatModel.seat_number == seat_number,
             ]

@@ -32,6 +32,6 @@ class GetSeatByLocationQuery:
     """Query to retrieve a seat by venue and location."""
 
     venue_id: str
-    section: str
+    section_id: str
     row: str
     seat_number: str

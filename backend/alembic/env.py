@@ -27,27 +27,12 @@ load_dotenv()
 # Operational models
 from app.infrastructure.shared.database.models import (
     operational_metadata,
-    # Inventory master data
-    ItemModel,
-    UnitOfMeasureModel,
-    BarcodeModel,
-    ItemSupplierModel,
-    # Inventory identification
-    LotModel,
-    SerialModel,
-    # Inventory balances & reservations
-    InventoryBalanceModel,
-    InventoryReservationModel,
-    # Inventory transactions
-    InventoryTransactionModel,
-    # Inventory costing
-    CostLayerModel,
-    StandardCostModel,
-    CostVarianceModel,
-    # Warehouse structure
-    StoreLocationModel,
-    PutawayRuleModel,
-    PickingRuleModel,
+    # Sales master data
+    TestEntityModel, TestModel, CustomerTypeModel,
+    CustomerGroupModel, TestTreeBackendModel, TestTreeModel, TestBasicModel,
+    # Ticketing master data
+    VenueModel, LayoutModel, SectionModel, SeatModel,
+    OrganizerModel, EventTypeModel,
     # Legacy models
     UserCacheModel,
     # UI Builder
@@ -57,10 +42,6 @@ from app.infrastructure.shared.database.models import (
     UICustomComponentModel,
     # Audit
     AuditLogModel,
-    # Ticketing
-    VenueModel,
-    LayoutModel,
-    SeatModel,
 )
 
 # Platform models (now in the same database)

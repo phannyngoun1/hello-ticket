@@ -42,6 +42,7 @@ class LayoutCommandHandler:
             name=command.name,
             description=command.description,
             file_id=command.file_id,
+            design_mode=command.design_mode or "seat-level",
         )
 
         saved = await self._layout_repository.save(layout)

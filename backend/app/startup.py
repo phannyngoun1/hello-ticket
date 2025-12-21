@@ -277,19 +277,13 @@ async def register_event_handlers() -> None:
     
     from app.application.shared.event_handlers.domain_event_handler import (
         event_bus,
-        AuditEventHandler,
-        InventoryEventHandler
+        AuditEventHandler
     )
     
     # Register audit handler (logs all domain events)
     audit_handler = AuditEventHandler()
     event_bus.register_handler(audit_handler)
     logger.info("✓  Registered AuditEventHandler")
-    
-    # Register inventory handler
-    inventory_handler = InventoryEventHandler()
-    event_bus.register_handler(inventory_handler)
-    logger.info("✓  Registered InventoryEventHandler")
     
     logger.info("✓  Event handlers registered")
 

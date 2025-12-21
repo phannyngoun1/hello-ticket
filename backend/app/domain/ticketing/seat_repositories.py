@@ -60,28 +60,28 @@ class SeatRepository(ABC):
         self,
         tenant_id: str,
         venue_id: str,
-        section: str,
+        section_id: str,
         row: str,
         seat_number: str,
     ) -> Optional[Seat]:
-        """Retrieve seat by venue and location (section, row, seat_number)"""
+        """Retrieve seat by venue and location (section_id, row, seat_number) - DEPRECATED"""
 
     @abstractmethod
     async def get_by_layout_and_location(
         self,
         tenant_id: str,
         layout_id: str,
-        section: str,
+        section_id: str,
         row: str,
         seat_number: str,
         include_deleted: bool = False,
     ) -> Optional[Seat]:
-        """Retrieve seat by layout and location (section, row, seat_number).
+        """Retrieve seat by layout and location (section_id, row, seat_number).
         
         Args:
             tenant_id: Tenant identifier
             layout_id: Layout identifier
-            section: Section name
+            section_id: Section identifier (foreign key to sections table)
             row: Row name
             seat_number: Seat number
             include_deleted: If True, include soft-deleted seats in search

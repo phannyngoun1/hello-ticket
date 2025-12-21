@@ -84,34 +84,6 @@
     ]
   },
   {
-    "label": "Inventory",
-    "path": "/inventory",
-    "icon": "Boxes",
-    "shortcut": "mod+I",
-    "description": "Track products, availability, and valuation with live data governance.",
-    "keywords": [
-      "inventory",
-      "inv",
-      "stock"
-    ],
-    "children": [
-      {
-        "label": "Items",
-        "path": "/inventory/items",
-        "icon": "Package",
-        "description": "View and manage catalog items.",
-        "keywords": [
-          "item",
-          "items",
-          "product",
-          "products",
-          "inventory",
-          "inv"
-        ]
-      }
-    ]
-  },
-  {
     "label": "Users",
     "path": "/users",
     "icon": "Users",

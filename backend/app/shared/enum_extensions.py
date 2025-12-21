@@ -20,7 +20,6 @@ from app.shared.enums import (
     UnitOfMeasureEnum,
     CustomerTypeEnum,
     TransactionTypeEnum,
-    InventoryStatusEnum,
     # Add other enums as needed
 )
 from app.shared.tenant_context import get_tenant_context
@@ -34,7 +33,6 @@ ENUM_SETTING_KEYS: Dict[Type[Enum], str] = {
     UnitOfMeasureEnum: "enum_extensions.unit_of_measure",
     CustomerTypeEnum: "enum_extensions.customer_type",
     TransactionTypeEnum: "enum_extensions.transaction_type",
-    InventoryStatusEnum: "enum_extensions.inventory_status",
     # Add mappings for other enums as needed
 }
 

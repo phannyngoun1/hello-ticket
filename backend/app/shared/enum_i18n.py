@@ -22,9 +22,6 @@ from app.shared.enums import (
     UnitOfMeasureEnum,
     CustomerTypeEnum,
     TransactionTypeEnum,
-    InventoryStatusEnum,
-    ProcessingStatusEnum,
-    SerialStatusEnum,
     # Add other enums as needed
 )
 
@@ -52,61 +49,6 @@ ENUM_TRANSLATIONS: Dict[Type[Enum], Dict[str, Dict[str, str]]] = {
             "pending": "En attente",
             "suspended": "Suspendu",
             "archived": "Archivé",
-        },
-    },
-    ProcessingStatusEnum: {
-        "en": {
-            "pending": "Pending",
-            "in_progress": "In Progress",
-            "completed": "Completed",
-            "failed": "Failed",
-            "cancelled": "Cancelled",
-        },
-        "es": {
-            "pending": "Pendiente",
-            "in_progress": "En Progreso",
-            "completed": "Completado",
-            "failed": "Fallido",
-            "cancelled": "Cancelado",
-        },
-        "fr": {
-            "pending": "En attente",
-            "in_progress": "En cours",
-            "completed": "Terminé",
-            "failed": "Échoué",
-            "cancelled": "Annulé",
-        },
-    },
-    InventoryStatusEnum: {
-        "en": {
-            "available": "Available",
-            "reserved": "Reserved",
-            "in_use": "In Use",
-            "hold": "On Hold",
-            "quarantine": "Quarantine",
-            "expired": "Expired",
-            "scrapped": "Scrapped",
-            "damaged": "Damaged",
-        },
-        "es": {
-            "available": "Disponible",
-            "reserved": "Reservado",
-            "in_use": "En Uso",
-            "hold": "Retenido",
-            "quarantine": "Cuarentena",
-            "expired": "Expirado",
-            "scrapped": "Descartado",
-            "damaged": "Dañado",
-        },
-        "fr": {
-            "available": "Disponible",
-            "reserved": "Réservé",
-            "in_use": "En utilisation",
-            "hold": "En attente",
-            "quarantine": "Quarantaine",
-            "expired": "Expiré",
-            "scrapped": "Mis au rebut",
-            "damaged": "Endommagé",
         },
     },
     UnitOfMeasureEnum: {
