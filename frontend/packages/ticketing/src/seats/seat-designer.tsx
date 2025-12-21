@@ -138,6 +138,8 @@ export function SeatDesigner({
   // Always in placement mode - simplified
   const isPlacingSections = true;
   const [currentSectionName, setCurrentSectionName] = useState("Section A");
+  const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
 
   // Section detail view (when clicking a section in large venue mode)
   const [viewingSection, setViewingSection] = useState<SectionMarker | null>(
@@ -190,6 +192,26 @@ export function SeatDesigner({
     refetchOnWindowFocus: false,
   });
 
+  // Ensure a default section exists in UI for section-level (large) mode
+  useEffect(() => {
+    if (
+      designMode === "section-level" &&
+      sectionMarkers.length === 0 &&
+      !isLoading
+    ) {
+      const defaultSection: SectionMarker = {
+        id: `section-default`,
+        name: "Section A",
+        x: 50,
+        y: 50,
+        isNew: true,
+      };
+      setSectionMarkers([defaultSection]);
+      setSelectedSectionMarker(defaultSection);
+      setCurrentSectionName(defaultSection.name);
+    }
+  }, [designMode, isLoading, sectionMarkers.length]);
+
   // Validate venueId and layoutId after hooks
   if (!venueId) {
     return <div className="p-4 text-destructive">Venue ID is required</div>;
@@ -201,13 +223,18 @@ export function SeatDesigner({
 
   // Initial synchronous measurement to avoid first-render resizing
   useLayoutEffect(() => {
-    if (containerRef.current && !dimensionsReady) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const width = Math.floor(rect.width) || 800;
-      const height = Math.floor(rect.height) || 600;
+    if (dimensionsReady) return;
+    const measure = () => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const width = rect && rect.width > 0 ? Math.floor(rect.width) : 800;
+      const height = rect && rect.height > 0 ? Math.floor(rect.height) : 600;
       setContainerDimensions({ width, height });
       setDimensionsReady(true);
-    }
+    };
+    measure();
+    // Fallback in case layout/paint not ready on first pass
+    const timeoutId = setTimeout(measure, 50);
+    return () => clearTimeout(timeoutId);
   }, [dimensionsReady]);
 
   // Track container dimensions for Konva canvas after initial measure
@@ -323,6 +350,16 @@ export function SeatDesigner({
         if (onImageUpload) {
           onImageUpload(response.url);
         }
+
+        // Force container dimension re-measurement after image upload
+        setTimeout(() => {
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const width = Math.floor(rect.width) || 800;
+            const height = Math.floor(rect.height) || 600;
+            setContainerDimensions({ width, height });
+          }
+        }, 100);
       } catch (error) {
         console.error("Failed to upload image:", error);
         alert("Failed to upload image. Please try again.");
@@ -353,6 +390,16 @@ export function SeatDesigner({
             prev ? { ...prev, imageUrl: response.url } : null
           );
         }
+
+        // Force container dimension re-measurement after image upload
+        setTimeout(() => {
+          if (containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const width = Math.floor(rect.width) || 800;
+            const height = Math.floor(rect.height) || 600;
+            setContainerDimensions({ width, height });
+          }
+        }, 100);
       } catch (error) {
         console.error("Failed to upload image:", error);
         alert("Failed to upload image. Please try again.");
@@ -547,6 +594,73 @@ export function SeatDesigner({
     setViewingSeat(seat);
     setIsEditingViewingSeat(false);
     setEditingSeatData(null);
+  };
+
+  // Section form helpers (Sheet)
+  const handleOpenNewSectionForm = () => {
+    setEditingSectionId(null);
+    const nextName = `Section ${sectionMarkers.length + 1}`;
+    setCurrentSectionName(nextName);
+    setIsSectionFormOpen(true);
+  };
+
+  const handleEditSectionFromSheet = (section: SectionMarker) => {
+    setEditingSectionId(section.id);
+    setCurrentSectionName(section.name);
+    setIsSectionFormOpen(true);
+  };
+
+  const handleSaveSectionForm = () => {
+    const name = currentSectionName.trim() || "Section";
+    if (editingSectionId) {
+      // Update existing section name and sync seats
+      let previousName: string | undefined;
+      setSectionMarkers((prev) =>
+        prev.map((s) => {
+          if (s.id === editingSectionId) {
+            previousName = s.name;
+            return { ...s, name };
+          }
+          return s;
+        })
+      );
+      if (previousName && previousName !== name) {
+        setSeats((prev) =>
+          prev.map((seat) =>
+            seat.seat.section === previousName
+              ? { ...seat, seat: { ...seat.seat, section: name } }
+              : seat
+          )
+        );
+      }
+      if (viewingSection?.id === editingSectionId) {
+        setViewingSection((prev) => (prev ? { ...prev, name } : null));
+      }
+      setSelectedSectionMarker((prev) =>
+        prev && prev.id === editingSectionId ? { ...prev, name } : prev
+      );
+    } else {
+      // Create new section in UI state (no backend write yet)
+      const newSection: SectionMarker = {
+        id: `section-${Date.now()}`,
+        name,
+        x: 50,
+        y: 50,
+        isNew: true,
+      };
+      setSectionMarkers((prev) => [...prev, newSection]);
+      setSelectedSectionMarker(newSection);
+    }
+
+    // Keep seat form in sync with latest section name
+    setCurrentSeat((prev) => ({ ...prev, section: name }));
+    setIsSectionFormOpen(false);
+    setEditingSectionId(null);
+  };
+
+  const handleCancelSectionForm = () => {
+    setIsSectionFormOpen(false);
+    setEditingSectionId(null);
   };
 
   // // Sync form fields with selected seat
@@ -1037,12 +1151,13 @@ export function SeatDesigner({
               {/* Canvas Container */}
               <div
                 ref={containerRef}
-                className="relative border rounded-lg overflow-hidden bg-gray-100"
+                className="relative border rounded-lg overflow-hidden bg-gray-100 flex-1"
                 style={{
                   minHeight: "600px",
                   minWidth: 0,
                   display: "flex",
                   flexDirection: "column",
+                  height: "100%",
                 }}
               >
                 {dimensionsReady ? (
@@ -1347,7 +1462,7 @@ export function SeatDesigner({
           {/* Canvas Container */}
           <div
             ref={containerRef}
-            className="relative border rounded-lg overflow-hidden bg-gray-100"
+            className="relative border rounded-lg overflow-hidden bg-gray-100 flex-1"
             style={{
               minHeight: "600px",
               minWidth: 0,
@@ -1516,6 +1631,56 @@ export function SeatDesigner({
             ) : venueType === "large" ? (
               // Large venue main view - show sections
               <div className="space-y-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-medium">Sections</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleOpenNewSectionForm}
+                    className="h-7 px-3"
+                  >
+                    Add section
+                  </Button>
+                </div>
+
+                {isSectionFormOpen && (
+                  <Card className="p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        {editingSectionId ? "Update section" : "New section"}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={handleCancelSectionForm}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 px-3"
+                          onClick={handleSaveSectionForm}
+                          disabled={!currentSectionName.trim()}
+                        >
+                          {editingSectionId ? "Update" : "Create"}
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Section Name</Label>
+                      <Input
+                        value={currentSectionName}
+                        onChange={(e) => setCurrentSectionName(e.target.value)}
+                        className="mt-1 h-8 text-sm"
+                        placeholder="e.g., Section A"
+                        autoFocus
+                      />
+                    </div>
+                  </Card>
+                )}
+
                 {sectionMarkers.map((section) => (
                   <div
                     key={section.id}
@@ -1548,17 +1713,44 @@ export function SeatDesigner({
                           seat(s)
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteSection(section);
-                        }}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenSectionDetail(section);
+                            setIsDatasheetOpen(false);
+                          }}
+                          className="h-7 px-3"
+                        >
+                          Open
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditSectionFromSheet(section);
+                          }}
+                          className="h-7 px-2"
+                          title="Edit section"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSection(section);
+                          }}
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          title="Delete section"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
