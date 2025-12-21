@@ -1,5 +1,6 @@
 """Handlers for layout commands and queries."""
 import logging
+from datetime import datetime, timezone
 
 from app.application.ticketing.commands_layout import (
     CreateLayoutCommand,
@@ -17,6 +18,9 @@ from app.domain.ticketing.venue_repositories import VenueRepository
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
+from app.infrastructure.shared.database.models import SectionModel
+from app.infrastructure.shared.database.connection import get_session_sync
+from app.shared.utils import generate_id
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +51,29 @@ class LayoutCommandHandler:
 
         saved = await self._layout_repository.save(layout)
         logger.info("Created layout %s for venue %s, tenant=%s", saved.id, command.venue_id, tenant_id)
+        
+        # Create default section for section-level design mode
+        design_mode = command.design_mode or "seat-level"
+        if design_mode == "section-level":
+            with get_session_sync() as session:
+                default_section = SectionModel(
+                    id=generate_id(),
+                    tenant_id=tenant_id,
+                    layout_id=saved.id,
+                    name="Section A",
+                    x_coordinate=50.0,  # Default center position
+                    y_coordinate=50.0,  # Default center position
+                    file_id=None,
+                    is_active=True,
+                    is_deleted=False,
+                    version=0,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
+                )
+                session.add(default_section)
+                session.commit()
+                logger.info("Created default section 'Section A' for layout %s, tenant=%s", saved.id, tenant_id)
+        
         return saved
 
     async def handle_update_layout(self, command: UpdateLayoutCommand) -> Layout:

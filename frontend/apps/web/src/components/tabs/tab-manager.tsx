@@ -86,14 +86,20 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
   // Get or create tab for current route
   useEffect(() => {
-    const currentPath = location.pathname;
+    // For seat designer route, include layoutId in path to create separate tabs per layout
+    const isSeatDesignerRoute = location.pathname.includes("/seats/designer");
+    const searchParams = new URLSearchParams(location.search);
+    const layoutId = searchParams.get("layoutId");
+    const currentPath = isSeatDesignerRoute && layoutId
+      ? `${location.pathname}?layoutId=${layoutId}`
+      : location.pathname;
 
     setTabs((prevTabs) => {
       const currentTab = prevTabs.find((tab) => tab.path === currentPath);
 
       if (!currentTab) {
         // Create new tab for current route
-        const { title, iconName } = getTitleAndIconFromPath(currentPath);
+        const { title, iconName } = getTitleAndIconFromPath(location.pathname);
         const newTab: AppTab = {
           id: generateTabId(),
           path: currentPath,
@@ -122,7 +128,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         return [...pinnedTabs.sort((a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)), ...otherTabs];
       }
     });
-  }, [location.pathname, onTabChange]);
+  }, [location.pathname, location.search, onTabChange]);
 
   // Listen for dynamic tab title updates from pages (e.g., after data load)
   useEffect(() => {
@@ -200,15 +206,25 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     return iconName ? iconMap[iconName] : null;
   };
 
+  // Helper to navigate to a tab path (handles query strings)
+  const navigateToTabPath = useCallback((path: string) => {
+    const [pathname, search] = path.split("?");
+    const searchParams = search ? new URLSearchParams(search) : undefined;
+    navigate({ 
+      to: pathname as any,
+      search: searchParams ? Object.fromEntries(searchParams) : undefined
+    });
+  }, [navigate]);
+
   const handleTabClick = useCallback(
     (tab: AppTab) => {
       setActiveTabId(tab.id);
-      navigate({ to: tab.path });
+      navigateToTabPath(tab.path);
       if (onTabChange) {
         onTabChange(tab);
       }
     },
-    [navigate, onTabChange]
+    [navigateToTabPath, onTabChange]
   );
 
   const handleTabClose = useCallback(
@@ -542,7 +558,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                   return (
                     <DropdownMenuItem
                       key={tab.id}
-                      onClick={() => navigate({ to: tab.path })}
+                      onClick={() => navigateToTabPath(tab.path)}
                       className="text-xs"
                     >
                       {IconComponent && (

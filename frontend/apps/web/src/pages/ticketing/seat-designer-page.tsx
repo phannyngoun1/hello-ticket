@@ -38,15 +38,18 @@ function SeatDesignerContent({
     useLayoutWithSeats(layoutService, effectiveLayoutId ?? null);
 
   // Update tab title with layout name when available
+  // Include layoutId in path to ensure each layout gets its own tab
   useEffect(() => {
     if (!id || !effectiveLayoutId) return;
     const layoutName =
       layoutWithSeats?.layout.name || `Layout ${effectiveLayoutId}`;
     const title = `Designer - ${layoutName}`;
+    // Include layoutId in path so each layout gets a unique tab
+    const tabPath = `/ticketing/venues/${id}/seats/designer?layoutId=${effectiveLayoutId}`;
     window.dispatchEvent(
       new CustomEvent("update-tab-title", {
         detail: {
-          path: `/ticketing/venues/${id}/seats/designer`,
+          path: tabPath,
           title,
           iconName: "MapPin",
         },
