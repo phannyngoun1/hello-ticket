@@ -150,6 +150,7 @@ export function SeatDesigner({
   const [currentSectionName, setCurrentSectionName] = useState("Section A");
   const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   // Section detail view (when clicking a section in large venue mode)
   const [viewingSection, setViewingSection] = useState<SectionMarker | null>(
@@ -168,6 +169,7 @@ export function SeatDesigner({
     seatNumber: "1",
     seatType: SeatType.STANDARD,
   });
+  const [sectionSelectValue, setSectionSelectValue] = useState<string>("");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -179,6 +181,10 @@ export function SeatDesigner({
     useState<SectionMarker | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
+  const [sectionToDelete, setSectionToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
@@ -203,11 +209,11 @@ export function SeatDesigner({
     refetchOnWindowFocus: false,
   });
 
-  // Fetch sections for the layout (needed for seat-level mode select box)
+  // Fetch sections for the layout (needed for seat-level mode select box and seat editing)
   const { data: sectionsData } = useQuery({
     queryKey: ["sections", "layout", layoutId],
     queryFn: () => sectionService.getByLayout(layoutId),
-    enabled: !!layoutId && designMode === "seat-level",
+    enabled: !!layoutId, // Enable for both modes since we need it for seat editing
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
@@ -652,6 +658,19 @@ export function SeatDesigner({
     setIsSectionFormOpen(true);
   };
 
+  // Edit section from sectionsData (for seat-level mode)
+  const handleEditSectionFromData = (section: { id: string; name: string }) => {
+    setEditingSectionId(section.id);
+    setCurrentSectionName(section.name);
+    setIsSectionFormOpen(true);
+    setIsManageSectionsOpen(false);
+  };
+
+  // Sync sectionSelectValue with currentSeat.section
+  useEffect(() => {
+    setSectionSelectValue(currentSeat.section || "");
+  }, [currentSeat.section]);
+
   // Get unique sections from existing seats and API
   const getUniqueSections = (): string[] => {
     const sections = new Set<string>();
@@ -663,9 +682,16 @@ export function SeatDesigner({
       }
     });
 
-    // Add sections from API (for seat-level mode)
-    if (sectionsData && designMode === "seat-level") {
+    // Add sections from API (for both modes - needed for seat editing)
+    if (sectionsData) {
       sectionsData.forEach((section) => {
+        sections.add(section.name);
+      });
+    }
+
+    // Add sections from sectionMarkers (for section-level mode)
+    if (designMode === "section-level") {
+      sectionMarkers.forEach((section) => {
         sections.add(section.name);
       });
     }
@@ -794,16 +820,33 @@ export function SeatDesigner({
 
   const handleSaveSectionForm = () => {
     const name = currentSectionName.trim() || "Section";
-    const section = sectionMarkers.find((s) => s.id === editingSectionId);
 
-    if (editingSectionId && section) {
-      // Update existing section
-      updateSectionMutation.mutate({
-        sectionId: editingSectionId,
-        name,
-        x: section.x,
-        y: section.y,
-      });
+    if (editingSectionId) {
+      // Find section in sectionMarkers (section-level mode) or sectionsData (seat-level mode)
+      const sectionFromMarkers = sectionMarkers.find(
+        (s) => s.id === editingSectionId
+      );
+      const sectionFromData = sectionsData?.find(
+        (s) => s.id === editingSectionId
+      );
+
+      if (sectionFromMarkers) {
+        // Update existing section (section-level mode)
+        updateSectionMutation.mutate({
+          sectionId: editingSectionId,
+          name,
+          x: sectionFromMarkers.x,
+          y: sectionFromMarkers.y,
+        });
+      } else if (sectionFromData) {
+        // Update existing section (seat-level mode)
+        updateSectionMutation.mutate({
+          sectionId: editingSectionId,
+          name,
+          x: sectionFromData.x_coordinate ?? undefined,
+          y: sectionFromData.y_coordinate ?? undefined,
+        });
+      }
     } else {
       // Create new section - always call API since seats need section_id
       console.log("Creating section via API:", {
@@ -1012,8 +1055,20 @@ export function SeatDesigner({
       seatId: string;
       data: SeatInfo;
     }) => {
+      // Try to find section_id from section name if sectionId is not provided
+      let sectionId = data.sectionId;
+      if (!sectionId && data.section) {
+        if (sectionsData && designMode === "seat-level") {
+          const section = sectionsData.find((s) => s.name === data.section);
+          sectionId = section?.id;
+        } else if (designMode === "section-level") {
+          const section = sectionMarkers.find((s) => s.name === data.section);
+          sectionId = section?.id;
+        }
+      }
+
       return await seatService.update(seatId, {
-        section_id: data.sectionId || data.section, // Send section_id if available, fallback to section name
+        section_id: sectionId || data.section, // Send section_id if available, fallback to section name (backend will handle conversion)
         row: data.row,
         seat_number: data.seatNumber,
         seat_type: data.seatType,
@@ -1048,16 +1103,61 @@ export function SeatDesigner({
     }
   };
 
-  // Delete section from datasheet
-  const handleDeleteSection = (section: SectionMarker) => {
-    // Also delete all seats in this section
-    setSeats((prev) => prev.filter((s) => s.seat.section !== section.name));
-    setSectionMarkers((prev) => prev.filter((s) => s.id !== section.id));
-    if (selectedSectionMarker?.id === section.id) {
-      setSelectedSectionMarker(null);
-    }
-    if (viewingSection?.id === section.id) {
-      setViewingSection(null);
+  // Delete section mutation
+  const deleteSectionMutation = useMutation({
+    mutationFn: async (sectionId: string) => {
+      return await sectionService.delete(sectionId);
+    },
+    onSuccess: (_, sectionId) => {
+      // Remove from sectionMarkers (for section-level mode)
+      setSectionMarkers((prev) => prev.filter((s) => s.id !== sectionId));
+
+      // Remove seats that belong to this section
+      setSeats((prev) =>
+        prev.filter((s) => {
+          // Check if seat's sectionId matches (if available) or section name matches
+          const seatSectionId = (s.seat as any).sectionId;
+          return seatSectionId !== sectionId && s.seat.section !== sectionId;
+        })
+      );
+
+      // Clear selected/viewing if they match
+      if (selectedSectionMarker?.id === sectionId) {
+        setSelectedSectionMarker(null);
+      }
+      if (viewingSection?.id === sectionId) {
+        setViewingSection(null);
+      }
+
+      toast({ title: "Section deleted successfully" });
+
+      // Invalidate sections query
+      queryClient.invalidateQueries({
+        queryKey: ["sections", "layout", layoutId],
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to delete section:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to delete section",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete section handler (with confirmation)
+  const handleDeleteSection = (
+    section: SectionMarker | { id: string; name: string }
+  ) => {
+    setSectionToDelete(section);
+  };
+
+  const handleConfirmDeleteSection = () => {
+    if (sectionToDelete) {
+      deleteSectionMutation.mutate(sectionToDelete.id);
+      setSectionToDelete(null);
     }
   };
 
@@ -1542,17 +1642,24 @@ export function SeatDesigner({
                   <Label className="text-xs">Section / Row / Seat #</Label>
                   <div className="flex gap-2 mt-1">
                     <Select
-                      value={currentSeat.section || ""}
+                      value={sectionSelectValue || currentSeat.section || ""}
                       onValueChange={(value) => {
                         if (value === "new-section") {
                           setIsSectionFormOpen(true);
                           setEditingSectionId(null);
                           setCurrentSectionName("");
+                          // Reset select to current section
+                          setSectionSelectValue(currentSeat.section || "");
+                        } else if (value === "manage-sections") {
+                          setIsManageSectionsOpen(true);
+                          // Reset select to current section
+                          setSectionSelectValue(currentSeat.section || "");
                         } else {
                           setCurrentSeat({
                             ...currentSeat,
                             section: value,
                           });
+                          setSectionSelectValue(value);
                         }
                       }}
                     >
@@ -1565,9 +1672,16 @@ export function SeatDesigner({
                             {section}
                           </SelectItem>
                         ))}
+                        <div className="h-px bg-border my-1 mx-2" />
                         <SelectItem value="new-section">
                           <div className="flex items-center gap-2 font-medium text-primary">
                             <span>+ New Section</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="manage-sections">
+                          <div className="flex items-center gap-2 font-medium">
+                            <Edit className="h-3 w-3" />
+                            <span>Manage Sections</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -2088,16 +2202,41 @@ export function SeatDesigner({
                     <div className="space-y-4">
                       <div>
                         <Label>Section</Label>
-                        <Input
+                        <Select
                           value={editingSeatData?.section || ""}
-                          onChange={(e) =>
+                          onValueChange={(value) => {
+                            // Find the section_id for the selected section name
+                            let sectionId = editingSeatData?.sectionId;
+                            if (sectionsData && designMode === "seat-level") {
+                              const section = sectionsData.find(
+                                (s) => s.name === value
+                              );
+                              sectionId = section?.id;
+                            } else if (designMode === "section-level") {
+                              const section = sectionMarkers.find(
+                                (s) => s.name === value
+                              );
+                              sectionId = section?.id;
+                            }
+
                             setEditingSeatData({
                               ...(editingSeatData || viewingSeat.seat),
-                              section: e.target.value,
-                            })
-                          }
-                          className="mt-1"
-                        />
+                              section: value,
+                              sectionId: sectionId,
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select section" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getUniqueSections().map((section) => (
+                              <SelectItem key={section} value={section}>
+                                {section}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label>Row</Label>
@@ -2457,6 +2596,108 @@ export function SeatDesigner({
           onClick: () => setShowSaveConfirmDialog(false),
         }}
       />
+
+      {/* Delete Section Confirmation Dialog */}
+      <ConfirmationDialog
+        open={!!sectionToDelete}
+        onOpenChange={(open) => !open && setSectionToDelete(null)}
+        title="Delete Section"
+        description={
+          sectionToDelete
+            ? `Are you sure you want to delete "${sectionToDelete.name}"? This action cannot be undone. Any seats in this section will also be removed.`
+            : ""
+        }
+        confirmAction={{
+          label: "Delete",
+          variant: "destructive",
+          onClick: handleConfirmDeleteSection,
+          loading: deleteSectionMutation.isPending,
+        }}
+        cancelAction={{
+          label: "Cancel",
+          onClick: () => setSectionToDelete(null),
+        }}
+      />
+
+      {/* Manage Sections Sheet (for seat-level mode) */}
+      {designMode === "seat-level" && (
+        <Sheet
+          open={isManageSectionsOpen}
+          onOpenChange={(open) => setIsManageSectionsOpen(open)}
+        >
+          <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+            <SheetHeader>
+              <SheetTitle>Manage Sections</SheetTitle>
+              <SheetDescription>
+                Edit or delete sections for this layout
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6 space-y-4">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-sm text-muted-foreground">
+                  {sectionsData?.length || 0} section(s)
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setEditingSectionId(null);
+                    setCurrentSectionName("");
+                    setIsSectionFormOpen(true);
+                    setIsManageSectionsOpen(false);
+                  }}
+                >
+                  + New Section
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {sectionsData && sectionsData.length > 0 ? (
+                  sectionsData.map((section) => (
+                    <Card key={section.id} className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium">{section.name}</p>
+                          {section.x_coordinate != null &&
+                            section.y_coordinate != null && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Position: ({section.x_coordinate.toFixed(1)},{" "}
+                                {section.y_coordinate.toFixed(1)})
+                              </p>
+                            )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditSectionFromData(section)}
+                            className="h-8 px-2"
+                            title="Edit section"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteSection(section)}
+                            className="h-8 px-2 text-destructive hover:text-destructive"
+                            title="Delete section"
+                            disabled={deleteSectionMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No sections found. Create your first section.
+                  </p>
+                )}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* New Section Sheet */}
       <Sheet
