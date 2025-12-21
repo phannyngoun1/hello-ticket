@@ -5,10 +5,11 @@
  */
 
 import { Button, Card, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input, Label } from "@truths/ui";
-import { Save, Trash2, X, MoreVertical, Image as ImageIcon } from "lucide-react";
+import { Save, Trash2, X, MoreVertical, Image as ImageIcon, List } from "lucide-react";
 import { LayoutCanvas } from "../layout-canvas";
-import { ImageUploadCard, SeatPlacementControls, ZoomControls } from "./index";
+import { ImageUploadCard, SeatPlacementControls, ZoomControls, DatasheetView } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
+import { useState } from "react";
 
 export interface SectionDetailViewProps {
   viewingSection: SectionMarker;
@@ -41,6 +42,13 @@ export interface SectionDetailViewProps {
   onResetZoom: () => void;
   onNewSection: () => void;
   saveSeatsMutationPending: boolean;
+  // Props for DatasheetView
+  seats: SeatMarker[];
+  onDeleteSeat: (seat: SeatMarker) => void;
+  onSetViewingSeat: (seat: SeatMarker | null) => void;
+  onSetIsEditingViewingSeat: (editing: boolean) => void;
+  onSetSelectedSeat: (seat: SeatMarker | null) => void;
+  seatEditFormReset: (data: any) => void;
 }
 
 export function SectionDetailView({
@@ -74,7 +82,14 @@ export function SectionDetailView({
   onResetZoom,
   onNewSection,
   saveSeatsMutationPending,
+  seats,
+  onDeleteSeat,
+  onSetViewingSeat,
+  onSetIsEditingViewingSeat,
+  onSetSelectedSeat,
+  seatEditFormReset,
 }: SectionDetailViewProps) {
+  const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   return (
     <Card className={className}>
       <div className="p-6 space-y-4">
@@ -94,6 +109,14 @@ export function SectionDetailView({
             </h3>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={() => setIsDatasheetOpen(true)}
+              variant="outline"
+              size="sm"
+            >
+              <List className="h-4 w-4 mr-2" />
+              Seat List ({displayedSeats.length})
+            </Button>
             <Button
               onClick={onSave}
               disabled={saveSeatsMutationPending}
@@ -218,6 +241,39 @@ export function SectionDetailView({
           </div>
         )}
       </div>
+      
+      {/* Seat List Datasheet */}
+      <DatasheetView
+        isOpen={isDatasheetOpen}
+        onOpenChange={setIsDatasheetOpen}
+        viewingSection={viewingSection}
+        venueType="small"
+        displayedSeats={displayedSeats}
+        seats={seats}
+        sectionMarkers={[]}
+        selectedSeat={selectedSeat}
+        isPlacingSeats={isPlacingSeats}
+        isSectionFormOpen={false}
+        editingSectionId={null}
+        sectionForm={{} as any}
+        selectedSectionMarker={null}
+        createSectionMutationPending={false}
+        updateSectionMutationPending={false}
+        onSeatClick={onSeatClick}
+        onDeleteSeat={onDeleteSeat}
+        onOpenNewSectionForm={() => {}}
+        onCancelSectionForm={() => {}}
+        onSaveSectionForm={() => {}}
+        onSectionMarkerClick={() => {}}
+        onOpenSectionDetail={() => {}}
+        onEditSectionFromSheet={() => {}}
+        onDeleteSection={() => {}}
+        onSetViewingSeat={onSetViewingSeat}
+        onSetIsEditingViewingSeat={onSetIsEditingViewingSeat}
+        onSetSelectedSeat={onSetSelectedSeat}
+        onSetIsDatasheetOpen={setIsDatasheetOpen}
+        seatEditFormReset={seatEditFormReset}
+      />
     </Card>
   );
 }

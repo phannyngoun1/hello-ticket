@@ -65,7 +65,7 @@ export function SeatEditSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
         <SheetHeader>
           <SheetTitle>Seat Information</SheetTitle>
           <SheetDescription>
@@ -76,7 +76,7 @@ export function SeatEditSheet({
               : "View seat details (read-only)"}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 space-y-4">
+        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
           {isEditing ? (
             // Edit mode
             <>
