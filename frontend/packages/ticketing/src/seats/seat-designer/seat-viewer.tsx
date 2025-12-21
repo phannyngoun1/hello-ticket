@@ -16,9 +16,9 @@ import {
 } from "@truths/ui";
 import { Map, Table as TableIcon, Plus, Edit } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { seatService } from "./seat-service";
-import type { Seat } from "./types";
-import { SeatType } from "./types";
+import { seatService } from "../seat-service";
+import type { Seat } from "../types";
+import { SeatType } from "../types";
 import { useQuery } from "@tanstack/react-query";
 
 export interface SeatViewerProps {
