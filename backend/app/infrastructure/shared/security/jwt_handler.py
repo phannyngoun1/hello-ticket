@@ -147,4 +147,28 @@ class JWTHandler:
             return user_id
         except JWTError:
             return None
+    
+    def verify_refresh_token(self, token: str) -> Optional[str]:
+        """Verify refresh token and return subject
+        
+        Args:
+            token: JWT refresh token to verify
+            
+        Returns:
+            Token subject (user_id) if valid refresh token, None otherwise
+        """
+        try:
+            payload = self.decode_token(token)
+            token_type = payload.get("type")
+            if token_type != "refresh":
+                print(f"JWT validation failed: expected 'refresh' type, got '{token_type}'")
+                return None
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                print("JWT validation failed: 'sub' claim missing from refresh token")
+                return None
+            return user_id
+        except Exception as e:
+            print(f"JWT refresh token validation failed: {str(e)}")
+            return None
 

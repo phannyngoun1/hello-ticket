@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -10,7 +14,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "noEmit": false,
     "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
@@ -18,21 +22,48 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@truths/ui": ["./packages/ui/src"],
-      "@truths/ui/*": ["./packages/ui/src/*"],
-      "@truths/utils": ["./packages/utils/src"],
-      "@truths/utils/*": ["./packages/utils/src/*"],
-      "@truths/config": ["./packages/config/src"],
-      "@truths/config/*": ["./packages/config/src/*"],
-      "@truths/api": ["./packages/api/src"],
-      "@truths/api/*": ["./packages/api/src/*"],
-      "@truths/shared": ["./packages/shared/src"],
-      "@truths/shared/*": ["./packages/shared/src/*"],
-      "@truths/inventory": ["./packages/inventory/src"],
-      "@truths/inventory/*": ["./packages/inventory/src/*"],
-      "@truths/ticketing": ["./packages/ticketing/src"],
-      "@truths/ticketing/*": ["./packages/ticketing/src/*"]
+      "@truths/ui": [
+        "./packages/ui/src"
+      ],
+      "@truths/ui/*": [
+        "./packages/ui/src/*"
+      ],
+      "@truths/utils": [
+        "./packages/utils/src"
+      ],
+      "@truths/utils/*": [
+        "./packages/utils/src/*"
+      ],
+      "@truths/config": [
+        "./packages/config/src"
+      ],
+      "@truths/config/*": [
+        "./packages/config/src/*"
+      ],
+      "@truths/api": [
+        "./packages/api/src"
+      ],
+      "@truths/api/*": [
+        "./packages/api/src/*"
+      ],
+      "@truths/shared": [
+        "./packages/shared/src"
+      ],
+      "@truths/shared/*": [
+        "./packages/shared/src/*"
+      ],
+      "@truths/inventory": [
+        "./packages/inventory/src"
+      ],
+      "@truths/inventory/*": [
+        "./packages/inventory/src/*"
+      ],
+      "@truths/ticketing": [
+        "./packages/ticketing/src"
+      ],
+      "@truths/ticketing/*": [
+        "./packages/ticketing/src/*"
+      ]
     }
   }
 }
-

@@ -23,6 +23,7 @@ from app.shared.container_registrations.test_tree import register_test_tree_cont
 from app.shared.container_registrations.test import register_test_container, register_test_mediator
 from app.shared.container_registrations.test_basic import register_test_basic_container, register_test_basic_mediator
 from app.shared.container_registrations.venue import register_venue_container, register_venue_mediator
+from app.shared.container_registrations.layout import register_layout_container, register_layout_mediator
 from app.shared.container_registrations.seat import register_seat_container, register_seat_mediator
 from app.shared.container_registrations.organizer import register_organizer_container, register_organizer_mediator
 from app.shared.container_registrations.event_type import register_event_type_container, register_event_type_mediator
@@ -62,7 +63,9 @@ def setup_container() -> Container:
 
     # Venues
     register_venue_container(container)
-    # Seats (depends on Venue)
+    # Layouts (depends on Venue)
+    register_layout_container(container)
+    # Seats (depends on Venue and Layout)
     register_seat_container(container)
     # Ticketing - Organizers
     register_organizer_container(container)
@@ -94,6 +97,7 @@ def setup_mediator(container: Container) -> Mediator:
     register_test_mediator(mediator)
     register_test_basic_mediator(mediator)
     register_venue_mediator(mediator)
+    register_layout_mediator(mediator)
     register_seat_mediator(mediator)
     register_organizer_mediator(mediator)
     register_event_type_mediator(mediator)

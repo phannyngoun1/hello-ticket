@@ -20,6 +20,16 @@ export const seatService = {
     },
 
     /**
+     * Get all seats for a layout
+     */
+    async getByLayout(layoutId: string, skip = 0, limit = 1000): Promise<SeatListResponse> {
+        return api.get<SeatListResponse>(
+            `${BASE_ENDPOINT}?layout_id=${layoutId}&skip=${skip}&limit=${limit}`,
+            { requiresAuth: true }
+        );
+    },
+
+    /**
      * Get a seat by ID
      */
     async getById(seatId: string): Promise<Seat> {
@@ -59,14 +69,57 @@ export const seatService = {
     },
 
     /**
-     * Bulk create seats
+     * Bulk seat operations (create, update, delete)
+     * 
+     * The 'seats' array contains all seat operations:
+     * - No 'id' field: Create new seat
+     * - Has 'id' field: Update existing seat
+     * - Has 'id' field + 'delete' flag: Delete seat
      */
-    async bulkCreate(venueId: string, seats: Array<Partial<CreateSeatInput>>): Promise<Seat[]> {
+    async bulkOperations(options: {
+        venueId: string;
+        seats: Array<Partial<CreateSeatInput> & { id?: string; delete?: boolean }>;
+        fileId?: string;
+        layoutId?: string;
+    }): Promise<Seat[]> {
+        const payload: {
+            seats: Array<Partial<CreateSeatInput> & { id?: string; delete?: boolean }>;
+            file_id?: string;
+        } = {
+            seats: options.seats,
+        };
+
+        if (options.fileId) {
+            payload.file_id = options.fileId;
+        }
+
+        const queryParams = new URLSearchParams({ venue_id: options.venueId });
+        if (options.layoutId) {
+            queryParams.append("layout_id", options.layoutId);
+        }
+
         return api.post<Seat[]>(
-            `${BASE_ENDPOINT}/bulk?venue_id=${venueId}`,
-            { seats },
+            `${BASE_ENDPOINT}/bulk?${queryParams.toString()}`,
+            payload,
             { requiresAuth: true }
         );
+    },
+
+    /**
+     * Bulk create seats (legacy method for backward compatibility)
+     */
+    async bulkCreate(
+        venueId: string,
+        seats: Array<Partial<CreateSeatInput>>,
+        fileId?: string,
+        layoutId?: string
+    ): Promise<Seat[]> {
+        return this.bulkOperations({
+            venueId,
+            seats: seats.map(s => ({ ...s, id: undefined })), // Ensure no id for creates
+            fileId,
+            layoutId,
+        });
     },
 
     /**

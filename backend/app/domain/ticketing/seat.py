@@ -25,6 +25,7 @@ class Seat(AggregateRoot):
         self,
         tenant_id: str,
         venue_id: str,
+        layout_id: str,
         section: str,
         row: str,
         seat_number: str,
@@ -43,6 +44,7 @@ class Seat(AggregateRoot):
         self.id = seat_id or generate_id()
         self.tenant_id = tenant_id
         self.venue_id = venue_id
+        self.layout_id = layout_id
         self.section = self._validate_section(section)
         self.row = self._validate_row(row)
         self.seat_number = self._validate_seat_number(seat_number)
@@ -124,6 +126,8 @@ class Seat(AggregateRoot):
         """Validate seat data and business rules."""
         if not self.venue_id:
             raise ValidationError("Venue ID is required")
+        if not self.layout_id:
+            raise ValidationError("Layout ID is required")
         if not self.tenant_id:
             raise ValidationError("Tenant ID is required")
 

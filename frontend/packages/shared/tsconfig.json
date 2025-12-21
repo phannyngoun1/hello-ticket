@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "composite": true,
+    "allowImportingTsExtensions": false,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -21,5 +22,13 @@
   "exclude": [
     "dist",
     "node_modules"
+  ],
+  "references": [
+    {
+      "path": "../utils"
+    },
+    {
+      "path": "../config"
+    }
   ]
 }

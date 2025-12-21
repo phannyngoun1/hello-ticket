@@ -15,6 +15,7 @@ export interface Seat {
     id: string;
     tenant_id: string;
     venue_id: string;
+    layout_id: string;
     section: string;
     row: string;
     seat_number: string;
@@ -28,6 +29,7 @@ export interface Seat {
 
 export interface CreateSeatInput {
     venue_id: string;
+    layout_id: string;
     section: string;
     row: string;
     seat_number: string;

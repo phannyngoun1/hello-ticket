@@ -168,12 +168,13 @@ class AuthService:
             refresh_token: Valid refresh token
             
         Returns:
-            New access token
+            New access token and optionally new refresh token
             
         Raises:
             ValidationError: If refresh token is invalid
         """
-        user_id = self._jwt_handler.verify_token(refresh_token)
+        # Verify refresh token specifically (must be type="refresh")
+        user_id = self._jwt_handler.verify_refresh_token(refresh_token)
         if not user_id:
             raise ValidationError("Invalid refresh token")
         
@@ -189,10 +190,13 @@ class AuthService:
                 "username": user.username,
                 "email": user.email.value,
                 "role": user.role.value,
+                "tenant_id": user.tenant_id,
                 "permissions": [p.value for p in user.get_permissions()]
             }
         )
         
+        # Optionally create a new refresh token (rotate refresh tokens)
+        # For now, return only access token to maintain backward compatibility
         return {"access_token": access_token, "token_type": "bearer"}
     
     async def get_current_user(self, token: str) -> AuthenticatedUser:

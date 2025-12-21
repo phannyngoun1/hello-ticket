@@ -37,6 +37,25 @@ class SeatRepository(ABC):
         """Retrieve all seats for a venue"""
 
     @abstractmethod
+    async def get_by_layout(
+        self,
+        tenant_id: str,
+        layout_id: str,
+        skip: int = 0,
+        limit: int = 1000,
+    ) -> SeatSearchResult:
+        """Retrieve all seats for a layout"""
+
+
+    @abstractmethod
+    async def get_all_by_layout(
+        self,
+        tenant_id: str,
+        layout_id: str,
+    ) -> List[Seat]:
+        """Retrieve all seats for a layout"""
+
+    @abstractmethod
     async def get_by_venue_and_location(
         self,
         tenant_id: str,
@@ -46,6 +65,30 @@ class SeatRepository(ABC):
         seat_number: str,
     ) -> Optional[Seat]:
         """Retrieve seat by venue and location (section, row, seat_number)"""
+
+    @abstractmethod
+    async def get_by_layout_and_location(
+        self,
+        tenant_id: str,
+        layout_id: str,
+        section: str,
+        row: str,
+        seat_number: str,
+        include_deleted: bool = False,
+    ) -> Optional[Seat]:
+        """Retrieve seat by layout and location (section, row, seat_number).
+        
+        Args:
+            tenant_id: Tenant identifier
+            layout_id: Layout identifier
+            section: Section name
+            row: Row name
+            seat_number: Seat number
+            include_deleted: If True, include soft-deleted seats in search
+        
+        Returns:
+            Seat if found, None otherwise
+        """
 
     @abstractmethod
     async def delete(self, tenant_id: str, seat_id: str, hard_delete: bool = False) -> bool:

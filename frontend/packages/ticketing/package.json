@@ -27,7 +27,10 @@
     "@truths/shared": "*",
     "@truths/ui": "*",
     "@truths/utils": "*",
-    "react": "^18.3.1"
+    "konva": "^9.2.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

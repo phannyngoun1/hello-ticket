@@ -17,7 +17,7 @@ import {
 import { cn } from "@truths/ui/lib/utils";
 import { Edit, MoreVertical, Info, Database, MapPin } from "lucide-react";
 import { Venue } from "./types";
-import { SeatViewer } from "../seats";
+import { LayoutList } from "../layouts";
 
 export interface VenueDetailProps {
   className?: string;
@@ -29,7 +29,7 @@ export interface VenueDetailProps {
   showMetadata?: boolean;
   editable?: boolean;
   onEdit?: (data: Venue) => void;
-  onNavigateToSeatDesigner?: (venueId: string) => void;
+  onNavigateToSeatDesigner?: (venueId: string, layoutId: string) => void;
 
   customActions?: (data: Venue) => React.ReactNode;
 }
@@ -203,7 +203,7 @@ export function VenueDetail({
               >
                 <span className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Seat Designer
+                  Layout
                 </span>
               </button>
               {hasMetadata && (
@@ -278,13 +278,16 @@ export function VenueDetail({
               </div>
             )}
 
-            {/* Seat Viewer Tab */}
+            {/* Layout Tab */}
             {activeTab === "seats" && (
               <div className="space-y-6">
-                <SeatViewer
+                <LayoutList
                   venueId={data.id}
-                  imageUrl={data.image_url}
-                  onNavigateToDesigner={onNavigateToSeatDesigner}
+                  onNavigateToDesigner={(layoutId) => {
+                    if (onNavigateToSeatDesigner) {
+                      onNavigateToSeatDesigner(data.id, layoutId);
+                    }
+                  }}
                 />
               </div>
             )}
