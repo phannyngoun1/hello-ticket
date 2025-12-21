@@ -36,3 +36,6 @@ export { getUniqueSections, findSectionId } from "./utils";
 
 // Export layout canvas component
 export { LayoutCanvas } from "./layout-canvas";
+
+// Export components
+export * from "./components";

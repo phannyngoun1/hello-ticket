@@ -93,14 +93,30 @@ export function LayoutCanvas({
   // Handle Space key for panning
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !e.repeat) {
+      // Don't prevent default if user is typing in an input field
+      const target = e.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.closest("input, textarea, [contenteditable]");
+
+      if (e.code === "Space" && !e.repeat && !isInputField) {
         e.preventDefault();
         setIsSpacePressed(true);
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === "Space") {
+      // Don't prevent default if user is typing in an input field
+      const target = e.target as HTMLElement;
+      const isInputField =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.closest("input, textarea, [contenteditable]");
+
+      if (e.code === "Space" && !isInputField) {
         e.preventDefault();
         setIsSpacePressed(false);
         if (isPanning) {
