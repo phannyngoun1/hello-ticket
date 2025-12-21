@@ -21,7 +21,8 @@ import {
 } from "@truths/ui";
 import { Controller, UseFormReturn } from "react-hook-form";
 import { SeatType } from "../../types";
-import type { SeatMarker, SeatFormData } from "../types";
+import type { SeatMarker } from "../types";
+import type { SeatFormData } from "../form-schemas";
 
 export interface SeatEditSheetProps {
   viewingSeat: SeatMarker | null;

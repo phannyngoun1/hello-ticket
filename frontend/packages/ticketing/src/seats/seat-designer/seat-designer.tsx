@@ -22,11 +22,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
 } from "@truths/ui";
 import {
   Trash2,
@@ -36,7 +31,6 @@ import {
   MoreVertical,
   Image as ImageIcon,
   List,
-  Edit,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -67,6 +61,7 @@ import {
   SectionDetailView,
   DatasheetView,
   SelectedSectionSheet,
+  ManageSectionsSheet,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -117,6 +112,9 @@ export function SeatDesigner({
   const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  // Store coordinates when clicking to place a section (pending section creation)
+  const [pendingSectionCoordinates, setPendingSectionCoordinates] =
+    useState<{ x: number; y: number } | null>(null);
 
   // Section Form
   const sectionForm = useForm<SectionFormData>({
@@ -168,8 +166,7 @@ export function SeatDesigner({
       seatType: SeatType.STANDARD,
     },
   });
-  const [viewingSectionForView, setViewingSectionForView] =
-    useState<SectionMarker | null>(null);
+
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<{
@@ -224,7 +221,8 @@ export function SeatDesigner({
         isNew: true,
       };
       setSectionMarkers([defaultSection]);
-      setSelectedSectionMarker(defaultSection);
+      // Don't auto-select the section to avoid opening the Selected Section sheet immediately
+      // setSelectedSectionMarker(defaultSection);
       sectionForm.setValue("name", defaultSection.name);
     }
   }, [designMode, isLoading, sectionMarkers.length]);
@@ -311,11 +309,11 @@ export function SeatDesigner({
         isNew: false,
       }));
       setSectionMarkers(markers);
-      // Select first section if available and none is selected
-      if (markers.length > 0) {
-        setSelectedSectionMarker((prev) => prev || markers[0]);
-        sectionForm.setValue("name", markers[0].name);
-      }
+      // Don't auto-select the first section to avoid opening the Selected Section sheet immediately
+      // if (markers.length > 0) {
+      //   setSelectedSectionMarker((prev) => prev || markers[0]);
+      //   sectionForm.setValue("name", markers[0].name);
+      // }
     }
   }, [initialSections, designMode]);
 
@@ -516,23 +514,14 @@ export function SeatDesigner({
         const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
         seatPlacementForm.setValue("seatNumber", nextSeatNumber);
       }
-      // Main floor - place sections (create locally, will be saved via form or bulk save)
+      // Main floor - place sections (open form to get name first)
       else if (venueType === "large" && isPlacingSections) {
-        const sectionName = sectionForm.getValues().name;
-        const newSection: SectionMarker = {
-          id: `section-${Date.now()}`,
-          name: sectionName,
-          x: Math.max(0, Math.min(100, x)),
-          y: Math.max(0, Math.min(100, y)),
-          isNew: true,
-        };
-        setSectionMarkers((prev) => [...prev, newSection]);
-        // Auto-increment section name
-        const match = sectionName.match(/Section ([A-Z])/);
-        const nextLetter = match
-          ? String.fromCharCode(match[1].charCodeAt(0) + 1)
-          : "B";
-        sectionForm.setValue("name", `Section ${nextLetter}`);
+        // Store the coordinates where user clicked
+        setPendingSectionCoordinates({ x, y });
+        // Open section form to get the name
+        setIsSectionFormOpen(true);
+        setEditingSectionId(null);
+        sectionForm.reset({ name: "" });
       }
       // Small venue - place seats
       else if (venueType === "small" && isPlacingSeats) {
@@ -649,12 +638,14 @@ export function SeatDesigner({
     const nextName = `Section ${sectionMarkers.length + 1}`;
     sectionForm.reset({ name: nextName });
     setIsSectionFormOpen(true);
+    setPendingSectionCoordinates(null); // Clear any pending coordinates
   };
 
   const handleEditSectionFromSheet = (section: SectionMarker) => {
     setEditingSectionId(section.id);
     sectionForm.reset({ name: section.name });
     setIsSectionFormOpen(true);
+    setPendingSectionCoordinates(null); // Clear any pending coordinates
   };
 
   // Edit section from sectionsData (for seat-level mode)
@@ -663,6 +654,7 @@ export function SeatDesigner({
     sectionForm.reset({ name: section.name });
     setIsSectionFormOpen(true);
     setIsManageSectionsOpen(false);
+    setPendingSectionCoordinates(null); // Clear any pending coordinates
   };
 
   // Sync sectionSelectValue with seat placement form section
@@ -714,18 +706,28 @@ export function SeatDesigner({
 
       // Only update sectionMarkers in section-level mode
       if (designMode === "section-level") {
+        // Use pending coordinates if available (from canvas click), otherwise use default
+        const coordinates = pendingSectionCoordinates || {
+          x: section.x_coordinate || 50,
+          y: section.y_coordinate || 50,
+        };
+        
         const newSectionMarker: SectionMarker = {
           id: section.id,
           name: section.name,
-          x: section.x_coordinate || 50,
-          y: section.y_coordinate || 50,
+          x: coordinates.x,
+          y: coordinates.y,
           imageUrl: section.image_url || undefined,
           isNew: false,
         };
         setSectionMarkers((prev) => [...prev, newSectionMarker]);
-        setSelectedSectionMarker(newSectionMarker);
+        // Don't auto-select the new section to avoid opening the Selected Section sheet
+        // setSelectedSectionMarker(newSectionMarker);
       }
 
+      // Clear pending coordinates after use
+      setPendingSectionCoordinates(null);
+      
       setIsSectionFormOpen(false);
       setEditingSectionId(null);
       sectionForm.reset({ name: "" });
@@ -849,11 +851,17 @@ export function SeatDesigner({
         name,
         layoutId,
         designMode,
+        pendingCoordinates: pendingSectionCoordinates,
       });
       createSectionMutation.mutate({
         name,
-        x: designMode === "section-level" ? 50 : undefined,
-        y: designMode === "section-level" ? 50 : undefined,
+        // Use pending coordinates if available (from canvas click), otherwise use defaults
+        x: designMode === "section-level" 
+          ? (pendingSectionCoordinates?.x ?? 50)
+          : undefined,
+        y: designMode === "section-level" 
+          ? (pendingSectionCoordinates?.y ?? 50)
+          : undefined,
       });
     }
   });
@@ -862,6 +870,7 @@ export function SeatDesigner({
     setIsSectionFormOpen(false);
     setEditingSectionId(null);
     sectionForm.reset({ name: "" });
+    setPendingSectionCoordinates(null); // Clear any pending coordinates
   };
 
   // // Sync form fields with selected seat
@@ -1382,32 +1391,6 @@ export function SeatDesigner({
             />
           )}
 
-          {/* Section Placement Controls Panel - On Top (Large Venue) */}
-          {venueType === "large" && (
-            <SectionPlacementControls
-              selectedSectionMarker={selectedSectionMarker}
-              sectionMarkers={sectionMarkers}
-              sectionFormName={sectionForm.getValues().name}
-              onSectionSelect={(sectionId) => {
-                const section = sectionMarkers.find((s) => s.id === sectionId);
-                if (section) {
-                  setSelectedSectionMarker(section);
-                  sectionForm.setValue("name", section.name);
-                }
-              }}
-              onNewSection={() => {
-                setIsSectionFormOpen(true);
-                setEditingSectionId(null);
-                sectionForm.reset({ name: "" });
-              }}
-              onDeleteSection={(section) => {
-                handleDeleteSection(section);
-                setSelectedSectionMarker(null);
-              }}
-              onUseSectionName={(name) => sectionForm.setValue("name", name)}
-            />
-          )}
-
           {/* Canvas Container */}
           <div
             ref={containerRef}
@@ -1432,7 +1415,6 @@ export function SeatDesigner({
                 panOffset={panOffset}
                 onSeatClick={handleSeatClick}
                 onSectionClick={handleKonvaSectionClick}
-                onSectionDoubleClick={handleOpenSectionDetail}
                 onSeatDragEnd={handleKonvaSeatDragEnd}
                 onImageClick={handleKonvaImageClick}
                 onWheel={handleKonvaWheel}
@@ -1556,74 +1538,20 @@ export function SeatDesigner({
         }}
       />
 
-      {/* Section View Sheet - Read-only view when not in placement mode */}
-      <Sheet
-        open={!!viewingSectionForView}
-        onOpenChange={(open) => !open && setViewingSectionForView(null)}
-      >
-        <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-          {viewingSectionForView && (
-            <>
-              <SheetHeader>
-                <SheetTitle>Section Information</SheetTitle>
-                <SheetDescription>
-                  View section details (read-only)
-                </SheetDescription>
-              </SheetHeader>
-              <div className="mt-6 space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">Name</Label>
-                    <div className="mt-1 text-sm font-medium">
-                      {viewingSectionForView.name}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Floor Plan</Label>
-                    <div className="mt-1 text-sm font-medium">
-                      {viewingSectionForView.imageUrl ? "Added" : "Not added"}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Seats</Label>
-                    <div className="mt-1 text-sm font-medium">
-                      {
-                        seats.filter(
-                          (s) => s.seat.section === viewingSectionForView.name
-                        ).length
-                      }{" "}
-                      seat(s)
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Position</Label>
-                    <div className="mt-1 text-sm font-medium">
-                      X: {viewingSectionForView.x.toFixed(2)}%, Y:{" "}
-                      {viewingSectionForView.y.toFixed(2)}%
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-
+  
       {/* Selected Section Sheet */}
       {venueType === "large" && (
         <SelectedSectionSheet
           selectedSectionMarker={selectedSectionMarker}
           seats={seats}
-          isOpen={!!selectedSectionMarker && !viewingSection}
+          isOpen={!!selectedSectionMarker}
           onOpenChange={(open: boolean) => {
             if (!open) {
               setSelectedSectionMarker(null);
             }
           }}
           onOpenSectionDetail={handleOpenSectionDetail}
-          onUseNameForNext={(name: string) =>
-            sectionForm.setValue("name", name)
-          }
+          onEdit={(section) => handleEditSectionFromSheet(section)}
           onDelete={handleDeleteSection}
         />
       )}
@@ -1704,82 +1632,20 @@ export function SeatDesigner({
 
       {/* Manage Sections Sheet (for seat-level mode) */}
       {designMode === "seat-level" && (
-        <Sheet
+        <ManageSectionsSheet
           open={isManageSectionsOpen}
-          onOpenChange={(open) => setIsManageSectionsOpen(open)}
-        >
-          <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-            <SheetHeader>
-              <SheetTitle>Manage Sections</SheetTitle>
-              <SheetDescription>
-                Edit or delete sections for this layout
-              </SheetDescription>
-            </SheetHeader>
-            <div className="mt-6 space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <p className="text-sm text-muted-foreground">
-                  {sectionsData?.length || 0} section(s)
-                </p>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setEditingSectionId(null);
-                    sectionForm.reset({ name: "" });
-                    setIsSectionFormOpen(true);
-                    setIsManageSectionsOpen(false);
-                  }}
-                >
-                  + New Section
-                </Button>
-              </div>
-              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-                {sectionsData && sectionsData.length > 0 ? (
-                  sectionsData.map((section) => (
-                    <Card key={section.id} className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium">{section.name}</p>
-                          {section.x_coordinate != null &&
-                            section.y_coordinate != null && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Position: ({section.x_coordinate.toFixed(1)},{" "}
-                                {section.y_coordinate.toFixed(1)})
-                              </p>
-                            )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditSectionFromData(section)}
-                            className="h-8 px-2"
-                            title="Edit section"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteSection(section)}
-                            className="h-8 px-2 text-destructive hover:text-destructive"
-                            title="Delete section"
-                            disabled={deleteSectionMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No sections found. Create your first section.
-                  </p>
-                )}
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
+          onOpenChange={setIsManageSectionsOpen}
+          sections={sectionsData}
+          onEdit={handleEditSectionFromData}
+          onDelete={handleDeleteSection}
+          onNewSection={() => {
+            setEditingSectionId(null);
+            sectionForm.reset({ name: "" });
+            setIsSectionFormOpen(true);
+            setIsManageSectionsOpen(false);
+          }}
+          isDeleting={deleteSectionMutation.isPending}
+        />
       )}
 
       {/* New Section Sheet */}
@@ -1790,6 +1656,7 @@ export function SeatDesigner({
             setIsSectionFormOpen(false);
             setEditingSectionId(null);
             sectionForm.reset({ name: "" });
+            setPendingSectionCoordinates(null); // Clear any pending coordinates
           }
         }}
         form={sectionForm}

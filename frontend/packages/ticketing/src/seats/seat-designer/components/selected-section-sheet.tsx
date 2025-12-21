@@ -1,11 +1,19 @@
 /**
  * Selected Section Sheet Component
- * 
+ *
  * Sheet displaying information about the currently selected section
  */
 
-import { Button, Label, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@truths/ui";
-import { Trash2 } from "lucide-react";
+import {
+  Button,
+  Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@truths/ui";
+import { Trash2, Edit, FolderOpen } from "lucide-react";
 import type { SectionMarker, SeatMarker } from "../types";
 
 export interface SelectedSectionSheetProps {
@@ -14,7 +22,7 @@ export interface SelectedSectionSheetProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenSectionDetail: (section: SectionMarker) => void;
-  onUseNameForNext: (name: string) => void;
+  onEdit: (section: SectionMarker) => void;
   onDelete: (section: SectionMarker) => void;
 }
 
@@ -24,7 +32,7 @@ export function SelectedSectionSheet({
   isOpen,
   onOpenChange,
   onOpenSectionDetail,
-  onUseNameForNext,
+  onEdit,
   onDelete,
 }: SelectedSectionSheetProps) {
   if (!selectedSectionMarker) return null;
@@ -47,12 +55,6 @@ export function SelectedSectionSheet({
               </div>
             </div>
             <div>
-              <Label className="text-muted-foreground">Floor Plan</Label>
-              <div className="mt-1 text-sm font-medium">
-                {selectedSectionMarker.imageUrl ? "Added" : "Not added"}
-              </div>
-            </div>
-            <div>
               <Label className="text-muted-foreground">Seats</Label>
               <div className="mt-1 text-sm font-medium">
                 {
@@ -63,7 +65,8 @@ export function SelectedSectionSheet({
                 seat(s)
               </div>
             </div>
-            {(selectedSectionMarker.x !== undefined || selectedSectionMarker.y !== undefined) && (
+            {(selectedSectionMarker.x !== undefined ||
+              selectedSectionMarker.y !== undefined) && (
               <div>
                 <Label className="text-muted-foreground">Position</Label>
                 <div className="mt-1 text-sm font-medium">
@@ -75,7 +78,7 @@ export function SelectedSectionSheet({
           </div>
           <div className="flex gap-2 pt-4 border-t">
             <Button
-              variant="default"
+              variant="outline"
               size="sm"
               onClick={() => {
                 onOpenSectionDetail(selectedSectionMarker);
@@ -83,18 +86,20 @@ export function SelectedSectionSheet({
               }}
               className="flex-1"
             >
-              Open Section Detail
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Open
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                onUseNameForNext(selectedSectionMarker.name);
+                onEdit(selectedSectionMarker);
                 onOpenChange(false);
               }}
               className="flex-1"
             >
-              Use Name for Next
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
             </Button>
             <Button
               variant="destructive"
@@ -113,4 +118,3 @@ export function SelectedSectionSheet({
     </Sheet>
   );
 }
-
