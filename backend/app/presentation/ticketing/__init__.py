@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from .event_routes import router as event_router
 from .show_routes import router as show_router
 from .event_type_routes import router as event_type_router
 from .organizer_routes import router as organizer_router
