@@ -7,6 +7,7 @@ This document clarifies how **Show** and **Event** entities should relate to eac
 ## Current State
 
 ### Show (✅ Implemented)
+
 - **Location**: `backend/app/domain/ticketing/show.py`
 - **Type**: Master data / Template entity
 - **Current Fields**:
@@ -14,9 +15,12 @@ This document clarifies how **Show** and **Event** entities should relate to eac
   - `code` (optional, e.g., "HAMILTON-001")
   - `name` (e.g., "Hamilton")
   - `is_active`
+  - `started_date` (optional, show start date)
+  - `ended_date` (optional, show end date)
   - `attributes` (JSON for flexible data)
 
 ### Event (📋 Planned, Not Yet Implemented)
+
 - **Location**: Planned in `backend/app/domain/events/`
 - **Type**: Specific occurrence / Sellable instance
 - **Planned Fields** (from `TICKET_SYSTEM_BRAINSTORM.md`):
@@ -43,6 +47,7 @@ Show (Template/Production)
 ```
 
 **Event Entity Should Include**:
+
 ```python
 class Event(AggregateRoot):
     def __init__(
@@ -60,6 +65,7 @@ class Event(AggregateRoot):
 ```
 
 **Benefits**:
+
 - ✅ Clear separation: Show = "what", Event = "when/where"
 - ✅ Reusable show information (description, images, etc.)
 - ✅ Easy to find all performances of a show
@@ -67,6 +73,7 @@ class Event(AggregateRoot):
 - ✅ Matches the docstring: Show has "complex relationships"
 
 **Use Cases**:
+
 - "Show me all events for Hamilton"
 - "Create a new event for Hamilton on March 20"
 - "Update the show description (affects all events)"
@@ -84,10 +91,12 @@ Event (Standalone)
 ```
 
 **Event Entity Would NOT Include**:
+
 - No `show_id` field
 - Event is completely independent
 
 **When to Use**:
+
 - If Show is meant to be a category/genre system
 - If events don't belong to a specific "production"
 - If you have one-off events (concerts, sports games) that aren't part of a "show"
@@ -105,10 +114,12 @@ Event
 ```
 
 **Benefits**:
+
 - ✅ Flexible: supports both show-based and standalone events
 - ✅ Can handle: "Hamilton" (show) vs "Taylor Swift Concert" (standalone event)
 
 **Trade-offs**:
+
 - More complex queries
 - Need to handle null show_id cases
 
@@ -119,6 +130,7 @@ Based on the ticket brokerage context and the Show entity's docstring mentioning
 ### Implementation Plan
 
 1. **Add `show_id` to Event Entity**:
+
    ```python
    class Event(AggregateRoot):
        show_id: str  # Required reference to Show
@@ -126,10 +138,12 @@ Based on the ticket brokerage context and the Show entity's docstring mentioning
    ```
 
 2. **Update Show Entity** (if needed):
+
    - Add methods to get related events
    - Add validation: can't delete show if events exist
 
 3. **Database Schema**:
+
    ```sql
    CREATE TABLE events (
        id VARCHAR PRIMARY KEY,
@@ -202,6 +216,7 @@ Booking (customer purchase)
 ## API Examples
 
 ### Creating an Event for a Show
+
 ```python
 POST /ticketing/events
 {
@@ -217,11 +232,13 @@ POST /ticketing/events
 ```
 
 ### Getting All Events for a Show
+
 ```python
 GET /ticketing/shows/{show_id}/events
 ```
 
 ### Getting Show Details with Events
+
 ```python
 GET /ticketing/shows/{show_id}
 {
@@ -255,10 +272,12 @@ If you choose Option 1, when implementing Event:
 ## Questions to Consider
 
 1. **Can an Event exist without a Show?**
+
    - If NO → Use Option 1 (show_id required)
    - If YES → Use Option 3 (show_id nullable)
 
 2. **Is Show a production template or a category?**
+
    - Template → Option 1 (one-to-many with Event)
    - Category → Option 2 (independent, used for filtering)
 
@@ -271,6 +290,7 @@ If you choose Option 1, when implementing Event:
 **Recommended**: **Option 1 - Show → Event (One-to-Many)**
 
 This provides:
+
 - Clear business model (Show = production, Event = performance)
 - Reusable show information
 - Easy querying and analytics
@@ -278,4 +298,3 @@ This provides:
 - Aligns with Show's "complex relationships" description
 
 The Event entity should include a required `show_id` field that references the Show entity.
-

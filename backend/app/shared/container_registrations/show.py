@@ -7,8 +7,10 @@ for the Show domain entity.
 from punq import Container
 from app.shared.mediator import Mediator
 from app.domain.ticketing.show_repositories import ShowRepository
+from app.domain.ticketing.organizer_repositories import OrganizerRepository
 from app.application.ticketing.handlers_show import ShowCommandHandler, ShowQueryHandler
 from app.infrastructure.ticketing.show_repository import SQLShowRepository
+from app.infrastructure.ticketing.organizer_repository import SQLOrganizerRepository
 from app.application.ticketing.commands_show import (
     CreateShowCommand,
     UpdateShowCommand,
@@ -40,10 +42,20 @@ def register_show_container(container: Container) -> None:
     show_repository = SQLShowRepository()
     container.register(ShowRepository, instance=show_repository)
     
+    # Get or create Organizer repository (for validation)
+    # Try to resolve if already registered, otherwise create new instance
+    try:
+        organizer_repository = container.resolve(OrganizerRepository)
+    except Exception:
+        # If not registered yet, create and register it
+        organizer_repository = SQLOrganizerRepository()
+        container.register(OrganizerRepository, instance=organizer_repository)
+    
     code_generator = container.resolve(CodeGeneratorService)
     # Register Show command handler
     show_command_handler = ShowCommandHandler(
         show_repository=show_repository,
+        organizer_repository=organizer_repository,
         code_generator=code_generator
     )
     container.register(ShowCommandHandler, instance=show_command_handler)

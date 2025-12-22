@@ -388,6 +388,30 @@ class BillingCycleEnum(str, Enum):
 
 
 # ============================================================================
+# TICKETING ENUMS
+# ============================================================================
+
+class EventStatusEnum(str, Enum):
+    """Event status enumeration"""
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ON_SALE = "on_sale"
+    SOLD_OUT = "sold_out"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+
+
+class ShowImageTypeEnum(str, Enum):
+    """Show image type enumeration"""
+    POSTER = "poster"
+    BANNER = "banner"
+    THUMBNAIL = "thumbnail"
+    GALLERY = "gallery"
+    LOGO = "logo"
+    OTHER = "other"
+
+
+# ============================================================================
 # UI/APPLICATION ENUMS
 # ============================================================================
 

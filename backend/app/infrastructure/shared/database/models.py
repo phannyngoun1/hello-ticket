@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, VehicleStatusEnum
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, VehicleStatusEnum, EventStatusEnum, ShowImageTypeEnum
 
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
@@ -317,6 +317,49 @@ class CustomerTypeModel(SQLModel, table=True):
 # ============================================================================
 # TICKETING MODULE
 
+class EventModel(SQLModel, table=True):
+    """Event database model"""
+    __tablename__ = "events"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    show_id: str = Field(index=True, foreign_key="shows.id")
+    title: str
+    start_dt: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+    duration_minutes: int
+    venue_id: str = Field(index=True, foreign_key="venues.id")
+    layout_id: Optional[str] = Field(default=None, index=True, foreign_key="layouts.id")
+    status: str = Field(sa_column=Column(SAEnum(EventStatusEnum, native_enum=False)))
+    is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_events_tenant_show', 'tenant_id', 'show_id'),
+        Index('ix_events_tenant_venue', 'tenant_id', 'venue_id'),
+        Index('ix_events_tenant_layout', 'tenant_id', 'layout_id'),
+        Index('ix_events_tenant_status', 'tenant_id', 'status'),
+        Index('ix_events_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_events_tenant_deleted', 'tenant_id', 'is_deleted'),
+        Index('ix_events_start_dt', 'start_dt'),  # For date range queries
+    )
+
+
+
 class ShowModel(SQLModel, table=True):
     """Show master data database model"""
     __tablename__ = "shows"
@@ -326,7 +369,12 @@ class ShowModel(SQLModel, table=True):
     tenant_id: str = Field(index=True)
     code: str = Field(index=True)
     name: str
+    organizer_id: Optional[str] = Field(default=None, index=True, foreign_key="organizers.id")
     is_active: bool = Field(default=True, index=True)
+    started_date: Optional[date] = Field(default=None, sa_column=Column(Date))
+    ended_date: Optional[date] = Field(default=None, sa_column=Column(Date))
+    images: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # List of images with type
+    note: Optional[str] = Field(default=None, sa_column=Column(String(5000)))
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
     

@@ -25,7 +25,9 @@ from app.infrastructure.shared.database.models import (
     # Sales master data
     BookingModel,
     # Ticketing master data
-    ShowModel)
+    ShowModel,
+    # Ticketing master data
+    EventModel)
 
 # Load environment variables from .env file
 try:
