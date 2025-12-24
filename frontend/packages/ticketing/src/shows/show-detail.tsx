@@ -4,7 +4,7 @@
  * Display detailed information about a show with optional edit and activity views.
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Button,
   Card,
@@ -22,9 +22,10 @@ import {
   MoreVertical,
   Info,
   Database,
-  
+  Image as ImageIcon,
 } from "lucide-react";
-import { Show } from "./types";
+import { Show, ShowImage } from "./types";
+import { useShowService } from "./show-provider";
 
 export interface ShowDetailProps {
   className?: string;
@@ -52,8 +53,29 @@ export function ShowDetail({
   
   customActions,
 }: ShowDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "metadata">("profile");
-  
+  const [activeTab, setActiveTab] = useState<"profile" | "images" | "metadata">("profile");
+  const service = useShowService();
+  const [images, setImages] = useState<ShowImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+
+  // Load images when data is available
+  useEffect(() => {
+    if (!data?.id) return;
+
+    const loadImages = async () => {
+      setIsLoadingImages(true);
+      try {
+        const loadedImages = await service.fetchShowImages(data.id);
+        setImages(loadedImages);
+      } catch (error) {
+        console.error("Failed to load images:", error);
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    loadImages();
+  }, [data?.id, service]);
 
   // All hooks must be called before any early returns
   
@@ -144,6 +166,7 @@ export function ShowDetail({
   }
 
   const hasMetadata = showMetadata;
+  const hasImages = images.length > 0;
 
   return (
     <Card className={cn("p-6", className)}>
@@ -228,6 +251,22 @@ export function ShowDetail({
                   Profile
                 </span>
               </button>
+              {(hasImages || isLoadingImages) && (
+                <button
+                  className={cn(
+                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                    activeTab === "images"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                  onClick={() => setActiveTab("images")}
+                >
+                  <span className="flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    Images {hasImages && `(${images.length})`}
+                  </span>
+                </button>
+              )}
               {hasMetadata && (
                 <button
                   className={cn(
@@ -321,6 +360,55 @@ export function ShowDetail({
                     </dl>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Images Tab */}
+            {activeTab === "images" && (
+              <div className="space-y-6">
+                {isLoadingImages ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-muted-foreground">Loading images...</div>
+                  </div>
+                ) : images.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-sm text-muted-foreground">No images uploaded yet</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {images.map((image) => (
+                      <Card key={image.id} className="overflow-hidden">
+                        <div className="relative aspect-video bg-muted">
+                          {image.file_url ? (
+                            <img
+                              src={image.file_url}
+                              alt={image.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                            </div>
+                          )}
+                          {image.is_banner && (
+                            <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                              Banner
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-medium text-sm truncate">{image.name}</h4>
+                          {image.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {image.description}
+                            </p>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -19,7 +19,7 @@ export function FormFieldWrapper({
   required = false,
   children,
   className,
-}: FormFieldProps) {
+}: FormFieldWrapperProps) {
   return (
     <div className={cn("space-y-2", className)}>
       {label && (
@@ -38,4 +38,3 @@ export function FormFieldWrapper({
 }
 
 export default FormFieldWrapper;
-

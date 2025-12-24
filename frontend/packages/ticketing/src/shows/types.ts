@@ -13,6 +13,10 @@ export interface Show {
     id: string;
     code?: string;
     name: string;
+    organizer_id?: string;
+    started_date?: string; // ISO date string
+    ended_date?: string; // ISO date string
+    note?: string;
     created_at: Date;
     updated_at?: Date;
 }
@@ -20,15 +24,49 @@ export interface Show {
 export interface CreateShowInput {
     code?: string;
     name: string;
+    organizer_id?: string;
+    started_date?: string; // ISO date string
+    ended_date?: string; // ISO date string
+    note?: string;
 }
 
 export interface UpdateShowInput {
     code?: string;
     name?: string;
+    organizer_id?: string;
+    started_date?: string; // ISO date string
+    ended_date?: string; // ISO date string
+    note?: string;
 }
 
 export interface ShowFilter {
     search?: string;
     createdAfter?: string;
     createdBefore?: string;
+}
+
+export interface ShowImage {
+    id: string;
+    show_id: string;
+    file_id: string;
+    name: string;
+    description?: string;
+    is_banner: boolean;
+    file_url?: string; // Populated from file_uploads
+    created_at: Date;
+    updated_at: Date;
+}
+
+export interface CreateShowImageInput {
+    show_id: string;
+    file_id: string;
+    name: string;
+    description?: string;
+    is_banner?: boolean;
+}
+
+export interface UpdateShowImageInput {
+    name?: string;
+    description?: string;
+    is_banner?: boolean;
 }

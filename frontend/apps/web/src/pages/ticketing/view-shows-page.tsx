@@ -3,6 +3,7 @@ import { useParams } from "@tanstack/react-router";
 import {
   ShowDetail,
   ShowProvider,
+  OrganizerProvider,
   useShow,
   useShowService,
 } from "@truths/ticketing";
@@ -52,7 +53,16 @@ export function ViewShowPage() {
 
   return (
     <ShowProvider config={serviceConfig}>
-      <ShowDetailContent id={id} />
+      <OrganizerProvider
+        config={{
+          apiClient: api,
+          endpoints: {
+            organizers: "/api/v1/ticketing/organizers",
+          },
+        }}
+      >
+        <ShowDetailContent id={id} />
+      </OrganizerProvider>
     </ShowProvider>
   );
 }

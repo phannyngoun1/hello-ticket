@@ -9,7 +9,12 @@ import { cn } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import { ShowForm, type ShowFormData } from "./show-form";
-import type { Show, UpdateShowInput } from "./types";
+import { ShowImageManager } from "./show-image-manager";
+import { useShowService } from "./show-provider";
+import { useOrganizerService } from "../organizers/organizer-provider";
+import { useOrganizers } from "../organizers/use-organizers";
+
+import type { Show, UpdateShowInput, ShowImage } from "./types";
 
 export interface EditShowDialogProps {
   open: boolean;
@@ -34,21 +39,45 @@ export function EditShowDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(null);
+  const service = useShowService();
+  const [images, setImages] = useState<ShowImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const organizerService = useOrganizerService();
+  const { data: organizersData } = useOrganizers(organizerService, {
+    pagination: { page: 1, pageSize: 100 },
+  });
+  const organizers = organizersData?.data?.map(org => ({ id: org.id, name: org.name })) || [];
 
   const defaultValues = useMemo(() => {
     if (!show) return undefined;
     return {
-
-
       code: show.code ?? "",
-
-
-
       name: show.name ?? "",
-
-
+      organizer_id: show.organizer_id ?? undefined,
+      started_date: show.started_date ?? undefined,
+      ended_date: show.ended_date ?? undefined,
+      note: show.note ?? undefined,
     };
   }, [show]);
+
+  // Load images when dialog opens
+  useEffect(() => {
+    if (!open || !show) return;
+
+    const loadImages = async () => {
+      setIsLoadingImages(true);
+      try {
+        const loadedImages = await service.fetchShowImages(show.id);
+        setImages(loadedImages);
+      } catch (error) {
+        console.error("Failed to load images:", error);
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    loadImages();
+  }, [open, show, service]);
 
   useEffect(() => {
     if (!open) return;
@@ -69,15 +98,12 @@ export function EditShowDialog({
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
     return (data: ShowFormData): UpdateShowInput => ({
-
-
       code: undefined,
-
-
-
       name: data.name,
-
-
+      organizer_id: data.organizer_id || undefined,
+      started_date: data.started_date || undefined,
+      ended_date: data.ended_date || undefined,
+      note: data.note || undefined,
     });
   }, []);
 
@@ -162,20 +188,38 @@ export function EditShowDialog({
         showSubmitButton
         onSubmit={handleDialogSubmit}
       >
-        <div
-          className={cn(
-            "bg-background border border-border rounded-lg shadow-sm mt-12",
-            density.paddingForm
+        <div className="space-y-6 mt-12">
+          <div
+            className={cn(
+              "bg-background border border-border rounded-lg shadow-sm",
+              density.paddingForm
+            )}
+          >
+            <ShowForm
+              ref={formRef}
+              key={`${show.id}-${formKey}`}
+              defaultValues={defaultValues}
+              onSubmit={handleFormSubmit}
+              isLoading={isSubmitting}
+              mode="edit"
+              organizers={organizers}
+            />
+          </div>
+          
+          {show && (
+            <div
+              className={cn(
+                "bg-background border border-border rounded-lg shadow-sm",
+                density.paddingForm
+              )}
+            >
+              <ShowImageManager
+                showId={show.id}
+                images={images}
+                onImagesChange={setImages}
+              />
+            </div>
           )}
-        >
-          <ShowForm
-            ref={formRef}
-            key={`${show.id}-${formKey}`}
-            defaultValues={defaultValues}
-            onSubmit={handleFormSubmit}
-            isLoading={isSubmitting}
-            mode="edit"
-          />
         </div>
       </FullScreenDialog>
 

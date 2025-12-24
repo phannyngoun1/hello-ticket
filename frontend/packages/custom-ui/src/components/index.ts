@@ -4,7 +4,7 @@ export type { DataRow, DataTableProps, ColumnTextHeaderProps, CreateTextColumnOp
 
 // Data List
 export { DataList } from './data-list';
-export type { DataListProps, DataListItem, StatConfig, BadgeConfig } from './data-list';
+
 
 // Tree Select
 export { TreeSelect } from './tree-select';
@@ -78,7 +78,7 @@ export type { SearchInputProps } from './form/search-input';
 export { PageHeader } from './layout/page-header';
 export type { PageHeaderProps } from './layout/page-header';
 export { QuickActionsList } from './layout/quick-actions-list';
-export type { QuickActionsListProps, QuickAction } from './layout/quick-actions-list';
+export type { QuickActionsListProps, } from './layout/quick-actions-list';
 
 // Feedback
 export { ErrorAlert } from './feedback/error-alert';

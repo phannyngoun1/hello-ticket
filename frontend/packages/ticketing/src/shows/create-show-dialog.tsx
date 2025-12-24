@@ -9,7 +9,12 @@ import { cn } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import { ShowForm, type ShowFormData } from "./show-form";
-import type { CreateShowInput } from "./types";
+import { ShowImageManager } from "./show-image-manager";
+import { useShowService } from "./show-provider";
+import { useOrganizerService } from "../organizers/organizer-provider";
+import { useOrganizers } from "../organizers/use-organizers";
+
+import type { CreateShowInput, ShowImage } from "./types";
 
 export interface CreateShowDialogProps {
   open: boolean;
@@ -32,6 +37,14 @@ export function CreateShowDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(null);
+  const [createdShowId, setCreatedShowId] = useState<string | null>(null);
+  const [images, setImages] = useState<ShowImage[]>([]);
+  const showService = useShowService();
+  const organizerService = useOrganizerService();
+  const { data: organizersData } = useOrganizers(organizerService, {
+    pagination: { page: 1, pageSize: 100 },
+  });
+  const organizers = organizersData?.data?.map(org => ({ id: org.id, name: org.name })) || [];
 
   useEffect(() => {
     if (!open) {
@@ -52,18 +65,14 @@ export function CreateShowDialog({
   };
 
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
-  // createValue is null for timestamp fields, so they are automatically excluded
   const buildPayload = useMemo(() => {
     return (data: ShowFormData): CreateShowInput => ({
-
-
       code: undefined,
-
-
-
       name: data.name,
-
-
+      organizer_id: data.organizer_id || undefined,
+      started_date: data.started_date || undefined,
+      ended_date: data.ended_date || undefined,
+      note: data.note || undefined,
     });
   }, []);
 
@@ -73,6 +82,8 @@ export function CreateShowDialog({
     setIsSubmitting(true);
     try {
       const payload = buildPayload(pendingFormData);
+      const createdShow = await showService.createShow(payload);
+      setCreatedShowId(createdShow.id);
       await onSubmit(payload);
       setPendingFormData(null);
       setShowConfirmDialog(false);
@@ -88,6 +99,8 @@ export function CreateShowDialog({
   const handleClose = () => {
     setShowConfirmDialog(false);
     setPendingFormData(null);
+    setCreatedShowId(null);
+    setImages([]);
     onOpenChange(false);
   };
 
@@ -145,19 +158,37 @@ export function CreateShowDialog({
           formRef.current?.requestSubmit();
         }}
       >
-        <div
-          className={cn(
-            "bg-background border border-border rounded-lg shadow-sm mt-12",
-            density.paddingForm
+        <div className="space-y-6 mt-12">
+          <div
+            className={cn(
+              "bg-background border border-border rounded-lg shadow-sm",
+              density.paddingForm
+            )}
+          >
+            <ShowForm
+              ref={formRef}
+              key={formKey}
+              onSubmit={handleFormSubmit}
+              isLoading={isSubmitting}
+              mode="create"
+              organizers={organizers}
+            />
+          </div>
+          
+          {createdShowId && (
+            <div
+              className={cn(
+                "bg-background border border-border rounded-lg shadow-sm",
+                density.paddingForm
+              )}
+            >
+              <ShowImageManager
+                showId={createdShowId}
+                images={images}
+                onImagesChange={setImages}
+              />
+            </div>
           )}
-        >
-          <ShowForm
-            ref={formRef}
-            key={formKey}
-            onSubmit={handleFormSubmit}
-            isLoading={isSubmitting}
-            mode="create"
-          />
         </div>
       </FullScreenDialog>
 
