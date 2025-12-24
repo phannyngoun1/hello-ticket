@@ -1,14 +1,18 @@
 /**
  * Show Image Manager Component
- * 
+ *
  * Component for managing show images (upload, view, delete, set banner)
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, Button, Input, Label, Textarea, Checkbox } from "@truths/ui";
-import { Upload, X, Image as ImageIcon, Star } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Star, Loader2 } from "lucide-react";
 import { uploadService } from "@truths/shared";
-import type { ShowImage, CreateShowImageInput, UpdateShowImageInput } from "./types";
+import type {
+  ShowImage,
+  CreateShowImageInput,
+  UpdateShowImageInput,
+} from "./types";
 import { useShowService } from "./show-provider";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -28,57 +32,101 @@ export function ShowImageManager({
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>(initialImages);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ name: string; description: string; is_banner: boolean } | null>(null);
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    description: string;
+    is_banner: boolean;
+  } | null>(null);
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Sync images with prop changes
+  useEffect(() => {
+    setImages(initialImages);
+  }, [initialImages]);
 
-    setIsUploading(true);
-    try {
-      // Upload file first
-      const uploadResponse = await uploadService.uploadImage(file);
-      
-      // Create show image record
-      const imageInput: CreateShowImageInput = {
-        show_id: showId,
-        file_id: uploadResponse.id,
-        name: file.name,
-        description: "",
-        is_banner: false,
-      };
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
 
-      const newImage = await service.createShowImage(imageInput);
-      // Ensure file_url is set from upload response
-      const imageWithUrl = { ...newImage, file_url: uploadResponse.url };
-      const updatedImages = [...images, imageWithUrl];
-      setImages(updatedImages);
-      onImagesChange?.(updatedImages);
-    } catch (error) {
-      console.error("Failed to upload image:", error);
-      alert("Failed to upload image. Please try again.");
-    } finally {
+      setIsUploading(true);
+      const newImages: ShowImage[] = [];
+      const failedFiles: string[] = [];
+
+      // Upload files sequentially to avoid overwhelming the server
+      for (const file of files) {
+        const fileName = file.name;
+        setUploadingFiles((prev) => new Set(prev).add(fileName));
+
+        try {
+          // Upload file first
+          const uploadResponse = await uploadService.uploadImage(file);
+
+          // Create show image record
+          const imageInput: CreateShowImageInput = {
+            show_id: showId,
+            file_id: uploadResponse.id,
+            name: file.name,
+            description: "",
+            is_banner: false, // New uploads are never banners by default
+          };
+
+          const newImage = await service.createShowImage(imageInput);
+          // Ensure file_url is set from upload response
+          const imageWithUrl = { ...newImage, file_url: uploadResponse.url };
+          newImages.push(imageWithUrl);
+        } catch (error) {
+          console.error(`Failed to upload image ${fileName}:`, error);
+          failedFiles.push(fileName);
+        } finally {
+          setUploadingFiles((prev) => {
+            const next = new Set(prev);
+            next.delete(fileName);
+            return next;
+          });
+        }
+      }
+
+      if (newImages.length > 0) {
+        const updatedImages = [...images, ...newImages];
+        setImages(updatedImages);
+        onImagesChange?.(updatedImages);
+      }
+
+      // Show summary message if there were failures
+      if (failedFiles.length > 0) {
+        const successCount = newImages.length;
+        const message =
+          successCount > 0
+            ? `Successfully uploaded ${successCount} image(s). ${failedFiles.length} image(s) failed to upload.`
+            : `Failed to upload ${failedFiles.length} image(s). Please try again.`;
+        alert(message);
+      }
+
       setIsUploading(false);
       // Reset file input
       e.target.value = "";
-    }
-  }, [showId, images, service, onImagesChange]);
+    },
+    [showId, images, service, onImagesChange]
+  );
 
-  const handleDelete = useCallback(async (imageId: string) => {
-    if (!confirm("Are you sure you want to delete this image?")) return;
+  const handleDelete = useCallback(
+    async (imageId: string) => {
+      if (!confirm("Are you sure you want to delete this image?")) return;
 
-    try {
-      await service.deleteShowImage(showId, imageId);
-      const updatedImages = images.filter(img => img.id !== imageId);
-      setImages(updatedImages);
-      onImagesChange?.(updatedImages);
-    } catch (error) {
-      console.error("Failed to delete image:", error);
-      alert("Failed to delete image. Please try again.");
-    }
-  }, [showId, images, service, onImagesChange]);
+      try {
+        await service.deleteShowImage(showId, imageId);
+        const updatedImages = images.filter((img) => img.id !== imageId);
+        setImages(updatedImages);
+        onImagesChange?.(updatedImages);
+      } catch (error) {
+        console.error("Failed to delete image:", error);
+        alert("Failed to delete image. Please try again.");
+      }
+    },
+    [showId, images, service, onImagesChange]
+  );
 
   const handleEdit = useCallback((image: ShowImage) => {
     setEditingId(image.id);
@@ -93,15 +141,42 @@ export function ShowImageManager({
     if (!editingId || !editForm) return;
 
     try {
+      // If setting as banner, first unset all other banners
+      if (editForm.is_banner) {
+        const bannerImages = images.filter(
+          (img) => img.is_banner && img.id !== editingId
+        );
+        for (const bannerImage of bannerImages) {
+          try {
+            await service.updateShowImage(showId, bannerImage.id, {
+              is_banner: false,
+            });
+          } catch (error) {
+            console.error(
+              `Failed to unset banner for image ${bannerImage.id}:`,
+              error
+            );
+          }
+        }
+      }
+
       const updateInput: UpdateShowImageInput = {
         name: editForm.name,
         description: editForm.description || undefined,
         is_banner: editForm.is_banner,
       };
 
-      const updatedImage = await service.updateShowImage(showId, editingId, updateInput);
-      const updatedImages = images.map(img => 
-        img.id === editingId ? updatedImage : img
+      const updatedImage = await service.updateShowImage(
+        showId,
+        editingId,
+        updateInput
+      );
+      const updatedImages = images.map((img) =>
+        img.id === editingId
+          ? updatedImage
+          : editForm.is_banner && img.is_banner
+            ? { ...img, is_banner: false }
+            : img
       );
       setImages(updatedImages);
       onImagesChange?.(updatedImages);
@@ -118,23 +193,54 @@ export function ShowImageManager({
     setEditForm(null);
   }, []);
 
-  const handleToggleBanner = useCallback(async (imageId: string, currentValue: boolean) => {
-    try {
-      const updateInput: UpdateShowImageInput = {
-        is_banner: !currentValue,
-      };
+  const handleToggleBanner = useCallback(
+    async (imageId: string, currentValue: boolean) => {
+      try {
+        const newBannerValue = !currentValue;
+        const updateInput: UpdateShowImageInput = {
+          is_banner: newBannerValue,
+        };
 
-      const updatedImage = await service.updateShowImage(showId, imageId, updateInput);
-      const updatedImages = images.map(img => 
-        img.id === imageId ? updatedImage : img
-      );
-      setImages(updatedImages);
-      onImagesChange?.(updatedImages);
-    } catch (error) {
-      console.error("Failed to update banner status:", error);
-      alert("Failed to update banner status. Please try again.");
-    }
-  }, [showId, images, service, onImagesChange]);
+        // If setting as banner, first unset all other banners
+        if (newBannerValue) {
+          const bannerImages = images.filter(
+            (img) => img.is_banner && img.id !== imageId
+          );
+          for (const bannerImage of bannerImages) {
+            try {
+              await service.updateShowImage(showId, bannerImage.id, {
+                is_banner: false,
+              });
+            } catch (error) {
+              console.error(
+                `Failed to unset banner for image ${bannerImage.id}:`,
+                error
+              );
+            }
+          }
+        }
+
+        const updatedImage = await service.updateShowImage(
+          showId,
+          imageId,
+          updateInput
+        );
+        const updatedImages = images.map((img) =>
+          img.id === imageId
+            ? updatedImage
+            : newBannerValue && img.is_banner
+              ? { ...img, is_banner: false }
+              : img
+        );
+        setImages(updatedImages);
+        onImagesChange?.(updatedImages);
+      } catch (error) {
+        console.error("Failed to update banner status:", error);
+        alert("Failed to update banner status. Please try again.");
+      }
+    },
+    [showId, images, service, onImagesChange]
+  );
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -149,20 +255,40 @@ export function ShowImageManager({
             asChild
           >
             <span>
-              <Upload className="h-4 w-4 mr-2" />
-              {isUploading ? "Uploading..." : "Upload Image"}
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Images
+                </>
+              )}
             </span>
           </Button>
           <input
             id="image-upload"
             type="file"
             accept="image/*"
+            multiple
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}
+            aria-label="Upload show images"
           />
         </Label>
       </div>
+
+      {uploadingFiles.size > 0 && (
+        <div className="bg-muted p-3 rounded-md">
+          <p className="text-sm text-muted-foreground">
+            Uploading {uploadingFiles.size} file(s):{" "}
+            {Array.from(uploadingFiles).join(", ")}
+          </p>
+        </div>
+      )}
 
       {images.length === 0 ? (
         <Card className="p-8 text-center border-dashed">
@@ -174,7 +300,7 @@ export function ShowImageManager({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {images.map((image) => (
-            <Card key={image.id} className="overflow-hidden">
+            <Card key={image.id} className="overflow-hidden flex flex-col">
               <div className="relative aspect-video bg-muted">
                 {image.file_url ? (
                   <img
@@ -188,12 +314,12 @@ export function ShowImageManager({
                   </div>
                 )}
                 {image.is_banner && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                  <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
                     <Star className="h-3 w-3" />
                     Banner
                   </div>
                 )}
-                <div className="absolute top-2 left-2 flex gap-1">
+                <div className="absolute top-2 right-2 flex gap-1">
                   <Button
                     type="button"
                     variant="destructive"
@@ -205,35 +331,58 @@ export function ShowImageManager({
                   </Button>
                 </div>
               </div>
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-2 flex flex-col flex-1">
                 {editingId === image.id ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 flex flex-col flex-1">
                     <div>
-                      <Label htmlFor={`name-${image.id}`} className="text-xs">Name</Label>
+                      <Label htmlFor={`name-${image.id}`} className="text-xs">
+                        Name
+                      </Label>
                       <Input
                         id={`name-${image.id}`}
                         value={editForm?.name || ""}
-                        onChange={(e) => setEditForm(prev => prev ? { ...prev, name: e.target.value } : null)}
+                        onChange={(e) =>
+                          setEditForm((prev) =>
+                            prev ? { ...prev, name: e.target.value } : null
+                          )
+                        }
                         className="h-8 text-sm"
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`desc-${image.id}`} className="text-xs">Description</Label>
+                      <Label htmlFor={`desc-${image.id}`} className="text-xs">
+                        Description
+                      </Label>
                       <Textarea
                         id={`desc-${image.id}`}
                         value={editForm?.description || ""}
-                        onChange={(e) => setEditForm(prev => prev ? { ...prev, description: e.target.value } : null)}
+                        onChange={(e) =>
+                          setEditForm((prev) =>
+                            prev
+                              ? { ...prev, description: e.target.value }
+                              : null
+                          )
+                        }
                         className="h-16 text-sm"
                         rows={2}
                       />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="mt-auto pt-2 flex items-center gap-2">
                       <Checkbox
                         id={`banner-${image.id}`}
                         checked={editForm?.is_banner || false}
-                        onCheckedChange={(checked) => setEditForm(prev => prev ? { ...prev, is_banner: checked === true } : null)}
+                        onCheckedChange={(checked) =>
+                          setEditForm((prev) =>
+                            prev
+                              ? { ...prev, is_banner: checked === true }
+                              : null
+                          )
+                        }
                       />
-                      <Label htmlFor={`banner-${image.id}`} className="text-xs cursor-pointer">
+                      <Label
+                        htmlFor={`banner-${image.id}`}
+                        className="text-xs cursor-pointer"
+                      >
                         Set as banner
                       </Label>
                     </div>
@@ -259,33 +408,40 @@ export function ShowImageManager({
                   </div>
                 ) : (
                   <>
-                    <div>
-                      <h4 className="font-medium text-sm truncate">{image.name}</h4>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-sm truncate">
+                          {image.name}
+                        </h4>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEdit(image)}
+                        >
+                          Edit
+                        </Button>
+                      </div>
                       {image.description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {image.description}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`banner-check-${image.id}`}
-                          checked={image.is_banner}
-                          onCheckedChange={() => handleToggleBanner(image.id, image.is_banner)}
-                        />
-                        <Label htmlFor={`banner-check-${image.id}`} className="text-xs cursor-pointer">
-                          Banner
-                        </Label>
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEdit(image)}
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                      <Checkbox
+                        id={`banner-check-${image.id}`}
+                        checked={image.is_banner}
+                        onCheckedChange={() =>
+                          handleToggleBanner(image.id, image.is_banner)
+                        }
+                      />
+                      <Label
+                        htmlFor={`banner-check-${image.id}`}
+                        className="text-xs cursor-pointer"
                       >
-                        Edit
-                      </Button>
+                        Banner
+                      </Label>
                     </div>
                   </>
                 )}
@@ -297,4 +453,3 @@ export function ShowImageManager({
     </div>
   );
 }
-

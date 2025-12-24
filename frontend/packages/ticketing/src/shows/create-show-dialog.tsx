@@ -4,17 +4,22 @@
  * Full-screen dialog for creating new shows using the shared form component.
  */
 
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { cn } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import { ShowForm, type ShowFormData } from "./show-form";
 import { ShowImageManager } from "./show-image-manager";
+import {
+  PendingImageManager,
+  type PendingImage,
+} from "./pending-image-manager";
 import { useShowService } from "./show-provider";
 import { useOrganizerService } from "../organizers/organizer-provider";
 import { useOrganizers } from "../organizers/use-organizers";
+import { uploadService } from "@truths/shared";
 
-import type { CreateShowInput, ShowImage } from "./types";
+import type { CreateShowInput, ShowImage, CreateShowImageInput } from "./types";
 
 export interface CreateShowDialogProps {
   open: boolean;
@@ -36,15 +41,19 @@ export function CreateShowDialog({
   const [formKey, setFormKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(
+    null
+  );
   const [createdShowId, setCreatedShowId] = useState<string | null>(null);
   const [images, setImages] = useState<ShowImage[]>([]);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const showService = useShowService();
   const organizerService = useOrganizerService();
   const { data: organizersData } = useOrganizers(organizerService, {
     pagination: { page: 1, pageSize: 100 },
   });
-  const organizers = organizersData?.data?.map(org => ({ id: org.id, name: org.name })) || [];
+  const organizers =
+    organizersData?.data?.map((org) => ({ id: org.id, name: org.name })) || [];
 
   useEffect(() => {
     if (!open) {
@@ -84,6 +93,46 @@ export function CreateShowDialog({
       const payload = buildPayload(pendingFormData);
       const createdShow = await showService.createShow(payload);
       setCreatedShowId(createdShow.id);
+
+      // Upload pending images after show is created
+      if (pendingImages.length > 0) {
+        const uploadedImages: ShowImage[] = [];
+        for (const pendingImage of pendingImages) {
+          try {
+            // Upload file first
+            const uploadResponse = await uploadService.uploadImage(
+              pendingImage.file
+            );
+
+            // Create show image record
+            const imageInput: CreateShowImageInput = {
+              show_id: createdShow.id,
+              file_id: uploadResponse.id,
+              name: pendingImage.name,
+              description: pendingImage.description || undefined,
+              is_banner: pendingImage.is_banner,
+            };
+
+            const newImage = await showService.createShowImage(imageInput);
+            const imageWithUrl = { ...newImage, file_url: uploadResponse.url };
+            uploadedImages.push(imageWithUrl);
+
+            // Clean up preview URL
+            if (pendingImage.preview) {
+              URL.revokeObjectURL(pendingImage.preview);
+            }
+          } catch (error) {
+            console.error(
+              `Failed to upload image ${pendingImage.name}:`,
+              error
+            );
+          }
+        }
+
+        setImages(uploadedImages);
+        setPendingImages([]);
+      }
+
       await onSubmit(payload);
       setPendingFormData(null);
       setShowConfirmDialog(false);
@@ -101,31 +150,19 @@ export function CreateShowDialog({
     setPendingFormData(null);
     setCreatedShowId(null);
     setImages([]);
+    // Clean up preview URLs
+    pendingImages.forEach((img) => {
+      if (img.preview) {
+        URL.revokeObjectURL(img.preview);
+      }
+    });
+    setPendingImages([]);
     onOpenChange(false);
   };
 
   const handleClear = () => {
     setPendingFormData(null);
     setFormKey((prev) => prev + 1);
-  };
-
-  const handleDialogSubmit = () => {
-    if (formRef.current) {
-      formRef.current.requestSubmit();
-    }
-  };
-
-  const handleConfirmDialogChange = (dialogOpen: boolean) => {
-    setShowConfirmDialog(dialogOpen);
-    if (!dialogOpen) {
-      setPendingFormData(null);
-      setTimeout(() => {
-        const firstInput = formRef.current?.querySelector(
-          "input, textarea, select"
-        ) as HTMLElement | null;
-        firstInput?.focus();
-      }, 0);
-    }
   };
 
   const confirmAction = {
@@ -174,8 +211,21 @@ export function CreateShowDialog({
               organizers={organizers}
             />
           </div>
-          
-          {createdShowId && (
+
+          {!createdShowId ? (
+            <div
+              className={cn(
+                "bg-background border border-border rounded-lg shadow-sm",
+                density.paddingForm
+              )}
+            >
+              <PendingImageManager
+                images={pendingImages}
+                onImagesChange={setPendingImages}
+                disabled={isSubmitting}
+              />
+            </div>
+          ) : (
             <div
               className={cn(
                 "bg-background border border-border rounded-lg shadow-sm",
@@ -220,4 +270,3 @@ export function CreateShowDialog({
     </>
   );
 }
-
