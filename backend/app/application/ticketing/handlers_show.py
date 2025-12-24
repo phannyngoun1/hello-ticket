@@ -58,7 +58,6 @@ class ShowCommandHandler:
             organizer_id=command.organizer_id,
             started_date=command.started_date,
             ended_date=command.ended_date,
-            images=command.images,
             note=command.note,
         )
 
@@ -93,8 +92,6 @@ class ShowCommandHandler:
             update_kwargs['started_date'] = command.started_date
         if command.ended_date is not None:
             update_kwargs['ended_date'] = command.ended_date
-        if command.images is not None:
-            update_kwargs['images'] = command.images
         if command.note is not None:
             update_kwargs['note'] = command.note
         show.update_details(**update_kwargs)

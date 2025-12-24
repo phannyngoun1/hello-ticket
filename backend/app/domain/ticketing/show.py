@@ -7,7 +7,6 @@ from typing import Optional, Dict, Any, List
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
 from app.shared.utils import generate_id
-from app.shared.enums import ShowImageTypeEnum
 
 
 class Show(AggregateRoot):
@@ -24,7 +23,6 @@ class Show(AggregateRoot):
         attributes: Optional[Dict[str, Any]] = None,
         started_date: Optional[date] = None,
         ended_date: Optional[date] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
         note: Optional[str] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
@@ -43,7 +41,6 @@ class Show(AggregateRoot):
         self.attributes = attributes or {}
         self.started_date = started_date
         self.ended_date = ended_date
-        self.images = self._validate_images(images) if images else []
         self.note = self._validate_note(note) if note else None
         self.deactivated_at = deactivated_at
         self._version = version
@@ -60,7 +57,6 @@ class Show(AggregateRoot):
         organizer_id: Optional[str] = None,
         started_date: Optional[date] = None,
         ended_date: Optional[date] = None,
-        images: Optional[List[Dict[str, Any]]] = None,
         note: Optional[str] = None,
     ) -> None:
         """Update show master data with validation."""
@@ -74,8 +70,6 @@ class Show(AggregateRoot):
             self.started_date = started_date
         if ended_date is not None:
             self.ended_date = ended_date
-        if images is not None:
-            self.images = self._validate_images(images)
         if note is not None:
             self.note = self._validate_note(note)
 
@@ -112,35 +106,6 @@ class Show(AggregateRoot):
         if not name or not name.strip():
             raise ValidationError("Show name is required")
         return name.strip()
-
-    def _validate_images(self, images: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Validate show images."""
-        if not isinstance(images, list):
-            raise ValidationError("Images must be a list")
-        
-        validated_images = []
-        for img in images:
-            if not isinstance(img, dict):
-                raise ValidationError("Each image must be a dictionary")
-            
-            if 'url' not in img or not img['url']:
-                raise ValidationError("Each image must have a 'url' field")
-            
-            if 'type' not in img or not img['type']:
-                raise ValidationError("Each image must have a 'type' field")
-            
-            # Validate image type enum
-            try:
-                ShowImageTypeEnum(img['type'])
-            except ValueError:
-                raise ValidationError(f"Invalid image type: {img['type']}. Must be one of: {', '.join([e.value for e in ShowImageTypeEnum])}")
-            
-            validated_images.append({
-                'url': str(img['url']).strip(),
-                'type': img['type']
-            })
-        
-        return validated_images
 
     def _validate_note(self, note: Optional[str]) -> Optional[str]:
         """Validate show note."""

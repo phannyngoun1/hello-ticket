@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, VehicleStatusEnum, EventStatusEnum, ShowImageTypeEnum
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, VehicleStatusEnum, EventStatusEnum
 
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
@@ -373,7 +373,6 @@ class ShowModel(SQLModel, table=True):
     is_active: bool = Field(default=True, index=True)
     started_date: Optional[date] = Field(default=None, sa_column=Column(Date))
     ended_date: Optional[date] = Field(default=None, sa_column=Column(Date))
-    images: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # List of images with type
     note: Optional[str] = Field(default=None, sa_column=Column(String(5000)))
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
@@ -397,6 +396,35 @@ class ShowModel(SQLModel, table=True):
         Index('ix_shows_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
     )
 
+
+class ShowImageModel(SQLModel, table=True):
+    """Show image database model"""
+    __tablename__ = "show_images"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    show_id: str = Field(index=True, foreign_key="shows.id")
+    tenant_id: str = Field(index=True)
+    file_id: str = Field(index=True, foreign_key="file_uploads.id")
+    name: str
+    description: Optional[str] = Field(default=None, sa_column=Column(String(1000)))
+    is_banner: bool = Field(default=False, index=True)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_show_images_show_id', 'show_id'),
+        Index('ix_show_images_tenant_id', 'tenant_id'),
+        Index('ix_show_images_file_id', 'file_id'),
+        Index('ix_show_images_is_banner', 'is_banner'),
+    )
 
 
 class EventTypeModel(SQLModel, table=True):

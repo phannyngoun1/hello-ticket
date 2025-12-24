@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { ShowListContainer, ShowProvider } from "@truths/ticketing";
+import { ShowListContainer, ShowProvider, OrganizerProvider } from "@truths/ticketing";
 import { api } from "@truths/api";
 
 export function ShowPage() {
@@ -17,20 +17,29 @@ export function ShowPage() {
         },
       }}
     >
-      <div className="space-y-4">
-        <ShowListContainer
-          autoOpenCreate={autoOpenCreate}
-          onCreateDialogClose={() =>
-            navigate({ to: "/ticketing/shows", search: {}})
-          }
-          onNavigateToShow={(id) =>
-            navigate({
-              to: "/ticketing/shows/$id",
-              params: { id },
-            })
-          }
-        />
-      </div>
+      <OrganizerProvider
+        config={{
+          apiClient: api,
+          endpoints: {
+            organizers: "/api/v1/ticketing/organizers",
+          },
+        }}
+      >
+        <div className="space-y-4">
+          <ShowListContainer
+            autoOpenCreate={autoOpenCreate}
+            onCreateDialogClose={() =>
+              navigate({ to: "/ticketing/shows", search: {}})
+            }
+            onNavigateToShow={(id) =>
+              navigate({
+                to: "/ticketing/shows/$id",
+                params: { id },
+              })
+            }
+          />
+        </div>
+      </OrganizerProvider>
     </ShowProvider>
   );
 }

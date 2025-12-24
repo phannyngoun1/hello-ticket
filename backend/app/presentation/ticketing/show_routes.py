@@ -43,18 +43,12 @@ async def create_show(
     """Create a new show"""
 
     try:
-        # Convert ShowImage models to dicts for command
-        images_dict = None
-        if request.images:
-            images_dict = [{"url": img.url, "type": img.type} for img in request.images]
-        
         command = CreateShowCommand(
             code=request.code,
             name=request.name,
             organizer_id=request.organizer_id,
             started_date=request.started_date,
             ended_date=request.ended_date,
-            images=images_dict,
             note=request.note,
         )
         show = await mediator.send(command)
@@ -120,11 +114,6 @@ async def update_show(
     """Update show fields"""
 
     try:
-        # Convert ShowImage models to dicts for command
-        images_dict = None
-        if request.images is not None:
-            images_dict = [{"url": img.url, "type": img.type} for img in request.images]
-        
         command = UpdateShowCommand(
             show_id=show_id,
             code=request.code,
@@ -132,7 +121,6 @@ async def update_show(
             organizer_id=request.organizer_id,
             started_date=request.started_date,
             ended_date=request.ended_date,
-            images=images_dict,
             note=request.note,
         )
         show = await mediator.send(command)

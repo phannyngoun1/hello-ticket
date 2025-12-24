@@ -4,21 +4,18 @@
  * Encapsulates all show API operations and data transformations.
  */
 
-import type { Show, CreateShowInput, UpdateShowInput } from "./types";
+import type { Show, CreateShowInput, UpdateShowInput, ShowImage, CreateShowImageInput, UpdateShowImageInput } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 
 interface ShowDTO {
   id: string;
   tenant_id: string;
-  
-  
   code: string;
-  
-  
-  
   name: string;
-  
-  
+  organizer_id?: string | null;
+  started_date?: string | null;
+  ended_date?: string | null;
+  note?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -29,15 +26,12 @@ interface ShowDTO {
 function transformShow(dto: ShowDTO): Show {
   return {
     id: dto.id,
-    
-    
     code: dto.code,
-    
-    
-    
     name: dto.name,
-    
-    
+    organizer_id: dto.organizer_id || undefined,
+    started_date: dto.started_date || undefined,
+    ended_date: dto.ended_date || undefined,
+    note: dto.note || undefined,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };
@@ -201,6 +195,76 @@ export class ShowService {
       );
     } catch (error) {
       console.error(`Error deleting Show ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // Show Image methods
+  async fetchShowImages(showId: string): Promise<ShowImage[]> {
+    try {
+      const baseEndpoint = this.endpoints.shows.replace(/\/$/, '');
+      const response = await this.apiClient.get<ShowImage[]>(
+        `${baseEndpoint}/${showId}/images`,
+        { requiresAuth: true }
+      );
+      return (response || []).map(img => ({
+        ...img,
+        created_at: img.created_at ? new Date(img.created_at) : new Date(),
+        updated_at: img.updated_at ? new Date(img.updated_at) : new Date(),
+      }));
+    } catch (error) {
+      console.error(`Error fetching images for show ${showId}:`, error);
+      throw error;
+    }
+  }
+
+  async createShowImage(input: CreateShowImageInput): Promise<ShowImage> {
+    try {
+      const baseEndpoint = this.endpoints.shows.replace(/\/$/, '');
+      const response = await this.apiClient.post<ShowImage>(
+        `${baseEndpoint}/${input.show_id}/images`,
+        input,
+        { requiresAuth: true }
+      );
+      return {
+        ...response,
+        created_at: response.created_at ? new Date(response.created_at) : new Date(),
+        updated_at: response.updated_at ? new Date(response.updated_at) : new Date(),
+      };
+    } catch (error) {
+      console.error('Error creating show image:', error);
+      throw error;
+    }
+  }
+
+  async updateShowImage(showId: string, imageId: string, input: UpdateShowImageInput): Promise<ShowImage> {
+    try {
+      const baseEndpoint = this.endpoints.shows.replace(/\/$/, '');
+      const response = await this.apiClient.put<ShowImage>(
+        `${baseEndpoint}/${showId}/images/${imageId}`,
+        input,
+        { requiresAuth: true }
+      );
+      return {
+        ...response,
+        created_at: response.created_at ? new Date(response.created_at) : new Date(),
+        updated_at: response.updated_at ? new Date(response.updated_at) : new Date(),
+      };
+    } catch (error) {
+      console.error(`Error updating show image ${imageId}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteShowImage(showId: string, imageId: string): Promise<void> {
+    try {
+      const baseEndpoint = this.endpoints.shows.replace(/\/$/, '');
+      await this.apiClient.delete(
+        `${baseEndpoint}/${showId}/images/${imageId}`,
+        { requiresAuth: true }
+      );
+    } catch (error) {
+      console.error(`Error deleting show image ${imageId}:`, error);
       throw error;
     }
   }
