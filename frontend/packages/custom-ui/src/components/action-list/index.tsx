@@ -5,13 +5,11 @@
  * handling. Actions beyond the visible limit are moved to a "More" dropdown menu.
  */
 
-import React from "react";
 import {
   Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@truths/ui";
 import { MoreVertical } from "lucide-react";

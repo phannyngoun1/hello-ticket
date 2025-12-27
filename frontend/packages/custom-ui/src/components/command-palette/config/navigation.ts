@@ -5,7 +5,6 @@ import {
     Settings,
     User,
     FileText,
-    Layout,
 } from "lucide-react";
 import { NavigationItem, QuickAction } from "../types";
 

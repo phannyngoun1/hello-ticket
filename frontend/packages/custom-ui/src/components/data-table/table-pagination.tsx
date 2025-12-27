@@ -6,7 +6,6 @@ import {
   ChevronRight,
   ChevronsRight,
 } from "lucide-react";
-import { useDensityStyles } from "@truths/utils";
 
 export interface TablePaginationProps<TData> {
   table: Table<TData>;

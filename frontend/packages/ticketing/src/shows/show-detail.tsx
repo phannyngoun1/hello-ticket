@@ -9,28 +9,20 @@ import {
   Button,
   Card,
   Tabs,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   Input,
   Label,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { ConfirmationDialog, ActionList, NoteEditor } from "@truths/custom-ui";
+import { ConfirmationDialog, ActionList, NoteEditor, ImageGallery } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import {
   Edit,
   Info,
   Database,
   Image as ImageIcon,
-  X,
   Star,
   Trash2,
   Upload,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
   FileText,
 } from "lucide-react";
 import { Show, ShowImage, UpdateShowInput } from "./types";
@@ -75,8 +67,6 @@ export function ShowDetail({
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  const [previewImage, setPreviewImage] = useState<ShowImage | null>(null);
-  const [hoveredImageId, setHoveredImageId] = useState<string | null>(null);
   const [deleteImageId, setDeleteImageId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -190,46 +180,7 @@ export function ShowDetail({
     [data?.id, images, service]
   );
 
-  const handlePreviousImage = useCallback(() => {
-    if (!previewImage || images.length === 0) return;
-    const currentIndex = images.findIndex((img) => img.id === previewImage.id);
-    if (currentIndex > 0) {
-      setPreviewImage(images[currentIndex - 1]);
-    } else {
-      setPreviewImage(images[images.length - 1]); // Loop to last image
-    }
-  }, [previewImage, images]);
 
-  const handleNextImage = useCallback(() => {
-    if (!previewImage || images.length === 0) return;
-    const currentIndex = images.findIndex((img) => img.id === previewImage.id);
-    if (currentIndex < images.length - 1) {
-      setPreviewImage(images[currentIndex + 1]);
-    } else {
-      setPreviewImage(images[0]); // Loop to first image
-    }
-  }, [previewImage, images]);
-
-  // Keyboard navigation for image preview
-  useEffect(() => {
-    if (!previewImage) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        handlePreviousImage();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        handleNextImage();
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setPreviewImage(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [previewImage, handlePreviousImage, handleNextImage]);
 
   const getShowDisplayName = () => {
     return data?.code || data?.id || "";
@@ -611,141 +562,77 @@ export function ShowDetail({
 
             {/* Images Tab */}
             {activeTab === "images" && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <input
-                    id="show-image-upload-input"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={isUploadingImage || isLoadingImages}
-                    aria-label="Upload show images"
-                  />
-                </div>
-                {isLoadingImages ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-muted-foreground">
-                      Loading images...
-                    </div>
-                  </div>
-                ) : images.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      No images uploaded yet
-                    </p>
-                    <Label
-                      htmlFor="show-image-upload-input-empty"
-                      className="cursor-pointer"
-                    >
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isUploadingImage}
-                        asChild
+              <ImageGallery
+                images={images.map((img) => ({
+                  id: img.id,
+                  url: img.file_url,
+                  name: img.name,
+                  isBanner: img.is_banner,
+                }))}
+                isLoading={isLoadingImages}
+                isUploading={isUploadingImage}
+                onUpload={handleImageUpload}
+                onDelete={(img) => handleDeleteImage(img.id)}
+                onToggleBanner={(img) =>
+                  handleToggleBanner(img.id, img.isBanner ?? false)
+                }
+                readOnly={!editable}
+                renderOverlay={(image, isHovered) => (
+                  <>
+                    {image.isBanner && (
+                      <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-md z-50 border border-primary/20">
+                        <Star className="h-3 w-3 fill-current" />
+                        <span>Banner</span>
+                      </div>
+                    )}
+                    
+                    {!(!editable) && (
+                      <div
+                        className={cn(
+                          "absolute bottom-0 right-0 flex items-center justify-end gap-1 p-1 transition-opacity duration-200",
+                          isHovered
+                            ? "opacity-100"
+                            : "opacity-0 pointer-events-none"
+                        )}
                       >
-                        <span>
-                          {isUploadingImage ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Upload Images
-                            </>
-                          )}
-                        </span>
-                      </Button>
-                      <input
-                        id="show-image-upload-input-empty"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isUploadingImage}
-                        aria-label="Upload show images"
-                      />
-                    </Label>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3  w-full h-full gap-2">
-                    {images.map((image) => (
-                      <Card
-                        key={image.id}
-                        className="overflow-hidden flex flex-col aspect-square w-full h-full"
-                        onMouseEnter={() => setHoveredImageId(image.id)}
-                        onMouseLeave={() => setHoveredImageId(null)}
-                      >
-                        <div
-                          className="relative w-full h-full bg-muted group cursor-pointer"
-                          onClick={() => setPreviewImage(image)}
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleBanner(image.id, image.isBanner ?? false);
+                          }}
+                          className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
+                          title={image.isBanner ? "Unset Banner" : "Set as Banner"}
                         >
-                          {image.file_url ? (
-                            <img src={image.file_url} alt={image.name} />
-                          ) : (
-                            <div className="flex items-center justify-center">
-                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          {image.is_banner && (
-                            <div className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-semibold flex items-center gap-1 shadow-lg z-30 border border-primary/20 pointer-events-none">
-                              <Star className="h-3 w-3 fill-current" />
-                              <span>Banner</span>
-                            </div>
-                          )}
-                          {/* Action buttons floating on hover */}
-                          <div
+                          <Star
                             className={cn(
-                              "absolute bottom-0 right-0 flex items-center justify-end gap-1.5 p-1.5 transition-opacity duration-200",
-                              hoveredImageId === image.id
-                                ? "opacity-100"
-                                : "opacity-0 pointer-events-none"
+                              "h-4 w-4",
+                              image.isBanner && "fill-current"
                             )}
-                          >
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleBanner(image.id, image.is_banner);
-                              }}
-                              className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
-                            >
-                              <Star
-                                className={cn(
-                                  "h-4 w-4",
-                                  image.is_banner && "fill-current"
-                                )}
-                              />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteImage(image.id);
-                              }}
-                              className="h-8 w-8 p-0 bg-destructive hover:bg-destructive text-destructive-foreground opacity-100 hover:opacity-100 shadow-md pointer-events-auto"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
+                          />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteImage(image.id);
+                          }}
+                          className="h-8 w-8 p-0 bg-destructive hover:bg-destructive text-destructive-foreground opacity-100 hover:opacity-100 shadow-md pointer-events-auto"
+                          title="Delete Image"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
-              </div>
+              />
             )}
-
+ 
             {/* Note Tab */}
             {activeTab === "note" && (
               <div className="space-y-4">
@@ -794,75 +681,7 @@ export function ShowDetail({
       </div>
 
       {/* Image Preview Dialog - Full Screen */}
-      <Dialog
-        open={!!previewImage}
-        onOpenChange={(open) => !open && setPreviewImage(null)}
-      >
-        <DialogContent className="max-w-full max-h-screen h-screen w-screen p-0 m-0 rounded-none border-0">
-          {previewImage && images.length > 0 && (
-            <div className="flex flex-col h-full w-full bg-black/95">
-              {/* Header */}
-              <DialogHeader className="px-6 pt-6 pb-4 bg-black/50 border-b border-border/20">
-                <DialogTitle className="text-white">
-                  {previewImage.name}
-                  {images.length > 1 && (
-                    <span className="text-sm font-normal text-muted-foreground ml-2">
-                      (
-                      {images.findIndex((img) => img.id === previewImage.id) +
-                        1}{" "}
-                      of {images.length})
-                    </span>
-                  )}
-                </DialogTitle>
-              </DialogHeader>
-              {/* Image Container */}
-              <div className="relative flex-1 flex items-center justify-center overflow-hidden">
-                {previewImage.file_url && (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <img
-                      src={previewImage.file_url}
-                      alt={previewImage.name}
-                      className="max-w-full max-h-full object-contain"
-                    />
-                    {images.length > 1 && (
-                      <>
-                        {/* Previous Button */}
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="fixed left-0 top-1/2 -translate-y-1/2 h-12 w-12 rounded-r-full rounded-l-none bg-background/90 hover:bg-background shadow-lg border border-border border-l-0 z-10"
-                          onClick={handlePreviousImage}
-                        >
-                          <ChevronLeft className="h-6 w-6" />
-                        </Button>
-                        {/* Next Button */}
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="icon"
-                          className="fixed right-0 top-1/2 -translate-y-1/2 h-12 w-12 rounded-l-full rounded-r-none bg-background/90 hover:bg-background shadow-lg border border-border border-r-0 z-10"
-                          onClick={handleNextImage}
-                        >
-                          <ChevronRight className="h-6 w-6" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-              {/* Footer with description */}
-              {previewImage.description && (
-                <div className="px-6 pb-6 bg-black/50 border-t border-border/20">
-                  <p className="text-sm text-muted-foreground mt-4">
-                    {previewImage.description}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog

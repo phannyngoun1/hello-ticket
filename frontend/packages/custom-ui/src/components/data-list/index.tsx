@@ -17,10 +17,11 @@ import { Card } from "@truths/ui";
 import { Button } from "@truths/ui";
 import { Input } from "@truths/ui";
 import { Badge } from "@truths/ui";
-import { LayoutGrid, List, Edit, Trash2, Users, FileText, Database, Plus } from "lucide-react";
+import { LayoutGrid, List, Edit, Trash2, Users, FileText, Database } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { userPreferences } from "@truths/utils";
 import { DataListProps, DataListItem } from "./types";
+export type { DataListProps, DataListItem, StatConfig, BadgeConfig } from "./types";
 
 export function DataList<T extends DataListItem>({
   className,

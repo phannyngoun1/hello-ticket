@@ -41,7 +41,6 @@ export function EditShowDialog({
   const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(null);
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>([]);
-  const [isLoadingImages, setIsLoadingImages] = useState(false);
   const organizerService = useOrganizerService();
   const { data: organizersData } = useOrganizers(organizerService, {
     pagination: { page: 1, pageSize: 100 },
@@ -65,14 +64,11 @@ export function EditShowDialog({
     if (!open || !show) return;
 
     const loadImages = async () => {
-      setIsLoadingImages(true);
       try {
         const loadedImages = await service.fetchShowImages(show.id);
         setImages(loadedImages);
       } catch (error) {
         console.error("Failed to load images:", error);
-      } finally {
-        setIsLoadingImages(false);
       }
     };
 

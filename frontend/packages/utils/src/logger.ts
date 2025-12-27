@@ -10,13 +10,13 @@
  *   logger.error('Failed to fetch', error)
  */
 
-const isDevelopment = import.meta.env.DEV
+const isDevelopment = (import.meta as any).env?.DEV
 
 export const logger = {
     /**
      * Log informational messages (development only)
      */
-    info: (...args: unknown[]) => {
+    info: (..._args: unknown[]) => {
         if (isDevelopment) {
         }
     },
