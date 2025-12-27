@@ -17,7 +17,7 @@ import {
   Label,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { ConfirmationDialog, ActionList, NoteEditor, } from "@truths/custom-ui";
+import { ConfirmationDialog, ActionList, NoteEditor } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import {
   Edit,
@@ -751,7 +751,6 @@ export function ShowDetail({
               <div className="space-y-4">
                 <NoteEditor
                   value={noteValue}
-                  
                   onChange={setNoteValue}
                   onSave={async () => {
                     if (!data?.id) return;
