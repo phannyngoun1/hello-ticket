@@ -5,15 +5,14 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import {
-  Button,
-  Card,
-  Tabs,
-  Input,
-  Label,
-} from "@truths/ui";
+import { Button, Card, Tabs, Input, Label } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { ConfirmationDialog, ActionList, NoteEditor, ImageGallery } from "@truths/custom-ui";
+import {
+  ConfirmationDialog,
+  ActionList,
+  NoteEditor,
+  ImageGallery,
+} from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import {
   Edit,
@@ -142,28 +141,12 @@ export function ShowDetail({
       try {
         const newBannerValue = !currentValue;
 
-        // If setting as banner, first unset all other banners
-        if (newBannerValue) {
-          const bannerImages = images.filter(
-            (img) => img.is_banner && img.id !== imageId
-          );
-          for (const bannerImage of bannerImages) {
-            try {
-              await service.updateShowImage(data.id, bannerImage.id, {
-                is_banner: false,
-              });
-            } catch (error) {
-              console.error(
-                `Failed to unset banner for image ${bannerImage.id}:`,
-                error
-              );
-            }
-          }
-        }
-
+        // Make a single API call - backend handles unsetting other banners
         const updatedImage = await service.updateShowImage(data.id, imageId, {
           is_banner: newBannerValue,
         });
+
+        // Update local state - unset other banners if setting a new one
         const updatedImages = images.map((img) =>
           img.id === imageId
             ? updatedImage
@@ -179,8 +162,6 @@ export function ShowDetail({
     },
     [data?.id, images, service]
   );
-
-
 
   const getShowDisplayName = () => {
     return data?.code || data?.id || "";
@@ -585,8 +566,8 @@ export function ShowDetail({
                         <span>Banner</span>
                       </div>
                     )}
-                    
-                    {!(!editable) && (
+
+                    {!!editable && (
                       <div
                         className={cn(
                           "absolute bottom-0 right-0 flex items-center justify-end gap-1 p-1 transition-opacity duration-200",
@@ -601,10 +582,15 @@ export function ShowDetail({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleToggleBanner(image.id, image.isBanner ?? false);
+                            handleToggleBanner(
+                              image.id,
+                              image.isBanner ?? false
+                            );
                           }}
                           className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
-                          title={image.isBanner ? "Unset Banner" : "Set as Banner"}
+                          title={
+                            image.isBanner ? "Unset Banner" : "Set as Banner"
+                          }
                         >
                           <Star
                             className={cn(
@@ -632,7 +618,7 @@ export function ShowDetail({
                 )}
               />
             )}
- 
+
             {/* Note Tab */}
             {activeTab === "note" && (
               <div className="space-y-4">
@@ -681,7 +667,6 @@ export function ShowDetail({
       </div>
 
       {/* Image Preview Dialog - Full Screen */}
-
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog

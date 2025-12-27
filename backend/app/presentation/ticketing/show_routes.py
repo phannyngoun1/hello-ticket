@@ -271,18 +271,23 @@ async def update_show_image(
             if not image:
                 raise NotFoundError(f"Show image with id '{image_id}' not found")
             
+            # Handle banner logic: ensure only one banner per show
             # If setting as banner, unset all other banners for this show
-            if request.is_banner is True and not image.is_banner:
-                banner_statement = select(ShowImageModel).where(
-                    ShowImageModel.show_id == show_id,
-                    ShowImageModel.tenant_id == current_user.tenant_id,
-                    ShowImageModel.is_banner == True,
-                    ShowImageModel.id != image_id
-                )
-                existing_banners = session.exec(banner_statement).all()
-                for banner in existing_banners:
-                    banner.is_banner = False
-                    banner.updated_at = datetime.now(timezone.utc)
+            if request.is_banner is not None:
+                if request.is_banner is True:
+                    # Setting this image as banner - unset all other banners
+                    banner_statement = select(ShowImageModel).where(
+                        ShowImageModel.show_id == show_id,
+                        ShowImageModel.tenant_id == current_user.tenant_id,
+                        ShowImageModel.is_banner == True,
+                        ShowImageModel.id != image_id
+                    )
+                    existing_banners = session.exec(banner_statement).all()
+                    for banner in existing_banners:
+                        banner.is_banner = False
+                        banner.updated_at = datetime.now(timezone.utc)
+                # If unsetting (is_banner is False), no need to unset others
+                # Just update this image's banner status
             
             # Update image fields
             if request.name is not None:

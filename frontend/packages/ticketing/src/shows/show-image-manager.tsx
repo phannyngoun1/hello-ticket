@@ -141,36 +141,20 @@ export function ShowImageManager({
     if (!editingId || !editForm) return;
 
     try {
-      // If setting as banner, first unset all other banners
-      if (editForm.is_banner) {
-        const bannerImages = images.filter(
-          (img) => img.is_banner && img.id !== editingId
-        );
-        for (const bannerImage of bannerImages) {
-          try {
-            await service.updateShowImage(showId, bannerImage.id, {
-              is_banner: false,
-            });
-          } catch (error) {
-            console.error(
-              `Failed to unset banner for image ${bannerImage.id}:`,
-              error
-            );
-          }
-        }
-      }
-
       const updateInput: UpdateShowImageInput = {
         name: editForm.name,
         description: editForm.description || undefined,
         is_banner: editForm.is_banner,
       };
 
+      // Make a single API call - backend handles unsetting other banners
       const updatedImage = await service.updateShowImage(
         showId,
         editingId,
         updateInput
       );
+      
+      // Update local state - unset other banners if setting a new one
       const updatedImages = images.map((img) =>
         img.id === editingId
           ? updatedImage
@@ -197,34 +181,13 @@ export function ShowImageManager({
     async (imageId: string, currentValue: boolean) => {
       try {
         const newBannerValue = !currentValue;
-        const updateInput: UpdateShowImageInput = {
+
+        // Make a single API call - backend handles unsetting other banners
+        const updatedImage = await service.updateShowImage(showId, imageId, {
           is_banner: newBannerValue,
-        };
-
-        // If setting as banner, first unset all other banners
-        if (newBannerValue) {
-          const bannerImages = images.filter(
-            (img) => img.is_banner && img.id !== imageId
-          );
-          for (const bannerImage of bannerImages) {
-            try {
-              await service.updateShowImage(showId, bannerImage.id, {
-                is_banner: false,
-              });
-            } catch (error) {
-              console.error(
-                `Failed to unset banner for image ${bannerImage.id}:`,
-                error
-              );
-            }
-          }
-        }
-
-        const updatedImage = await service.updateShowImage(
-          showId,
-          imageId,
-          updateInput
-        );
+        });
+        
+        // Update local state - unset other banners if setting a new one
         const updatedImages = images.map((img) =>
           img.id === imageId
             ? updatedImage
