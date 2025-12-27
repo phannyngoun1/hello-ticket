@@ -17,7 +17,7 @@ import {
   Label,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { ConfirmationDialog, ActionList } from "@truths/custom-ui";
+import { ConfirmationDialog, ActionList, NoteEditor, } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import {
   Edit,
@@ -31,6 +31,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  FileText,
 } from "lucide-react";
 import { Show, ShowImage, UpdateShowInput } from "./types";
 import { useShowService } from "./show-provider";
@@ -68,9 +69,9 @@ export function ShowDetail({
 
   customActions,
 }: ShowDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "images" | "metadata">(
-    "profile"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "images" | "note" | "metadata"
+  >("profile");
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
@@ -85,7 +86,16 @@ export function ShowDetail({
   const [isDeletingShow, setIsDeletingShow] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [noteValue, setNoteValue] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const updateShowMutation = useUpdateShow(service);
+
+  // Initialize note value when data changes
+  useEffect(() => {
+    if (data?.note !== undefined) {
+      setNoteValue(data.note || "");
+    }
+  }, [data?.note]);
 
   // Load images when data is available
   useEffect(() => {
@@ -513,6 +523,20 @@ export function ShowDetail({
                   Images {hasImages && `(${images.length})`}
                 </span>
               </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "note"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("note")}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Note
+                </span>
+              </button>
               {hasMetadata && (
                 <button
                   className={cn(
@@ -719,6 +743,38 @@ export function ShowDetail({
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Note Tab */}
+            {activeTab === "note" && (
+              <div className="space-y-4">
+                <NoteEditor
+                  value={noteValue}
+                  
+                  onChange={setNoteValue}
+                  onSave={async () => {
+                    if (!data?.id) return;
+                    setIsSavingNote(true);
+                    try {
+                      await updateShowMutation.mutateAsync({
+                        id: data.id,
+                        input: { note: noteValue },
+                      });
+                    } catch (error) {
+                      console.error("Failed to save note:", error);
+                      alert("Failed to save note. Please try again.");
+                      setNoteValue(data?.note || "");
+                    } finally {
+                      setIsSavingNote(false);
+                    }
+                  }}
+                  isSaving={isSavingNote}
+                  disabled={isSavingNote}
+                  editable={editable}
+                  description="Add or edit notes about this show"
+                  maxLength={2000}
+                />
               </div>
             )}
 

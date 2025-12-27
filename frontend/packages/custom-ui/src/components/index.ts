@@ -161,3 +161,7 @@ export type {
 // Search Dialog
 export { SearchDialog } from './search-dialog';
 export type { SearchDialogProps } from './search-dialog';
+
+// Note Editor
+export { NoteEditor } from './note-editor';
+export type { NoteEditorProps } from './note-editor';
