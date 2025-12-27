@@ -173,6 +173,7 @@ export function EventListContainer({
         onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        isDeleting={deleteMutation.isPending}
       />
 
       <CreateEventDialog

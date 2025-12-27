@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.shared.enums import EventStatusEnum
+from app.shared.enums import EventStatusEnum, EventConfigurationTypeEnum
 
 
 class EventCreateRequest(BaseModel):
@@ -17,6 +17,7 @@ class EventCreateRequest(BaseModel):
     venue_id: str = Field(..., description="Venue identifier")
     layout_id: Optional[str] = Field(None, description="Venue layout identifier")
     status: EventStatusEnum = Field(default=EventStatusEnum.DRAFT, description="Event status")
+    configuration_type: EventConfigurationTypeEnum = Field(default=EventConfigurationTypeEnum.SEAT_SETUP, description="Configuration type")
 
 
 class EventUpdateRequest(BaseModel):
@@ -28,6 +29,7 @@ class EventUpdateRequest(BaseModel):
     venue_id: Optional[str] = Field(None, description="Venue identifier")
     layout_id: Optional[str] = Field(None, description="Venue layout identifier")
     status: Optional[EventStatusEnum] = Field(None, description="Event status")
+    configuration_type: Optional[EventConfigurationTypeEnum] = Field(None, description="Configuration type")
 
 
 class EventResponse(BaseModel):
@@ -42,6 +44,7 @@ class EventResponse(BaseModel):
     venue_id: str
     layout_id: Optional[str] = None
     status: EventStatusEnum
+    configuration_type: EventConfigurationTypeEnum
     is_active: bool
     created_at: datetime
     updated_at: datetime

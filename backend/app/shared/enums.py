@@ -411,6 +411,12 @@ class ShowImageTypeEnum(str, Enum):
     OTHER = "other"
 
 
+class EventConfigurationTypeEnum(str, Enum):
+    """Event configuration type for ticket handling"""
+    SEAT_SETUP = "seat_setup"
+    TICKET_IMPORT = "ticket_import"
+
+
 # ============================================================================
 # UI/APPLICATION ENUMS
 # ============================================================================

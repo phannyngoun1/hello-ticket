@@ -7,7 +7,7 @@ from typing import Optional
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
 from app.shared.utils import generate_id
-from app.shared.enums import EventStatusEnum
+from app.shared.enums import EventStatusEnum, EventConfigurationTypeEnum
 
 
 class Event(AggregateRoot):
@@ -24,6 +24,7 @@ class Event(AggregateRoot):
         status: EventStatusEnum = EventStatusEnum.DRAFT,
         layout_id: Optional[str] = None,
         event_id: Optional[str] = None,
+        configuration_type: EventConfigurationTypeEnum = EventConfigurationTypeEnum.SEAT_SETUP,
         is_active: bool = True,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
@@ -40,6 +41,7 @@ class Event(AggregateRoot):
         self.venue_id = venue_id
         self.layout_id = layout_id
         self.status = status
+        self.configuration_type = configuration_type
         self.is_active = is_active
         self._version = version
         self.created_at = created_at or now
@@ -55,7 +57,9 @@ class Event(AggregateRoot):
         duration_minutes: Optional[int] = None,
         venue_id: Optional[str] = None,
         layout_id: Optional[str] = None,
+
         status: Optional[EventStatusEnum] = None,
+        configuration_type: Optional[EventConfigurationTypeEnum] = None,
     ) -> None:
         """Update event details with validation."""
         if title is not None:
@@ -70,6 +74,8 @@ class Event(AggregateRoot):
             self.layout_id = layout_id
         if status is not None:
             self.status = status
+        if configuration_type is not None:
+            self.configuration_type = configuration_type
 
         self._validate()
         self._touch()
