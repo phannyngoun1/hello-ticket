@@ -4,6 +4,16 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+
+class ShowImageData(BaseModel):
+    """Image data for show creation/update"""
+    
+    file_id: str = Field(..., description="File upload identifier")
+    name: str = Field(..., description="Image name")
+    description: Optional[str] = Field(None, max_length=1000, description="Image description")
+    is_banner: bool = Field(False, description="Whether this image is a banner")
+
+
 class ShowCreateRequest(BaseModel):
     """Payload for show creation"""
 
@@ -13,6 +23,7 @@ class ShowCreateRequest(BaseModel):
     started_date: Optional[date] = Field(None, description="Show start date")
     ended_date: Optional[date] = Field(None, description="Show end date")
     note: Optional[str] = Field(None, max_length=5000, description="Show note")
+    images: Optional[List[ShowImageData]] = Field(None, description="List of show images")
 
 
 class ShowUpdateRequest(BaseModel):
@@ -24,6 +35,7 @@ class ShowUpdateRequest(BaseModel):
     started_date: Optional[date] = Field(None, description="Show start date")
     ended_date: Optional[date] = Field(None, description="Show end date")
     note: Optional[str] = Field(None, max_length=5000, description="Show note")
+    images: Optional[List[ShowImageData]] = Field(None, description="List of show images (replaces all existing images)")
 
 
 class ShowResponse(BaseModel):
@@ -54,4 +66,40 @@ class ShowListResponse(BaseModel):
     limit: int
     total: int
     has_next: bool
+
+
+# Show Image Schemas
+class ShowImageCreateRequest(BaseModel):
+    """Payload for show image creation"""
+    
+    file_id: str = Field(..., description="File upload identifier")
+    name: str = Field(..., description="Image name")
+    description: Optional[str] = Field(None, max_length=1000, description="Image description")
+    is_banner: bool = Field(False, description="Whether this image is a banner")
+
+
+class ShowImageUpdateRequest(BaseModel):
+    """Payload for show image updates"""
+    
+    name: Optional[str] = Field(None, description="Image name")
+    description: Optional[str] = Field(None, max_length=1000, description="Image description")
+    is_banner: Optional[bool] = Field(None, description="Whether this image is a banner")
+
+
+class ShowImageResponse(BaseModel):
+    """Show image response model"""
+    
+    id: str
+    show_id: str
+    tenant_id: str
+    file_id: str
+    file_url: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    is_banner: bool
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        use_enum_values = True
 

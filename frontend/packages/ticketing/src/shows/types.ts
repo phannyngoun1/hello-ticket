@@ -21,6 +21,13 @@ export interface Show {
     updated_at?: Date;
 }
 
+export interface ShowImageData {
+    file_id: string;
+    name: string;
+    description?: string;
+    is_banner?: boolean;
+}
+
 export interface CreateShowInput {
     code?: string;
     name: string;
@@ -28,6 +35,7 @@ export interface CreateShowInput {
     started_date?: string; // ISO date string
     ended_date?: string; // ISO date string
     note?: string;
+    images?: ShowImageData[];
 }
 
 export interface UpdateShowInput {
@@ -37,6 +45,7 @@ export interface UpdateShowInput {
     started_date?: string; // ISO date string
     ended_date?: string; // ISO date string
     note?: string;
+    images?: ShowImageData[];
 }
 
 export interface ShowFilter {

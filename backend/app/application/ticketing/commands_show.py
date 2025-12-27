@@ -1,7 +1,16 @@
 """Ticketing commands for CQRS pattern"""
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional
+from typing import Optional, List
+
+
+@dataclass
+class ShowImageCommandData:
+    """Image data for show commands"""
+    file_id: str
+    name: str
+    description: Optional[str] = None
+    is_banner: bool = False
 
 
 @dataclass
@@ -14,6 +23,7 @@ class CreateShowCommand:
     started_date: Optional[date] = None
     ended_date: Optional[date] = None
     note: Optional[str] = None
+    images: Optional[List[ShowImageCommandData]] = None
 
 
 @dataclass
@@ -27,6 +37,7 @@ class UpdateShowCommand:
     started_date: Optional[date] = None
     ended_date: Optional[date] = None
     note: Optional[str] = None
+    images: Optional[List[ShowImageCommandData]] = None
 
 
 @dataclass
