@@ -95,6 +95,7 @@ export function CreateEventDialog({
         venue_id: data.venue_id,
         layout_id: data.layout_id || undefined,
         status: data.status,
+        configuration_type: data.configuration_type,
       };
     };
   }, [showId]);

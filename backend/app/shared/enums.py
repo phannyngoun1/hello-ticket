@@ -417,6 +417,15 @@ class EventConfigurationTypeEnum(str, Enum):
     TICKET_IMPORT = "ticket_import"
 
 
+class EventSeatStatusEnum(str, Enum):
+    """Event seat status enumeration"""
+    AVAILABLE = "available"
+    RESERVED = "reserved"
+    SOLD = "sold"
+    HELD = "held"
+    BLOCKED = "blocked"
+
+
 # ============================================================================
 # UI/APPLICATION ENUMS
 # ============================================================================

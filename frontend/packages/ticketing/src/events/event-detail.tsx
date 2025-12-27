@@ -4,12 +4,16 @@
  * Display detailed information about an event.
  */
 
-import { Card } from "@truths/ui";
+import { Card, Button } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Calendar, Clock, Database } from "lucide-react";
-import type { Event } from "./types";
+import { Calendar, Clock, Database, Settings, RefreshCw, Upload, Armchair, ExternalLink } from "lucide-react";
+import type { Event, EventConfigurationType } from "./types";
+import { EventConfigurationType as EventConfigurationTypeEnum } from "./types";
 import { useShow, useShowService } from "../shows";
 import { useLayout, useLayoutService } from "../layouts";
+import { useEventService } from "./event-provider";
+import { useInitializeEventSeats, useEventSeats } from "./use-events";
+import { useState } from "react";
 
 export interface EventDetailProps {
   className?: string;
@@ -26,6 +30,7 @@ export function EventDetail({
 }: EventDetailProps) {
   const showService = useShowService();
   const layoutService = useLayoutService();
+  const eventService = useEventService();
 
   // Fetch show and layout data
   const { data: showData } = useShow(showService, data?.show_id || null);
@@ -33,6 +38,28 @@ export function EventDetail({
     layoutService,
     data?.layout_id || null
   );
+
+  const { data: seatsData, isLoading: isLoadingSeats } = useEventSeats(
+    eventService,
+    data?.id || "",
+    { limit: 1 }
+  );
+
+  const initializeSeatsMutation = useInitializeEventSeats(eventService);
+  const [isInitializing, setIsInitializing] = useState(false);
+
+  const handleInitializeSeats = async () => {
+    if (!data?.id) return;
+    setIsInitializing(true);
+    try {
+      await initializeSeatsMutation.mutateAsync(data.id);
+    } catch (err) {
+      console.error("Failed to initialize seats:", err);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
     const date = value instanceof Date ? value : new Date(value);
@@ -46,6 +73,17 @@ export function EventDetail({
       return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
     }
     return `${mins}m`;
+  };
+
+  const formatConfigurationType = (type: EventConfigurationType) => {
+    switch (type) {
+      case EventConfigurationTypeEnum.SEAT_SETUP:
+        return "Seat Setup";
+      case EventConfigurationTypeEnum.TICKET_IMPORT:
+        return "Ticket Import";
+      default:
+        return type;
+    }
   };
 
   const formatFieldValue = (value: unknown) => {
@@ -106,13 +144,13 @@ export function EventDetail({
     <div className={cn("space-y-6", className)}>
       <div className="space-y-6">
         <div className="pb-6 border-b">
-          <h2 className="mb-4  text-foreground">
+          <h2 className="mb-4 text-foreground font-semibold text-lg">
             {showData?.name || showData?.code || "Event Information"}
           </h2>
           <dl className="space-y-3">
             <div className="flex items-center gap-2">
               <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                <Calendar className="h-4 w-4" />
+                <Calendar className="h-4 w-4 text-primary" />
                 Start Date & Time
               </dt>
               <dd className="text-sm text-muted-foreground">
@@ -122,7 +160,7 @@ export function EventDetail({
 
             <div className="flex items-center gap-2">
               <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                <Clock className="h-4 w-4" />
+                <Clock className="h-4 w-4 text-primary" />
                 Duration
               </dt>
               <dd className="text-sm text-muted-foreground">
@@ -140,7 +178,7 @@ export function EventDetail({
         </div>
 
         <div className="pb-6 border-b">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+          <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Location & Configuration
           </h3>
           <dl className="space-y-3">
@@ -161,11 +199,21 @@ export function EventDetail({
                   formatFieldValue(data.show_id)}
               </dd>
             </div>
+
+            <div className="flex items-center gap-2">
+              <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
+                <Settings className="h-4 w-4 text-primary" />
+                Configuration Type
+              </dt>
+              <dd className="text-sm text-muted-foreground">
+                {formatConfigurationType(data.configuration_type)}
+              </dd>
+            </div>
           </dl>
         </div>
 
         <div className="pb-6 border-b">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+          <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
             Timeline
           </h3>
           <dl className="space-y-3">
@@ -190,10 +238,75 @@ export function EventDetail({
           </dl>
         </div>
 
-        <div>
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Additional Information
+        <div className="pt-2">
+          <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
+            <Armchair className="h-4 w-4 text-primary" />
+            Inventory Management
+          </h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
+              <div>
+                <p className="text-sm font-medium">Seat Inventory</p>
+                <p className="text-xs text-muted-foreground">
+                  {isLoadingSeats
+                    ? "Loading inventory..."
+                    : seatsData?.pagination.total === 0
+                    ? "No seats initialized"
+                    : `${seatsData?.pagination.total} seats managed`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {data.configuration_type ===
+                  EventConfigurationTypeEnum.SEAT_SETUP && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleInitializeSeats}
+                    disabled={isInitializing || !data.layout_id}
+                    className="gap-2"
+                  >
+                    <RefreshCw
+                      className={cn("h-4 w-4", isInitializing && "animate-spin")}
+                    />
+                    {seatsData?.pagination.total === 0
+                      ? "Initialize Seats"
+                      : "Regenerate Seats"}
+                  </Button>
+                )}
+                {data.configuration_type ===
+                  EventConfigurationTypeEnum.TICKET_IMPORT && (
+                  <Button size="sm" variant="outline" className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    Import Broker Tickets
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="default"
+                  asChild
+                  className="gap-2"
+                >
+                  <a href={`/ticketing/events/${data.id}/inventory`}>
+                    <ExternalLink className="h-4 w-4" />
+                    Manage Inventory
+                  </a>
+                </Button>
+              </div>
+            </div>
+            {data.configuration_type ===
+              EventConfigurationTypeEnum.SEAT_SETUP &&
+              !data.layout_id && (
+                <p className="text-xs text-destructive">
+                  A layout must be assigned to initialize seats.
+                </p>
+              )}
+          </div>
+        </div>
+
+        <div className="pt-6 border-t mt-6">
+          <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
+            <Database className="h-4 w-4 text-primary" />
+            System Metadata
           </h3>
           <dl className="space-y-3">
             <div className="flex items-center gap-2">

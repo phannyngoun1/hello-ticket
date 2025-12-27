@@ -18,6 +18,45 @@ export enum EventStatus {
   COMPLETED = "completed",
 }
 
+export enum EventConfigurationType {
+  SEAT_SETUP = "seat_setup",
+  TICKET_IMPORT = "ticket_import",
+}
+
+export enum EventSeatStatus {
+  AVAILABLE = "AVAILABLE",
+  RESERVED = "RESERVED",
+  SOLD = "SOLD",
+  HELD = "HELD",
+  BLOCKED = "BLOCKED",
+}
+
+export interface EventSeat {
+  id: string;
+  tenant_id: string;
+  event_id: string;
+  status: EventSeatStatus;
+  seat_id?: string;
+  section_name?: string;
+  row_name?: string;
+  seat_number?: string;
+  price: number;
+  ticket_code?: string;
+  broker_id?: string;
+  attributes: Record<string, any>;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface BrokerSeatImportItem {
+  section_name: string;
+  row_name: string;
+  seat_number: string;
+  price?: number;
+  ticket_code?: string;
+  attributes?: Record<string, any>;
+}
+
 export interface Event {
   id: string;
   tenant_id: string;
@@ -28,6 +67,7 @@ export interface Event {
   venue_id: string;
   layout_id?: string;
   status: EventStatus;
+  configuration_type: EventConfigurationType;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -41,6 +81,7 @@ export interface CreateEventInput {
   venue_id: string;
   layout_id?: string;
   status?: EventStatus;
+  configuration_type?: EventConfigurationType;
 }
 
 export interface UpdateEventInput {
@@ -50,6 +91,7 @@ export interface UpdateEventInput {
   venue_id?: string;
   layout_id?: string;
   status?: EventStatus;
+  configuration_type?: EventConfigurationType;
 }
 
 export interface EventFilter {

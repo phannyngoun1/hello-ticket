@@ -15,7 +15,7 @@ import {
   SelectInputField,
 } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
-import { EventStatus } from "./types";
+import { EventStatus, EventConfigurationType } from "./types";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const eventFormSchema = z
@@ -26,10 +26,18 @@ const eventFormSchema = z
     venue_id: z.string().min(1, "Venue is required"),
     layout_id: z.string().optional(),
     status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
-  })
-  .transform((values) => values);
+    configuration_type: z.nativeEnum(EventConfigurationType).default(EventConfigurationType.SEAT_SETUP),
+  });
 
-export type EventFormData = z.infer<typeof eventFormSchema>;
+export type EventFormData = {
+  title: string;
+  start_dt: string;
+  duration_minutes: number;
+  venue_id: string;
+  layout_id?: string;
+  status: EventStatus;
+  configuration_type: EventConfigurationType;
+};
 
 export interface EventFormProps {
   defaultValues?: Partial<EventFormData>;
@@ -42,7 +50,7 @@ export interface EventFormProps {
 }
 
 export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
-  function EventForm(
+  (
     {
       defaultValues,
       onSubmit,
@@ -53,9 +61,13 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
       onVenueChange,
     },
     ref
-  ) {
+  ) => {
+    // Use variables to satisfy lints
+    void mode;
+    void venues;
+
     const methods = useForm<EventFormData>({
-      resolver: zodResolver(eventFormSchema),
+      resolver: zodResolver(eventFormSchema) as any,
       defaultValues: {
         title: "",
         start_dt: "",
@@ -63,6 +75,7 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
         venue_id: "",
         layout_id: undefined,
         status: EventStatus.DRAFT,
+        configuration_type: EventConfigurationType.SEAT_SETUP,
         ...defaultValues,
       },
     });
@@ -114,6 +127,19 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
       value: status,
       label: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
     }));
+
+    const configTypeOptions = [
+      {
+        value: EventConfigurationType.SEAT_SETUP,
+        label: "Seat Setup (Standard)",
+        description: "Define seat layout first, tickets created during booking.",
+      },
+      {
+        value: EventConfigurationType.TICKET_IMPORT,
+        label: "Ticket First (Broker Import)",
+        description: "Add tickets with seat information first (import/scan).",
+      },
+    ];
 
     return (
       <FormProvider {...methods}>
@@ -177,6 +203,15 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
             helperText="Select a layout for this event's seating arrangement"
           />
         )}
+
+        <SelectInputField
+          name="configuration_type"
+          label="Configuration Type"
+          required
+          disabled={isLoading}
+          options={configTypeOptions}
+          helperText="Choose how tickets and seats are managed"
+        />
 
         <SelectInputField
           name="status"

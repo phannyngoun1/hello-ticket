@@ -106,6 +106,9 @@ export function EditEventDialog({
         payload.layout_id = data.layout_id || undefined;
       }
       if (data.status !== event.status) payload.status = data.status;
+      if (data.configuration_type !== event.configuration_type) {
+        payload.configuration_type = data.configuration_type;
+      }
       
       return payload;
     };
@@ -165,6 +168,7 @@ export function EditEventDialog({
     venue_id: event.venue_id,
     layout_id: event.layout_id || undefined,
     status: event.status,
+    configuration_type: event.configuration_type,
   };
 
   const confirmAction = {

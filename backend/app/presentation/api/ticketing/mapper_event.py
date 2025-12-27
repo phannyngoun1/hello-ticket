@@ -18,6 +18,7 @@ class TicketingApiMapper:
             venue_id=event.venue_id,
             layout_id=event.layout_id,
             status=event.status,
+            configuration_type=event.configuration_type,
             is_active=event.is_active,
             created_at=event.created_at,
             updated_at=event.updated_at,
