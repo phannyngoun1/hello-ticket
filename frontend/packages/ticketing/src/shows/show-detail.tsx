@@ -29,6 +29,8 @@ import { useShowService } from "./show-provider";
 import { EditShowDialog } from "./edit-show-dialog";
 import { useUpdateShow } from "./use-shows";
 import { uploadService } from "@truths/shared";
+import { EventListContainer } from "../events/event-list-container";
+import { Calendar } from "lucide-react";
 
 export interface ShowDetailProps {
   className?: string;
@@ -61,7 +63,7 @@ export function ShowDetail({
   customActions,
 }: ShowDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "profile" | "images" | "note" | "metadata"
+    "profile" | "images" | "note" | "metadata" | "events"
   >("profile");
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>([]);
@@ -469,6 +471,20 @@ export function ShowDetail({
                   Note
                 </span>
               </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "events"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("events")}
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Events
+                </span>
+              </button>
               {hasMetadata && (
                 <button
                   className={cn(
@@ -647,6 +663,26 @@ export function ShowDetail({
                   description="Add or edit notes about this show"
                   maxLength={2000}
                 />
+              </div>
+            )}
+
+            {/* Events Tab */}
+            {activeTab === "events" && data?.id && (
+              <div className="space-y-6">
+                <EventListContainer showId={data.id} />
+              </div>
+            )}
+
+            {/* Events Tab - Fallback if provider not available */}
+            {activeTab === "events" && !data?.id && (
+              <div className="space-y-6">
+                <Card>
+                  <div className="p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Please select a show to view events.
+                    </p>
+                  </div>
+                </Card>
               </div>
             )}
 

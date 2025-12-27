@@ -192,6 +192,7 @@ class EventQueryHandler:
             tenant_id=tenant_id,
             search=query.search,
             is_active=query.is_active,
+            show_id=query.show_id,
             skip=query.skip,
             limit=query.limit,
         )

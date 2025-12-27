@@ -1,0 +1,437 @@
+/**
+ * Event List Component
+ *
+ * List view for events with card/list item display and actions.
+ */
+
+import React, { useState, useMemo } from "react";
+import { Edit, Trash2, Calendar, Clock, MapPin, ChevronDown } from "lucide-react";
+import {
+  Badge,
+  Input,
+  Label,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@truths/ui";
+import {
+  ConfirmationDialog,
+  DataList,
+  type DataListItem,
+  type StatConfig,
+  type BadgeConfig,
+} from "@truths/custom-ui";
+import { Pagination } from "@truths/shared";
+import type { Event, EventStatus } from "./types";
+import { EventStatus as EventStatusEnum } from "./types";
+
+export interface EventListProps {
+  className?: string;
+  events?: Event[];
+  loading?: boolean;
+  error?: Error | null;
+  pagination?: Pagination;
+  onEventClick?: (event: Event) => void;
+  onEdit?: (event: Event) => void;
+  onDelete?: (event: Event) => void;
+  onStatusChange?: (event: Event, newStatus: EventStatus) => void;
+  onCreate?: () => void;
+  onSearch?: (query: string) => void;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  customActions?: (event: Event) => React.ReactNode;
+}
+
+interface EventListItem extends DataListItem {
+  event: Event;
+}
+
+export function EventList({
+  className,
+  events = [],
+  loading = false,
+  error = null,
+  pagination,
+  onEventClick,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onCreate,
+  onSearch,
+  onPageChange,
+  onPageSizeChange,
+  customActions,
+}: EventListProps) {
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
+  const [statusChangeConfirmOpen, setStatusChangeConfirmOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{ event: Event; newStatus: EventStatus } | null>(null);
+  const [viewMode, setViewMode] = useState<"card" | "list">("card");
+
+  const formatDateTime = (date: Date) => {
+    return new Date(date).toLocaleString();
+  };
+
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+    return `${mins}m`;
+  };
+
+  const formatStatus = (status: string) => {
+    return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
+  };
+
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status.toLowerCase()) {
+      case "draft":
+        return "outline";
+      case "published":
+      case "on_sale":
+        return "default";
+      case "sold_out":
+        return "secondary";
+      case "cancelled":
+        return "destructive";
+      case "completed":
+        return "secondary";
+      default:
+        return "outline";
+    }
+  };
+
+  // Transform events to DataListItem format
+  const eventItems: EventListItem[] = useMemo(() => {
+    return events.map((event) => ({
+      id: event.id,
+      name: event.title,
+      description: formatDateTime(event.start_dt),
+      event,
+    }));
+  }, [events]);
+
+  // Stats configuration
+  const stats: StatConfig<EventListItem>[] = useMemo(() => [
+    {
+      key: "duration",
+      label: "Duration",
+      value: (item) => formatDuration(item.event.duration_minutes),
+    },
+  ], []);
+
+  const handleItemClick = (item: EventListItem) => {
+    if (onEventClick) {
+      onEventClick(item.event);
+    }
+  };
+
+  const handleEdit = (item: EventListItem) => {
+    if (onEdit) {
+      onEdit(item.event);
+    }
+  };
+
+  const handleDeleteClick = (item: EventListItem) => {
+    setSelectedEvent(item.event);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleStatusChange = (event: Event, newStatus: EventStatus) => {
+    setPendingStatusChange({ event, newStatus });
+    setStatusChangeConfirmOpen(true);
+  };
+
+  const handleStatusChangeConfirm = () => {
+    if (pendingStatusChange && onStatusChange) {
+      onStatusChange(pendingStatusChange.event, pendingStatusChange.newStatus);
+    }
+    setStatusChangeConfirmOpen(false);
+    setPendingStatusChange(null);
+  };
+
+  const handleStatusChangeCancel = () => {
+    setStatusChangeConfirmOpen(false);
+    setPendingStatusChange(null);
+  };
+
+  const statusOptions = Object.values(EventStatusEnum).map((status) => ({
+    value: status,
+    label: formatStatus(status),
+  }));
+
+  // Render status badge with dropdown
+  const renderStatusBadge = (event: Event, statusVariant: "default" | "secondary" | "destructive" | "outline") => {
+    if (onStatusChange) {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-auto p-0 hover:bg-transparent"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Badge variant={statusVariant} className="text-xs flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1">
+                {formatStatus(event.status)}
+                <ChevronDown className="h-3 w-3" />
+              </Badge>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            {statusOptions.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => handleStatusChange(event, option.value)}
+                disabled={event.status === option.value}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+    return (
+      <Badge variant={statusVariant} className="text-xs flex-shrink-0">
+        {formatStatus(event.status)}
+      </Badge>
+    );
+  };
+
+  // Render action buttons
+  const renderActions = (item: EventListItem) => {
+    if (!onEdit && !onDelete && !customActions) return null;
+    
+    return (
+      <div
+        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {customActions ? (
+          customActions(item.event)
+        ) : (
+          <>
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(item);
+                }}
+                className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center"
+                title="Edit"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(item);
+                }}
+                className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center"
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Custom item renderer - supports both card and list views
+  const renderItem = useMemo(() => {
+    return (item: EventListItem) => {
+      const statusVariant = getStatusVariant(item.event.status);
+      
+      // List view - horizontal row layout
+      if (viewMode === "list") {
+        return (
+          <div
+            className="group flex items-center gap-4 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/50 cursor-pointer"
+            onClick={() => handleItemClick(item)}
+          >
+            {/* Title and Date */}
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-medium text-foreground truncate">{item.name}</h4>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.description}</p>
+            </div>
+
+            {/* Duration */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-[80px]">
+              <Clock className="h-3 w-3 flex-shrink-0" />
+              <span className="font-semibold text-foreground whitespace-nowrap">
+                {formatDuration(item.event.duration_minutes)}
+              </span>
+            </div>
+
+            {/* Status */}
+            <div className="min-w-[100px] flex justify-end">
+              {renderStatusBadge(item.event, statusVariant)}
+            </div>
+
+            {/* Actions */}
+            <div className="min-w-[60px] flex justify-end">
+              {renderActions(item)}
+            </div>
+          </div>
+        );
+      }
+
+      // Card view - vertical card layout
+      return (
+        <div
+          className="group rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
+          onClick={() => handleItemClick(item)}
+        >
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-medium text-foreground">{item.name}</h4>
+              <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+            </div>
+            {renderStatusBadge(item.event, statusVariant)}
+          </div>
+          <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/40">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span className="font-semibold text-foreground">
+                {formatDuration(item.event.duration_minutes)}
+              </span>
+              <span>Duration</span>
+            </div>
+            {renderActions(item)}
+          </div>
+        </div>
+      );
+    };
+  }, [onEdit, onDelete, onStatusChange, customActions, onEventClick, statusOptions, viewMode]);
+
+  const handleDeleteConfirmChange = (open: boolean) => {
+    setDeleteConfirmOpen(open);
+    if (!open) {
+      setSelectedEvent(null);
+      setDeleteConfirmationText("");
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (selectedEvent && onDelete) {
+      onDelete(selectedEvent);
+    }
+    setDeleteConfirmOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setSelectedEvent(null);
+    setDeleteConfirmationText("");
+  };
+
+  const deleteConfirmAction = {
+    label: "Delete",
+    onClick: handleDeleteConfirm,
+    variant: "destructive" as const,
+    disabled: deleteConfirmationText.toLowerCase() !== "delete",
+  };
+
+  const deleteCancelAction = {
+    label: "Cancel",
+    onClick: handleDeleteCancel,
+  };
+
+  const statusChangeConfirmAction = {
+    label: "Change Status",
+    onClick: handleStatusChangeConfirm,
+    variant: "default" as const,
+  };
+
+  const statusChangeCancelAction = {
+    label: "Cancel",
+    onClick: handleStatusChangeCancel,
+    variant: "outline" as const,
+  };
+
+
+  return (
+    <div className={className}>
+      <DataList<EventListItem>
+        items={eventItems}
+        loading={loading}
+        error={error}
+        title="Events"
+        description="Manage and view events"
+        onCreate={onCreate}
+        onSearch={onSearch}
+        onItemClick={handleItemClick}
+        renderItem={renderItem}
+        showCreateButton={!!onCreate}
+        defaultViewMode="card"
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        gridCols={{ default: 1, md: 2, lg: 3 }}
+      />
+
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={handleDeleteConfirmChange}
+        title="Delete Event"
+        description={
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {selectedEvent
+                ? `Are you sure you want to delete "${selectedEvent.title}"? This action cannot be undone.`
+                : "Are you sure you want to delete this event? This action cannot be undone."}
+            </p>
+            <div className="space-y-2">
+              <Label
+                htmlFor="delete-event-confirmation"
+                className="text-sm font-medium"
+              >
+                Type <span className="font-mono font-semibold">delete</span> to
+                confirm:
+              </Label>
+              <Input
+                id="delete-event-confirmation"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                placeholder="Type 'delete' to confirm"
+                autoFocus
+                className="font-mono"
+              />
+            </div>
+          </div>
+        }
+        confirmAction={deleteConfirmAction}
+        cancelAction={deleteCancelAction}
+      />
+
+      <ConfirmationDialog
+        open={statusChangeConfirmOpen}
+        onOpenChange={(open) => {
+          setStatusChangeConfirmOpen(open);
+          if (!open) {
+            setPendingStatusChange(null);
+          }
+        }}
+        title="Change Event Status"
+        description={
+          pendingStatusChange
+            ? `Are you sure you want to change the status of "${pendingStatusChange.event.title}" from ${formatStatus(pendingStatusChange.event.status)} to ${formatStatus(pendingStatusChange.newStatus)}?`
+            : "Are you sure you want to change the event status?"
+        }
+        confirmAction={statusChangeConfirmAction}
+        cancelAction={statusChangeCancelAction}
+      />
+    </div>
+  );
+}
+

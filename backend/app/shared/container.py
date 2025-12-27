@@ -28,6 +28,7 @@ from app.shared.container_registrations.organizer import register_organizer_cont
 from app.shared.container_registrations.event_type import register_event_type_container, register_event_type_mediator
 from app.shared.container_registrations.booking import register_booking_container, register_booking_mediator
 from app.shared.container_registrations.show import register_show_container, register_show_mediator
+from app.shared.container_registrations.event import register_event_container, register_event_mediator
 def setup_container() -> Container:
     """Set up dependency injection container"""
     container = Container()
@@ -79,6 +80,9 @@ def setup_container() -> Container:
     #shows
     register_show_container(container)
 
+    #events
+    register_event_container(container)
+
     return container
 
 def setup_mediator(container: Container) -> Mediator:
@@ -108,6 +112,7 @@ def setup_mediator(container: Container) -> Mediator:
     register_event_type_mediator(mediator)
     register_booking_mediator(mediator)
     register_show_mediator(mediator)
+    register_event_mediator(mediator)
     return mediator
 
 
