@@ -181,9 +181,9 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     <div className={cn("container mx-auto py-6 space-y-6", className)}>
       {/* Header */}
       <Card className="p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-semibold mb-2">{event.title}</h1>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-2xl font-semibold">{event.title}</h1>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -201,7 +201,26 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            {hasSeats && (
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-2">
+                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 font-medium text-xs py-0.5 px-2">
+                  Available {statusCounts.AVAILABLE}
+                </Badge>
+                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 font-medium text-xs py-0.5 px-2">
+                  Reserved {statusCounts.RESERVED}
+                </Badge>
+                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 font-medium text-xs py-0.5 px-2">
+                  Sold {statusCounts.SOLD}
+                </Badge>
+                <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 font-medium text-xs py-0.5 px-2">
+                  Held {statusCounts.HELD}
+                </Badge>
+                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 font-medium text-xs py-0.5 px-2">
+                  Blocked {statusCounts.BLOCKED}
+                </Badge>
+              </div>
+            )}
             {needsInitialization && (
               <Button
                 onClick={handleInitializeSeats}
@@ -219,48 +238,6 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
             )}
           </div>
         </div>
-
-        {/* Status Summary */}
-        {hasSeats && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-4">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-green-50 text-green-700">
-                Available
-              </Badge>
-              <span className="text-sm font-medium">
-                {statusCounts.AVAILABLE}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-                Reserved
-              </Badge>
-              <span className="text-sm font-medium">
-                {statusCounts.RESERVED}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                Sold
-              </Badge>
-              <span className="text-sm font-medium">{statusCounts.SOLD}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                Held
-              </Badge>
-              <span className="text-sm font-medium">{statusCounts.HELD}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-red-50 text-red-700">
-                Blocked
-              </Badge>
-              <span className="text-sm font-medium">
-                {statusCounts.BLOCKED}
-              </span>
-            </div>
-          </div>
-        )}
       </Card>
 
       {/* Warnings */}

@@ -239,23 +239,25 @@ export function EventDetail({
         </div>
 
         <div className="pt-2">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
-            <Armchair className="h-4 w-4 text-primary" />
+          <h3 className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
+            <Armchair className="h-3.5 w-3.5 text-primary" />
             Inventory Management
           </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border">
-              <div>
-                <p className="text-sm font-medium">Seat Inventory</p>
-                <p className="text-xs text-muted-foreground">
-                  {isLoadingSeats
-                    ? "Loading inventory..."
-                    : seatsData?.pagination.total === 0
-                    ? "No seats initialized"
-                    : `${seatsData?.pagination.total} seats managed`}
-                </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg border">
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-xs font-medium">Seat Inventory</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isLoadingSeats
+                      ? "Loading..."
+                      : seatsData?.pagination.total === 0
+                      ? "No seats initialized"
+                      : `${seatsData?.pagination.total} seats`}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 {data.configuration_type ===
                   EventConfigurationTypeEnum.SEAT_SETUP && (
                   <Button
@@ -263,32 +265,32 @@ export function EventDetail({
                     variant="outline"
                     onClick={handleInitializeSeats}
                     disabled={isInitializing || !data.layout_id}
-                    className="gap-2"
+                    className="gap-1.5 h-7 text-xs px-2"
                   >
                     <RefreshCw
-                      className={cn("h-4 w-4", isInitializing && "animate-spin")}
+                      className={cn("h-3.5 w-3.5", isInitializing && "animate-spin")}
                     />
                     {seatsData?.pagination.total === 0
-                      ? "Initialize Seats"
-                      : "Regenerate Seats"}
+                      ? "Initialize"
+                      : "Regenerate"}
                   </Button>
                 )}
                 {data.configuration_type ===
                   EventConfigurationTypeEnum.TICKET_IMPORT && (
-                  <Button size="sm" variant="outline" className="gap-2">
-                    <Upload className="h-4 w-4" />
-                    Import Broker Tickets
+                  <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs px-2">
+                    <Upload className="h-3.5 w-3.5" />
+                    Import
                   </Button>
                 )}
                 <Button
                   size="sm"
                   variant="default"
                   asChild
-                  className="gap-2"
+                  className="gap-1.5 h-7 text-xs px-2"
                 >
                   <a href={`/ticketing/events/${data.id}/inventory`}>
-                    <ExternalLink className="h-4 w-4" />
-                    Manage Inventory
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Manage
                   </a>
                 </Button>
               </div>
@@ -296,7 +298,7 @@ export function EventDetail({
             {data.configuration_type ===
               EventConfigurationTypeEnum.SEAT_SETUP &&
               !data.layout_id && (
-                <p className="text-xs text-destructive">
+                <p className="text-xs text-destructive px-1">
                   A layout must be assigned to initialize seats.
                 </p>
               )}
