@@ -374,14 +374,73 @@ export function EventInventoryViewer({
     }
   }, [isPanning]);
 
-  // Calculate image dimensions to fit container while maintaining aspect ratio
-  // Use the same logic as layout designer
+  // Ensure container dimensions are valid (same as layout designer)
   const validWidth = containerSize.width > 0 ? containerSize.width : 800;
   const validHeight = containerSize.height > 0 ? containerSize.height : 600;
 
-  const imageAspectRatio = image
-    ? image.height / image.width
-    : 9 / 16;
+  // Convert percentage coordinates to Konva stage coordinates
+  // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
+  // This matches the layout designer exactly
+  const percentageToStage = useCallback(
+    (xPercent: number, yPercent: number) => {
+      if (!image) return { x: 0, y: 0 };
+
+      const currentValidWidth = containerSize.width > 0 ? containerSize.width : 800;
+      const currentValidHeight = containerSize.height > 0 ? containerSize.height : 600;
+
+      const imageAspectRatio = image.height / image.width;
+      const containerAspectRatio = currentValidHeight / currentValidWidth;
+
+      let displayedWidth: number;
+      let displayedHeight: number;
+
+      if (imageAspectRatio > containerAspectRatio) {
+        displayedHeight = currentValidHeight;
+        displayedWidth = displayedHeight / imageAspectRatio;
+      } else {
+        displayedWidth = currentValidWidth;
+        displayedHeight = displayedWidth * imageAspectRatio;
+      }
+
+      // Image is positioned centered in container
+      const imageX = (currentValidWidth - displayedWidth) / 2;
+      const imageY = (currentValidHeight - displayedHeight) / 2;
+
+      const x = imageX + (xPercent / 100) * displayedWidth;
+      const y = imageY + (yPercent / 100) * displayedHeight;
+
+      return { x, y };
+    },
+    [image, containerSize]
+  );
+
+  // Show loading indicator while image is loading or image dimensions are invalid
+  if (isLoading || !image || !imageLoaded || !image.width || !image.height) {
+    return (
+      <div
+        className={cn("relative border rounded-lg overflow-hidden bg-gray-100", className)}
+        ref={containerRef}
+      >
+        <div
+          style={{
+            width: validWidth,
+            height: validHeight,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f3f4f6",
+            borderRadius: "0.5rem",
+          }}
+        >
+          <div className="text-muted-foreground">Loading seats...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate image dimensions to fit within container while maintaining aspect ratio
+  // Use the same logic as layout designer
+  const imageAspectRatio = image.height / image.width;
   const containerAspectRatio = validHeight / validWidth;
 
   let displayedWidth: number;
@@ -405,17 +464,6 @@ export function EventInventoryViewer({
   const centerX = validWidth / 2;
   const centerY = validHeight / 2;
 
-  // Convert percentage coordinates to stage coordinates (same as layout designer)
-  const percentageToStage = useCallback(
-    (xPercent: number, yPercent: number) => {
-      if (!image) return { x: 0, y: 0 };
-      const x = imageX + (xPercent / 100) * displayedWidth;
-      const y = imageY + (yPercent / 100) * displayedHeight;
-      return { x, y };
-    },
-    [image, imageX, imageY, displayedWidth, displayedHeight]
-  );
-
   return (
     <div className={cn("relative border rounded-lg overflow-hidden bg-gray-100", className)}>
       <div
@@ -423,52 +471,47 @@ export function EventInventoryViewer({
         className="relative w-full"
         style={{ minHeight: "600px", height: "70vh" }}
       >
-        {isLoading ? (
-          <div className="flex items-center justify-center w-full h-full">
-            <div className="text-muted-foreground">Loading seats...</div>
-          </div>
-        ) : (
-          <Stage
-            ref={stageRef}
-            width={validWidth}
-            height={validHeight}
-            onWheel={(e) => handleWheel(e, isSpacePressed)}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              display: "block",
-              cursor:
-                hoveredSeatId
-                  ? "pointer"
-                  : isPanning || isSpacePressed
-                    ? "grabbing"
-                    : "default",
-            }}
+        <Stage
+          ref={stageRef}
+          width={validWidth}
+          height={validHeight}
+          onWheel={(e) => handleWheel(e, isSpacePressed)}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          style={{
+            display: "block",
+            cursor:
+              hoveredSeatId
+                ? "pointer"
+                : isPanning || isSpacePressed
+                  ? "grabbing"
+                  : "default",
+          }}
+        >
+          <Layer
+            x={centerX + panOffset.x}
+            y={centerY + panOffset.y}
+            scaleX={zoomLevel}
+            scaleY={zoomLevel}
+            offsetX={centerX}
+            offsetY={centerY}
           >
-            <Layer
-              x={centerX + panOffset.x}
-              y={centerY + panOffset.y}
-              scaleX={zoomLevel}
-              scaleY={zoomLevel}
-              offsetX={centerX}
-              offsetY={centerY}
-            >
-              {/* Background Image */}
-              {imageLoaded && image && (
-                <Image
-                  image={image}
-                  x={imageX}
-                  y={imageY}
-                  width={displayedWidth}
-                  height={displayedHeight}
-                />
-              )}
+            {/* Background Image */}
+            <Image
+              name="background-image"
+              image={image}
+              x={imageX}
+              y={imageY}
+              width={displayedWidth}
+              height={displayedHeight}
+              listening={true}
+            />
 
-              {/* Seats */}
-              {layoutSeats.map((seat) => {
-                if (!seat.x_coordinate || !seat.y_coordinate || !imageLoaded || !image) return null;
+            {/* Seats */}
+            {layoutSeats.map((seat) => {
+              if (!seat.x_coordinate || !seat.y_coordinate) return null;
 
                 // Convert percentage coordinates to stage coordinates using same logic as layout designer
                 const { x, y } = percentageToStage(seat.x_coordinate, seat.y_coordinate);
@@ -506,7 +549,6 @@ export function EventInventoryViewer({
               })}
             </Layer>
           </Stage>
-        )}
       </div>
 
       {/* Zoom Controls */}

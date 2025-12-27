@@ -204,21 +204,36 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           <div className="flex items-center gap-3 flex-wrap">
             {hasSeats && (
               <div className="flex items-center flex-wrap gap-x-2 gap-y-2">
-                <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300 font-medium text-xs py-0.5 px-2">
+                <span 
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  style={{ backgroundColor: '#10b981', borderColor: '#059669' }}
+                >
                   Available {statusCounts.AVAILABLE}
-                </Badge>
-                <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300 font-medium text-xs py-0.5 px-2">
+                </span>
+                <span 
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  style={{ backgroundColor: '#eab308', borderColor: '#ca8a04' }}
+                >
                   Reserved {statusCounts.RESERVED}
-                </Badge>
-                <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 font-medium text-xs py-0.5 px-2">
+                </span>
+                <span 
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  style={{ backgroundColor: '#3b82f6', borderColor: '#2563eb' }}
+                >
                   Sold {statusCounts.SOLD}
-                </Badge>
-                <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300 font-medium text-xs py-0.5 px-2">
+                </span>
+                <span 
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  style={{ backgroundColor: '#a855f7', borderColor: '#9333ea' }}
+                >
                   Held {statusCounts.HELD}
-                </Badge>
-                <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300 font-medium text-xs py-0.5 px-2">
+                </span>
+                <span 
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  style={{ backgroundColor: '#ef4444', borderColor: '#dc2626' }}
+                >
                   Blocked {statusCounts.BLOCKED}
-                </Badge>
+                </span>
               </div>
             )}
             {needsInitialization && (
