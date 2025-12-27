@@ -25,6 +25,11 @@ class AggregateRoot(ABC):
         """Mark events as committed"""
         self._event_stream.clear_events()
     
+    @property
+    def version(self) -> int:
+        """Get aggregate version as a property"""
+        return self._version
+
     def get_version(self) -> int:
         """Get aggregate version"""
         return self._version

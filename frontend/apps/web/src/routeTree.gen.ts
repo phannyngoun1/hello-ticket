@@ -50,6 +50,7 @@ import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settin
 import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
 import { Route as SalesBookingsIdRouteImport } from './routes/sales/bookings/$id'
+import { Route as TicketingEventsEventIdInventoryRouteImport } from './routes/ticketing/events/$eventId/inventory'
 import { Route as TicketingVenuesIdSeatsDesignerRouteImport } from './routes/ticketing/venues/$id/seats/designer'
 
 const UsersRoute = UsersRouteImport.update({
@@ -262,6 +263,12 @@ const SalesBookingsIdRoute = SalesBookingsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SalesBookingsRoute,
 } as any)
+const TicketingEventsEventIdInventoryRoute =
+  TicketingEventsEventIdInventoryRouteImport.update({
+    id: '/ticketing/events/$eventId/inventory',
+    path: '/ticketing/events/$eventId/inventory',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const TicketingVenuesIdSeatsDesignerRoute =
   TicketingVenuesIdSeatsDesignerRouteImport.update({
     id: '/seats/designer',
@@ -311,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
+  '/ticketing/events/$eventId/inventory': typeof TicketingEventsEventIdInventoryRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
 export interface FileRoutesByTo {
@@ -348,6 +356,7 @@ export interface FileRoutesByTo {
   '/ticketing/organizers': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows': typeof TicketingShowsIndexRoute
   '/ticketing/venues': typeof TicketingVenuesIndexRoute
+  '/ticketing/events/$eventId/inventory': typeof TicketingEventsEventIdInventoryRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
 export interface FileRoutesById {
@@ -393,6 +402,7 @@ export interface FileRoutesById {
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
+  '/ticketing/events/$eventId/inventory': typeof TicketingEventsEventIdInventoryRoute
   '/ticketing/venues/$id/seats/designer': typeof TicketingVenuesIdSeatsDesignerRoute
 }
 export interface FileRouteTypes {
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
     | '/ticketing/venues/'
+    | '/ticketing/events/$eventId/inventory'
     | '/ticketing/venues/$id/seats/designer'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -476,6 +487,7 @@ export interface FileRouteTypes {
     | '/ticketing/organizers'
     | '/ticketing/shows'
     | '/ticketing/venues'
+    | '/ticketing/events/$eventId/inventory'
     | '/ticketing/venues/$id/seats/designer'
   id:
     | '__root__'
@@ -520,6 +532,7 @@ export interface FileRouteTypes {
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
     | '/ticketing/venues/'
+    | '/ticketing/events/$eventId/inventory'
     | '/ticketing/venues/$id/seats/designer'
   fileRoutesById: FileRoutesById
 }
@@ -551,6 +564,7 @@ export interface RootRouteChildren {
   SettingsSalesTestBasicsRoute: typeof SettingsSalesTestBasicsRoute
   SettingsSalesTestTreesRoute: typeof SettingsSalesTestTreesRoute
   SettingsTicketingEventTypesRoute: typeof SettingsTicketingEventTypesRoute
+  TicketingEventsEventIdInventoryRoute: typeof TicketingEventsEventIdInventoryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -842,6 +856,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesBookingsIdRouteImport
       parentRoute: typeof SalesBookingsRoute
     }
+    '/ticketing/events/$eventId/inventory': {
+      id: '/ticketing/events/$eventId/inventory'
+      path: '/ticketing/events/$eventId/inventory'
+      fullPath: '/ticketing/events/$eventId/inventory'
+      preLoaderRoute: typeof TicketingEventsEventIdInventoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ticketing/venues/$id/seats/designer': {
       id: '/ticketing/venues/$id/seats/designer'
       path: '/seats/designer'
@@ -986,6 +1007,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsSalesTestBasicsRoute: SettingsSalesTestBasicsRoute,
   SettingsSalesTestTreesRoute: SettingsSalesTestTreesRoute,
   SettingsTicketingEventTypesRoute: SettingsTicketingEventTypesRoute,
+  TicketingEventsEventIdInventoryRoute: TicketingEventsEventIdInventoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

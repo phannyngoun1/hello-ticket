@@ -34687,3 +34687,2396 @@ WHERE shows.tenant_id = %(tenant_id_1)s AND shows.is_deleted = false AND (shows.
 [parameters: {'tenant_id_1': 'default-tenant', 'code_1': '%sss%', 'name_1': '%sss%'}]
 (Background on this error at: https://sqlalche.me/e/20/f405)
 
+========================================================================================================================
+timestamp: 2025-12-27T08:45:04.890349Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:05.962577Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:08.038016Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:12.487720Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:13.562176Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:15.630268Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T08:45:19.690263Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 117, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T09:01:01.324323Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T09:01:02.386364Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T09:01:04.464720Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T09:01:08.536371Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: ProgrammingError
+exception_message: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlmodel/orm/session.py", line 68, in exec
+    results = super().execute(
+              ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column events.configuration_type does not exist
+LINE 1: ...events.venue_id, events.layout_id, events.status, events.con...
+                                                             ^
+
+[SQL: SELECT events.id, events.tenant_id, events.show_id, events.title, events.start_dt, events.duration_minutes, events.venue_id, events.layout_id, events.status, events.configuration_type, events.is_active, events.is_deleted, events.version, events.created_at, events.updated_at, events.deleted_at 
+FROM events 
+WHERE events.tenant_id = %(tenant_id_1)s AND events.is_deleted = false AND events.show_id = %(show_id_1)s]
+[parameters: {'tenant_id_1': 'default-tenant', 'show_id_1': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+
+========================================================================================================================
+timestamp: 2025-12-27T09:07:20.637137Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&search=s&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'search': 's', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: LookupError
+exception_message: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1709, in _object_value_for_elem
+    return self._object_lookup[elem]  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'seat_setup'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1774, in all
+    return self._allrows()
+           ^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 548, in _allrows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1681, in _fetchall_impl
+    return self._real_result._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 2275, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 220, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1829, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1711, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+
+========================================================================================================================
+timestamp: 2025-12-27T09:07:21.587802Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: LookupError
+exception_message: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1709, in _object_value_for_elem
+    return self._object_lookup[elem]  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'seat_setup'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1774, in all
+    return self._allrows()
+           ^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 548, in _allrows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1681, in _fetchall_impl
+    return self._real_result._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 2275, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 220, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1829, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1711, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+
+========================================================================================================================
+timestamp: 2025-12-27T09:07:22.666540Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: LookupError
+exception_message: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1709, in _object_value_for_elem
+    return self._object_lookup[elem]  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'seat_setup'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1774, in all
+    return self._allrows()
+           ^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 548, in _allrows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1681, in _fetchall_impl
+    return self._real_result._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 2275, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 220, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1829, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1711, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+
+========================================================================================================================
+timestamp: 2025-12-27T09:07:24.735673Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: LookupError
+exception_message: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1709, in _object_value_for_elem
+    return self._object_lookup[elem]  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'seat_setup'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1774, in all
+    return self._allrows()
+           ^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 548, in _allrows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1681, in _fetchall_impl
+    return self._real_result._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 2275, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 220, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1829, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1711, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+
+========================================================================================================================
+timestamp: 2025-12-27T09:07:28.809536Z
+path: http://localhost:8000/api/v1/ticketing/events?skip=0&limit=50&show_id=db197680-9273-4f62-a1c9-d3e7dce678bf
+method: GET
+status_code: 500
+query_params: {'skip': '0', 'limit': '50', 'show_id': 'db197680-9273-4f62-a1c9-d3e7dce678bf'}
+tenant_id: None
+user_id: None
+client_ip: 127.0.0.1
+exception_type: LookupError
+exception_message: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+========================================================================================================================
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1709, in _object_value_for_elem
+    return self._object_lookup[elem]  # type: ignore[return-value]
+           ~~~~~~~~~~~~~~~~~~~^^^^^^
+KeyError: 'seat_setup'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/error_logging_middleware.py", line 171, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/audit_middleware.py", line 101, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/session_middleware.py", line 82, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 187, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/middleware/tenant_middleware.py", line 150, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 163, in call_next
+    raise app_exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 62, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 715, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 735, in app
+    await route.handle(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 288, in handle
+    await self.app(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 76, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/starlette/routing.py", line 73, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 301, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/fastapi/routing.py", line 212, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/presentation/ticketing/event_routes.py", line 74, in list_events
+    result = await mediator.query(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 121, in query
+    return await self._invoke_handler(handler, query)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/shared/mediator.py", line 149, in _invoke_handler
+    return await method(message)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/application/ticketing/handlers_event.py", line 191, in handle_search_events
+    return await self._event_repository.search(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/ticket-system/backend/app/infrastructure/ticketing/event_repository.py", line 120, in search
+    all_models = session.exec(count_statement).all()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1774, in all
+    return self._allrows()
+           ^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 548, in _allrows
+    rows = self._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 1681, in _fetchall_impl
+    return self._real_result._fetchall_impl()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 2275, in _fetchall_impl
+    return list(self.iterator)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/orm/loading.py", line 220, in chunks
+    fetch = cursor._raw_all_rows()
+            ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/engine/result.py", line 541, in _raw_all_rows
+    return [make_row(row) for row in rows]
+            ^^^^^^^^^^^^^
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 22, in sqlalchemy.cyextension.resultproxy.BaseRow.__init__
+  File "lib/sqlalchemy/cyextension/resultproxy.pyx", line 79, in sqlalchemy.cyextension.resultproxy._apply_processors
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1829, in process
+    value = self._object_value_for_elem(value)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ngounphanny/dev/envs/projects/truths/backend/venv/lib/python3.12/site-packages/sqlalchemy/sql/sqltypes.py", line 1711, in _object_value_for_elem
+    raise LookupError(
+LookupError: 'seat_setup' is not among the defined enum values. Enum name: eventconfigurationtypeenum. Possible values: SEAT_SETUP, TICKET_IMPO..
+

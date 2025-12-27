@@ -11,6 +11,8 @@ import type {
   CreateEventInput,
   UpdateEventInput,
   EventFilter,
+  EventSeat,
+  BrokerSeatImportItem,
 } from "./types";
 import type { Pagination, PaginatedResponse } from "@truths/shared";
 import type { EventService } from "./event-service";
@@ -90,6 +92,37 @@ export function useDeleteEvent(service: EventService) {
     mutationFn: (id) => service.deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
+export function useEventSeats(service: EventService, eventId?: string, params?: { skip?: number, limit?: number }) {
+  return useQuery<PaginatedResponse<EventSeat>>({
+    queryKey: ["events", eventId, "seats", params?.skip, params?.limit],
+    queryFn: () => service.fetchEventSeats(eventId!, params),
+    enabled: !!eventId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInitializeEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<EventSeat[], Error, string>({
+    mutationFn: (eventId) => service.initializeEventSeats(eventId),
+    onSuccess: (_data, eventId) => {
+      queryClient.invalidateQueries({ queryKey: ["events", eventId, "seats"] });
+    },
+  });
+}
+
+export function useImportBrokerSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<EventSeat[], Error, { eventId: string; brokerId: string; seats: BrokerSeatImportItem[] }>({
+    mutationFn: ({ eventId, brokerId, seats }) => service.importBrokerSeats(eventId, brokerId, seats),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["events", variables.eventId, "seats"] });
     },
   });
 }

@@ -30,14 +30,12 @@ export interface EventListContainerProps {
   showId: string;
   className?: string;
   onNavigateToEvent?: (eventId: string) => void;
-  onNavigateToCreate?: () => void;
 }
 
 export function EventListContainer({
   showId,
   className,
   onNavigateToEvent,
-  onNavigateToCreate,
 }: EventListContainerProps) {
   const service = useEventService();
   const [page, setPage] = useState(1);

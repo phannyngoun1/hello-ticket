@@ -15,8 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, VehicleStatusEnum, EventStatusEnum
-
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
 
@@ -331,6 +330,7 @@ class EventModel(SQLModel, table=True):
     venue_id: str = Field(index=True, foreign_key="venues.id")
     layout_id: Optional[str] = Field(default=None, index=True, foreign_key="layouts.id")
     status: str = Field(sa_column=Column(SAEnum(EventStatusEnum, native_enum=False)))
+    configuration_type: str = Field(default=EventConfigurationTypeEnum.SEAT_SETUP.value, sa_column=Column(String))
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
@@ -353,9 +353,52 @@ class EventModel(SQLModel, table=True):
         Index('ix_events_tenant_venue', 'tenant_id', 'venue_id'),
         Index('ix_events_tenant_layout', 'tenant_id', 'layout_id'),
         Index('ix_events_tenant_status', 'tenant_id', 'status'),
+        Index('ix_events_tenant_configuration', 'tenant_id', 'configuration_type'),
         Index('ix_events_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_events_tenant_deleted', 'tenant_id', 'is_deleted'),
         Index('ix_events_start_dt', 'start_dt'),  # For date range queries
+    )
+
+
+class EventSeatModel(SQLModel, table=True):
+    """EventSeat database model - manages seat inventory for events"""
+    __tablename__ = "event_seats"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    event_id: str = Field(index=True, foreign_key="events.id")
+    seat_id: Optional[str] = Field(default=None, index=True, foreign_key="seats.id")
+    
+    status: str = Field(sa_column=Column(SAEnum(EventSeatStatusEnum, native_enum=False), index=True))
+    
+    # Store seat info directly for broker imports or caching
+    section_name: Optional[str] = Field(default=None, index=True)
+    row_name: Optional[str] = Field(default=None, index=True)
+    seat_number: Optional[str] = Field(default=None, index=True)
+    
+    price: float = Field(default=0.0)
+    ticket_code: Optional[str] = Field(default=None, index=True)
+    broker_id: Optional[str] = Field(default=None, index=True)
+    
+    is_active: bool = Field(default=True, index=True)
+    version: int = Field(default=0)
+    attributes: dict = Field(default_factory=dict, sa_column=Column(JSONB))
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_event_seats_event_status', 'event_id', 'status'),
+        Index('ix_event_seats_event_location', 'event_id', 'section_name', 'row_name', 'seat_number'),
+        Index('ix_event_seats_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_event_seats_broker', 'tenant_id', 'broker_id'),
     )
 
 

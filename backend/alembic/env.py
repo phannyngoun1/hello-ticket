@@ -32,7 +32,8 @@ from app.infrastructure.shared.database.models import (
     CustomerGroupModel, TestTreeBackendModel, TestTreeModel, TestBasicModel,
     # Ticketing master data
     VenueModel, LayoutModel, SectionModel, SeatModel,
-    OrganizerModel, EventTypeModel,
+    OrganizerModel, EventTypeModel, EventModel, ShowModel,
+    ShowImageModel, EventSeatModel,
     # Legacy models
     UserCacheModel,
     # UI Builder

@@ -71,8 +71,11 @@ class SQLEventRepository(EventRepository):
         """Get event by ID (within tenant scope)"""
         with self._session_factory() as session:
             statement = select(EventModel).where(
-                EventModel.id == event_id,
-                EventModel.tenant_id == tenant_id
+                and_(
+                    EventModel.id == event_id,
+                    EventModel.tenant_id == tenant_id,
+                    EventModel.is_deleted == False
+                )
             )
             model = session.exec(statement).first()
             return self._mapper.to_domain(model) if model else None
@@ -135,7 +138,10 @@ class SQLEventRepository(EventRepository):
         """Get all events for a tenant"""
         with self._session_factory() as session:
             statement = select(EventModel).where(
-                EventModel.tenant_id == tenant_id
+                and_(
+                    EventModel.tenant_id == tenant_id,
+                    EventModel.is_deleted == False
+                )
             )
             models = session.exec(statement).all()
             return [self._mapper.to_domain(model) for model in models]
@@ -144,8 +150,11 @@ class SQLEventRepository(EventRepository):
         """Delete a event (soft-delete by default, hard-delete if specified)"""
         with self._session_factory() as session:
             statement = select(EventModel).where(
-                EventModel.id == event_id,
-                EventModel.tenant_id == tenant_id
+                and_(
+                    EventModel.id == event_id,
+                    EventModel.tenant_id == tenant_id,
+                    EventModel.is_deleted == False
+                )
             )
             model = session.exec(statement).first()
             if not model:
