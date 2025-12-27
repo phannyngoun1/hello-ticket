@@ -62,6 +62,7 @@ async def create_event(
 async def list_events(
     search: Optional[str] = Query(None, description="Search term for event title"),
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    show_id: Optional[str] = Query(None, description="Filter by show ID"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
@@ -74,6 +75,7 @@ async def list_events(
             SearchEventsQuery(
                 search=search,
                 is_active=is_active,
+                show_id=show_id,
                 skip=skip,
                 limit=limit,
             )

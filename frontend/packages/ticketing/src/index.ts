@@ -28,6 +28,9 @@ export * from './sections';
 // Shows Management
 export * from './shows';
 
+// Events Management
+export * from './events';
+
 // Register all ticketing components
 import { registerTicketingComponent } from './registry';
 

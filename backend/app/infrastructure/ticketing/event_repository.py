@@ -87,6 +87,7 @@ class SQLEventRepository(EventRepository):
         tenant_id: str,
         search: Optional[str] = None,
         is_active: Optional[bool] = None,
+        show_id: Optional[str] = None,
         include_deleted: bool = False,
         skip: int = 0,
         limit: int = 50,
@@ -107,6 +108,9 @@ class SQLEventRepository(EventRepository):
             
             if is_active is not None:
                 conditions.append(EventModel.is_active == is_active)
+            
+            if show_id:
+                conditions.append(EventModel.show_id == show_id)
             
             # Count total
             count_statement = select(EventModel).where(and_(*conditions))

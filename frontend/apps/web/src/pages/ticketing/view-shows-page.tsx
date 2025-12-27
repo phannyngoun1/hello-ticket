@@ -4,6 +4,9 @@ import {
   ShowDetail,
   ShowProvider,
   OrganizerProvider,
+  EventProvider,
+  VenueProvider,
+  LayoutProvider,
   useShow,
   useShowService,
 } from "@truths/ticketing";
@@ -61,7 +64,34 @@ export function ViewShowPage() {
           },
         }}
       >
-        <ShowDetailContent id={id} />
+        <EventProvider
+          config={{
+            apiClient: api,
+            endpoints: {
+              events: "/api/v1/ticketing/events",
+            },
+          }}
+        >
+          <VenueProvider
+            config={{
+              apiClient: api,
+              endpoints: {
+                venues: "/api/v1/ticketing/venues",
+              },
+            }}
+          >
+            <LayoutProvider
+              config={{
+                apiClient: api,
+                endpoints: {
+                  layouts: "/api/v1/ticketing/layouts",
+                },
+              }}
+            >
+              <ShowDetailContent id={id} />
+            </LayoutProvider>
+          </VenueProvider>
+        </EventProvider>
       </OrganizerProvider>
     </ShowProvider>
   );

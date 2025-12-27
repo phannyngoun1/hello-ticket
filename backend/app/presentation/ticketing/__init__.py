@@ -17,6 +17,7 @@ router.include_router(section_router)
 router.include_router(organizer_router)
 router.include_router(event_type_router)
 router.include_router(show_router)
+router.include_router(event_router)
 
 # Export as ticketing_router for consistency
 ticketing_router = router
