@@ -9,7 +9,6 @@ import { cn } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import { ShowForm, type ShowFormData } from "./show-form";
-import { ShowImageManager } from "./show-image-manager";
 import {
   PendingImageManager,
   type PendingImage,
@@ -19,7 +18,7 @@ import { useOrganizerService } from "../organizers/organizer-provider";
 import { useOrganizers } from "../organizers/use-organizers";
 import { uploadService } from "@truths/shared";
 
-import type { CreateShowInput, ShowImage, CreateShowImageInput } from "./types";
+import type { CreateShowInput, ShowImageData } from "./types";
 
 export interface CreateShowDialogProps {
   open: boolean;
@@ -44,9 +43,10 @@ export function CreateShowDialog({
   const [pendingFormData, setPendingFormData] = useState<ShowFormData | null>(
     null
   );
-  const [createdShowId, setCreatedShowId] = useState<string | null>(null);
-  const [images, setImages] = useState<ShowImage[]>([]);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [uploadedFileIds, setUploadedFileIds] = useState<
+    Map<string, { file_id: string; url: string }>
+  >(new Map());
   const showService = useShowService();
   const organizerService = useOrganizerService();
   const { data: organizersData } = useOrganizers(organizerService, {
@@ -75,13 +75,14 @@ export function CreateShowDialog({
 
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
-    return (data: ShowFormData): CreateShowInput => ({
+    return (data: ShowFormData, images: ShowImageData[]): CreateShowInput => ({
       code: undefined,
       name: data.name,
       organizer_id: data.organizer_id || undefined,
       started_date: data.started_date || undefined,
       ended_date: data.ended_date || undefined,
       note: data.note || undefined,
+      images: images.length > 0 ? images : undefined,
     });
   }, []);
 
@@ -90,51 +91,62 @@ export function CreateShowDialog({
 
     setIsSubmitting(true);
     try {
-      const payload = buildPayload(pendingFormData);
-      const createdShow = await showService.createShow(payload);
-      setCreatedShowId(createdShow.id);
+      // Upload all pending images first and collect image data
+      const imageData: ShowImageData[] = [];
 
-      // Upload pending images after show is created
-      if (pendingImages.length > 0) {
-        const uploadedImages: ShowImage[] = [];
-        for (const pendingImage of pendingImages) {
-          try {
-            // Upload file first
+      for (const pendingImage of pendingImages) {
+        try {
+          // Check if already uploaded
+          const existingUpload = uploadedFileIds.get(pendingImage.id);
+          if (existingUpload) {
+            imageData.push({
+              file_id: existingUpload.file_id,
+              name: pendingImage.name,
+              description: pendingImage.description || undefined,
+              is_banner: pendingImage.is_banner,
+            });
+          } else {
+            // Upload file
             const uploadResponse = await uploadService.uploadImage(
               pendingImage.file
             );
 
-            // Create show image record
-            const imageInput: CreateShowImageInput = {
-              show_id: createdShow.id,
+            // Store uploaded file info
+            setUploadedFileIds((prev) => {
+              const next = new Map(prev);
+              next.set(pendingImage.id, {
+                file_id: uploadResponse.id,
+                url: uploadResponse.url,
+              });
+              return next;
+            });
+
+            imageData.push({
               file_id: uploadResponse.id,
               name: pendingImage.name,
               description: pendingImage.description || undefined,
               is_banner: pendingImage.is_banner,
-            };
-
-            const newImage = await showService.createShowImage(imageInput);
-            const imageWithUrl = { ...newImage, file_url: uploadResponse.url };
-            uploadedImages.push(imageWithUrl);
-
-            // Clean up preview URL
-            if (pendingImage.preview) {
-              URL.revokeObjectURL(pendingImage.preview);
-            }
-          } catch (error) {
-            console.error(
-              `Failed to upload image ${pendingImage.name}:`,
-              error
-            );
+            });
           }
+        } catch (error) {
+          console.error(`Failed to upload image ${pendingImage.name}:`, error);
         }
-
-        setImages(uploadedImages);
-        setPendingImages([]);
       }
+
+      const payload = buildPayload(pendingFormData, imageData);
+      await showService.createShow(payload);
+
+      // Clean up preview URLs
+      pendingImages.forEach((img) => {
+        if (img.preview) {
+          URL.revokeObjectURL(img.preview);
+        }
+      });
 
       await onSubmit(payload);
       setPendingFormData(null);
+      setPendingImages([]);
+      setUploadedFileIds(new Map());
       setShowConfirmDialog(false);
       // Let parent control closing; consumers can close via onOpenChange
     } catch (error) {
@@ -145,11 +157,28 @@ export function CreateShowDialog({
     }
   };
 
+  const handleDialogSubmit = () => {
+    if (formRef.current) {
+      formRef.current.requestSubmit();
+    }
+  };
+
+  const handleConfirmDialogChange = (dialogOpen: boolean) => {
+    setShowConfirmDialog(dialogOpen);
+    if (!dialogOpen) {
+      setPendingFormData(null);
+      setTimeout(() => {
+        const firstInput = formRef.current?.querySelector(
+          "input, textarea, select"
+        ) as HTMLElement | null;
+        firstInput?.focus();
+      }, 0);
+    }
+  };
+
   const handleClose = () => {
     setShowConfirmDialog(false);
     setPendingFormData(null);
-    setCreatedShowId(null);
-    setImages([]);
     // Clean up preview URLs
     pendingImages.forEach((img) => {
       if (img.preview) {
@@ -157,6 +186,7 @@ export function CreateShowDialog({
       }
     });
     setPendingImages([]);
+    setUploadedFileIds(new Map());
     onOpenChange(false);
   };
 
@@ -188,12 +218,13 @@ export function CreateShowDialog({
         maxWidth={maxWidth}
         loading={isSubmitting}
         formSelector={formRef}
+        autoSubmitShortcut
+        showClearButton
         onClear={handleClear}
+        showCancelButton
         onCancel={handleClose}
         showSubmitButton
-        onSubmit={() => {
-          formRef.current?.requestSubmit();
-        }}
+        onSubmit={handleDialogSubmit}
       >
         <div className="space-y-6 mt-12">
           <div
@@ -212,50 +243,24 @@ export function CreateShowDialog({
             />
           </div>
 
-          {!createdShowId ? (
-            <div
-              className={cn(
-                "bg-background border border-border rounded-lg shadow-sm",
-                density.paddingForm
-              )}
-            >
-              <PendingImageManager
-                images={pendingImages}
-                onImagesChange={setPendingImages}
-                disabled={isSubmitting}
-              />
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "bg-background border border-border rounded-lg shadow-sm",
-                density.paddingForm
-              )}
-            >
-              <ShowImageManager
-                showId={createdShowId}
-                images={images}
-                onImagesChange={setImages}
-              />
-            </div>
-          )}
+          <div
+            className={cn(
+              "bg-background border border-border rounded-lg shadow-sm",
+              density.paddingForm
+            )}
+          >
+            <PendingImageManager
+              images={pendingImages}
+              onImagesChange={setPendingImages}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
       </FullScreenDialog>
 
       <ConfirmationDialog
         open={showConfirmDialog}
-        onOpenChange={(dialogOpen) => {
-          setShowConfirmDialog(dialogOpen);
-          if (!dialogOpen) {
-            setPendingFormData(null);
-            setTimeout(() => {
-              const firstInput = formRef.current?.querySelector(
-                "input, textarea, select"
-              ) as HTMLElement | null;
-              firstInput?.focus();
-            }, 0);
-          }
-        }}
+        onOpenChange={handleConfirmDialogChange}
         title="Confirm Show Creation"
         description={
           pendingFormData ? (

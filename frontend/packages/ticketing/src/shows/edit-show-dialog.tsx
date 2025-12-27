@@ -14,7 +14,7 @@ import { useShowService } from "./show-provider";
 import { useOrganizerService } from "../organizers/organizer-provider";
 import { useOrganizers } from "../organizers/use-organizers";
 
-import type { Show, UpdateShowInput, ShowImage } from "./types";
+import type { Show, UpdateShowInput, ShowImage, ShowImageData } from "./types";
 
 export interface EditShowDialogProps {
   open: boolean;
@@ -97,13 +97,14 @@ export function EditShowDialog({
 
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
-    return (data: ShowFormData): UpdateShowInput => ({
+    return (data: ShowFormData, images: ShowImageData[]): UpdateShowInput => ({
       code: undefined,
       name: data.name,
       organizer_id: data.organizer_id || undefined,
       started_date: data.started_date || undefined,
       ended_date: data.ended_date || undefined,
       note: data.note || undefined,
+      images: images.length > 0 ? images : [],
     });
   }, []);
 
@@ -112,7 +113,15 @@ export function EditShowDialog({
 
     setIsSubmitting(true);
     try {
-      const payload = buildPayload(pendingFormData);
+      // Convert current images to ShowImageData format
+      const imageData: ShowImageData[] = images.map((img) => ({
+        file_id: img.file_id,
+        name: img.name,
+        description: img.description,
+        is_banner: img.is_banner,
+      }));
+
+      const payload = buildPayload(pendingFormData, imageData);
       await onSubmit(show.id, payload);
       setShowConfirmDialog(false);
       setPendingFormData(null);

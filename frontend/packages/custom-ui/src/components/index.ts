@@ -106,6 +106,10 @@ export type { PageHeaderProps } from './layout/page-header';
 export { QuickActionsList } from './layout/quick-actions-list';
 export type { QuickActionsListProps, } from './layout/quick-actions-list';
 
+// Action List
+export { ActionList } from './action-list';
+export type { ActionListProps, ActionItem } from './action-list';
+
 // Feedback
 export { ErrorAlert } from './feedback/error-alert';
 export type { ErrorAlertProps } from './feedback/error-alert';

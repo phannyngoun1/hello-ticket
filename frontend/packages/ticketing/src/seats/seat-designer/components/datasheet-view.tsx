@@ -233,7 +233,7 @@ export function DatasheetView({
               {sectionMarkers.map((section) => (
                 <div
                   key={section.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`p-2 rounded-lg border cursor-pointer transition-colors ${
                     selectedSectionMarker?.id === section.id
                       ? "bg-blue-50 border-blue-500"
                       : "bg-background border-border hover:bg-muted"
@@ -244,23 +244,33 @@ export function DatasheetView({
                     onSetIsDatasheetOpen(false);
                   }}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{section.name}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {section.imageUrl
-                          ? "Floor plan added"
-                          : "No floor plan"}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                       <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-medium text-sm truncate">{section.name}</span>
+                         {section.imageUrl && (
+                          <div className="flex items-center text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                            Image
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {
-                          seats.filter((s) => s.seat.section === section.name)
-                            .length
-                        }{" "}
-                        seat(s)
+                      <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                         <span>
+                          {
+                            seats.filter((s) => s.seat.section === section.name)
+                              .length
+                          }{" "}
+                          seats
+                        </span>
+                         {!section.imageUrl && (
+                          <>
+                            <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/40" />
+                            <span className="italic">No image</span>
+                          </>
+                        )}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -269,9 +279,10 @@ export function DatasheetView({
                           onOpenSectionDetail(section);
                           onSetIsDatasheetOpen(false);
                         }}
-                        className="h-7 px-3"
+                        className="h-7 w-7 p-0"
+                        title="Open Details"
                       >
-                        <FolderOpen className="h-3 w-3" />
+                        <FolderOpen className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -280,10 +291,10 @@ export function DatasheetView({
                           e.stopPropagation();
                           onEditSectionFromSheet(section);
                         }}
-                        className="h-7 px-2"
+                        className="h-7 w-7 p-0"
                         title="Edit section"
                       >
-                        <Edit className="h-3 w-3" />
+                        <Edit className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -295,7 +306,7 @@ export function DatasheetView({
                         className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                         title="Delete section"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

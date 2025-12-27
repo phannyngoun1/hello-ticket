@@ -16,6 +16,11 @@ from app.domain.ticketing.organizer_repositories import OrganizerRepository
 from app.domain.ticketing.show import Show
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
+from app.infrastructure.shared.database.models import ShowImageModel
+from app.infrastructure.shared.database.connection import get_session_sync
+from sqlmodel import select
+from app.shared.utils import generate_id
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +67,36 @@ class ShowCommandHandler:
         )
 
         saved = await self._show_repository.save(show)
+        
+        # Create show images if provided
+        if command.images:
+            with get_session_sync() as session:
+                # If setting any banners, ensure only one banner is set
+                banner_count = sum(1 for img in command.images if img.is_banner)
+                if banner_count > 1:
+                    # Keep only the first banner, unset the rest
+                    banner_set = False
+                    for img in command.images:
+                        if img.is_banner and banner_set:
+                            img.is_banner = False
+                        elif img.is_banner:
+                            banner_set = True
+                
+                for img_data in command.images:
+                    image = ShowImageModel(
+                        id=generate_id(),
+                        show_id=saved.id,
+                        tenant_id=tenant_id,
+                        file_id=img_data.file_id,
+                        name=img_data.name,
+                        description=img_data.description,
+                        is_banner=img_data.is_banner,
+                        created_at=datetime.now(timezone.utc),
+                        updated_at=datetime.now(timezone.utc),
+                    )
+                    session.add(image)
+                session.commit()
+        
         logger.info("Created show %s for tenant=%s", saved.id, tenant_id)
         return saved
 
@@ -97,6 +132,47 @@ class ShowCommandHandler:
         show.update_details(**update_kwargs)
 
         saved = await self._show_repository.save(show)
+        
+        # Update show images if provided (replaces all existing images)
+        if command.images is not None:
+            with get_session_sync() as session:
+                # Delete all existing images for this show
+                existing_images_statement = select(ShowImageModel).where(
+                    ShowImageModel.show_id == saved.id,
+                    ShowImageModel.tenant_id == tenant_id
+                )
+                existing_images = session.exec(existing_images_statement).all()
+                for existing_image in existing_images:
+                    session.delete(existing_image)
+                
+                # Create new images
+                if command.images:
+                    # If setting any banners, ensure only one banner is set
+                    banner_count = sum(1 for img in command.images if img.is_banner)
+                    if banner_count > 1:
+                        # Keep only the first banner, unset the rest
+                        banner_set = False
+                        for img in command.images:
+                            if img.is_banner and banner_set:
+                                img.is_banner = False
+                            elif img.is_banner:
+                                banner_set = True
+                    
+                    for img_data in command.images:
+                        image = ShowImageModel(
+                            id=generate_id(),
+                            show_id=saved.id,
+                            tenant_id=tenant_id,
+                            file_id=img_data.file_id,
+                            name=img_data.name,
+                            description=img_data.description,
+                            is_banner=img_data.is_banner,
+                            created_at=datetime.now(timezone.utc),
+                            updated_at=datetime.now(timezone.utc),
+                        )
+                        session.add(image)
+                session.commit()
+        
         logger.info("Updated show %s for tenant=%s", saved.id, tenant_id)
         return saved
 
