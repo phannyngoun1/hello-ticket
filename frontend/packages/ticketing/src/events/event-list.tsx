@@ -42,6 +42,7 @@ export interface EventListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (event: Event) => React.ReactNode;
+  isDeleting?: boolean;
 }
 
 interface EventListItem extends DataListItem {
@@ -63,6 +64,7 @@ export function EventList({
   onPageChange,
   onPageSizeChange,
   customActions,
+  isDeleting = false,
 }: EventListProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -340,12 +342,14 @@ export function EventList({
     label: "Delete",
     onClick: handleDeleteConfirm,
     variant: "destructive" as const,
-    disabled: deleteConfirmationText.toLowerCase() !== "delete",
+    loading: isDeleting,
+    disabled: deleteConfirmationText.toLowerCase() !== "delete" || isDeleting,
   };
 
   const deleteCancelAction = {
     label: "Cancel",
     onClick: handleDeleteCancel,
+    disabled: isDeleting,
   };
 
   const statusChangeConfirmAction = {
@@ -404,6 +408,7 @@ export function EventList({
                 value={deleteConfirmationText}
                 onChange={(e) => setDeleteConfirmationText(e.target.value)}
                 placeholder="Type 'delete' to confirm"
+                disabled={isDeleting}
                 autoFocus
                 className="font-mono"
               />
