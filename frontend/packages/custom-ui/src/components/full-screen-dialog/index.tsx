@@ -19,7 +19,6 @@ import { X, Keyboard } from "lucide-react";
 import {
   FullScreenDialogProps,
   KeyboardShortcut,
-  DialogActionConfig,
 } from "./types";
 
 /**

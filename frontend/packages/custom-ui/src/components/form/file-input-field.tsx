@@ -107,7 +107,6 @@ export function FileInputField<
   multiple = false,
   maxSize,
   helperText,
-  className,
   errorMessage,
   buttonText = "Browse",
   control: controlProp,

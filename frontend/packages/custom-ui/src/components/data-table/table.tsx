@@ -239,11 +239,6 @@ export function TableContent<TData>({
                     const isFirstColumn = cellIndex === 0;
                     const isLastColumn =
                       cellIndex === row.getVisibleCells().length - 1;
-                    const cellIsActions =
-                      cell.column.id === "actions" ||
-                      cell.column.id === "action" ||
-                      cell.column.columnDef.id === "actions" ||
-                      cell.column.columnDef.id === "action";
 
                     return (
                       <td

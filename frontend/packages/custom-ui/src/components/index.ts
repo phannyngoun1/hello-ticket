@@ -165,3 +165,7 @@ export type { SearchDialogProps } from './search-dialog';
 // Note Editor
 export { NoteEditor } from './note-editor';
 export type { NoteEditorProps } from './note-editor';
+
+// Image Gallery
+export { ImageGallery } from './image-gallery';
+export type { ImageGalleryProps, GalleryImage } from './image-gallery';
