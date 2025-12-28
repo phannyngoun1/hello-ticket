@@ -426,6 +426,16 @@ class EventSeatStatusEnum(str, Enum):
     BLOCKED = "blocked"
 
 
+class TicketStatusEnum(str, Enum):
+    """Ticket status enumeration"""
+    AVAILABLE = "available"  # Created and available for sale (not yet reserved)
+    RESERVED = "reserved"  # Temporarily held during booking process
+    CONFIRMED = "confirmed"  # Payment completed, ticket confirmed
+    CANCELLED = "cancelled"
+    TRANSFERRED = "transferred"
+    USED = "used"
+
+
 # ============================================================================
 # UI/APPLICATION ENUMS
 # ============================================================================

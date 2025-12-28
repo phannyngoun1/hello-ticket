@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
 
@@ -399,6 +399,67 @@ class EventSeatModel(SQLModel, table=True):
         Index('ix_event_seats_event_location', 'event_id', 'section_name', 'row_name', 'seat_number'),
         Index('ix_event_seats_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_event_seats_broker', 'tenant_id', 'broker_id'),
+    )
+
+
+class TicketModel(SQLModel, table=True):
+    """Ticket database model - represents tickets issued for event seats"""
+    __tablename__ = "tickets"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    event_id: str = Field(index=True, foreign_key="events.id")
+    event_seat_id: str = Field(index=True, foreign_key="event_seats.id")
+    booking_id: Optional[str] = Field(default=None, index=True, foreign_key="bookings.id")
+    
+    ticket_number: str = Field(index=True, unique=True)
+    status: str = Field(sa_column=Column(SAEnum(TicketStatusEnum, native_enum=False), index=True))
+    
+    price: float = Field(default=0.0, description="Ticket price")
+    currency: str = Field(default="USD")
+    
+    barcode: Optional[str] = Field(default=None, index=True, unique=True)
+    qr_code: Optional[str] = Field(default=None, index=True, unique=True)
+    transfer_token: Optional[str] = Field(default=None, index=True)
+    
+    reserved_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    reserved_until: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    expires_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    scanned_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    issued_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_tickets_event_status', 'event_id', 'status'),
+        Index('ix_tickets_event_seat', 'event_id', 'event_seat_id'),
+        Index('ix_tickets_booking', 'tenant_id', 'booking_id'),
+        Index('ix_tickets_tenant_event', 'tenant_id', 'event_id'),
     )
 
 

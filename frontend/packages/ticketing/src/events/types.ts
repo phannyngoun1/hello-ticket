@@ -40,20 +40,19 @@ export interface EventSeat {
   section_name?: string;
   row_name?: string;
   seat_number?: string;
-  price: number;
-  ticket_code?: string;
   broker_id?: string;
   attributes: Record<string, any>;
   created_at: Date;
   updated_at: Date;
+  // Ticket information (if ticket exists)
+  ticket_number?: string;
+  ticket_price?: number;  // Ticket price
 }
 
 export interface BrokerSeatImportItem {
   section_name: string;
   row_name: string;
   seat_number: string;
-  price?: number;
-  ticket_code?: string;
   attributes?: Record<string, any>;
 }
 
