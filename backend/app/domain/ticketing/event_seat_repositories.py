@@ -44,6 +44,10 @@ class EventSeatRepository(ABC):
         """Delete all seats for an event. Returns count of deleted seats."""
 
     @abstractmethod
+    async def delete(self, tenant_id: str, event_id: str, event_seat_ids: List[str]) -> int:
+        """Delete specific event seats by their IDs. Returns count of deleted seats."""
+
+    @abstractmethod
     async def get_seat_by_location(
         self,
         tenant_id: str,

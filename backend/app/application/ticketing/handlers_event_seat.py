@@ -6,7 +6,11 @@ from app.domain.ticketing.event_repositories import EventRepository
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.domain.ticketing.event_seat import EventSeat
 from app.domain.ticketing.event_seat_repositories import EventSeatRepository, EventSeatSearchResult
-from app.application.ticketing.commands_event_seat import InitializeEventSeatsCommand, ImportBrokerSeatsCommand
+from app.application.ticketing.commands_event_seat import (
+    InitializeEventSeatsCommand,
+    ImportBrokerSeatsCommand,
+    DeleteEventSeatsCommand,
+)
 from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
 from app.shared.exceptions import BusinessRuleError, NotFoundError
 from app.shared.enums import EventConfigurationTypeEnum, EventSeatStatusEnum
@@ -107,6 +111,24 @@ class EventSeatCommandHandler:
             event_seats.append(event_seat)
 
         return await self.event_seat_repository.save_all(event_seats)
+
+    async def handle_delete_event_seats(self, command: DeleteEventSeatsCommand) -> int:
+        """Delete specific event seats by their IDs"""
+        tenant_id = require_tenant_context()
+        event = await self.event_repository.get_by_id(tenant_id, command.event_id)
+        if not event:
+            raise NotFoundError(f"Event {command.event_id} not found")
+        
+        if not command.event_seat_ids:
+            return 0
+        
+        deleted_count = await self.event_seat_repository.delete(
+            tenant_id=command.tenant_id,
+            event_id=command.event_id,
+            event_seat_ids=command.event_seat_ids
+        )
+        
+        return deleted_count
 
 
 class EventSeatQueryHandler:

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Edit, Trash2, Calendar, Clock, MapPin, ChevronDown } from "lucide-react";
+import { Edit, Trash2, Calendar, Clock, MapPin, ChevronDown, Package } from "lucide-react";
 import {
   Badge,
   Input,
@@ -36,6 +36,7 @@ export interface EventListProps {
   onEventClick?: (event: Event) => void;
   onEdit?: (event: Event) => void;
   onDelete?: (event: Event) => void;
+  onManageInventory?: (event: Event) => void;
   onStatusChange?: (event: Event, newStatus: EventStatus) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
@@ -58,6 +59,7 @@ export function EventList({
   onEventClick,
   onEdit,
   onDelete,
+  onManageInventory,
   onStatusChange,
   onCreate,
   onSearch,
@@ -208,7 +210,7 @@ export function EventList({
 
   // Render action buttons
   const renderActions = (item: EventListItem) => {
-    if (!onEdit && !onDelete && !customActions) return null;
+    if (!onEdit && !onDelete && !onManageInventory && !customActions) return null;
     
     return (
       <div
@@ -219,6 +221,20 @@ export function EventList({
           customActions(item.event)
         ) : (
           <>
+            {onManageInventory && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onManageInventory) {
+                    onManageInventory(item.event);
+                  }
+                }}
+                className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center"
+                title="Manage Inventory"
+              >
+                <Package className="h-3.5 w-3.5" />
+              </button>
+            )}
             {onEdit && (
               <button
                 onClick={(e) => {
@@ -314,7 +330,7 @@ export function EventList({
         </div>
       );
     };
-  }, [onEdit, onDelete, onStatusChange, customActions, onEventClick, statusOptions, viewMode]);
+  }, [onEdit, onDelete, onManageInventory, onStatusChange, customActions, onEventClick, statusOptions, viewMode]);
 
   const handleDeleteConfirmChange = (open: boolean) => {
     setDeleteConfirmOpen(open);

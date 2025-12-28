@@ -127,3 +127,14 @@ export function useImportBrokerSeats(service: EventService) {
   });
 }
 
+export function useDeleteEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, { eventId: string; seatIds: string[] }>({
+    mutationFn: ({ eventId, seatIds }) => service.deleteEventSeats(eventId, seatIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["events", variables.eventId, "seats"] });
+    },
+  });
+}
+

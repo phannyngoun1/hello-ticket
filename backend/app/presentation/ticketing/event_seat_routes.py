@@ -7,6 +7,7 @@ from app.application.ticketing.commands_event_seat import (
     InitializeEventSeatsCommand,
     ImportBrokerSeatsCommand,
     BrokerSeatImportItem,
+    DeleteEventSeatsCommand,
 )
 from app.application.ticketing.queries_event_seat import (
     GetEventSeatsQuery,
@@ -15,6 +16,7 @@ from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
 from app.presentation.api.ticketing.schemas_event_seat import (
     ImportBrokerSeatsRequest,
+    DeleteEventSeatsRequest,
     EventSeatResponse,
     EventSeatListResponse,
 )
@@ -77,6 +79,28 @@ async def import_broker_seats(
         )
         seats = await mediator.send(command)
         return [EventSeatApiMapper.to_response(s) for s in seats]
+    except (BusinessRuleError, ValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{event_id}/seats/delete", status_code=204)
+async def delete_event_seats(
+    event_id: str,
+    request: DeleteEventSeatsRequest,
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    mediator: Mediator = Depends(get_mediator_dependency),
+):
+    """Delete specific event seats by their IDs"""
+    try:
+        command = DeleteEventSeatsCommand(
+            event_id=event_id,
+            tenant_id=current_user.tenant_id,
+            event_seat_ids=request.seat_ids,
+        )
+        await mediator.send(command)
+        return Response(status_code=204)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:

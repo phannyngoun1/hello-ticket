@@ -11,7 +11,11 @@ from app.domain.ticketing.event_repositories import EventRepository
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.infrastructure.ticketing.event_seat_repository import SQLEventSeatRepository
 from app.application.ticketing.handlers_event_seat import EventSeatCommandHandler, EventSeatQueryHandler
-from app.application.ticketing.commands_event_seat import InitializeEventSeatsCommand, ImportBrokerSeatsCommand
+from app.application.ticketing.commands_event_seat import (
+    InitializeEventSeatsCommand,
+    ImportBrokerSeatsCommand,
+    DeleteEventSeatsCommand,
+)
 from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
 from app.infrastructure.shared.database.connection import get_session_sync
 
@@ -56,6 +60,7 @@ def register_event_seat_mediator(mediator: Mediator) -> None:
     # Register command handlers
     mediator.register_command_handler(InitializeEventSeatsCommand, EventSeatCommandHandler)
     mediator.register_command_handler(ImportBrokerSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(DeleteEventSeatsCommand, EventSeatCommandHandler)
     
     # Register query handlers
     mediator.register_query_handler(GetEventSeatsQuery, EventSeatQueryHandler)

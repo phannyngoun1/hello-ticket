@@ -29,6 +29,7 @@ export { Command, CommandDialog, CommandInput, CommandList, CommandEmpty, Comman
 export { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuContent, NavigationMenuTrigger, NavigationMenuLink, NavigationMenuIndicator, NavigationMenuViewport, navigationMenuTriggerStyle } from './components/navigation-menu'
 export { Popover, PopoverTrigger, PopoverContent } from './components/popover'
 export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription } from './components/sheet'
+export { Item, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, type ItemProps, type ItemMediaProps, type ItemContentProps, type ItemTitleProps, type ItemDescriptionProps, type ItemActionsProps } from './components/item'
 
 // Export utilities
 export { cn } from './lib/utils'

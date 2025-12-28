@@ -5,7 +5,8 @@
  */
 
 import { useState, useMemo } from "react";
-import { Card, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from "@truths/ui";
+import { Card, Button, Badge, Sheet, SheetContent, SheetHeader, SheetTitle } from "@truths/ui";
+import { InitializeSeatsDialog, type InitializeSeatsData } from "./initialize-seats-dialog";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Package,
@@ -15,6 +16,7 @@ import {
   Calendar,
   Clock,
   AlertCircle,
+  List,
 } from "lucide-react";
 import { useEventService } from "./event-provider";
 import { useLayoutService } from "../layouts";
@@ -22,6 +24,7 @@ import {
   useEvent,
   useEventSeats,
   useInitializeEventSeats,
+  useDeleteEventSeats,
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat, EventSeatStatus } from "./types";
@@ -37,7 +40,8 @@ export interface EventInventoryProps {
 export function EventInventory({ eventId, className }: EventInventoryProps) {
   const eventService = useEventService();
   const layoutService = useLayoutService();
-  const [activeTab, setActiveTab] = useState<"visual" | "list">("visual");
+  const [seatListSheetOpen, setSeatListSheetOpen] = useState(false);
+  const [initializeSeatsDialogOpen, setInitializeSeatsDialogOpen] = useState(false);
 
   // Fetch event data
   const {
@@ -62,6 +66,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   } = useEventSeats(eventService, eventId, { skip: 0, limit: 1000 });
 
   const initializeSeatsMutation = useInitializeEventSeats(eventService);
+  const deleteSeatsMutation = useDeleteEventSeats(eventService);
 
   const eventSeats = eventSeatsData?.data || [];
   const totalSeats = eventSeatsData?.pagination.total || 0;
@@ -91,11 +96,36 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
   const handleInitializeSeats = async () => {
     if (!event?.id) return;
+    setInitializeSeatsDialogOpen(true);
+  };
+
+  const handleInitializeSeatsSubmit = async (data: InitializeSeatsData) => {
+    if (!event?.id) return;
     try {
+      // Initialize seats first (this creates the event seats from layout)
       await initializeSeatsMutation.mutateAsync(event.id);
+      
+      // TODO: After initialization, update seats with price and ticket codes
+      // This would require a bulk update endpoint or individual updates
+      // For now, we'll just initialize and let the user update prices later
+      // In the future, we can add: await updateSeatsWithData(event.id, data);
+      
       await refetchSeats();
+      setInitializeSeatsDialogOpen(false);
     } catch (err) {
       console.error("Failed to initialize seats:", err);
+      throw err;
+    }
+  };
+
+  const handleDeleteSeats = async (seatIds: string[]) => {
+    if (!event?.id || seatIds.length === 0) return;
+    try {
+      await deleteSeatsMutation.mutateAsync({ eventId: event.id, seatIds });
+      await refetchSeats();
+    } catch (err) {
+      console.error("Failed to delete seats:", err);
+      throw err; // Re-throw so the confirmation dialog can handle it
     }
   };
 
@@ -177,6 +207,55 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     hasLayout &&
     !hasSeats;
 
+  // Check if there are missing seats (layout seats not yet assigned to event)
+  const hasMissingSeats = useMemo(() => {
+    if (!hasLayout || !layoutWithSeats || event.configuration_type !== "seat_setup") {
+      return false;
+    }
+
+    const layoutSeats = layoutWithSeats.seats;
+    if (layoutSeats.length === 0) return false;
+
+    // Create maps for existing event seats
+    const existingSeatIds = new Set<string>();
+    const existingLocations = new Set<string>();
+    
+    // Create section name map
+    const sectionNameMap = new Map<string, string>();
+    layoutWithSeats.sections.forEach((section) => {
+      sectionNameMap.set(section.id, section.name);
+    });
+
+    eventSeats.forEach((eventSeat) => {
+      if (eventSeat.seat_id) {
+        existingSeatIds.add(eventSeat.seat_id);
+      }
+      if (eventSeat.section_name && eventSeat.row_name && eventSeat.seat_number) {
+        const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
+        existingLocations.add(key);
+      }
+    });
+
+    // Check if any layout seats are missing
+    return layoutSeats.some((layoutSeat) => {
+      // Check by seat_id
+      if (layoutSeat.id && existingSeatIds.has(layoutSeat.id)) {
+        return false;
+      }
+      
+      // Check by location
+      const sectionName = sectionNameMap.get(layoutSeat.section_id);
+      if (sectionName && layoutSeat.row && layoutSeat.seat_number) {
+        const locationKey = `${sectionName}|${layoutSeat.row}|${layoutSeat.seat_number}`;
+        if (existingLocations.has(locationKey)) {
+          return false;
+        }
+      }
+      
+      return true; // This seat is missing
+    });
+  }, [hasLayout, layoutWithSeats, eventSeats, event?.configuration_type]);
+
   return (
     <div className={cn("container mx-auto py-6 space-y-6", className)}>
       {/* Header */}
@@ -236,7 +315,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                 </span>
               </div>
             )}
-            {needsInitialization && (
+            {(needsInitialization || hasMissingSeats) && (
               <Button
                 onClick={handleInitializeSeats}
                 disabled={initializeSeatsMutation.isPending}
@@ -248,7 +327,17 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                     initializeSeatsMutation.isPending && "animate-spin"
                   )}
                 />
-                Initialize Seats
+                {needsInitialization ? "Initialize Seats" : "Add Seats"}
+              </Button>
+            )}
+            {hasSeats && (
+              <Button
+                onClick={() => setSeatListSheetOpen(true)}
+                variant="outline"
+                size="icon"
+                title={`View Seat List (${totalSeats})`}
+              >
+                <List className="h-4 w-4" />
               </Button>
             )}
           </div>
@@ -280,62 +369,60 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
         </Card>
       )}
 
-      {/* Main Content */}
+      {/* Main Content - Visual Layout Only */}
       {hasLayout && (
         <Card className="p-6">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList>
-              <TabsTrigger value="visual" className="gap-2">
-                <MapPin className="h-4 w-4" />
-                Visual Layout
-              </TabsTrigger>
-              <TabsTrigger value="list" className="gap-2">
-                <Package className="h-4 w-4" />
-                Seat List ({totalSeats})
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="visual" className="mt-6">
-              {layoutLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-muted-foreground">Loading layout...</div>
-                </div>
-              ) : layoutError ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-destructive">
-                    Error loading layout:{" "}
-                    {layoutError instanceof Error
-                      ? layoutError.message
-                      : "Unknown error"}
-                  </div>
-                </div>
-              ) : !layoutWithSeats ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-muted-foreground">Layout not found</div>
-                </div>
-              ) : (
-                <EventInventoryViewer
-                  layout={layoutWithSeats.layout}
-                  layoutSeats={layoutWithSeats.seats}
-                  eventSeats={eventSeats}
-                  seatStatusMap={seatStatusMap}
-                  locationStatusMap={locationStatusMap}
-                  imageUrl={layoutWithSeats.layout.image_url}
-                  isLoading={seatsLoading}
-                />
-              )}
-            </TabsContent>
-
-            <TabsContent value="list" className="mt-6">
-              <EventSeatList
-                eventSeats={eventSeats}
-                isLoading={seatsLoading}
-                onRefresh={refetchSeats}
-              />
-            </TabsContent>
-          </Tabs>
+          {layoutLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">Loading layout...</div>
+            </div>
+          ) : layoutError ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-destructive">
+                Error loading layout:{" "}
+                {layoutError instanceof Error
+                  ? layoutError.message
+                  : "Unknown error"}
+              </div>
+            </div>
+          ) : !layoutWithSeats ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">Layout not found</div>
+            </div>
+          ) : (
+            <EventInventoryViewer
+              layout={layoutWithSeats.layout}
+              layoutSeats={layoutWithSeats.seats}
+              sections={layoutWithSeats.sections}
+              eventSeats={eventSeats}
+              seatStatusMap={seatStatusMap}
+              locationStatusMap={locationStatusMap}
+              imageUrl={layoutWithSeats.layout.image_url}
+              isLoading={seatsLoading}
+            />
+          )}
         </Card>
       )}
+
+      {/* Seat List Sheet */}
+      <Sheet open={seatListSheetOpen} onOpenChange={setSeatListSheetOpen}>
+        <SheetContent
+          side="right"
+          className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0 overflow-hidden"
+          style={{ width: "600px", maxWidth: "740px" }}
+        >
+          <SheetHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+            <SheetTitle>Seat List ({totalSeats})</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-w-0">
+            <EventSeatList
+              eventSeats={eventSeats}
+              isLoading={seatsLoading}
+              onDelete={handleDeleteSeats}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* No Layout Message */}
       {!hasLayout && (
@@ -349,6 +436,19 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
             </p>
           </div>
         </Card>
+      )}
+
+      {/* Initialize Seats Dialog */}
+      {layoutWithSeats && (
+        <InitializeSeatsDialog
+          open={initializeSeatsDialogOpen}
+          onClose={() => setInitializeSeatsDialogOpen(false)}
+          onSubmit={handleInitializeSeatsSubmit}
+          layoutSeats={layoutWithSeats.seats}
+          sections={layoutWithSeats.sections}
+          existingEventSeats={eventSeats}
+          loading={initializeSeatsMutation.isPending}
+        />
       )}
     </div>
   );

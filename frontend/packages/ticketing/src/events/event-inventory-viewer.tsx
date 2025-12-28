@@ -4,12 +4,13 @@
  * Displays venue layout with event seats overlaid, showing seat status
  */
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Stage, Layer, Image, Circle, Group, Text, Rect } from "react-konva";
 import Konva from "konva";
 import { cn } from "@truths/ui/lib/utils";
 import { ZoomControls } from "../seats/seat-designer/components/zoom-controls";
 import type { Layout } from "../layouts/types";
+import type { Section } from "../layouts/types";
 import type { Seat } from "../seats/types";
 import type { EventSeat, EventSeatStatus } from "./types";
 import { EventSeatStatus as EventSeatStatusEnum } from "./types";
@@ -17,6 +18,7 @@ import { EventSeatStatus as EventSeatStatusEnum } from "./types";
 export interface EventInventoryViewerProps {
   layout: Layout;
   layoutSeats: Seat[];
+  sections: Section[];
   eventSeats: EventSeat[];
   seatStatusMap: Map<string, EventSeat>;
   locationStatusMap: Map<string, EventSeat>;
@@ -82,11 +84,17 @@ function SeatMarker({
   onMouseLeave,
   onClick,
 }: SeatMarkerProps) {
-  const colors = eventSeat
+  // Get colors based on status - use both fill and border to show status
+  const statusColors = eventSeat
     ? getSeatStatusColor(eventSeat.status)
     : { fill: "#9ca3af", stroke: "#6b7280" };
 
-  const radius = isHovered ? 8 : 6;
+  // Use a lighter version of the status color for fill, and darker for border
+  // This ensures the status is visible even if borders are hard to see
+  const fillColor = eventSeat ? statusColors.fill : "#f3f4f6";
+  const borderColor = statusColors.stroke;
+
+  const radius = isHovered ? 12 : 10;
 
   // Build tooltip text with seat details
   const tooltipText = eventSeat
@@ -126,10 +134,11 @@ function SeatMarker({
     >
       <Circle
         radius={radius}
-        fill={colors.fill}
-        stroke={colors.stroke}
-        strokeWidth={isHovered ? 3 : 1}
-        opacity={isHovered ? 1 : 0.8}
+        fill={fillColor}
+        stroke={borderColor}
+        strokeWidth={isHovered ? 3 : 2.5}
+        opacity={1}
+        listening={true}
       />
       {isHovered && (
         <Group>
@@ -161,6 +170,7 @@ function SeatMarker({
 export function EventInventoryViewer({
   layout,
   layoutSeats,
+  sections,
   eventSeats,
   seatStatusMap,
   locationStatusMap,
@@ -179,6 +189,15 @@ export function EventInventoryViewer({
   const [hoveredSeatId, setHoveredSeatId] = useState<string | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Create section name map for location-based matching
+  const sectionNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    sections.forEach((section) => {
+      map.set(section.id, section.name);
+    });
+    return map;
+  }, [sections]);
 
   // Load image
   useEffect(() => {
@@ -518,15 +537,20 @@ export function EventInventoryViewer({
 
                 // Find event seat by seat_id or location
                 let eventSeat: EventSeat | undefined;
+                // First try by seat_id (most reliable)
                 if (seat.id && seatStatusMap.has(seat.id)) {
                   eventSeat = seatStatusMap.get(seat.id);
-                } else if (
-                  seat.section_name &&
-                  seat.row &&
-                  seat.seat_number
-                ) {
-                  const key = `${seat.section_name}|${seat.row}|${seat.seat_number}`;
+                } 
+                // Fallback to location-based matching (for broker imports or when seat_id is missing)
+                if (!eventSeat && seat.row && seat.seat_number) {
+                  // Try location-based matching with section name
+                  const sectionName = seat.section_name || sectionNameMap.get(seat.section_id);
+                  if (sectionName) {
+                    // Try with seat.row (layout seat uses 'row') - event seats use row_name
+                    // The backend should set row_name to match row when initializing from layout
+                    const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
                   eventSeat = locationStatusMap.get(key);
+                  }
                 }
 
                 return (
