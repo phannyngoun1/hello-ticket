@@ -153,8 +153,6 @@ export function EventSeatList({
 
   const allSelected =
     filteredSeats.length > 0 && selectedSeatIds.size === filteredSeats.length;
-  const someSelected =
-    selectedSeatIds.size > 0 && selectedSeatIds.size < filteredSeats.length;
 
   if (isLoading) {
     return (
