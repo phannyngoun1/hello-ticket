@@ -8,6 +8,8 @@ export interface ConfirmationDialogAction {
   label: string;
   /** Button variant */
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  /** Action type (determines icon and semantic meaning) */
+  type?: 'delete' | 'confirm' | 'save';
   /** Whether the button is disabled */
   disabled?: boolean;
   /** Whether the button shows a loading state */
@@ -44,5 +46,11 @@ export interface ConfirmationDialogProps {
   footerClassName?: string;
   /** Override density mode. If undefined, uses user preference. true = compact, false = normal */
   compact?: boolean;
+  /** Text that must be typed to confirm (e.g., "delete"). If provided, an input field will be shown */
+  confirmText?: string;
+  /** Label for the confirmation text input */
+  confirmTextLabel?: string;
+  /** Placeholder for the confirmation text input */
+  confirmTextPlaceholder?: string;
 }
 

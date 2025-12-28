@@ -146,6 +146,31 @@ class SQLEventSeatRepository(EventSeatRepository):
                 session.rollback()
                 raise BusinessRuleError(f"Failed to delete event seats: {str(e)}")
 
+    async def delete(self, tenant_id: str, event_id: str, event_seat_ids: List[str]) -> int:
+        """Delete specific event seats by their IDs"""
+        if not event_seat_ids:
+            return 0
+        
+        with self._session_factory() as session:
+            statement = select(EventSeatModel).where(
+                and_(
+                    EventSeatModel.tenant_id == tenant_id,
+                    EventSeatModel.event_id == event_id,
+                    EventSeatModel.id.in_(event_seat_ids)
+                )
+            )
+            models = session.exec(statement).all()
+            count = len(models)
+            for model in models:
+                session.delete(model)
+            
+            try:
+                session.commit()
+                return count
+            except IntegrityError as e:
+                session.rollback()
+                raise BusinessRuleError(f"Failed to delete event seats: {str(e)}")
+
     async def get_seat_by_location(
         self,
         tenant_id: str,

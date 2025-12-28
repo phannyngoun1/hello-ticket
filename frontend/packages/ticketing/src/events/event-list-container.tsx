@@ -30,12 +30,14 @@ export interface EventListContainerProps {
   showId: string;
   className?: string;
   onNavigateToEvent?: (eventId: string) => void;
+  onNavigateToInventory?: (eventId: string) => void;
 }
 
 export function EventListContainer({
   showId,
   className,
   onNavigateToEvent,
+  onNavigateToInventory,
 }: EventListContainerProps) {
   const service = useEventService();
   const [page, setPage] = useState(1);
@@ -149,6 +151,18 @@ export function EventListContainer({
     setSelectedEventId(null);
   }, []);
 
+  const handleManageInventory = useCallback(
+    (event: Event) => {
+      if (onNavigateToInventory) {
+        onNavigateToInventory(event.id);
+      } else {
+        // Fallback to window.location if no callback provided
+        window.location.href = `/ticketing/events/${event.id}/inventory`;
+      }
+    },
+    [onNavigateToInventory]
+  );
+
   // Fetch event detail when sheet is open
   const {
     data: eventDetail,
@@ -166,6 +180,7 @@ export function EventListContainer({
         onCreate={handleCreate}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onManageInventory={handleManageInventory}
         onStatusChange={handleStatusChange}
         onEventClick={handleEventClick}
         onSearch={handleSearch}

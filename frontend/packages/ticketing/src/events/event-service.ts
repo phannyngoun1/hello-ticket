@@ -313,6 +313,21 @@ export class EventService {
       throw error;
     }
   }
+
+  async deleteEventSeats(eventId: string, seatIds: string[]): Promise<void> {
+    try {
+      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      // Use POST for bulk delete with body
+      await this.apiClient.post(
+        `${baseEndpoint}/${eventId}/seats/delete`,
+        { seat_ids: seatIds },
+        { requiresAuth: true }
+      );
+    } catch (error) {
+      console.error(`Error deleting seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
 }
 
 // Default export

@@ -23,6 +23,11 @@ class ImportBrokerSeatsRequest(BaseModel):
     seats: List[BrokerSeatImportItemSchema]
 
 
+class DeleteEventSeatsRequest(BaseModel):
+    """Request to delete specific event seats"""
+    seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to delete")
+
+
 class EventSeatResponse(BaseModel):
     """Response model for an event seat"""
     id: str

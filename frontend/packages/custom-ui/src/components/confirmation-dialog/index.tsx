@@ -7,7 +7,7 @@
  * Supports custom title, description, and action buttons with flexible configuration.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@truths/ui";
-import { Button, cn } from "@truths/ui";
+import { Button, Input, Label, cn } from "@truths/ui";
 import { useDensityStyles, useDensity } from "@truths/utils";
 import { Check, X, Loader2, Trash2 } from "lucide-react";
 import type { ConfirmationDialogProps } from "./types";
@@ -59,7 +59,19 @@ export function ConfirmationDialog({
   className,
   headerClassName,
   footerClassName,
+  confirmText,
+  confirmTextLabel = "Type to confirm",
+  confirmTextPlaceholder,
 }: ConfirmationDialogProps) {
+  const [confirmTextValue, setConfirmTextValue] = useState("");
+  const confirmTextInputId = useId();
+
+  // Reset confirmation text when dialog opens/closes
+  useEffect(() => {
+    if (!open) {
+      setConfirmTextValue("");
+    }
+  }, [open]);
   const handleCancel = () => {
     if (cancelAction?.onClick) {
       const result = cancelAction.onClick();
@@ -102,12 +114,23 @@ export function ConfirmationDialog({
     ...cancelAction,
   };
 
+  // Check if confirmation text matches
+  const isConfirmTextValid = confirmText
+    ? confirmTextValue.toLowerCase() === confirmText.toLowerCase()
+    : true;
+
   const defaultConfirmAction: ConfirmationDialogProps["confirmAction"] = {
     label: "Confirm",
     variant: "default",
     onClick: handleConfirm,
     ...confirmAction,
   };
+
+  // Apply confirmation text validation to disabled state
+  const isConfirmDisabled =
+    defaultConfirmAction.disabled ||
+    defaultConfirmAction.loading ||
+    (confirmText ? !isConfirmTextValid : false);
 
   // Refs to track button elements
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -124,12 +147,15 @@ export function ConfirmationDialog({
     paddingCell: isCompact ? "px-2 py-1.5" : "px-3 py-2",
   };
 
-  // Determine icon for confirm button based on variant
+  // Determine icon for confirm button based on type or variant
   const getConfirmIcon = () => {
     if (defaultConfirmAction?.loading) {
       return <Loader2 className={cn(density.iconSizeSmall, "animate-spin")} />;
     }
-    if (defaultConfirmAction?.variant === "destructive") {
+    if (
+      defaultConfirmAction?.type === "delete" ||
+      defaultConfirmAction?.variant === "destructive"
+    ) {
       return <Trash2 className={density.iconSizeSmall} />;
     }
     return <Check className={density.iconSizeSmall} />;
@@ -228,6 +254,27 @@ export function ConfirmationDialog({
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>
+        {confirmText && (
+          <div className={cn(density.spacingFormItem, "px-6")}>
+            <Label
+              htmlFor={confirmTextInputId}
+              className={cn(density.textSizeSmall)}
+            >
+              {confirmTextLabel}
+            </Label>
+            <Input
+              id={confirmTextInputId}
+              type="text"
+              value={confirmTextValue}
+              onChange={(e) => setConfirmTextValue(e.target.value)}
+              placeholder={
+                confirmTextPlaceholder || `Type "${confirmText}" to confirm`
+              }
+              className={cn(density.inputHeight, "mt-1.5")}
+              autoFocus
+            />
+          </div>
+        )}
         {footer !== undefined ? (
           <AlertDialogFooter
             className={cn(density.gapButtonGroup, footerClassName)}
@@ -274,10 +321,7 @@ export function ConfirmationDialog({
                 <Button
                   ref={confirmButtonRef}
                   variant={defaultConfirmAction.variant || "default"}
-                  disabled={
-                    defaultConfirmAction.disabled ||
-                    defaultConfirmAction.loading
-                  }
+                  disabled={isConfirmDisabled}
                   onClick={handleConfirm}
                   className={cn(
                     density.buttonHeightSmall,

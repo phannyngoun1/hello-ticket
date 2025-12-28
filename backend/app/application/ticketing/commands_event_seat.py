@@ -28,3 +28,11 @@ class ImportBrokerSeatsCommand:
     tenant_id: str
     broker_id: str
     seats: List[BrokerSeatImportItem]
+
+
+@dataclass
+class DeleteEventSeatsCommand:
+    """Command to delete specific event seats"""
+    event_id: str
+    tenant_id: str
+    event_seat_ids: List[str]
