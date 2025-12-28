@@ -5,11 +5,20 @@
  */
 
 import { useState, useMemo } from "react";
-import { Card, Button, Badge, Sheet, SheetContent, SheetHeader, SheetTitle } from "@truths/ui";
-import { InitializeSeatsDialog, type InitializeSeatsData } from "./initialize-seats-dialog";
+import {
+  Card,
+  Button,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@truths/ui";
+import {
+  InitializeSeatsDialog,
+  type InitializeSeatsData,
+} from "./initialize-seats-dialog";
 import { cn } from "@truths/ui/lib/utils";
 import {
-  Package,
   RefreshCw,
   Upload,
   MapPin,
@@ -28,7 +37,6 @@ import {
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat, EventSeatStatus } from "./types";
-import { EventSeatStatus as EventSeatStatusEnum } from "./types";
 import { EventInventoryViewer } from "./event-inventory-viewer";
 import { EventSeatList } from "./event-seat-list";
 
@@ -41,7 +49,8 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const eventService = useEventService();
   const layoutService = useLayoutService();
   const [seatListSheetOpen, setSeatListSheetOpen] = useState(false);
-  const [initializeSeatsDialogOpen, setInitializeSeatsDialogOpen] = useState(false);
+  const [initializeSeatsDialogOpen, setInitializeSeatsDialogOpen] =
+    useState(false);
 
   // Fetch event data
   const {
@@ -86,13 +95,76 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const locationStatusMap = useMemo(() => {
     const map = new Map<string, EventSeat>();
     eventSeats.forEach((eventSeat) => {
-      if (eventSeat.section_name && eventSeat.row_name && eventSeat.seat_number) {
+      if (
+        eventSeat.section_name &&
+        eventSeat.row_name &&
+        eventSeat.seat_number
+      ) {
         const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
         map.set(key, eventSeat);
       }
     });
     return map;
   }, [eventSeats]);
+
+  // Check if there are missing seats (layout seats not yet assigned to event)
+  // This hook must be called before any early returns to follow Rules of Hooks
+  const hasMissingSeats = useMemo(() => {
+    if (
+      !event ||
+      !event.layout_id ||
+      !layoutWithSeats ||
+      event.configuration_type !== "seat_setup"
+    ) {
+      return false;
+    }
+
+    const layoutSeats = layoutWithSeats.seats;
+    if (layoutSeats.length === 0) return false;
+
+    // Create maps for existing event seats
+    const existingSeatIds = new Set<string>();
+    const existingLocations = new Set<string>();
+
+    // Create section name map
+    const sectionNameMap = new Map<string, string>();
+    layoutWithSeats.sections.forEach((section) => {
+      sectionNameMap.set(section.id, section.name);
+    });
+
+    eventSeats.forEach((eventSeat) => {
+      if (eventSeat.seat_id) {
+        existingSeatIds.add(eventSeat.seat_id);
+      }
+      if (
+        eventSeat.section_name &&
+        eventSeat.row_name &&
+        eventSeat.seat_number
+      ) {
+        const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
+        existingLocations.add(key);
+      }
+    });
+
+    // Check if any layout seats are missing
+    return layoutSeats.some((layoutSeat) => {
+      // Check by seat_id
+      if (layoutSeat.id && existingSeatIds.has(layoutSeat.id)) {
+        return false;
+      }
+
+      // Check by location
+      const sectionName = sectionNameMap.get(layoutSeat.section_id);
+      if (sectionName && layoutSeat.row && layoutSeat.seat_number) {
+        const locationKey = `${sectionName}|${layoutSeat.row}|${layoutSeat.seat_number}`;
+        if (existingLocations.has(locationKey)) {
+          return false;
+        }
+      }
+
+      return true; // This seat is missing
+    });
+  }, [event, layoutWithSeats, eventSeats]);
 
   const handleInitializeSeats = async () => {
     if (!event?.id) return;
@@ -104,12 +176,12 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     try {
       // Initialize seats first (this creates the event seats from layout)
       await initializeSeatsMutation.mutateAsync(event.id);
-      
+
       // TODO: After initialization, update seats with price and ticket codes
       // This would require a bulk update endpoint or individual updates
       // For now, we'll just initialize and let the user update prices later
       // In the future, we can add: await updateSeatsWithData(event.id, data);
-      
+
       await refetchSeats();
       setInitializeSeatsDialogOpen(false);
     } catch (err) {
@@ -132,9 +204,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
     const date = value instanceof Date ? value : new Date(value);
-    return Number.isNaN(date.getTime())
-      ? String(value)
-      : date.toLocaleString();
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   };
 
   const formatDuration = (minutes: number) => {
@@ -203,58 +273,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const hasLayout = !!event.layout_id;
   const hasSeats = totalSeats > 0;
   const needsInitialization =
-    event.configuration_type === "seat_setup" &&
-    hasLayout &&
-    !hasSeats;
-
-  // Check if there are missing seats (layout seats not yet assigned to event)
-  const hasMissingSeats = useMemo(() => {
-    if (!hasLayout || !layoutWithSeats || event.configuration_type !== "seat_setup") {
-      return false;
-    }
-
-    const layoutSeats = layoutWithSeats.seats;
-    if (layoutSeats.length === 0) return false;
-
-    // Create maps for existing event seats
-    const existingSeatIds = new Set<string>();
-    const existingLocations = new Set<string>();
-    
-    // Create section name map
-    const sectionNameMap = new Map<string, string>();
-    layoutWithSeats.sections.forEach((section) => {
-      sectionNameMap.set(section.id, section.name);
-    });
-
-    eventSeats.forEach((eventSeat) => {
-      if (eventSeat.seat_id) {
-        existingSeatIds.add(eventSeat.seat_id);
-      }
-      if (eventSeat.section_name && eventSeat.row_name && eventSeat.seat_number) {
-        const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
-        existingLocations.add(key);
-      }
-    });
-
-    // Check if any layout seats are missing
-    return layoutSeats.some((layoutSeat) => {
-      // Check by seat_id
-      if (layoutSeat.id && existingSeatIds.has(layoutSeat.id)) {
-        return false;
-      }
-      
-      // Check by location
-      const sectionName = sectionNameMap.get(layoutSeat.section_id);
-      if (sectionName && layoutSeat.row && layoutSeat.seat_number) {
-        const locationKey = `${sectionName}|${layoutSeat.row}|${layoutSeat.seat_number}`;
-        if (existingLocations.has(locationKey)) {
-          return false;
-        }
-      }
-      
-      return true; // This seat is missing
-    });
-  }, [hasLayout, layoutWithSeats, eventSeats, event?.configuration_type]);
+    event.configuration_type === "seat_setup" && hasLayout && !hasSeats;
 
   return (
     <div className={cn("container mx-auto py-6 space-y-6", className)}>
@@ -283,33 +302,33 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           <div className="flex items-center gap-3 flex-wrap">
             {hasSeats && (
               <div className="flex items-center flex-wrap gap-x-2 gap-y-2">
-                <span 
+                <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
-                  style={{ backgroundColor: '#10b981', borderColor: '#059669' }}
+                  style={{ backgroundColor: "#10b981", borderColor: "#059669" }}
                 >
                   Available {statusCounts.AVAILABLE}
                 </span>
-                <span 
+                <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
-                  style={{ backgroundColor: '#eab308', borderColor: '#ca8a04' }}
+                  style={{ backgroundColor: "#eab308", borderColor: "#ca8a04" }}
                 >
                   Reserved {statusCounts.RESERVED}
                 </span>
-                <span 
+                <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
-                  style={{ backgroundColor: '#3b82f6', borderColor: '#2563eb' }}
+                  style={{ backgroundColor: "#3b82f6", borderColor: "#2563eb" }}
                 >
                   Sold {statusCounts.SOLD}
                 </span>
-                <span 
+                <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
-                  style={{ backgroundColor: '#a855f7', borderColor: '#9333ea' }}
+                  style={{ backgroundColor: "#a855f7", borderColor: "#9333ea" }}
                 >
                   Held {statusCounts.HELD}
                 </span>
-                <span 
+                <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
-                  style={{ backgroundColor: '#ef4444', borderColor: '#dc2626' }}
+                  style={{ backgroundColor: "#ef4444", borderColor: "#dc2626" }}
                 >
                   Blocked {statusCounts.BLOCKED}
                 </span>
@@ -350,8 +369,8 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           <div className="flex items-center gap-2 text-yellow-800">
             <AlertCircle className="h-4 w-4" />
             <span className="text-sm">
-              This event requires a layout to manage seat inventory. Please assign
-              a layout to the event first.
+              This event requires a layout to manage seat inventory. Please
+              assign a layout to the event first.
             </span>
           </div>
         </Card>
@@ -453,4 +472,3 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     </div>
   );
 }
-
