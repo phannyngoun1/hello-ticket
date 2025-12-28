@@ -98,7 +98,7 @@ function SeatMarker({
 
   // Build tooltip text with seat details
   const tooltipText = eventSeat
-    ? `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nStatus: ${eventSeat.status}\nPrice: $${eventSeat.price.toFixed(2)}`
+    ? `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nStatus: ${eventSeat.status}`
     : `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nNo event seat`;
 
   return (
@@ -146,7 +146,7 @@ function SeatMarker({
             x={-60}
             y={radius + 5}
             width={120}
-            height={eventSeat ? 50 : 20}
+            height={eventSeat ? 35 : 20}
             fill="rgba(0, 0, 0, 0.8)"
             cornerRadius={4}
           />

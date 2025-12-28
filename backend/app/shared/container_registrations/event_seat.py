@@ -9,12 +9,15 @@ from app.shared.mediator import Mediator
 from app.domain.ticketing.event_seat_repositories import EventSeatRepository
 from app.domain.ticketing.event_repositories import EventRepository
 from app.domain.ticketing.seat_repositories import SeatRepository
+from app.domain.ticketing.ticket_repositories import TicketRepository
 from app.infrastructure.ticketing.event_seat_repository import SQLEventSeatRepository
 from app.application.ticketing.handlers_event_seat import EventSeatCommandHandler, EventSeatQueryHandler
 from app.application.ticketing.commands_event_seat import (
     InitializeEventSeatsCommand,
     ImportBrokerSeatsCommand,
     DeleteEventSeatsCommand,
+    CreateTicketsFromSeatsCommand,
+    CreateEventSeatCommand,
 )
 from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
 from app.infrastructure.shared.database.connection import get_session_sync
@@ -34,12 +37,18 @@ def register_event_seat_container(container: Container) -> None:
     # Get dependencies
     event_repository = container.resolve(EventRepository)
     seat_repository = container.resolve(SeatRepository)
+    
+    # Register Ticket repository
+    from app.infrastructure.ticketing.ticket_repository import SQLTicketRepository
+    ticket_repository = SQLTicketRepository()
+    container.register(TicketRepository, instance=ticket_repository)
 
     # Register handlers
     event_seat_command_handler = EventSeatCommandHandler(
         event_repository=event_repository,
         seat_repository=seat_repository,
         event_seat_repository=event_seat_repository,
+        ticket_repository=ticket_repository,
         session_factory=get_session_sync
     )
     container.register(EventSeatCommandHandler, instance=event_seat_command_handler)
@@ -61,6 +70,8 @@ def register_event_seat_mediator(mediator: Mediator) -> None:
     mediator.register_command_handler(InitializeEventSeatsCommand, EventSeatCommandHandler)
     mediator.register_command_handler(ImportBrokerSeatsCommand, EventSeatCommandHandler)
     mediator.register_command_handler(DeleteEventSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(CreateTicketsFromSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(CreateEventSeatCommand, EventSeatCommandHandler)
     
     # Register query handlers
     mediator.register_query_handler(GetEventSeatsQuery, EventSeatQueryHandler)

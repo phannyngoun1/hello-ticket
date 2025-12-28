@@ -63,23 +63,40 @@ class SQLEventSeatRepository(EventSeatRepository):
                     raise BusinessRuleError(f"Failed to create event seat: {str(e)}")
 
     async def save_all(self, event_seats: List[EventSeat]) -> List[EventSeat]:
-        """Bulk save event seats"""
+        """Bulk save event seats (create or update)"""
         tenant_id = self._get_tenant_id()
         if not event_seats:
             return []
 
         with self._session_factory() as session:
+            # Get all IDs to check which ones exist
+            seat_ids = [seat.id for seat in event_seats]
+            existing_statement = select(EventSeatModel).where(
+                and_(
+                    EventSeatModel.id.in_(seat_ids),
+                    EventSeatModel.tenant_id == tenant_id
+                )
+            )
+            existing_models = {m.id: m for m in session.exec(existing_statement).all()}
+            
             models = []
             for domain in event_seats:
                 model = self._mapper.to_model(domain)
                 model.tenant_id = tenant_id  # Ensure tenant consistency
-                models.append(model)
-                session.add(model)
+                
+                # Use merge for existing records, add for new ones
+                if domain.id in existing_models:
+                    merged_model = session.merge(model)
+                    models.append(merged_model)
+                else:
+                    session.add(model)
+                    models.append(model)
             
             try:
                 session.commit()
-                # Refreshing all might be slow for very large sets, 
-                # but SQLModel's add/commit handles common cases.
+                # Refresh all models to get updated data
+                for model in models:
+                    session.refresh(model)
                 return [self._mapper.to_domain(m) for m in models]
             except IntegrityError as e:
                 session.rollback()
@@ -126,8 +143,12 @@ class SQLEventSeatRepository(EventSeatRepository):
             return EventSeatSearchResult(items=items, total=total, has_next=has_next)
 
     async def delete_by_event(self, tenant_id: str, event_id: str) -> int:
-        """Delete all seats for an event"""
+        """Delete all seats for an event (and their associated tickets)"""
+        from app.infrastructure.shared.database.models import TicketModel
+        from sqlalchemy import delete as sql_delete
+        
         with self._session_factory() as session:
+            # First, get all event seat IDs
             statement = select(EventSeatModel).where(
                 and_(
                     EventSeatModel.tenant_id == tenant_id,
@@ -135,11 +156,32 @@ class SQLEventSeatRepository(EventSeatRepository):
                 )
             )
             models = session.exec(statement).all()
+            event_seat_ids = [model.id for model in models]
             count = len(models)
-            for model in models:
-                session.delete(model)
+            
+            if not event_seat_ids:
+                return 0
             
             try:
+                # Delete associated tickets first using bulk delete
+                ticket_delete_stmt = sql_delete(TicketModel).where(
+                    and_(
+                        TicketModel.tenant_id == tenant_id,
+                        TicketModel.event_seat_id.in_(event_seat_ids)
+                    )
+                )
+                session.execute(ticket_delete_stmt)
+                session.flush()  # Ensure tickets are deleted before seats
+                
+                # Then delete event seats using bulk delete
+                seat_delete_stmt = sql_delete(EventSeatModel).where(
+                    and_(
+                        EventSeatModel.tenant_id == tenant_id,
+                        EventSeatModel.event_id == event_id
+                    )
+                )
+                session.execute(seat_delete_stmt)
+                
                 session.commit()
                 return count
             except IntegrityError as e:
@@ -147,11 +189,15 @@ class SQLEventSeatRepository(EventSeatRepository):
                 raise BusinessRuleError(f"Failed to delete event seats: {str(e)}")
 
     async def delete(self, tenant_id: str, event_id: str, event_seat_ids: List[str]) -> int:
-        """Delete specific event seats by their IDs"""
+        """Delete specific event seats by their IDs (and their associated tickets)"""
+        from app.infrastructure.shared.database.models import TicketModel
+        from sqlalchemy import delete as sql_delete
+        
         if not event_seat_ids:
             return 0
         
         with self._session_factory() as session:
+            # Verify seats exist and belong to the event
             statement = select(EventSeatModel).where(
                 and_(
                     EventSeatModel.tenant_id == tenant_id,
@@ -161,10 +207,34 @@ class SQLEventSeatRepository(EventSeatRepository):
             )
             models = session.exec(statement).all()
             count = len(models)
-            for model in models:
-                session.delete(model)
+            
+            if not models:
+                return 0
+            
+            # Get the IDs of seats that will be deleted
+            seat_ids_to_delete = [model.id for model in models]
             
             try:
+                # Delete associated tickets first using bulk delete
+                ticket_delete_stmt = sql_delete(TicketModel).where(
+                    and_(
+                        TicketModel.tenant_id == tenant_id,
+                        TicketModel.event_seat_id.in_(seat_ids_to_delete)
+                    )
+                )
+                session.execute(ticket_delete_stmt)
+                session.flush()  # Ensure tickets are deleted before seats
+                
+                # Then delete event seats using bulk delete
+                seat_delete_stmt = sql_delete(EventSeatModel).where(
+                    and_(
+                        EventSeatModel.tenant_id == tenant_id,
+                        EventSeatModel.event_id == event_id,
+                        EventSeatModel.id.in_(seat_ids_to_delete)
+                    )
+                )
+                session.execute(seat_delete_stmt)
+                
                 session.commit()
                 return count
             except IntegrityError as e:

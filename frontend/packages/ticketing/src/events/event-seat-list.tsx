@@ -15,8 +15,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Label,
 } from "@truths/ui";
-import { RefreshCw, Search, Trash2, X, Filter } from "lucide-react";
+import { RefreshCw, Search, Trash2, X, Filter, Ticket } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import {
@@ -35,6 +36,7 @@ export interface EventSeatListProps {
   onRefresh?: () => void;
   onDelete?: (seatIds: string[]) => void;
   onDeleteSeat?: (seatId: string) => void;
+  onCreateTickets?: (seatIds: string[], ticketPrice: number) => void;
   className?: string;
 }
 
@@ -44,6 +46,7 @@ export function EventSeatList({
   onRefresh,
   onDelete,
   onDeleteSeat,
+  onCreateTickets,
   className,
 }: EventSeatListProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -55,6 +58,10 @@ export function EventSeatList({
   );
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingTickets, setIsCreatingTickets] = useState(false);
+  const [ticketPriceDialogOpen, setTicketPriceDialogOpen] = useState(false);
+  const [ticketPrice, setTicketPrice] = useState<string>("0");
+  const [seatsForTicketCreation, setSeatsForTicketCreation] = useState<string[]>([]);
 
   const filteredSeats = eventSeats.filter((seat) => {
     // Filter by status
@@ -69,7 +76,7 @@ export function EventSeatList({
       seat.section_name?.toLowerCase().includes(query) ||
       seat.row_name?.toLowerCase().includes(query) ||
       seat.seat_number?.toLowerCase().includes(query) ||
-      seat.ticket_code?.toLowerCase().includes(query) ||
+      seat.ticket_number?.toLowerCase().includes(query) ||
       false
     );
   });
@@ -101,12 +108,6 @@ export function EventSeatList({
     );
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -151,6 +152,47 @@ export function EventSeatList({
     }
   };
 
+  const handleCreateTicketsClick = () => {
+    if (selectedSeatIds.size === 0 || !onCreateTickets) return;
+    
+    // Only create tickets for seats without tickets
+    const seatsWithoutTickets = Array.from(selectedSeatIds).filter(
+      (seatId) => {
+        const seat = eventSeats.find((s) => s.id === seatId);
+        return seat && !seat.ticket_number;
+      }
+    );
+    
+    if (seatsWithoutTickets.length === 0) {
+      return; // No seats without tickets
+    }
+    
+    // Store the seats without tickets for the dialog
+    setSeatsForTicketCreation(seatsWithoutTickets);
+    setTicketPriceDialogOpen(true);
+  };
+
+  const handleCreateTicketsConfirm = async () => {
+    if (seatsForTicketCreation.length === 0 || !onCreateTickets) return;
+
+    const price = parseFloat(ticketPrice) || 0;
+    setIsCreatingTickets(true);
+    setTicketPriceDialogOpen(false);
+    try {
+      await onCreateTickets(seatsForTicketCreation, price);
+      // Remove the seats that got tickets from selection
+      const newSelection = new Set(selectedSeatIds);
+      seatsForTicketCreation.forEach((id) => newSelection.delete(id));
+      setSelectedSeatIds(newSelection);
+      setSeatsForTicketCreation([]);
+      setTicketPrice("0");
+    } catch (error) {
+      console.error("Failed to create tickets:", error);
+    } finally {
+      setIsCreatingTickets(false);
+    }
+  };
+
   const allSelected =
     filteredSeats.length > 0 && selectedSeatIds.size === filteredSeats.length;
 
@@ -183,7 +225,7 @@ export function EventSeatList({
         <div className="relative flex-1 min-w-0 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
           <Input
-            placeholder="Search by section, row, seat, or ticket code..."
+            placeholder="Search by section, row, or seat..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 min-w-0"
@@ -233,36 +275,74 @@ export function EventSeatList({
         )}
       </div>
 
-      {/* Selection Bar */}
-      {selectedSeatIds.size > 0 && (
-        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
-          <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-            {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""}{" "}
-            selected
-          </span>
-          <div className="flex items-center flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedSeatIds(new Set())}
-              className="h-7 w-7 p-0 rounded-r-none border-r-0"
-              title="Clear selection"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteSelected}
-              disabled={!onDelete && !onDeleteSeat}
-              className="h-7 w-7 p-0 rounded-l-none"
-              title="Delete selected"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+      {/* Selection Bars */}
+      {selectedSeatIds.size > 0 && (() => {
+        // Find selected seats without tickets
+        const selectedSeatsWithoutTickets = Array.from(selectedSeatIds).filter(
+          (seatId) => {
+            const seat = eventSeats.find((s) => s.id === seatId);
+            return seat && !seat.ticket_number;
+          }
+        );
+        const seatsWithoutTicketsCount = selectedSeatsWithoutTickets.length;
+        const hasSeatsWithoutTickets = seatsWithoutTicketsCount > 0;
+
+        return (
+          <div className="space-y-2">
+            {/* Create Tickets Bar - Only for seats without tickets */}
+            {hasSeatsWithoutTickets && onCreateTickets && (
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
+                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                  {seatsWithoutTicketsCount} seat{seatsWithoutTicketsCount !== 1 ? "s" : ""} without ticket
+                  {seatsWithoutTicketsCount !== 1 ? "s" : ""} selected
+                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleCreateTicketsClick}
+                    disabled={isCreatingTickets}
+                    className="h-7 px-3 gap-1.5"
+                    title="Create tickets for selected seats without tickets"
+                  >
+                    <Ticket className={cn("h-3.5 w-3.5", isCreatingTickets && "animate-spin")} />
+                    <span className="text-xs">Create Tickets</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Action Bar - For all selected seats */}
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
+              <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""}{" "}
+                selected
+              </span>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedSeatIds(new Set())}
+                  className="h-7 w-7 p-0 rounded-r-none border-r-0"
+                  title="Clear all selection"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteSelected}
+                  disabled={!onDelete && !onDeleteSeat}
+                  className="h-7 w-7 p-0 rounded-l-none"
+                  title="Delete selected"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Results Count and Select All */}
       <div className="flex items-center justify-between">
@@ -296,10 +376,15 @@ export function EventSeatList({
                 ? `Seat ${seat.seat_id.slice(0, 8)}`
                 : "N/A";
 
+          // Format price display
+          const priceDisplay = seat.ticket_price !== undefined && seat.ticket_price !== null
+            ? `Price: $${seat.ticket_price.toFixed(2)}`
+            : null;
+
           const details = [
-            formatPrice(seat.price),
-            seat.ticket_code && `Ticket: ${seat.ticket_code}`,
             seat.broker_id && `Broker: ${seat.broker_id}`,
+            seat.ticket_number && `Ticket: ${seat.ticket_number}`,
+            priceDisplay,
           ]
             .filter(Boolean)
             .join(" • ");
@@ -394,6 +479,58 @@ export function EventSeatList({
           label: "Cancel",
           onClick: () => setDeleteConfirmOpen(false),
           disabled: isDeleting,
+        }}
+      />
+
+      {/* Ticket Price Dialog */}
+      <ConfirmationDialog
+        open={ticketPriceDialogOpen}
+        onOpenChange={(open) => {
+          setTicketPriceDialogOpen(open);
+          if (!open) {
+            setTicketPrice("0");
+            setSeatsForTicketCreation([]);
+          }
+        }}
+        title="Create Tickets"
+        description={
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Create tickets for {seatsForTicketCreation.length} selected seat{seatsForTicketCreation.length !== 1 ? "s" : ""} without tickets.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="ticket-price-input">Ticket Price (per ticket)</Label>
+              <Input
+                id="ticket-price-input"
+                type="number"
+                step="0.01"
+                min="0"
+                value={ticketPrice}
+                onChange={(e) => setTicketPrice(e.target.value)}
+                placeholder="0.00"
+                disabled={isCreatingTickets}
+              />
+              <p className="text-xs text-muted-foreground">
+                This price will be applied to all tickets. You can change individual ticket prices later.
+              </p>
+            </div>
+          </div>
+        }
+        confirmAction={{
+          label: "Create Tickets",
+          variant: "default",
+          onClick: handleCreateTicketsConfirm,
+          loading: isCreatingTickets,
+          disabled: isCreatingTickets,
+        }}
+        cancelAction={{
+          label: "Cancel",
+          onClick: () => {
+            setTicketPriceDialogOpen(false);
+            setTicketPrice("0");
+            setSeatsForTicketCreation([]);
+          },
+          disabled: isCreatingTickets,
         }}
       />
     </div>

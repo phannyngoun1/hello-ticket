@@ -33,12 +33,12 @@ interface EventSeatDTO {
   section_name?: string | null;
   row_name?: string | null;
   seat_number?: string | null;
-  price: number;
-  ticket_code?: string | null;
   broker_id?: string | null;
   attributes: Record<string, any>;
   created_at: string;
   updated_at: string;
+  ticket_number?: string | null;
+  ticket_price?: number | null;  // Ticket price
 }
 
 // Transform DTO to frontend type - converts snake_case timestamps to Date objects
@@ -70,12 +70,12 @@ function transformEventSeat(dto: EventSeatDTO): EventSeat {
     section_name: dto.section_name || undefined,
     row_name: dto.row_name || undefined,
     seat_number: dto.seat_number || undefined,
-    price: dto.price,
-    ticket_code: dto.ticket_code || undefined,
     broker_id: dto.broker_id || undefined,
     attributes: dto.attributes || {},
     created_at: new Date(dto.created_at),
     updated_at: new Date(dto.updated_at),
+    ticket_number: dto.ticket_number || undefined,
+    ticket_price: dto.ticket_price || undefined,
   };
 }
 
@@ -284,12 +284,12 @@ export class EventService {
     }
   }
 
-  async initializeEventSeats(eventId: string): Promise<EventSeat[]> {
+  async initializeEventSeats(eventId: string, generateTickets: boolean = false, ticketPrice: number = 0): Promise<EventSeat[]> {
     try {
       const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO[]>(
         `${baseEndpoint}/${eventId}/seats/initialize`,
-        {},
+        { generate_tickets: generateTickets, ticket_price: ticketPrice },
         { requiresAuth: true }
       );
       return (response || []).map(transformEventSeat);
@@ -325,6 +325,46 @@ export class EventService {
       );
     } catch (error) {
       console.error(`Error deleting seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
+
+  async createTicketsFromSeats(eventId: string, seatIds: string[], ticketPrice: number = 0): Promise<EventSeat[]> {
+    try {
+      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const response = await this.apiClient.post<EventSeatDTO[]>(
+        `${baseEndpoint}/${eventId}/seats/create-tickets`,
+        { seat_ids: seatIds, ticket_price: ticketPrice },
+        { requiresAuth: true }
+      );
+      return (response || []).map(transformEventSeat);
+    } catch (error) {
+      console.error(`Error creating tickets from seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
+
+  async createEventSeat(eventId: string, input: {
+    seat_id?: string;
+    section_name?: string;
+    row_name?: string;
+    seat_number?: string;
+    broker_id?: string;
+    create_ticket?: boolean;
+    ticket_price?: number;
+    ticket_number?: string;
+    attributes?: Record<string, any>;
+  }): Promise<EventSeat> {
+    try {
+      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const response = await this.apiClient.post<EventSeatDTO>(
+        `${baseEndpoint}/${eventId}/seats`,
+        input,
+        { requiresAuth: true }
+      );
+      return transformEventSeat(response);
+    } catch (error) {
+      console.error(`Error creating event seat for Event ${eventId}:`, error);
       throw error;
     }
   }

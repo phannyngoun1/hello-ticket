@@ -17,6 +17,10 @@ import {
   InitializeSeatsDialog,
   type InitializeSeatsData,
 } from "./initialize-seats-dialog";
+import {
+  CreateEventSeatDialog,
+  type CreateEventSeatData,
+} from "./create-event-seat-dialog";
 import { cn } from "@truths/ui/lib/utils";
 import {
   RefreshCw,
@@ -34,6 +38,8 @@ import {
   useEventSeats,
   useInitializeEventSeats,
   useDeleteEventSeats,
+  useCreateTicketsFromSeats,
+  useCreateEventSeat,
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat, EventSeatStatus } from "./types";
@@ -51,6 +57,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const [seatListSheetOpen, setSeatListSheetOpen] = useState(false);
   const [initializeSeatsDialogOpen, setInitializeSeatsDialogOpen] =
     useState(false);
+  const [createSeatDialogOpen, setCreateSeatDialogOpen] = useState(false);
 
   // Fetch event data
   const {
@@ -70,12 +77,13 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const {
     data: eventSeatsData,
     isLoading: seatsLoading,
-    error: seatsError,
     refetch: refetchSeats,
   } = useEventSeats(eventService, eventId, { skip: 0, limit: 1000 });
 
   const initializeSeatsMutation = useInitializeEventSeats(eventService);
   const deleteSeatsMutation = useDeleteEventSeats(eventService);
+  const createTicketsMutation = useCreateTicketsFromSeats(eventService);
+  const createSeatMutation = useCreateEventSeat(eventService);
 
   const eventSeats = eventSeatsData?.data || [];
   const totalSeats = eventSeatsData?.pagination.total || 0;
@@ -174,13 +182,12 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const handleInitializeSeatsSubmit = async (data: InitializeSeatsData) => {
     if (!event?.id) return;
     try {
-      // Initialize seats first (this creates the event seats from layout)
-      await initializeSeatsMutation.mutateAsync(event.id);
-
-      // TODO: After initialization, update seats with price and ticket codes
-      // This would require a bulk update endpoint or individual updates
-      // For now, we'll just initialize and let the user update prices later
-      // In the future, we can add: await updateSeatsWithData(event.id, data);
+      // Initialize seats with optional ticket generation
+      await initializeSeatsMutation.mutateAsync({
+        eventId: event.id,
+        generateTickets: data.generateTicketCodes, // Use the checkbox value
+        ticketPrice: data.defaultPrice, // Use the price from the form
+      });
 
       await refetchSeats();
       setInitializeSeatsDialogOpen(false);
@@ -198,6 +205,48 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     } catch (err) {
       console.error("Failed to delete seats:", err);
       throw err; // Re-throw so the confirmation dialog can handle it
+    }
+  };
+
+  const handleCreateTickets = async (
+    seatIds: string[],
+    ticketPrice: number
+  ) => {
+    if (!event?.id || seatIds.length === 0) return;
+    try {
+      await createTicketsMutation.mutateAsync({
+        eventId: event.id,
+        seatIds,
+        ticketPrice,
+      });
+      await refetchSeats();
+    } catch (err) {
+      console.error("Failed to create tickets:", err);
+      throw err;
+    }
+  };
+
+  const handleCreateSeat = async (data: CreateEventSeatData) => {
+    if (!event?.id) return;
+    try {
+      await createSeatMutation.mutateAsync({
+        eventId: event.id,
+        input: {
+          seat_id: data.seat_id,
+          section_name: data.section_name,
+          row_name: data.row_name,
+          seat_number: data.seat_number,
+          broker_id: data.broker_id,
+          create_ticket: data.create_ticket,
+          ticket_price: data.ticket_price,
+          ticket_number: data.ticket_number,
+        },
+      });
+      await refetchSeats();
+      setCreateSeatDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to create event seat:", err);
+      throw err;
     }
   };
 
@@ -438,6 +487,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               eventSeats={eventSeats}
               isLoading={seatsLoading}
               onDelete={handleDeleteSeats}
+              onCreateTickets={handleCreateTickets}
             />
           </div>
         </SheetContent>
@@ -469,6 +519,14 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           loading={initializeSeatsMutation.isPending}
         />
       )}
+
+      {/* Create Event Seat Dialog */}
+      <CreateEventSeatDialog
+        open={createSeatDialogOpen}
+        onOpenChange={setCreateSeatDialogOpen}
+        onSubmit={handleCreateSeat}
+        loading={createSeatMutation.isPending}
+      />
     </div>
   );
 }

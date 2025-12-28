@@ -65,7 +65,7 @@ export function useCreateEvent(service: EventService) {
 
   return useMutation<Event, Error, CreateEventInput>({
     mutationFn: (input) => service.createEvent(input),
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       // Also invalidate shows since events are related
       queryClient.invalidateQueries({ queryKey: ["shows"] });
@@ -96,22 +96,49 @@ export function useDeleteEvent(service: EventService) {
   });
 }
 
-export function useEventSeats(service: EventService, eventId?: string, params?: { skip?: number, limit?: number }) {
+export function useEventSeats(
+  service: EventService,
+  eventId?: string,
+  params?: { skip?: number; limit?: number }
+) {
   return useQuery<PaginatedResponse<EventSeat>>({
     queryKey: ["events", eventId, "seats", params?.skip, params?.limit],
-    queryFn: () => service.fetchEventSeats(eventId!, params),
+    queryFn: async () => {
+      if (!eventId) {
+        throw new Error("Event ID is required");
+      }
+      return service.fetchEventSeats(eventId, params);
+    },
     enabled: !!eventId,
     staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) => {
+      // Don't retry on cancellation errors
+      if (
+        error?.name === "CancelledError" ||
+        error?.message?.includes("CancelledError") ||
+        error?.message?.includes("cancelled")
+      ) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 }
 
 export function useInitializeEventSeats(service: EventService) {
   const queryClient = useQueryClient();
 
-  return useMutation<EventSeat[], Error, string>({
-    mutationFn: (eventId) => service.initializeEventSeats(eventId),
-    onSuccess: (_data, eventId) => {
-      queryClient.invalidateQueries({ queryKey: ["events", eventId, "seats"] });
+  return useMutation<
+    EventSeat[],
+    Error,
+    { eventId: string; generateTickets: boolean; ticketPrice: number }
+  >({
+    mutationFn: ({ eventId, generateTickets, ticketPrice }) =>
+      service.initializeEventSeats(eventId, generateTickets, ticketPrice),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
     },
   });
 }
@@ -119,10 +146,17 @@ export function useInitializeEventSeats(service: EventService) {
 export function useImportBrokerSeats(service: EventService) {
   const queryClient = useQueryClient();
 
-  return useMutation<EventSeat[], Error, { eventId: string; brokerId: string; seats: BrokerSeatImportItem[] }>({
-    mutationFn: ({ eventId, brokerId, seats }) => service.importBrokerSeats(eventId, brokerId, seats),
+  return useMutation<
+    EventSeat[],
+    Error,
+    { eventId: string; brokerId: string; seats: BrokerSeatImportItem[] }
+  >({
+    mutationFn: ({ eventId, brokerId, seats }) =>
+      service.importBrokerSeats(eventId, brokerId, seats),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["events", variables.eventId, "seats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
     },
   });
 }
@@ -131,10 +165,60 @@ export function useDeleteEventSeats(service: EventService) {
   const queryClient = useQueryClient();
 
   return useMutation<void, Error, { eventId: string; seatIds: string[] }>({
-    mutationFn: ({ eventId, seatIds }) => service.deleteEventSeats(eventId, seatIds),
+    mutationFn: ({ eventId, seatIds }) =>
+      service.deleteEventSeats(eventId, seatIds),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["events", variables.eventId, "seats"] });
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
     },
   });
 }
 
+export function useCreateTicketsFromSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat[],
+    Error,
+    { eventId: string; seatIds: string[]; ticketPrice: number }
+  >({
+    mutationFn: ({ eventId, seatIds, ticketPrice }) =>
+      service.createTicketsFromSeats(eventId, seatIds, ticketPrice),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}
+
+export function useCreateEventSeat(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat,
+    Error,
+    {
+      eventId: string;
+      input: {
+        seat_id?: string;
+        section_name?: string;
+        row_name?: string;
+        seat_number?: string;
+        broker_id?: string;
+        create_ticket?: boolean;
+        ticket_price?: number;
+        ticket_number?: string;
+        attributes?: Record<string, any>;
+      };
+    }
+  >({
+    mutationFn: ({ eventId, input }) => service.createEventSeat(eventId, input),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}

@@ -27,8 +27,6 @@ class EventSeat(AggregateRoot):
         section_name: Optional[str] = None,
         row_name: Optional[str] = None,
         seat_number: Optional[str] = None,
-        price: float = 0.0,
-        ticket_code: Optional[str] = None,
         broker_id: Optional[str] = None,
         event_seat_id: Optional[str] = None,
         is_active: bool = True,
@@ -47,8 +45,6 @@ class EventSeat(AggregateRoot):
         self.section_name = section_name
         self.row_name = row_name
         self.seat_number = seat_number
-        self.price = price
-        self.ticket_code = ticket_code
         self.broker_id = broker_id
         self.is_active = is_active
         self.attributes = attributes or {}
@@ -72,12 +68,11 @@ class EventSeat(AggregateRoot):
         self.status = EventSeatStatusEnum.AVAILABLE
         self._touch()
 
-    def sell(self, ticket_code: str) -> None:
-        """Mark seat as sold."""
+    def sell(self) -> None:
+        """Mark seat as sold (ticket should be created separately)."""
         if self.status not in [EventSeatStatusEnum.AVAILABLE, EventSeatStatusEnum.RESERVED]:
             raise BusinessRuleError(f"Seat cannot be sold (current status: {self.status})")
         self.status = EventSeatStatusEnum.SOLD
-        self.ticket_code = ticket_code
         self._touch()
 
     def hold(self) -> None:
@@ -90,12 +85,6 @@ class EventSeat(AggregateRoot):
         self.status = EventSeatStatusEnum.BLOCKED
         self._touch()
 
-    def update_price(self, price: float) -> None:
-        """Update seat price."""
-        if price < 0:
-            raise ValidationError("Price cannot be negative")
-        self.price = price
-        self._touch()
 
     def _validate(self) -> None:
         """Validate event seat data."""

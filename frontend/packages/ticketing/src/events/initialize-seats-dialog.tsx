@@ -25,14 +25,12 @@ export interface InitializeSeatsDialogProps {
 
 export interface InitializeSeatsData {
   defaultPrice: number;
-  generateTicketCodes: boolean;
-  ticketCodePrefix?: string;
+  generateTicketCodes: boolean; // If true, generate tickets for all seats
 }
 
 interface InitializeSeatsFormData {
   defaultPrice: string; // String for form input
   generateTicketCodes: boolean;
-  ticketCodePrefix: string;
 }
 
 export function InitializeSeatsDialog({
@@ -53,13 +51,11 @@ export function InitializeSeatsDialog({
     defaultValues: {
       defaultPrice: "0",
       generateTicketCodes: false,
-      ticketCodePrefix: "",
     },
   });
 
   const defaultPrice = watch("defaultPrice");
   const generateTicketCodes = watch("generateTicketCodes");
-  const ticketCodePrefix = watch("ticketCodePrefix");
 
   // Create section name map for display
   const sectionNameMap = useMemo(() => {
@@ -140,7 +136,6 @@ export function InitializeSeatsDialog({
     const submitData: InitializeSeatsData = {
       defaultPrice: parseFloat(data.defaultPrice) || 0,
       generateTicketCodes: data.generateTicketCodes,
-      ticketCodePrefix: data.ticketCodePrefix.trim() || undefined,
     };
     await onSubmit(submitData);
   };
@@ -270,29 +265,20 @@ export function InitializeSeatsDialog({
                   />
                   <Label htmlFor="generateTicketCodes" className="flex items-center gap-2 cursor-pointer">
                     <Ticket className="h-4 w-4" />
-                    Generate Ticket Codes
+                    Generate Tickets
                   </Label>
                 </div>
 
                 {generateTicketCodes && (
-                  <div className="pl-6 space-y-2">
-                    <Label htmlFor="ticketCodePrefix">Ticket Code Prefix (Optional)</Label>
-                    <Input
-                      id="ticketCodePrefix"
-                      type="text"
-                      placeholder="TIX-"
-                      {...register("ticketCodePrefix")}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Optional prefix for ticket codes. If not provided, codes will be generated
-                      automatically (e.g., "EVT-001", "EVT-002").
-                    </p>
-                  </div>
+                  <p className="text-xs text-muted-foreground pl-6">
+                    Tickets will be created for all seats with AVAILABLE status, ready for sale.
+                    Ticket numbers will be generated automatically.
+                  </p>
                 )}
 
                 {!generateTicketCodes && (
                   <p className="text-xs text-muted-foreground pl-6">
-                    Ticket codes can be added manually after initialization.
+                    Seats will be created without tickets. Tickets can be created later from the seat list.
                   </p>
                 )}
               </div>
@@ -314,14 +300,9 @@ export function InitializeSeatsDialog({
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Ticket codes:</span>
+                <span className="text-muted-foreground">Generate Tickets:</span>
                 <span className="font-medium">
                   {generateTicketCodes ? "Yes" : "No"}
-                  {generateTicketCodes && ticketCodePrefix && (
-                    <span className="text-muted-foreground ml-1">
-                      (Prefix: {ticketCodePrefix})
-                    </span>
-                  )}
                 </span>
               </div>
               <div className="flex justify-between font-medium pt-2 border-t">

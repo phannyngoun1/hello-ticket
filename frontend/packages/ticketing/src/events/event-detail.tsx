@@ -52,7 +52,10 @@ export function EventDetail({
     if (!data?.id) return;
     setIsInitializing(true);
     try {
-      await initializeSeatsMutation.mutateAsync(data.id);
+      await initializeSeatsMutation.mutateAsync({
+        eventId: data.id,
+        generateTickets: false, // Default to false, tickets can be created later
+      });
     } catch (err) {
       console.error("Failed to initialize seats:", err);
     } finally {
