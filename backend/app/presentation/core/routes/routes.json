@@ -25,6 +25,20 @@
     ],
     "children": [
       {
+        "label": "Events",
+        "path": "/sales/events",
+        "icon": "Calendar",
+        "description": "Browse and book available and upcoming shows.",
+        "keywords": [
+          "event",
+          "events",
+          "show",
+          "shows",
+          "booking",
+          "book"
+        ]
+      },
+      {
         "label": "Bookings",
         "path": "/sales/bookings",
         "icon": "Calendar",

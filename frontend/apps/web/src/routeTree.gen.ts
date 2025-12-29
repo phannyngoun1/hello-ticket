@@ -29,6 +29,7 @@ import { Route as SettingsCompanyAddressesRouteImport } from './routes/settings/
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SalesTestsRouteImport } from './routes/sales/tests'
+import { Route as SalesEventsRouteImport } from './routes/sales/events'
 import { Route as SalesCustomersRouteImport } from './routes/sales/customers'
 import { Route as SalesBookingsRouteImport } from './routes/sales/bookings'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
@@ -37,6 +38,7 @@ import { Route as TicketingVenuesIndexRouteImport } from './routes/ticketing/ven
 import { Route as TicketingShowsIndexRouteImport } from './routes/ticketing/shows/index'
 import { Route as TicketingOrganizersIndexRouteImport } from './routes/ticketing/organizers/index'
 import { Route as SalesTestsIndexRouteImport } from './routes/sales/tests/index'
+import { Route as SalesEventsIndexRouteImport } from './routes/sales/events/index'
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
 import { Route as SalesBookingsIndexRouteImport } from './routes/sales/bookings/index'
 import { Route as TicketingVenuesIdRouteImport } from './routes/ticketing/venues/$id'
@@ -154,6 +156,11 @@ const SalesTestsRoute = SalesTestsRouteImport.update({
   path: '/sales/tests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesEventsRoute = SalesEventsRouteImport.update({
+  id: '/sales/events',
+  path: '/sales/events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SalesCustomersRoute = SalesCustomersRouteImport.update({
   id: '/sales/customers',
   path: '/sales/customers',
@@ -194,6 +201,11 @@ const SalesTestsIndexRoute = SalesTestsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => SalesTestsRoute,
+} as any)
+const SalesEventsIndexRoute = SalesEventsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesEventsRoute,
 } as any)
 const SalesCustomersIndexRoute = SalesCustomersIndexRouteImport.update({
   id: '/',
@@ -287,6 +299,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof authLoginRoute
   '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
+  '/sales/events': typeof SalesEventsRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -314,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/sales/events/': typeof SalesEventsIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
@@ -352,6 +366,7 @@ export interface FileRoutesByTo {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings': typeof SalesBookingsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
+  '/sales/events': typeof SalesEventsIndexRoute
   '/sales/tests': typeof SalesTestsIndexRoute
   '/ticketing/organizers': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows': typeof TicketingShowsIndexRoute
@@ -371,6 +386,7 @@ export interface FileRoutesById {
   '/(auth)/login': typeof authLoginRoute
   '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
+  '/sales/events': typeof SalesEventsRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
@@ -398,6 +414,7 @@ export interface FileRoutesById {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/sales/events/': typeof SalesEventsIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
@@ -418,6 +435,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/events'
     | '/sales/tests'
     | '/settings/account'
     | '/settings/appearance'
@@ -445,6 +463,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings/'
     | '/sales/customers/'
+    | '/sales/events/'
     | '/sales/tests/'
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
@@ -483,6 +502,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/events'
     | '/sales/tests'
     | '/ticketing/organizers'
     | '/ticketing/shows'
@@ -501,6 +521,7 @@ export interface FileRouteTypes {
     | '/(auth)/login'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/events'
     | '/sales/tests'
     | '/settings/account'
     | '/settings/appearance'
@@ -528,6 +549,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings/'
     | '/sales/customers/'
+    | '/sales/events/'
     | '/sales/tests/'
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
@@ -547,6 +569,7 @@ export interface RootRouteChildren {
   authLoginRoute: typeof authLoginRoute
   SalesBookingsRoute: typeof SalesBookingsRouteWithChildren
   SalesCustomersRoute: typeof SalesCustomersRouteWithChildren
+  SalesEventsRoute: typeof SalesEventsRouteWithChildren
   SalesTestsRoute: typeof SalesTestsRouteWithChildren
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
@@ -709,6 +732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesTestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales/events': {
+      id: '/sales/events'
+      path: '/sales/events'
+      fullPath: '/sales/events'
+      preLoaderRoute: typeof SalesEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sales/customers': {
       id: '/sales/customers'
       path: '/sales/customers'
@@ -764,6 +794,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sales/tests/'
       preLoaderRoute: typeof SalesTestsIndexRouteImport
       parentRoute: typeof SalesTestsRoute
+    }
+    '/sales/events/': {
+      id: '/sales/events/'
+      path: '/'
+      fullPath: '/sales/events/'
+      preLoaderRoute: typeof SalesEventsIndexRouteImport
+      parentRoute: typeof SalesEventsRoute
     }
     '/sales/customers/': {
       id: '/sales/customers/'
@@ -913,6 +950,18 @@ const SalesCustomersRouteWithChildren = SalesCustomersRoute._addFileChildren(
   SalesCustomersRouteChildren,
 )
 
+interface SalesEventsRouteChildren {
+  SalesEventsIndexRoute: typeof SalesEventsIndexRoute
+}
+
+const SalesEventsRouteChildren: SalesEventsRouteChildren = {
+  SalesEventsIndexRoute: SalesEventsIndexRoute,
+}
+
+const SalesEventsRouteWithChildren = SalesEventsRoute._addFileChildren(
+  SalesEventsRouteChildren,
+)
+
 interface SalesTestsRouteChildren {
   SalesTestsIdRoute: typeof SalesTestsIdRoute
   SalesTestsIndexRoute: typeof SalesTestsIndexRoute
@@ -990,6 +1039,7 @@ const rootRouteChildren: RootRouteChildren = {
   authLoginRoute: authLoginRoute,
   SalesBookingsRoute: SalesBookingsRouteWithChildren,
   SalesCustomersRoute: SalesCustomersRouteWithChildren,
+  SalesEventsRoute: SalesEventsRouteWithChildren,
   SalesTestsRoute: SalesTestsRouteWithChildren,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
