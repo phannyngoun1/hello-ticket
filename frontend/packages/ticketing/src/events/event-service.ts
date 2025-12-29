@@ -284,12 +284,31 @@ export class EventService {
     }
   }
 
-  async initializeEventSeats(eventId: string, generateTickets: boolean = false, ticketPrice: number = 0): Promise<EventSeat[]> {
+  async initializeEventSeats(
+    eventId: string,
+    input: {
+      generate_tickets?: boolean;
+      ticket_price?: number;
+      pricing_mode?: "same" | "per_section";
+      section_pricing?: Array<{ section_id: string; price: number }>;
+      seat_pricing?: Array<{ seat_id: string; price: number }>;
+      included_section_ids?: string[];
+      excluded_section_ids?: string[];
+    }
+  ): Promise<EventSeat[]> {
     try {
       const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO[]>(
         `${baseEndpoint}/${eventId}/seats/initialize`,
-        { generate_tickets: generateTickets, ticket_price: ticketPrice },
+        {
+          generate_tickets: input.generate_tickets ?? false,
+          ticket_price: input.ticket_price ?? 0,
+          pricing_mode: input.pricing_mode ?? "same",
+          section_pricing: input.section_pricing,
+          seat_pricing: input.seat_pricing,
+          included_section_ids: input.included_section_ids,
+          excluded_section_ids: input.excluded_section_ids,
+        },
         { requiresAuth: true }
       );
       return (response || []).map(transformEventSeat);

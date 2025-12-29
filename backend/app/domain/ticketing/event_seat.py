@@ -28,6 +28,7 @@ class EventSeat(AggregateRoot):
         row_name: Optional[str] = None,
         seat_number: Optional[str] = None,
         broker_id: Optional[str] = None,
+        price: float = 0.0,  # Price for this seat
         event_seat_id: Optional[str] = None,
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
@@ -46,6 +47,7 @@ class EventSeat(AggregateRoot):
         self.row_name = row_name
         self.seat_number = seat_number
         self.broker_id = broker_id
+        self.price = price
         self.is_active = is_active
         self.attributes = attributes or {}
         self._version = version

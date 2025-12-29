@@ -19,6 +19,7 @@ class EventSeatMapper:
             row_name=model.row_name,
             seat_number=model.seat_number,
             broker_id=model.broker_id,
+            price=model.price,
             event_seat_id=model.id,
             is_active=model.is_active,
             attributes=model.attributes,
@@ -30,8 +31,6 @@ class EventSeatMapper:
     @staticmethod
     def to_model(domain: EventSeat) -> EventSeatModel:
         """Convert domain aggregate to database model"""
-        # Note: price and ticket_code fields still exist in EventSeatModel for backward compatibility
-        # but are not used from domain. A database migration should remove these fields.
         return EventSeatModel(
             id=domain.id,
             tenant_id=domain.tenant_id,
@@ -41,8 +40,7 @@ class EventSeatMapper:
             section_name=domain.section_name,
             row_name=domain.row_name,
             seat_number=domain.seat_number,
-            price=0.0,  # Default value - price is now on Ticket entity
-            ticket_code=None,  # ticket_code is now on Ticket entity
+            price=domain.price,
             broker_id=domain.broker_id,
             is_active=domain.is_active,
             version=domain.version,

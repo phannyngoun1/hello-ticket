@@ -64,7 +64,7 @@ export function ShowDetail({
 }: ShowDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "profile" | "images" | "note" | "metadata" | "events"
-  >("profile");
+  >("events");
   const service = useShowService();
   const [images, setImages] = useState<ShowImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
@@ -432,6 +432,20 @@ export function ShowDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "events"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("events")}
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Events
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
                   activeTab === "profile"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -471,20 +485,6 @@ export function ShowDetail({
                   Note
                 </span>
               </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "events"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("events")}
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Events
-                </span>
-              </button>
               {hasMetadata && (
                 <button
                   className={cn(
@@ -505,6 +505,26 @@ export function ShowDetail({
           </div>
 
           <div className="mt-0">
+            {/* Events Tab */}
+            {activeTab === "events" && data?.id && (
+              <div className="space-y-6">
+                <EventListContainer showId={data.id} />
+              </div>
+            )}
+
+            {/* Events Tab - Fallback if provider not available */}
+            {activeTab === "events" && !data?.id && (
+              <div className="space-y-6">
+                <Card>
+                  <div className="p-4">
+                    <p className="text-sm text-muted-foreground">
+                      Please select a show to view events.
+                    </p>
+                  </div>
+                </Card>
+              </div>
+            )}
+
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6">
@@ -663,26 +683,6 @@ export function ShowDetail({
                   description="Add or edit notes about this show"
                   maxLength={2000}
                 />
-              </div>
-            )}
-
-            {/* Events Tab */}
-            {activeTab === "events" && data?.id && (
-              <div className="space-y-6">
-                <EventListContainer showId={data.id} />
-              </div>
-            )}
-
-            {/* Events Tab - Fallback if provider not available */}
-            {activeTab === "events" && !data?.id && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <p className="text-sm text-muted-foreground">
-                      Please select a show to view events.
-                    </p>
-                  </div>
-                </Card>
               </div>
             )}
 
