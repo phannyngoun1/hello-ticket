@@ -182,11 +182,16 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const handleInitializeSeatsSubmit = async (data: InitializeSeatsData) => {
     if (!event?.id) return;
     try {
-      // Initialize seats with optional ticket generation
+      // Initialize seats with optional ticket generation and section pricing
       await initializeSeatsMutation.mutateAsync({
         eventId: event.id,
-        generateTickets: data.generateTicketCodes, // Use the checkbox value
-        ticketPrice: data.defaultPrice, // Use the price from the form
+        generateTickets: data.generateTicketCodes,
+        ticketPrice: data.defaultPrice,
+        pricingMode: data.pricingMode,
+        sectionPricing: data.sectionPricing,
+        seatPricing: data.seatPricing,
+        includedSectionIds: data.includedSectionIds,
+        excludedSectionIds: data.excludedSectionIds,
       });
 
       await refetchSeats();

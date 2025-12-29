@@ -7,6 +7,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Stage, Layer, Image, Circle, Group, Text, Rect } from "react-konva";
 import Konva from "konva";
+import { createPortal } from "react-dom";
 import { cn } from "@truths/ui/lib/utils";
 import { ZoomControls } from "../seats/seat-designer/components/zoom-controls";
 import type { Layout } from "../layouts/types";
@@ -68,7 +69,8 @@ interface SeatMarkerProps {
   y: number;
   isHovered: boolean;
   isSpacePressed: boolean;
-  onMouseEnter: () => void;
+  onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: () => void;
   onClick: () => void;
 }
@@ -81,6 +83,7 @@ function SeatMarker({
   isHovered,
   isSpacePressed,
   onMouseEnter,
+  onMouseMove,
   onMouseLeave,
   onClick,
 }: SeatMarkerProps) {
@@ -110,13 +113,17 @@ function SeatMarker({
         if (container) {
           container.style.cursor = "pointer";
         }
-        onMouseEnter();
+        onMouseEnter(e);
+      }}
+      onMouseMove={(e) => {
+        if (onMouseMove) {
+          onMouseMove(e);
+        }
       }}
       onMouseLeave={(e) => {
         const container = e.target.getStage()?.container();
         if (container) {
-          container.style.cursor =
-            isSpacePressed ? "grabbing" : "default";
+          container.style.cursor = isSpacePressed ? "grabbing" : "default";
         }
         onMouseLeave();
       }}
@@ -140,29 +147,7 @@ function SeatMarker({
         opacity={1}
         listening={true}
       />
-      {isHovered && (
-        <Group>
-          <Rect
-            x={-60}
-            y={radius + 5}
-            width={120}
-            height={eventSeat ? 35 : 20}
-            fill="rgba(0, 0, 0, 0.8)"
-            cornerRadius={4}
-          />
-          <Text
-            text={tooltipText}
-            fontSize={11}
-            fill="#fff"
-            y={radius + 10}
-            x={-55}
-            width={110}
-            align="left"
-            padding={4}
-            lineHeight={1.4}
-          />
-        </Group>
-      )}
+      {/* Removed inline tooltip - using Popover instead */}
     </Group>
   );
 }
@@ -180,13 +165,27 @@ export function EventInventoryViewer({
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
-  const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+  const [containerSize, setContainerSize] = useState({
+    width: 800,
+    height: 600,
+  });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [panStartPos, setPanStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [panStartPos, setPanStartPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [hoveredSeatId, setHoveredSeatId] = useState<string | null>(null);
+  const [hoveredSeatPosition, setHoveredSeatPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [hoveredSeatData, setHoveredSeatData] = useState<{
+    seat: Seat;
+    eventSeat?: EventSeat;
+  } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -313,7 +312,8 @@ export function EventInventoryViewer({
 
       const scaleBy = 1.1;
       const oldScale = zoomLevel;
-      const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+      const newScale =
+        e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
       const clampedScale = Math.max(0.1, Math.min(5, newScale));
 
       // Convert pointer position to Layer coordinates
@@ -393,6 +393,101 @@ export function EventInventoryViewer({
     }
   }, [isPanning]);
 
+  // Helper function to calculate and update popover position
+  const updatePopoverPosition = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const group = e.target.getParent();
+      const evt = e.evt;
+      const stage = e.target.getStage();
+
+      if (group && stage && containerRef.current) {
+        try {
+          // Get the container's bounding rect to account for its position on the page
+          const containerRect = containerRef.current.getBoundingClientRect();
+
+          // Use Konva's getClientRect to get the bounding box
+          // This gives us coordinates relative to the stage container
+          const box = group.getClientRect();
+
+          // Convert to absolute screen coordinates by adding container position
+          // This accounts for scroll position since getBoundingClientRect() is relative to viewport
+          const absoluteX = containerRect.left + box.x;
+          const absoluteY = containerRect.top + box.y;
+
+          const popoverWidth = 320; // Width of the popover
+          const popoverHeight = 200; // Estimated height
+          const offset = 15; // Offset from seat
+
+          // Calculate preferred position (to the right of seat)
+          let screenX = absoluteX + box.width + offset;
+          let screenY = absoluteY + box.height / 2 - popoverHeight / 2;
+
+          // Get viewport dimensions
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+
+          // Check if popover would go off right edge of viewport
+          if (screenX + popoverWidth > viewportWidth) {
+            // Position to the left of seat instead
+            screenX = absoluteX - popoverWidth - offset;
+          }
+
+          // Check if popover would go off left edge
+          if (screenX < 0) {
+            screenX = Math.max(offset, absoluteX + box.width + offset);
+            // If still off screen, position at edge
+            if (screenX + popoverWidth > viewportWidth) {
+              screenX = viewportWidth - popoverWidth - offset;
+            }
+          }
+
+          // Check if popover would go off bottom edge
+          if (screenY + popoverHeight > viewportHeight) {
+            screenY = viewportHeight - popoverHeight - offset;
+          }
+
+          // Check if popover would go off top edge
+          if (screenY < 0) {
+            screenY = offset;
+          }
+
+          setHoveredSeatPosition({ x: screenX, y: screenY });
+        } catch (error) {
+          // Fallback to mouse position if getClientRect fails
+          const popoverWidth = 320;
+          let screenX = evt.clientX + 20;
+          let screenY = evt.clientY - 100;
+
+          // Keep on screen
+          if (screenX + popoverWidth > window.innerWidth) {
+            screenX = evt.clientX - popoverWidth - 20;
+          }
+          if (screenY < 0) {
+            screenY = 10;
+          }
+
+          setHoveredSeatPosition({ x: screenX, y: screenY });
+        }
+      } else {
+        // Fallback to mouse position
+        const popoverWidth = 320;
+        let screenX = evt.clientX + 20;
+        let screenY = evt.clientY - 100;
+
+        // Keep on screen
+        if (screenX + popoverWidth > window.innerWidth) {
+          screenX = evt.clientX - popoverWidth - 20;
+        }
+        if (screenY < 0) {
+          screenY = 10;
+        }
+
+        setHoveredSeatPosition({ x: screenX, y: screenY });
+      }
+    },
+    []
+  );
+
   // Ensure container dimensions are valid (same as layout designer)
   const validWidth = containerSize.width > 0 ? containerSize.width : 800;
   const validHeight = containerSize.height > 0 ? containerSize.height : 600;
@@ -404,8 +499,10 @@ export function EventInventoryViewer({
     (xPercent: number, yPercent: number) => {
       if (!image) return { x: 0, y: 0 };
 
-      const currentValidWidth = containerSize.width > 0 ? containerSize.width : 800;
-      const currentValidHeight = containerSize.height > 0 ? containerSize.height : 600;
+      const currentValidWidth =
+        containerSize.width > 0 ? containerSize.width : 800;
+      const currentValidHeight =
+        containerSize.height > 0 ? containerSize.height : 600;
 
       const imageAspectRatio = image.height / image.width;
       const containerAspectRatio = currentValidHeight / currentValidWidth;
@@ -437,7 +534,10 @@ export function EventInventoryViewer({
   if (isLoading || !image || !imageLoaded || !image.width || !image.height) {
     return (
       <div
-        className={cn("relative border rounded-lg overflow-hidden bg-gray-100", className)}
+        className={cn(
+          "relative border rounded-lg overflow-hidden bg-gray-100",
+          className
+        )}
         ref={containerRef}
       >
         <div
@@ -484,7 +584,12 @@ export function EventInventoryViewer({
   const centerY = validHeight / 2;
 
   return (
-    <div className={cn("relative border rounded-lg overflow-hidden bg-gray-100", className)}>
+    <div
+      className={cn(
+        "relative border rounded-lg overflow-hidden bg-gray-100",
+        className
+      )}
+    >
       <div
         ref={containerRef}
         className="relative w-full"
@@ -501,12 +606,11 @@ export function EventInventoryViewer({
           onMouseLeave={handleMouseLeave}
           style={{
             display: "block",
-            cursor:
-              hoveredSeatId
-                ? "pointer"
-                : isPanning || isSpacePressed
-                  ? "grabbing"
-                  : "default",
+            cursor: hoveredSeatId
+              ? "pointer"
+              : isPanning || isSpacePressed
+                ? "grabbing"
+                : "default",
           }}
         >
           <Layer
@@ -532,47 +636,61 @@ export function EventInventoryViewer({
             {layoutSeats.map((seat) => {
               if (!seat.x_coordinate || !seat.y_coordinate) return null;
 
-                // Convert percentage coordinates to stage coordinates using same logic as layout designer
-                const { x, y } = percentageToStage(seat.x_coordinate, seat.y_coordinate);
+              // Convert percentage coordinates to stage coordinates using same logic as layout designer
+              const { x, y } = percentageToStage(
+                seat.x_coordinate,
+                seat.y_coordinate
+              );
 
-                // Find event seat by seat_id or location
-                let eventSeat: EventSeat | undefined;
-                // First try by seat_id (most reliable)
-                if (seat.id && seatStatusMap.has(seat.id)) {
-                  eventSeat = seatStatusMap.get(seat.id);
-                } 
-                // Fallback to location-based matching (for broker imports or when seat_id is missing)
-                if (!eventSeat && seat.row && seat.seat_number) {
-                  // Try location-based matching with section name
-                  const sectionName = seat.section_name || sectionNameMap.get(seat.section_id);
-                  if (sectionName) {
-                    // Try with seat.row (layout seat uses 'row') - event seats use row_name
-                    // The backend should set row_name to match row when initializing from layout
-                    const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
+              // Find event seat by seat_id or location
+              let eventSeat: EventSeat | undefined;
+              // First try by seat_id (most reliable)
+              if (seat.id && seatStatusMap.has(seat.id)) {
+                eventSeat = seatStatusMap.get(seat.id);
+              }
+              // Fallback to location-based matching (for broker imports or when seat_id is missing)
+              if (!eventSeat && seat.row && seat.seat_number) {
+                // Try location-based matching with section name
+                const sectionName =
+                  seat.section_name || sectionNameMap.get(seat.section_id);
+                if (sectionName) {
+                  // Try with seat.row (layout seat uses 'row') - event seats use row_name
+                  // The backend should set row_name to match row when initializing from layout
+                  const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
                   eventSeat = locationStatusMap.get(key);
-                  }
                 }
+              }
 
-                return (
-                  <SeatMarker
-                    key={seat.id}
-                    seat={seat}
-                    eventSeat={eventSeat}
-                    x={x}
-                    y={y}
-                    isHovered={hoveredSeatId === seat.id}
-                    isSpacePressed={isSpacePressed}
-                    onMouseEnter={() => setHoveredSeatId(seat.id)}
-                    onMouseLeave={() => setHoveredSeatId(null)}
-                    onClick={() => {
-                      // TODO: Open seat detail/edit dialog
-                      console.log("Seat clicked:", seat, eventSeat);
-                    }}
-                  />
-                );
-              })}
-            </Layer>
-          </Stage>
+              return (
+                <SeatMarker
+                  key={seat.id}
+                  seat={seat}
+                  eventSeat={eventSeat}
+                  x={x}
+                  y={y}
+                  isHovered={hoveredSeatId === seat.id}
+                  isSpacePressed={isSpacePressed}
+                  onMouseEnter={(e) => {
+                    setHoveredSeatId(seat.id);
+                    setHoveredSeatData({ seat, eventSeat });
+                    // Calculate position immediately
+                    updatePopoverPosition(e);
+                  }}
+                  onMouseMove={updatePopoverPosition}
+                  onMouseLeave={() => {
+                    setHoveredSeatId(null);
+                    setHoveredSeatPosition(null);
+                    setHoveredSeatData(null);
+                  }}
+                  onClick={() => {
+                    // TODO: Open seat detail/edit dialog
+                    console.log("Seat clicked:", seat, eventSeat);
+                  }}
+                />
+              );
+            })}
+          </Layer>
+        </Stage>
       </div>
 
       {/* Zoom Controls */}
@@ -594,7 +712,10 @@ export function EventInventoryViewer({
               <div key={key} className="flex items-center gap-2 text-xs">
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: colors.fill, border: `1px solid ${colors.stroke}` }}
+                  style={{
+                    backgroundColor: colors.fill,
+                    border: `1px solid ${colors.stroke}`,
+                  }}
                 />
                 <span>{key}</span>
               </div>
@@ -602,7 +723,117 @@ export function EventInventoryViewer({
           })}
         </div>
       </div>
+
+      {/* Seat Tooltip/Popover - Rendered via Portal */}
+      {hoveredSeatId &&
+        hoveredSeatPosition &&
+        hoveredSeatData &&
+        createPortal(
+          <div
+            className="fixed z-[9999] rounded-lg border border-gray-300 bg-white p-4 shadow-2xl"
+            style={{
+              left: `${hoveredSeatPosition.x}px`,
+              top: `${hoveredSeatPosition.y}px`,
+              pointerEvents: "none",
+              width: "320px",
+              backgroundColor: "#ffffff",
+              opacity: 1,
+              backdropFilter: "none",
+            }}
+          >
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-semibold text-sm mb-1">Seat Information</h4>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Section:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSeatData.seat.section_name ||
+                        sectionNameMap.get(hoveredSeatData.seat.section_id) ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Row:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSeatData.seat.row || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Seat Number:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSeatData.seat.seat_number || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Seat Type:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSeatData.seat.seat_type || "STANDARD"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {hoveredSeatData.eventSeat ? (
+                <div className="border-t pt-3">
+                  <h4 className="font-semibold text-sm mb-1">
+                    Event Seat Status
+                  </h4>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Status:</span>
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium"
+                        style={{
+                          backgroundColor:
+                            getSeatStatusColor(hoveredSeatData.eventSeat.status)
+                              .fill + "20",
+                          color: getSeatStatusColor(
+                            hoveredSeatData.eventSeat.status
+                          ).stroke,
+                          border: `1px solid ${getSeatStatusColor(hoveredSeatData.eventSeat.status).stroke}`,
+                        }}
+                      >
+                        {hoveredSeatData.eventSeat.status}
+                      </span>
+                    </div>
+                    {hoveredSeatData.eventSeat.ticket_number && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ticket Number:</span>
+                        <span className="font-medium text-gray-900">
+                          {hoveredSeatData.eventSeat.ticket_number}
+                        </span>
+                      </div>
+                    )}
+                    {hoveredSeatData.eventSeat.ticket_price !== undefined && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Ticket Price:</span>
+                        <span className="font-medium text-gray-900">
+                          ${hoveredSeatData.eventSeat.ticket_price.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {hoveredSeatData.eventSeat.broker_id && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Broker ID:</span>
+                        <span className="font-medium text-gray-900">
+                          {hoveredSeatData.eventSeat.broker_id}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t pt-3">
+                  <p className="text-sm text-gray-500 italic">
+                    No event seat assigned
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
-

@@ -4,20 +4,25 @@
  * Displays event seats using Item components for management
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Button,
   Badge,
   Input,
   Checkbox,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Label,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Separator,
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
 } from "@truths/ui";
-import { RefreshCw, Search, Trash2, X, Filter, Ticket } from "lucide-react";
+import { RefreshCw, Search, Trash2, X, Filter, Ticket, Check } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import {
@@ -50,9 +55,12 @@ export function EventSeatList({
   className,
 }: EventSeatListProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<EventSeatStatus | "all">(
-    "all"
+  const [statusFilter, setStatusFilter] = useState<Set<EventSeatStatus>>(
+    new Set()
   );
+  const [sectionFilter, setSectionFilter] = useState<Set<string>>(new Set());
+  const [sectionSearchQuery, setSectionSearchQuery] = useState("");
+  const [statusSearchQuery, setStatusSearchQuery] = useState("");
   const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(
     new Set()
   );
@@ -63,23 +71,118 @@ export function EventSeatList({
   const [ticketPrice, setTicketPrice] = useState<string>("0");
   const [seatsForTicketCreation, setSeatsForTicketCreation] = useState<string[]>([]);
 
-  const filteredSeats = eventSeats.filter((seat) => {
-    // Filter by status
-    if (statusFilter !== "all" && seat.status !== statusFilter) {
-      return false;
-    }
+  // Get unique sections from event seats
+  const sections = useMemo(() => {
+    const sectionSet = new Set<string>();
+    eventSeats.forEach((seat) => {
+      if (seat.section_name) {
+        sectionSet.add(seat.section_name);
+      }
+    });
+    return Array.from(sectionSet).sort();
+  }, [eventSeats]);
 
-    // Filter by search query
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      seat.section_name?.toLowerCase().includes(query) ||
-      seat.row_name?.toLowerCase().includes(query) ||
-      seat.seat_number?.toLowerCase().includes(query) ||
-      seat.ticket_number?.toLowerCase().includes(query) ||
-      false
+  // Status options for multi-select (constant, defined outside useMemo)
+  const statusOptions: { label: string; value: EventSeatStatus }[] = useMemo(() => [
+    { label: EventSeatStatusEnum.AVAILABLE, value: EventSeatStatusEnum.AVAILABLE },
+    { label: EventSeatStatusEnum.RESERVED, value: EventSeatStatusEnum.RESERVED },
+    { label: EventSeatStatusEnum.SOLD, value: EventSeatStatusEnum.SOLD },
+    { label: EventSeatStatusEnum.HELD, value: EventSeatStatusEnum.HELD },
+    { label: EventSeatStatusEnum.BLOCKED, value: EventSeatStatusEnum.BLOCKED },
+  ], []);
+
+  // Filter sections by search query
+  const filteredSections = useMemo(() => {
+    if (!sectionSearchQuery.trim()) {
+      return sections;
+    }
+    const query = sectionSearchQuery.toLowerCase();
+    return sections.filter((section) =>
+      section.toLowerCase().includes(query)
     );
-  });
+  }, [sections, sectionSearchQuery]);
+
+  // Filter status options by search query
+  const filteredStatusOptions = useMemo(() => {
+    if (!statusSearchQuery.trim()) {
+      return statusOptions;
+    }
+    const query = statusSearchQuery.toLowerCase();
+    return statusOptions.filter((option) =>
+      option.label.toLowerCase().includes(query)
+    );
+  }, [statusOptions, statusSearchQuery]);
+
+  // Filter seats by status, section, and search query
+  const filteredSeats = useMemo(() => {
+    return eventSeats.filter((seat) => {
+      // Filter by status (if any statuses are selected)
+      if (statusFilter.size > 0 && !statusFilter.has(seat.status)) {
+        return false;
+      }
+
+      // Filter by section (if any sections are selected)
+      if (sectionFilter.size > 0 && seat.section_name && !sectionFilter.has(seat.section_name)) {
+        return false;
+      }
+
+      // Filter by search query
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        seat.section_name?.toLowerCase().includes(query) ||
+        seat.row_name?.toLowerCase().includes(query) ||
+        seat.seat_number?.toLowerCase().includes(query) ||
+        seat.ticket_number?.toLowerCase().includes(query) ||
+        false
+      );
+    });
+  }, [eventSeats, statusFilter, sectionFilter, searchQuery]);
+
+  const handleStatusToggle = (status: EventSeatStatus) => {
+    const newFilter = new Set(statusFilter);
+    if (newFilter.has(status)) {
+      newFilter.delete(status);
+    } else {
+      newFilter.add(status);
+    }
+    setStatusFilter(newFilter);
+  };
+
+  const handleClearStatusFilter = () => {
+    setStatusFilter(new Set());
+  };
+
+  const handleSectionToggle = (section: string) => {
+    const newFilter = new Set(sectionFilter);
+    if (newFilter.has(section)) {
+      newFilter.delete(section);
+    } else {
+      newFilter.add(section);
+    }
+    setSectionFilter(newFilter);
+  };
+
+  const handleClearSectionFilter = () => {
+    setSectionFilter(new Set());
+  };
+
+  // Group filtered seats by section
+  const seatsBySection = useMemo(() => {
+    const grouped = new Map<string, EventSeat[]>();
+    filteredSeats.forEach((seat) => {
+      const section = seat.section_name || "Unknown Section";
+      if (!grouped.has(section)) {
+        grouped.set(section, []);
+      }
+      grouped.get(section)!.push(seat);
+    });
+    // Sort sections alphabetically
+    const sortedSections = Array.from(grouped.entries()).sort((a, b) => 
+      a[0].localeCompare(b[0])
+    );
+    return sortedSections;
+  }, [filteredSeats]);
 
   const getStatusBadge = (status: EventSeatStatus) => {
     const variants: Record<
@@ -221,58 +324,185 @@ export function EventSeatList({
   return (
     <div className={cn("space-y-4 min-w-0", className)}>
       {/* Search, Filter and Actions */}
-      <div className="flex items-center gap-4 min-w-0 flex-wrap">
-        <div className="relative flex-1 min-w-0 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-          <Input
-            placeholder="Search by section, row, or seat..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 min-w-0"
-          />
+      <div className="space-y-3">
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative flex-1 min-w-0 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+            <Input
+              placeholder="Search by section, row, or seat..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 min-w-0"
+            />
+          </div>
+          {onRefresh && (
+            <Button
+              onClick={onRefresh}
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          )}
         </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(value) =>
-            setStatusFilter(value as EventSeatStatus | "all")
-          }
-        >
-          <SelectTrigger className="w-[150px] flex-shrink-0">
-            <div className="flex items-center">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Status" />
-            </div>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value={EventSeatStatusEnum.AVAILABLE}>
-              {EventSeatStatusEnum.AVAILABLE}
-            </SelectItem>
-            <SelectItem value={EventSeatStatusEnum.RESERVED}>
-              {EventSeatStatusEnum.RESERVED}
-            </SelectItem>
-            <SelectItem value={EventSeatStatusEnum.SOLD}>
-              {EventSeatStatusEnum.SOLD}
-            </SelectItem>
-            <SelectItem value={EventSeatStatusEnum.HELD}>
-              {EventSeatStatusEnum.HELD}
-            </SelectItem>
-            <SelectItem value={EventSeatStatusEnum.BLOCKED}>
-              {EventSeatStatusEnum.BLOCKED}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        {onRefresh && (
-          <Button
-            onClick={onRefresh}
-            variant="outline"
-            size="sm"
-            className="flex-shrink-0"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        )}
+        <div className="flex items-center gap-4 min-w-0 flex-wrap">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-[150px] flex-shrink-0 justify-start"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                <span className="flex-1 text-left">
+                  {sectionFilter.size === 0
+                    ? "All Sections"
+                    : sectionFilter.size === 1
+                    ? Array.from(sectionFilter)[0]
+                    : `${sectionFilter.size} selected`}
+                </span>
+                {sectionFilter.size > 0 && (
+                  <>
+                    <Separator orientation="vertical" className="mx-2 h-4" />
+                    <Badge
+                      variant="secondary"
+                      className="rounded-sm px-1 font-normal"
+                    >
+                      {sectionFilter.size}
+                    </Badge>
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0" align="start">
+              <Command>
+                <CommandInput
+                  placeholder="Search sections..."
+                  value={sectionSearchQuery}
+                  onValueChange={setSectionSearchQuery}
+                />
+                <CommandList>
+                  <CommandEmpty>No sections found.</CommandEmpty>
+                  <CommandGroup>
+                    {filteredSections.map((section) => {
+                      const isSelected = sectionFilter.has(section);
+                      return (
+                        <CommandItem
+                          key={section}
+                          onSelect={() => handleSectionToggle(section)}
+                        >
+                          <div
+                            className={cn(
+                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                              isSelected
+                                ? "bg-primary text-primary-foreground"
+                                : "opacity-50 [&_svg]:invisible"
+                            )}
+                          >
+                            <Check className="h-3 w-3" />
+                          </div>
+                          <span>{section}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                  {sectionFilter.size > 0 && (
+                    <>
+                      <Separator />
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={handleClearSectionFilter}
+                          className="justify-center text-center"
+                        >
+                          Clear filters
+                        </CommandItem>
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-[150px] flex-shrink-0 justify-start"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                <span className="flex-1 text-left">
+                  {statusFilter.size === 0
+                    ? "All Status"
+                    : statusFilter.size === 1
+                    ? Array.from(statusFilter)[0]
+                    : `${statusFilter.size} selected`}
+                </span>
+                {statusFilter.size > 0 && (
+                  <>
+                    <Separator orientation="vertical" className="mx-2 h-4" />
+                    <Badge
+                      variant="secondary"
+                      className="rounded-sm px-1 font-normal"
+                    >
+                      {statusFilter.size}
+                    </Badge>
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0" align="start">
+              <Command>
+                <CommandInput
+                  placeholder="Search statuses..."
+                  value={statusSearchQuery}
+                  onValueChange={setStatusSearchQuery}
+                />
+                <CommandList>
+                  <CommandEmpty>No statuses found.</CommandEmpty>
+                  <CommandGroup>
+                    {filteredStatusOptions.map((option) => {
+                      const isSelected = statusFilter.has(option.value);
+                      return (
+                        <CommandItem
+                          key={option.value}
+                          onSelect={() => handleStatusToggle(option.value)}
+                        >
+                          <div
+                            className={cn(
+                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                              isSelected
+                                ? "bg-primary text-primary-foreground"
+                                : "opacity-50 [&_svg]:invisible"
+                            )}
+                          >
+                            <Check className="h-3 w-3" />
+                          </div>
+                          <span>{option.label}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                  {statusFilter.size > 0 && (
+                    <>
+                      <Separator />
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={handleClearStatusFilter}
+                          className="justify-center text-center"
+                        >
+                          Clear filters
+                        </CommandItem>
+                      </CommandGroup>
+                    </>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Selection Bars */}
@@ -366,70 +596,88 @@ export function EventSeatList({
         )}
       </div>
 
-      {/* Seat List */}
-      <div className="space-y-2 min-w-0">
-        {filteredSeats.map((seat) => {
-          const location =
-            seat.section_name && seat.row_name && seat.seat_number
-              ? `${seat.section_name} ${seat.row_name} ${seat.seat_number}`
-              : seat.seat_id
-                ? `Seat ${seat.seat_id.slice(0, 8)}`
-                : "N/A";
+      {/* Seat List - Grouped by Section */}
+      <div className="space-y-4 min-w-0">
+        {seatsBySection.map(([sectionName, seats]) => (
+          <div key={sectionName} className="space-y-2">
+            {/* Section Header */}
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pb-2 pt-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {sectionName}
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  {seats.length} seat{seats.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+            </div>
+            {/* Seats in this section */}
+            <div className="space-y-2 pl-2">
+              {seats.map((seat) => {
+                const location =
+                  seat.row_name && seat.seat_number
+                    ? `${seat.row_name} ${seat.seat_number}`
+                    : seat.seat_id
+                      ? `Seat ${seat.seat_id.slice(0, 8)}`
+                      : "N/A";
 
-          // Format price display
-          const priceDisplay = seat.ticket_price !== undefined && seat.ticket_price !== null
-            ? `Price: $${seat.ticket_price.toFixed(2)}`
-            : null;
+                // Format price display
+                const priceDisplay = seat.ticket_price !== undefined && seat.ticket_price !== null
+                  ? `Price: $${seat.ticket_price.toFixed(2)}`
+                  : null;
 
-          const details = [
-            seat.broker_id && `Broker: ${seat.broker_id}`,
-            seat.ticket_number && `Ticket: ${seat.ticket_number}`,
-            priceDisplay,
-          ]
-            .filter(Boolean)
-            .join(" • ");
+                const details = [
+                  seat.broker_id && `Broker: ${seat.broker_id}`,
+                  seat.ticket_number && `Ticket: ${seat.ticket_number}`,
+                  priceDisplay,
+                ]
+                  .filter(Boolean)
+                  .join(" • ");
 
-          const isSelected = selectedSeatIds.has(seat.id);
+                const isSelected = selectedSeatIds.has(seat.id);
 
-          return (
-            <Item
-              key={seat.id}
-              onClick={() => {
-                // TODO: Open seat detail/edit dialog
-                console.log("Seat clicked:", seat);
-              }}
-              className={cn(
-                isSelected && "bg-accent/50 border-primary",
-                "min-w-0"
-              )}
-            >
-              <ItemActions className="flex-shrink-0">
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={(checked) => {
-                    handleSelectSeat(seat.id, checked as boolean);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </ItemActions>
-              <ItemContent className="min-w-0">
-                <div className="flex items-start justify-between gap-4 min-w-0">
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <ItemTitle className="truncate">{location}</ItemTitle>
-                    {details && (
-                      <ItemDescription className="truncate">
-                        {details}
-                      </ItemDescription>
+                return (
+                  <Item
+                    key={seat.id}
+                    onClick={() => {
+                      // TODO: Open seat detail/edit dialog
+                      console.log("Seat clicked:", seat);
+                    }}
+                    className={cn(
+                      isSelected && "bg-accent/50 border-primary",
+                      "min-w-0"
                     )}
-                  </div>
-                  <ItemActions className="flex-shrink-0">
-                    {getStatusBadge(seat.status)}
-                  </ItemActions>
-                </div>
-              </ItemContent>
-            </Item>
-          );
-        })}
+                  >
+                    <ItemActions className="flex-shrink-0">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) => {
+                          handleSelectSeat(seat.id, checked as boolean);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </ItemActions>
+                    <ItemContent className="min-w-0">
+                      <div className="flex items-start justify-between gap-4 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <ItemTitle className="truncate">{location}</ItemTitle>
+                          {details && (
+                            <ItemDescription className="truncate">
+                              {details}
+                            </ItemDescription>
+                          )}
+                        </div>
+                        <ItemActions className="flex-shrink-0">
+                          {getStatusBadge(seat.status)}
+                        </ItemActions>
+                      </div>
+                    </ItemContent>
+                  </Item>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Delete Confirmation Dialog */}

@@ -3,13 +3,34 @@ Commands for EventSeat module.
 """
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
+
+
+@dataclass
+class SectionPricingConfig:
+    """Configuration for section-based pricing"""
+    section_id: str
+    price: float
+
+
+@dataclass
+class SeatPricingConfig:
+    """Configuration for individual seat pricing (overrides section price)"""
+    seat_id: str
+    price: float
+
+
 @dataclass
 class InitializeEventSeatsCommand:
     """Command to generate EventSeat records from a Layout"""
     event_id: str
     tenant_id: str
     generate_tickets: bool = False  # If True, create tickets for all seats
-    ticket_price: float = 0.0  # Price for tickets if generate_tickets is True
+    ticket_price: float = 0.0  # Default price for tickets if generate_tickets is True (used when section_pricing is not provided)
+    pricing_mode: str = "same"  # "same" for same price for all, "per_section" for different prices per section
+    section_pricing: Optional[List[SectionPricingConfig]] = None  # Per-section pricing configuration
+    seat_pricing: Optional[List[SeatPricingConfig]] = None  # Individual seat pricing overrides
+    included_section_ids: Optional[List[str]] = None  # List of section IDs to include
+    excluded_section_ids: Optional[List[str]] = None  # List of section IDs to exclude
 
 
 @dataclass

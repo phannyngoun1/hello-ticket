@@ -378,7 +378,6 @@ class EventSeatModel(SQLModel, table=True):
     seat_number: Optional[str] = Field(default=None, index=True)
     
     price: float = Field(default=0.0)
-    ticket_code: Optional[str] = Field(default=None, index=True)
     broker_id: Optional[str] = Field(default=None, index=True)
     
     is_active: bool = Field(default=True, index=True)

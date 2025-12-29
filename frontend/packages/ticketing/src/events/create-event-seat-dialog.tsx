@@ -107,8 +107,8 @@ export function CreateEventSeatDialog({
         section_name: "",
         row_name: "",
         seat_number: "",
-        price: 0,
-        ticket_code: "",
+        ticket_price: 0,
+        ticket_number: "",
         broker_id: "",
         create_ticket: false,
       });
@@ -124,8 +124,8 @@ export function CreateEventSeatDialog({
         section_name: "",
         row_name: "",
         seat_number: "",
-        price: 0,
-        ticket_code: "",
+        ticket_price: 0,
+        ticket_number: "",
         broker_id: "",
         create_ticket: false,
       });

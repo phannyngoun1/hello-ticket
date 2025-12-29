@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from app.application.ticketing.commands_event_seat import (
     InitializeEventSeatsCommand,
+    SectionPricingConfig,
+    SeatPricingConfig,
     ImportBrokerSeatsCommand,
     BrokerSeatImportItem,
     DeleteEventSeatsCommand,
@@ -50,11 +52,32 @@ async def initialize_event_seats(
 ):
     """Initialize event seats from the assigned layout"""
     try:
+        # Convert section pricing config from schema to command
+        section_pricing = None
+        if request.section_pricing:
+            section_pricing = [
+                SectionPricingConfig(section_id=sp.section_id, price=sp.price)
+                for sp in request.section_pricing
+            ]
+        
+        # Convert seat pricing config from schema to command
+        seat_pricing = None
+        if request.seat_pricing:
+            seat_pricing = [
+                SeatPricingConfig(seat_id=sp.seat_id, price=sp.price)
+                for sp in request.seat_pricing
+            ]
+        
         command = InitializeEventSeatsCommand(
             event_id=event_id,
             tenant_id=current_user.tenant_id,
             generate_tickets=request.generate_tickets,
-            ticket_price=request.ticket_price
+            ticket_price=request.ticket_price,
+            pricing_mode=request.pricing_mode,
+            section_pricing=section_pricing,
+            seat_pricing=seat_pricing,
+            included_section_ids=request.included_section_ids,
+            excluded_section_ids=request.excluded_section_ids
         )
         seats = await mediator.send(command)
         return [EventSeatApiMapper.to_response(s) for s in seats]

@@ -3,14 +3,39 @@ Pydantic schemas for EventSeat API.
 """
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.shared.enums import EventSeatStatusEnum
+
+
+class SectionPricingConfig(BaseModel):
+    """Configuration for section-based pricing"""
+    section_id: str = Field(..., description="Section ID")
+    price: float = Field(..., ge=0, description="Price for this section")
+
+
+class SeatPricingConfig(BaseModel):
+    """Configuration for individual seat pricing (overrides section price)"""
+    seat_id: str = Field(..., description="Seat ID")
+    price: float = Field(..., ge=0, description="Price for this specific seat")
 
 
 class InitializeEventSeatsRequest(BaseModel):
     """Request to initialize event seats from layout"""
     generate_tickets: bool = Field(False, description="If True, create tickets for all seats")
-    ticket_price: float = Field(0.0, ge=0, description="Price for tickets if generate_tickets is True")
+    ticket_price: float = Field(0.0, ge=0, description="Default price for tickets if generate_tickets is True (used when section_pricing is not provided)")
+    # Section-based pricing configuration
+    pricing_mode: str = Field("same", description="Pricing mode: 'same' for same price for all, 'per_section' for different prices per section")
+    section_pricing: Optional[List[SectionPricingConfig]] = Field(None, description="Per-section pricing configuration (required if pricing_mode is 'per_section')")
+    seat_pricing: Optional[List[SeatPricingConfig]] = Field(None, description="Individual seat pricing overrides (optional, overrides section price)")
+    included_section_ids: Optional[List[str]] = Field(None, description="List of section IDs to include (if not provided, all sections are included)")
+    excluded_section_ids: Optional[List[str]] = Field(None, description="List of section IDs to exclude")
+
+    @model_validator(mode='after')
+    def validate_pricing_config(self):
+        """Validate that section_pricing is provided when pricing_mode is 'per_section'"""
+        if self.pricing_mode == 'per_section' and (not self.section_pricing or len(self.section_pricing) == 0):
+            raise ValueError("section_pricing is required when pricing_mode is 'per_section'")
+        return self
 
 
 class BrokerSeatImportItemSchema(BaseModel):

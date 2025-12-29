@@ -131,10 +131,36 @@ export function useInitializeEventSeats(service: EventService) {
   return useMutation<
     EventSeat[],
     Error,
-    { eventId: string; generateTickets: boolean; ticketPrice: number }
+    {
+      eventId: string;
+      generateTickets: boolean;
+      ticketPrice: number;
+      pricingMode?: "same" | "per_section";
+      sectionPricing?: Array<{ section_id: string; price: number }>;
+      seatPricing?: Array<{ seat_id: string; price: number }>;
+      includedSectionIds?: string[];
+      excludedSectionIds?: string[];
+    }
   >({
-    mutationFn: ({ eventId, generateTickets, ticketPrice }) =>
-      service.initializeEventSeats(eventId, generateTickets, ticketPrice),
+    mutationFn: ({
+      eventId,
+      generateTickets,
+      ticketPrice,
+      pricingMode,
+      sectionPricing,
+      seatPricing,
+      includedSectionIds,
+      excludedSectionIds,
+    }) =>
+      service.initializeEventSeats(eventId, {
+        generate_tickets: generateTickets,
+        ticket_price: ticketPrice,
+        pricing_mode: pricingMode,
+        section_pricing: sectionPricing,
+        seat_pricing: seatPricing,
+        included_section_ids: includedSectionIds,
+        excluded_section_ids: excludedSectionIds,
+      }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["events", variables.eventId, "seats"],

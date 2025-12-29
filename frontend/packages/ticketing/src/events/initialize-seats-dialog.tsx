@@ -2,16 +2,17 @@
  * Initialize Seats Dialog Component
  *
  * Full-screen dialog for initializing event seats with price and ticket options
+ * Supports section-based pricing and section inclusion/exclusion
  */
 
-import { useMemo } from "react";
-import { Input, Label, Card, Badge } from "@truths/ui";
+import { useMemo, useState, useEffect } from "react";
+import { Input, Label, Card, Badge, Button } from "@truths/ui";
 import { FullScreenDialog } from "@truths/custom-ui";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import type { Seat } from "../seats";
 import type { Section } from "../layouts";
 import type { EventSeat } from "./types";
-import { DollarSign, Ticket, Info, Plus } from "lucide-react";
+import { DollarSign, Ticket, Info, Plus, X, Check, ChevronDown, ChevronRight, Settings2 } from "lucide-react";
 
 export interface InitializeSeatsDialogProps {
   open: boolean;
@@ -25,12 +26,22 @@ export interface InitializeSeatsDialogProps {
 
 export interface InitializeSeatsData {
   defaultPrice: number;
-  generateTicketCodes: boolean; // If true, generate tickets for all seats
+  generateTicketCodes: boolean;
+  pricingMode: "same" | "per_section";
+  sectionPricing?: Array<{ section_id: string; price: number }>;
+  seatPricing?: Array<{ seat_id: string; price: number }>; // Individual seat price overrides
+  includedSectionIds?: string[];
+  excludedSectionIds?: string[];
 }
 
 interface InitializeSeatsFormData {
-  defaultPrice: string; // String for form input
+  defaultPrice: string;
   generateTicketCodes: boolean;
+  pricingMode: "same" | "per_section";
+  sectionPricing: Array<{ section_id: string; price: string }>;
+  seatPricing: Array<{ seat_id: string; price: string }>; // Individual seat overrides
+  sectionSelection: "all" | "include" | "exclude";
+  selectedSectionIds: string[];
 }
 
 export function InitializeSeatsDialog({
@@ -42,20 +53,44 @@ export function InitializeSeatsDialog({
   existingEventSeats = [],
   loading = false,
 }: InitializeSeatsDialogProps) {
+  const [sectionSelectionMode, setSectionSelectionMode] = useState<"all" | "include" | "exclude">("all");
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+
   const {
     register,
     handleSubmit,
     watch,
+    control,
+    getValues,
+    setValue,
     formState: { errors },
+    reset,
   } = useForm<InitializeSeatsFormData>({
     defaultValues: {
       defaultPrice: "0",
       generateTicketCodes: false,
+      pricingMode: "same",
+      sectionPricing: [],
+      seatPricing: [],
+      sectionSelection: "all",
+      selectedSectionIds: [],
     },
+  });
+
+  const { fields: sectionPricingFields, append: appendSection, remove: removeSection, update: updateSection } = useFieldArray({
+    control,
+    name: "sectionPricing",
+  });
+
+  const { fields: seatPricingFields, append: appendSeat, remove: removeSeat, update: updateSeat } = useFieldArray({
+    control,
+    name: "seatPricing",
   });
 
   const defaultPrice = watch("defaultPrice");
   const generateTicketCodes = watch("generateTicketCodes");
+  const pricingMode = watch("pricingMode");
 
   // Create section name map for display
   const sectionNameMap = useMemo(() => {
@@ -72,11 +107,9 @@ export function InitializeSeatsDialog({
     const locationSet = new Set<string>();
     
     existingEventSeats.forEach((eventSeat) => {
-      // Match by seat_id
       if (eventSeat.seat_id) {
         seatIdSet.add(eventSeat.seat_id);
       }
-      // Match by location (section_name, row_name, seat_number)
       if (eventSeat.section_name && eventSeat.row_name && eventSeat.seat_number) {
         const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
         locationSet.add(key);
@@ -86,15 +119,14 @@ export function InitializeSeatsDialog({
     return { seatIdSet, locationSet };
   }, [existingEventSeats]);
 
-  // Filter out seats that already have event seats assigned
-  const missingSeats = useMemo(() => {
+  // Get all available seats (seats that can be added) WITHOUT section selection filters
+  // This is used for the stable section selection UI
+  const availableSeats = useMemo(() => {
     return layoutSeats.filter((layoutSeat) => {
-      // Check if seat_id matches
+      // Check if seat already exists
       if (layoutSeat.id && existingSeatIds.seatIdSet.has(layoutSeat.id)) {
         return false;
       }
-      
-      // Check if location matches (using section name from map and row/seat_number from layout seat)
       const sectionName = sectionNameMap.get(layoutSeat.section_id);
       if (sectionName && layoutSeat.row && layoutSeat.seat_number) {
         const locationKey = `${sectionName}|${layoutSeat.row}|${layoutSeat.seat_number}`;
@@ -102,29 +134,74 @@ export function InitializeSeatsDialog({
           return false;
         }
       }
-      
-      return true; // Seat is missing, include it
+      return true;
     });
   }, [layoutSeats, existingSeatIds, sectionNameMap]);
 
-  // Get seat count by section for all layout seats
-  const seatsBySection = useMemo(() => {
-    const grouped = new Map<string, number>();
-    layoutSeats.forEach((seat) => {
-      const sectionName = sectionNameMap.get(seat.section_id) || "Unknown";
-      grouped.set(sectionName, (grouped.get(sectionName) || 0) + 1);
+  // Filter out seats that already have event seats assigned AND apply section selection filters
+  const missingSeats = useMemo(() => {
+    return availableSeats.filter((layoutSeat) => {
+      // Apply section selection filters
+      if (sectionSelectionMode === "include" && selectedSections.size > 0) {
+        // Only include seats from selected sections
+        if (!selectedSections.has(layoutSeat.section_id)) {
+          return false;
+        }
+      } else if (sectionSelectionMode === "exclude" && selectedSections.size > 0) {
+        // Exclude seats from selected sections
+        if (selectedSections.has(layoutSeat.section_id)) {
+          return false;
+        }
+      }
+      
+      return true;
     });
-    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [layoutSeats, sectionNameMap]);
+  }, [availableSeats, sectionSelectionMode, selectedSections]);
 
-  // Get seat count by section for missing seats
-  const missingSeatsBySection = useMemo(() => {
-    const grouped = new Map<string, number>();
-    missingSeats.forEach((seat) => {
-      const sectionName = sectionNameMap.get(seat.section_id) || "Unknown";
-      grouped.set(sectionName, (grouped.get(sectionName) || 0) + 1);
+  // Get sections that have seats in the layout (for section selection UI)
+  const sectionsWithSeats = useMemo(() => {
+    const sectionIds = new Set<string>();
+    layoutSeats.forEach((seat) => {
+      sectionIds.add(seat.section_id);
     });
-    return Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    return sections.filter((s) => sectionIds.has(s.id));
+  }, [layoutSeats, sections]);
+
+  // Get sections with available seats to add (stable list for section selection UI)
+  // This list doesn't change when checkboxes are toggled
+  const availableSeatsBySection = useMemo(() => {
+    const grouped = new Map<string, { id: string; count: number }>();
+    availableSeats.forEach((seat) => {
+      const existing = grouped.get(seat.section_id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        grouped.set(seat.section_id, { id: seat.section_id, count: 1 });
+      }
+    });
+    return Array.from(grouped.entries()).map(([sectionId, data]) => ({
+      sectionId,
+      sectionName: sectionNameMap.get(sectionId) || "Unknown",
+      count: data.count,
+    })).sort((a, b) => a.sectionName.localeCompare(b.sectionName));
+  }, [availableSeats, sectionNameMap]);
+
+  // Get seat count by section for missing seats (after filters applied)
+  const missingSeatsBySection = useMemo(() => {
+    const grouped = new Map<string, { id: string; count: number }>();
+    missingSeats.forEach((seat) => {
+      const existing = grouped.get(seat.section_id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        grouped.set(seat.section_id, { id: seat.section_id, count: 1 });
+      }
+    });
+    return Array.from(grouped.entries()).map(([sectionId, data]) => ({
+      sectionId,
+      sectionName: sectionNameMap.get(sectionId) || "Unknown",
+      count: data.count,
+    })).sort((a, b) => a.sectionName.localeCompare(b.sectionName));
   }, [missingSeats, sectionNameMap]);
 
   const totalSeats = layoutSeats.length;
@@ -132,12 +209,161 @@ export function InitializeSeatsDialog({
   const existingSeatsCount = totalSeats - missingSeatsCount;
   const hasMissingSeats = missingSeatsCount > 0;
 
+  // Get seats grouped by section for display (only non-excluded sections)
+  const seatsBySection = useMemo(() => {
+    const grouped = new Map<string, Seat[]>();
+    missingSeats.forEach((seat) => {
+      const existing = grouped.get(seat.section_id) || [];
+      existing.push(seat);
+      grouped.set(seat.section_id, existing);
+    });
+    return grouped;
+  }, [missingSeats]);
+
+  // Remove excluded sections from pricing configuration when they're excluded
+  useEffect(() => {
+    if (sectionSelectionMode === "exclude" && pricingMode === "per_section" && selectedSections.size > 0) {
+      // Remove pricing fields for excluded sections
+      const fieldsToRemove: number[] = [];
+      sectionPricingFields.forEach((field, index) => {
+        if (selectedSections.has(field.section_id)) {
+          fieldsToRemove.push(index);
+        }
+      });
+      // Remove in reverse order to maintain indices
+      fieldsToRemove.reverse().forEach(index => {
+        removeSection(index);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionSelectionMode, selectedSections, pricingMode]);
+
+  // Initialize section pricing fields when switching to per-section mode
+  const handlePricingModeChange = (mode: "same" | "per_section") => {
+    if (mode === "per_section" && sectionPricingFields.length === 0) {
+      // Initialize with all sections that have seats (already filtered by section selection)
+      missingSeatsBySection.forEach((section) => {
+        appendSection({
+          section_id: section.sectionId,
+          price: defaultPrice || "0",
+        });
+      });
+    }
+  };
+
+  const toggleSectionExpansion = (sectionId: string) => {
+    const newSet = new Set(expandedSections);
+    if (newSet.has(sectionId)) {
+      newSet.delete(sectionId);
+    } else {
+      newSet.add(sectionId);
+    }
+    setExpandedSections(newSet);
+  };
+
+  const getSeatPrice = (seat: Seat): string => {
+    // Check if seat has individual price override
+    const seatPricing = seatPricingFields.find((sp) => sp.seat_id === seat.id);
+    if (seatPricing) {
+      return seatPricing.price;
+    }
+    // Check section price
+    if (pricingMode === "per_section") {
+      const sectionPricing = sectionPricingFields.find((sp) => sp.section_id === seat.section_id);
+      if (sectionPricing) {
+        return sectionPricing.price;
+      }
+    }
+    return defaultPrice || "0";
+  };
+
+  const setSeatPrice = (seatId: string, price: string) => {
+    const existingIndex = seatPricingFields.findIndex((sp) => sp.seat_id === seatId);
+    if (existingIndex >= 0) {
+      // Update existing using setValue to ensure form state is updated
+      setValue(`seatPricing.${existingIndex}.price`, price, { shouldValidate: true, shouldDirty: true });
+    } else {
+      // Add new - appendSeat will add to the form array with the price value
+      appendSeat({ seat_id: seatId, price });
+    }
+  };
+
+  const removeSeatPrice = (seatId: string) => {
+    const existingIndex = seatPricingFields.findIndex((sp) => sp.seat_id === seatId);
+    if (existingIndex >= 0) {
+      removeSeat(existingIndex);
+    }
+  };
+
   const handleFormSubmit = async (data: InitializeSeatsFormData) => {
     const submitData: InitializeSeatsData = {
       defaultPrice: parseFloat(data.defaultPrice) || 0,
       generateTicketCodes: data.generateTicketCodes,
+      pricingMode: data.pricingMode,
+      sectionPricing:
+        data.pricingMode === "per_section"
+          ? data.sectionPricing.map((sp) => ({
+              section_id: sp.section_id,
+              price: parseFloat(sp.price) || 0,
+            }))
+          : undefined,
+      seatPricing:
+        data.seatPricing.length > 0
+          ? data.seatPricing.map((sp) => ({
+              seat_id: sp.seat_id,
+              price: parseFloat(sp.price) || 0,
+            }))
+          : undefined,
+      includedSectionIds:
+        sectionSelectionMode === "include" && selectedSections.size > 0
+          ? Array.from(selectedSections)
+          : undefined,
+      excludedSectionIds:
+        sectionSelectionMode === "exclude" && selectedSections.size > 0
+          ? Array.from(selectedSections)
+          : undefined,
     };
     await onSubmit(submitData);
+  };
+
+  const toggleSectionSelection = (sectionId: string) => {
+    const newSet = new Set(selectedSections);
+    if (newSet.has(sectionId)) {
+      newSet.delete(sectionId);
+      // If excluding and removing from exclusion, add back to pricing if needed
+      if (sectionSelectionMode === "exclude" && pricingMode === "per_section") {
+        // Check if section should be in pricing (it's not excluded anymore)
+        const sectionInMissingSeats = missingSeatsBySection.find(s => s.sectionId === sectionId);
+        if (sectionInMissingSeats) {
+          const existingIndex = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+          if (existingIndex < 0) {
+            appendSection({
+              section_id: sectionId,
+              price: defaultPrice || "0",
+            });
+          }
+        }
+      }
+    } else {
+      newSet.add(sectionId);
+      // If excluding and adding to exclusion, remove from pricing
+      if (sectionSelectionMode === "exclude" && pricingMode === "per_section") {
+        const existingIndex = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+        if (existingIndex >= 0) {
+          removeSection(existingIndex);
+        }
+      }
+    }
+    setSelectedSections(newSet);
+  };
+
+  const calculateTotalValue = () => {
+    let total = 0;
+    missingSeats.forEach((seat) => {
+      const price = getSeatPrice(seat);
+      total += parseFloat(price || "0");
+    });
+    return total;
   };
 
   return (
@@ -150,7 +376,7 @@ export function InitializeSeatsDialog({
       showCancelButton={true}
       showSubmitButton={true}
       showClearButton={false}
-      maxWidth="1000px"
+      maxWidth="1200px"
     >
       <div className="space-y-6">
         {/* Information Card */}
@@ -173,7 +399,7 @@ export function InitializeSeatsDialog({
                 ) : (
                   <>
                     This will create {totalSeats} event seat{totalSeats !== 1 ? "s" : ""} from the
-                    layout seats. You can set default pricing and ticket codes for all seats.
+                    layout seats. You can set pricing per section and configure ticket generation.
                   </>
                 )}
               </p>
@@ -209,8 +435,8 @@ export function InitializeSeatsDialog({
                 {hasMissingSeats ? "Missing Seats by Section:" : "Seats by Section:"}
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {(hasMissingSeats ? missingSeatsBySection : seatsBySection).map(([sectionName, count]) => (
-                  <div key={sectionName} className="flex justify-between text-sm">
+                {missingSeatsBySection.map(({ sectionId, sectionName, count }) => (
+                  <div key={sectionId} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{sectionName}:</span>
                     <span className="font-medium">{count}</span>
                   </div>
@@ -223,65 +449,414 @@ export function InitializeSeatsDialog({
         {/* Form Fields */}
         <div className="space-y-4">
           <Card className="p-4">
-            <h3 className="font-medium mb-4">Configuration</h3>
+            <h3 className="font-medium mb-4">Section Selection</h3>
             <div className="space-y-4">
-              {/* Default Price */}
               <div className="space-y-2">
-                <Label htmlFor="defaultPrice" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Default Price (per seat)
-                </Label>
-                <Input
-                  id="defaultPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  {...register("defaultPrice", {
-                    required: "Price is required",
-                    min: { value: 0, message: "Price must be 0 or greater" },
-                    valueAsNumber: false, // Keep as string for better UX
-                  })}
-                />
-                {errors.defaultPrice && (
-                  <p className="text-sm text-destructive">
-                    {errors.defaultPrice.message}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  This price will be applied to all seats. You can change individual seat prices
-                  later.
-                </p>
-              </div>
-
-              {/* Ticket Code Options */}
-              <div className="space-y-3 border-t pt-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="generateTicketCodes"
-                    {...register("generateTicketCodes")}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <Label htmlFor="generateTicketCodes" className="flex items-center gap-2 cursor-pointer">
-                    <Ticket className="h-4 w-4" />
-                    Generate Tickets
-                  </Label>
+                <Label>Select Sections</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sectionSelection"
+                      value="all"
+                      checked={sectionSelectionMode === "all"}
+                      onChange={() => {
+                        setSectionSelectionMode("all");
+                        setSelectedSections(new Set());
+                        // Re-initialize pricing if in per-section mode
+                        if (pricingMode === "per_section") {
+                          // Clear and re-add all sections
+                          sectionPricingFields.forEach((_, index) => {
+                            removeSection(0); // Remove from start each time
+                          });
+                          // Re-add all sections that should be included
+                          missingSeatsBySection.forEach((section) => {
+                            appendSection({
+                              section_id: section.sectionId,
+                              price: defaultPrice || "0",
+                            });
+                          });
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm">All Sections</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sectionSelection"
+                      value="include"
+                      checked={sectionSelectionMode === "include"}
+                      onChange={() => {
+                        setSectionSelectionMode("include");
+                        // Clear pricing and let user re-select
+                        if (pricingMode === "per_section") {
+                          sectionPricingFields.forEach((_, index) => {
+                            removeSection(0);
+                          });
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm">Include Specific Sections</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sectionSelection"
+                      value="exclude"
+                      checked={sectionSelectionMode === "exclude"}
+                      onChange={() => {
+                        setSectionSelectionMode("exclude");
+                        // Remove excluded sections from pricing if any are already selected
+                        if (pricingMode === "per_section" && selectedSections.size > 0) {
+                          selectedSections.forEach((sectionId) => {
+                            const index = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+                            if (index >= 0) {
+                              removeSection(index);
+                            }
+                          });
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm">Exclude Specific Sections</span>
+                  </label>
                 </div>
-
-                {generateTicketCodes && (
-                  <p className="text-xs text-muted-foreground pl-6">
-                    Tickets will be created for all seats with AVAILABLE status, ready for sale.
-                    Ticket numbers will be generated automatically.
-                  </p>
-                )}
-
-                {!generateTicketCodes && (
-                  <p className="text-xs text-muted-foreground pl-6">
-                    Seats will be created without tickets. Tickets can be created later from the seat list.
-                  </p>
-                )}
               </div>
+
+              {(sectionSelectionMode === "include" || sectionSelectionMode === "exclude") && (
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
+                  {availableSeatsBySection.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {/* Show only sections that have seats available to add (stable list, doesn't change when checkboxes are toggled) */}
+                        {availableSeatsBySection.map(({ sectionId, sectionName, count }) => {
+                          const isExcluded = sectionSelectionMode === "exclude" && selectedSections.has(sectionId);
+                          const isIncluded = sectionSelectionMode === "include" && selectedSections.has(sectionId);
+                          
+                          return (
+                            <label
+                              key={sectionId}
+                              className={`flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted ${
+                                isExcluded ? "opacity-50" : ""
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedSections.has(sectionId)}
+                                onChange={() => toggleSectionSelection(sectionId)}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-sm">
+                                {sectionName} ({count} seats)
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {sectionSelectionMode === "exclude" && selectedSections.size > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {selectedSections.size} section{selectedSections.size !== 1 ? "s" : ""} will be excluded from initialization
+                        </p>
+                      )}
+                      {sectionSelectionMode === "include" && selectedSections.size > 0 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Only {selectedSections.size} selected section{selectedSections.size !== 1 ? "s" : ""} will be included
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      All seats have already been initialized. No sections available for selection.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="font-medium mb-4">Pricing Configuration</h3>
+            <div className="space-y-4">
+              {/* Pricing Mode */}
+              <div className="space-y-2">
+                <Label>Pricing Mode</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      {...register("pricingMode")}
+                      value="same"
+                      onChange={(e) => {
+                        register("pricingMode").onChange(e);
+                        handlePricingModeChange("same");
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm">Same Price for All Sections</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      {...register("pricingMode")}
+                      value="per_section"
+                      onChange={(e) => {
+                        register("pricingMode").onChange(e);
+                        handlePricingModeChange("per_section");
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-sm">Different Price per Section</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Default Price (for same mode or fallback) */}
+              {pricingMode === "same" && (
+                <div className="space-y-2">
+                  <Label htmlFor="defaultPrice" className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Price (per seat)
+                  </Label>
+                  <Input
+                    id="defaultPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    {...register("defaultPrice", {
+                      required: "Price is required",
+                      min: { value: 0, message: "Price must be 0 or greater" },
+                      valueAsNumber: false,
+                    })}
+                  />
+                  {errors.defaultPrice && (
+                    <p className="text-sm text-destructive">
+                      {errors.defaultPrice.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Per-Section Pricing */}
+              {pricingMode === "per_section" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Section Prices</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Set prices per section. Expand sections to set individual seat prices.
+                    </p>
+                  </div>
+                  <div className="space-y-2 border rounded-lg p-3 max-h-96 overflow-y-auto">
+                    {missingSeatsBySection.map((section) => {
+                      const sectionFieldIndex = sectionPricingFields.findIndex(
+                        (f) => f.section_id === section.sectionId
+                      );
+                      const sectionSeats = seatsBySection.get(section.sectionId) || [];
+                      const isExpanded = expandedSections.has(section.sectionId);
+                      const hasSeatOverrides = seatPricingFields.some((sp) =>
+                        sectionSeats.some((s) => s.id === sp.seat_id)
+                      );
+
+                      return (
+                        <div key={section.sectionId} className="border rounded-lg p-3 space-y-3">
+                          {/* Section Header */}
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleSectionExpansion(section.sectionId)}
+                              className="flex items-center gap-2 hover:bg-muted p-1 rounded"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </button>
+                            <div className="flex-1">
+                              <Label className="text-sm font-medium flex items-center gap-2">
+                                {section.sectionName}
+                                {hasSeatOverrides && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Custom Prices
+                                  </Badge>
+                                )}
+                              </Label>
+                              {sectionFieldIndex >= 0 ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="mt-1"
+                                  {...register(`sectionPricing.${sectionFieldIndex}.price` as const, {
+                                    required: "Price is required",
+                                    min: { value: 0, message: "Price must be 0 or greater" },
+                                    valueAsNumber: false,
+                                  })}
+                                />
+                              ) : (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="0.00"
+                                  className="mt-1"
+                                  value={defaultPrice || "0"}
+                                  onChange={(e) => {
+                                    if (sectionFieldIndex < 0) {
+                                      appendSection({
+                                        section_id: section.sectionId,
+                                        price: e.target.value,
+                                      });
+                                    }
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {section.count} seats
+                            </div>
+                          </div>
+
+                          {/* Expanded Seat List */}
+                          {isExpanded && sectionSeats.length > 0 && (
+                            <div className="ml-8 space-y-2 border-t pt-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <Label className="text-xs text-muted-foreground">
+                                  Individual Seat Prices (optional overrides)
+                                </Label>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 text-xs"
+                                  onClick={() => {
+                                    // Get current section price from form values
+                                    let sectionPrice = defaultPrice || "0";
+                                    if (sectionFieldIndex >= 0) {
+                                      const currentSectionPrice = getValues(`sectionPricing.${sectionFieldIndex}.price`);
+                                      sectionPrice = currentSectionPrice || sectionPricingFields[sectionFieldIndex]?.price || defaultPrice || "0";
+                                    }
+                                    
+                                    // Apply section price to all seats in section
+                                    sectionSeats.forEach((seat) => {
+                                      setSeatPrice(seat.id, sectionPrice);
+                                    });
+                                  }}
+                                >
+                                  Apply Section Price to All
+                                </Button>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                                {sectionSeats.map((seat) => {
+                                  const seatPriceIndex = seatPricingFields.findIndex(
+                                    (sp) => sp.seat_id === seat.id
+                                  );
+                                  const currentPrice = getSeatPrice(seat);
+                                  const hasOverride = seatPriceIndex >= 0;
+
+                                  return (
+                                    <div
+                                      key={seat.id}
+                                      className={`flex items-center gap-2 p-2 rounded border ${
+                                        hasOverride ? "bg-blue-50 border-blue-200" : ""
+                                      }`}
+                                    >
+                                      <div className="flex-1 min-w-0">
+                                        <Label className="text-xs text-muted-foreground truncate">
+                                          {seat.row}-{seat.seat_number}
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          min="0"
+                                          placeholder={currentPrice}
+                                          className="h-8 text-sm"
+                                          value={
+                                            seatPriceIndex >= 0
+                                              ? (watch(`seatPricing.${seatPriceIndex}.price`) as string | undefined) || seatPricingFields[seatPriceIndex]?.price || ""
+                                              : ""
+                                          }
+                                          onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value && value !== "") {
+                                              // Set or update the seat price
+                                              if (seatPriceIndex >= 0) {
+                                                setValue(`seatPricing.${seatPriceIndex}.price`, value, { shouldValidate: true, shouldDirty: true });
+                                              } else {
+                                                setSeatPrice(seat.id, value);
+                                              }
+                                            } else if (seatPriceIndex >= 0) {
+                                              // If cleared and field exists, remove the override
+                                              removeSeatPrice(seat.id);
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                      {hasOverride && (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0"
+                                          onClick={() => removeSeatPrice(seat.id)}
+                                          title="Remove override (use section price)"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {missingSeatsBySection.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No sections available. All seats may already be assigned.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Ticket Code Options */}
+          <Card className="p-4">
+            <h3 className="font-medium mb-4">Ticket Options</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="generateTicketCodes"
+                  {...register("generateTicketCodes")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="generateTicketCodes" className="flex items-center gap-2 cursor-pointer">
+                  <Ticket className="h-4 w-4" />
+                  Generate Tickets
+                </Label>
+              </div>
+
+              {generateTicketCodes && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Tickets will be created for all seats with AVAILABLE status, ready for sale.
+                  Ticket numbers will be generated automatically.
+                </p>
+              )}
+
+              {!generateTicketCodes && (
+                <p className="text-xs text-muted-foreground pl-6">
+                  Seats will be created without tickets. Tickets can be created later from the seat list.
+                </p>
+              )}
             </div>
           </Card>
 
@@ -291,14 +866,22 @@ export function InitializeSeatsDialog({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Seats to {hasMissingSeats ? "add" : "create"}:</span>
-                <span className="font-medium">{hasMissingSeats ? missingSeatsCount : totalSeats}</span>
+                <span className="font-medium">{missingSeatsCount}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Default price:</span>
+                <span className="text-muted-foreground">Pricing Mode:</span>
                 <span className="font-medium">
-                  ${parseFloat(defaultPrice || "0").toFixed(2)}
+                  {pricingMode === "same" ? "Same Price" : "Per Section"}
                 </span>
               </div>
+              {pricingMode === "same" && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Price:</span>
+                  <span className="font-medium">
+                    ${parseFloat(defaultPrice || "0").toFixed(2)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Generate Tickets:</span>
                 <span className="font-medium">
@@ -308,7 +891,7 @@ export function InitializeSeatsDialog({
               <div className="flex justify-between font-medium pt-2 border-t">
                 <span>Total value:</span>
                 <span>
-                  ${(parseFloat(defaultPrice || "0") * (hasMissingSeats ? missingSeatsCount : totalSeats)).toFixed(2)}
+                  ${calculateTotalValue().toFixed(2)}
                 </span>
               </div>
             </div>

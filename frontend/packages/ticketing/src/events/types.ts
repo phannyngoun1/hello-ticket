@@ -99,3 +99,23 @@ export interface EventFilter {
   show_id?: string;
 }
 
+export interface SectionPricingConfig {
+  section_id: string;
+  price: number;
+}
+
+export interface SeatPricingConfig {
+  seat_id: string;
+  price: number;
+}
+
+export interface InitializeEventSeatsInput {
+  generate_tickets?: boolean;
+  ticket_price?: number;
+  pricing_mode?: "same" | "per_section";
+  section_pricing?: SectionPricingConfig[];
+  seat_pricing?: SeatPricingConfig[];
+  included_section_ids?: string[];
+  excluded_section_ids?: string[];
+}
+
