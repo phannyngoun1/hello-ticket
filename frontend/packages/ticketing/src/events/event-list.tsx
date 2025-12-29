@@ -44,6 +44,10 @@ export interface EventListProps {
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (event: Event) => React.ReactNode;
   isDeleting?: boolean;
+  searchable?: boolean;
+  title?: string;
+  description?: string;
+  showViewToggle?: boolean;
 }
 
 interface EventListItem extends DataListItem {
@@ -67,6 +71,10 @@ export function EventList({
   onPageSizeChange,
   customActions,
   isDeleting = false,
+  searchable = true,
+  title = "Events",
+  description = "Manage and view events",
+  showViewToggle = true,
 }: EventListProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -387,16 +395,18 @@ export function EventList({
         items={eventItems}
         loading={loading}
         error={error}
-        title="Events"
-        description="Manage and view events"
+        title={title}
+        description={description}
         onCreate={onCreate}
         onSearch={onSearch}
+        searchable={searchable && !!onSearch}
         onItemClick={handleItemClick}
         renderItem={renderItem}
         showCreateButton={!!onCreate}
         defaultViewMode="card"
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        showViewToggle={showViewToggle}
         gridCols={{ default: 1, md: 2, lg: 3 }}
       />
 

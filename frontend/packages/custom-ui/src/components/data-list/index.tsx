@@ -51,6 +51,7 @@ export function DataList<T extends DataListItem>({
   viewMode: controlledViewMode,
   defaultViewMode = "card",
   onViewModeChange,
+  showViewToggle = true,
 }: DataListProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -208,7 +209,7 @@ export function DataList<T extends DataListItem>({
             />
           )}
           {/* View Mode Toggle */}
-          {viewToggle}
+          {showViewToggle && viewToggle}
           {showCreateButton && onCreate && (
             <Button size="sm" onClick={onCreate} className="h-9">
               {typeof createButtonLabel === "string" ? (
