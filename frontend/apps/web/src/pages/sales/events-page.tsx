@@ -658,6 +658,10 @@ function EventsPageContent() {
           loading={isLoading}
           error={eventsLoading ? null : (eventsData ? null : new Error("Failed to load events"))}
           onEventClick={handleEventClick}
+          searchable={false}
+          title=""
+          description=""
+          showViewToggle={false}
           customActions={(event) => (
             <div className="flex gap-2">
               {event.status === EventStatusEnum.ON_SALE && (

@@ -124,5 +124,8 @@ export interface DataListProps<T extends DataListItem> {
 
   /** Called when view mode changes */
   onViewModeChange?: (viewMode: "card" | "list") => void;
+
+  /** Show view mode toggle (card/list) */
+  showViewToggle?: boolean;
 }
 
