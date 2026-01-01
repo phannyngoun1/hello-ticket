@@ -39,6 +39,7 @@ interface EventSeatDTO {
   updated_at: string;
   ticket_number?: string | null;
   ticket_price?: number | null;  // Ticket price
+  ticket_status?: string | null;  // Ticket status
 }
 
 // Transform DTO to frontend type - converts snake_case timestamps to Date objects
@@ -76,6 +77,7 @@ function transformEventSeat(dto: EventSeatDTO): EventSeat {
     updated_at: new Date(dto.updated_at),
     ticket_number: dto.ticket_number || undefined,
     ticket_price: dto.ticket_price || undefined,
+    ticket_status: dto.ticket_status || undefined,
   };
 }
 

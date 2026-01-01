@@ -22,6 +22,11 @@ from app.application.sales.queries_booking import (
 )
 
 from app.shared.services.code_generator import CodeGeneratorService
+from app.domain.shared.repositories import SequenceRepository
+from app.domain.ticketing.ticket_repositories import TicketRepository
+from app.domain.ticketing.event_seat_repositories import EventSeatRepository
+from app.infrastructure.ticketing.ticket_repository import SQLTicketRepository
+from app.infrastructure.ticketing.event_seat_repository import SQLEventSeatRepository
 
 
 def register_booking_container(container: Container) -> None:
@@ -41,10 +46,28 @@ def register_booking_container(container: Container) -> None:
     container.register(BookingRepository, instance=booking_repository)
     
     code_generator = container.resolve(CodeGeneratorService)
+    sequence_repository = container.resolve(SequenceRepository)
+    
+    # Get or create ticket and event seat repositories
+    try:
+        ticket_repository = container.resolve(TicketRepository)
+    except Exception:
+        ticket_repository = SQLTicketRepository()
+        container.register(TicketRepository, instance=ticket_repository)
+    
+    try:
+        event_seat_repository = container.resolve(EventSeatRepository)
+    except Exception:
+        event_seat_repository = SQLEventSeatRepository()
+        container.register(EventSeatRepository, instance=event_seat_repository)
+    
     # Register Booking command handler
     booking_command_handler = BookingCommandHandler(
         booking_repository=booking_repository,
-        code_generator=code_generator
+        code_generator=code_generator,
+        sequence_repository=sequence_repository,
+        ticket_repository=ticket_repository,
+        event_seat_repository=event_seat_repository
     )
     container.register(BookingCommandHandler, instance=booking_command_handler)
     

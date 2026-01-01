@@ -49,6 +49,19 @@
         ]
       },
       {
+        "label": "Payments",
+        "path": "/sales/payments",
+        "icon": "DollarSign",
+        "description": "Manage payments and payment transactions.",
+        "keywords": [
+          "payment",
+          "payments",
+          "pay",
+          "settle",
+          "transaction"
+        ]
+      },
+      {
         "label": "Customers",
         "path": "/sales/customers",
         "icon": "Users",

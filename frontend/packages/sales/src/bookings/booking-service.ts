@@ -7,39 +7,70 @@
 import type { Booking, CreateBookingInput, UpdateBookingInput } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 
+interface BookingItemDTO {
+  id?: string;
+  event_seat_id: string;
+  ticket_id?: string;
+  section_name?: string;
+  row_name?: string;
+  seat_number?: string;
+  unit_price: number;
+  total_price: number;
+  currency?: string;
+  ticket_number?: string;
+  ticket_status?: string;
+}
+
 interface BookingDTO {
   id: string;
   tenant_id: string;
-  
-  
-  code: string;
-  
-  
-  
-  name: string;
-  
-  
-  is_active: boolean;
+  booking_number: string;
+  customer_id?: string;
+  event_id: string;
+  status: string;
+  subtotal_amount: number;
+  discount_amount: number;
+  discount_type?: string;
+  discount_value?: number;
+  tax_amount: number;
+  tax_rate: number;
+  total_amount: number;
+  currency: string;
+  payment_status?: string;
+  reserved_until?: string;
+  cancelled_at?: string;
+  cancellation_reason?: string;
+  items?: BookingItemDTO[];
   created_at: string;
-  updated_at: string;
-  deactivated_at?: string | null;
+  updated_at?: string;
+  version?: number;
 }
 
 // Transform DTO to frontend type - converts snake_case timestamps to Date objects
 function transformBooking(dto: BookingDTO): Booking {
   return {
     id: dto.id,
-    
-    
-    code: dto.code,
-    
-    
-    
-    name: dto.name,
-    
-    
+    tenant_id: dto.tenant_id,
+    booking_number: dto.booking_number,
+    customer_id: dto.customer_id,
+    event_id: dto.event_id,
+    status: dto.status,
+    subtotal_amount: dto.subtotal_amount,
+    discount_amount: dto.discount_amount,
+    discount_type: dto.discount_type,
+    discount_value: dto.discount_value,
+    tax_amount: dto.tax_amount,
+    tax_rate: dto.tax_rate,
+    total_amount: dto.total_amount,
+    currency: dto.currency,
+    payment_status: dto.payment_status,
+    reserved_until: dto.reserved_until ? new Date(dto.reserved_until) : undefined,
+    cancelled_at: dto.cancelled_at ? new Date(dto.cancelled_at) : undefined,
+    cancellation_reason: dto.cancellation_reason,
+    items: dto.items || [],
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
+    version: dto.version,
   };
 }
 
@@ -62,7 +93,7 @@ export class BookingService {
     skip?: number;
     limit?: number;
     search?: string;
-    is_active?: boolean;
+    status?: string;
   }): Promise<PaginatedResponse<Booking>> {
     try {
       const queryParams = new URLSearchParams();
@@ -76,8 +107,8 @@ export class BookingService {
       if (params?.search !== undefined && params.search.trim()) {
         queryParams.append('search', params.search.trim());
       }
-      if (params?.is_active !== undefined) {
-        queryParams.append('is_active', params.is_active.toString());
+      if (params?.status !== undefined) {
+        queryParams.append('status', params.status);
       }
 
       const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
@@ -192,15 +223,17 @@ export class BookingService {
     }
   }
 
-  async deleteBooking(id: string): Promise<void> {
+  async deleteBooking(id: string, cancellationReason: string): Promise<void> {
     try {
       const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const params = new URLSearchParams({ cancellation_reason: cancellationReason });
+      const endpoint = `${baseEndpoint}/${id}?${params.toString()}`;
       await this.apiClient.delete(
-        `${baseEndpoint}/${id}`,
+        endpoint,
         { requiresAuth: true }
       );
     } catch (error) {
-      console.error(`Error deleting Booking ${id}:`, error);
+      console.error(`Error cancelling Booking ${id}:`, error);
       throw error;
     }
   }

@@ -4,7 +4,7 @@ Pydantic schemas for EventSeat API.
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, model_validator
-from app.shared.enums import EventSeatStatusEnum
+from app.shared.enums import EventSeatStatusEnum, TicketStatusEnum
 
 
 class SectionPricingConfig(BaseModel):
@@ -94,6 +94,7 @@ class EventSeatResponse(BaseModel):
     # Ticket information (if ticket exists)
     ticket_number: Optional[str] = None
     ticket_price: Optional[float] = None  # Ticket price
+    ticket_status: Optional[TicketStatusEnum] = None  # Ticket status
 
 
 class EventSeatListResponse(BaseModel):

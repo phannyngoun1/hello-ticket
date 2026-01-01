@@ -22,9 +22,19 @@ import {
   MoreVertical,
   Info,
   Database,
-  
+  Ticket,
+  DollarSign,
+  Calendar,
+  User,
 } from "lucide-react";
 import { Booking } from "./types";
+import { EventService } from "@truths/ticketing/events";
+import { ShowService } from "@truths/ticketing/shows";
+import { useEvent } from "@truths/ticketing/events";
+import { useShow } from "@truths/ticketing/shows";
+import { CustomerService } from "../customers/customer-service";
+import { useCustomer } from "../customers/use-customers";
+import { api } from "@truths/api";
 
 export interface BookingDetailProps {
   className?: string;
@@ -52,24 +62,51 @@ export function BookingDetail({
   
   customActions,
 }: BookingDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "metadata">("profile");
+  const [activeTab, setActiveTab] = useState<"information" | "metadata">("information");
   
+  // Initialize services
+  const eventService = useMemo(
+    () =>
+      new EventService({
+        apiClient: api,
+        endpoints: {
+          events: "/api/v1/ticketing/events",
+        },
+      }),
+    []
+  );
+
+  const showService = useMemo(
+    () =>
+      new ShowService({
+        apiClient: api,
+        endpoints: {
+          shows: "/api/v1/ticketing/shows",
+        },
+      }),
+    []
+  );
+
+  const customerService = useMemo(
+    () =>
+      new CustomerService({
+        apiClient: api,
+        endpoints: {
+          customers: "/api/v1/sales/customers",
+        },
+      }),
+    []
+  );
+
+  // Fetch event, show, and customer data
+  const { data: eventData, isLoading: isLoadingEvent } = useEvent(eventService, data?.event_id || null);
+  const { data: showData, isLoading: isLoadingShow } = useShow(showService, eventData?.show_id || null);
+  const { data: customerData, isLoading: isLoadingCustomer } = useCustomer(customerService, data?.customer_id || null);
 
   // All hooks must be called before any early returns
   
   const getBookingDisplayName = () => {
-    
-    
-    
-    return data?.code || data?.id || "";
-    
-    
-    
-    
-    
-    
-    
-    return data?.id || "";
+    return data?.booking_number || data?.id || "";
   };
   
 
@@ -78,7 +115,7 @@ export function BookingDetail({
       data
         ? getBookingDisplayName()
         : "",
-    [data, data?.code]
+    [data, data?.booking_number]
   );
 
   
@@ -160,11 +197,30 @@ export function BookingDetail({
               <h2 className="text-xl font-semibold">{displayName}</h2>
               
               
-              {data.code && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Code: {data.code}
-                </p>
-              )}
+              <div className="flex items-center gap-4 mt-2">
+                {data.status && (
+                  <span className={cn(
+                    "px-2 py-1 text-xs font-medium rounded-full",
+                    data.status === "confirmed" || data.status === "paid"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : data.status === "cancelled" || data.status === "refunded"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                  )}>
+                    {data.status.toUpperCase()}
+                  </span>
+                )}
+                {data.payment_status && (
+                  <span className={cn(
+                    "px-2 py-1 text-xs font-medium rounded-full",
+                    data.payment_status === "completed"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                  )}>
+                    Payment: {data.payment_status.toUpperCase()}
+                  </span>
+                )}
+              </div>
               
               
               
@@ -217,15 +273,15 @@ export function BookingDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
+                  activeTab === "information"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => setActiveTab("profile")}
+                onClick={() => setActiveTab("information")}
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
+                  Information
                 </span>
               </button>
               {hasMetadata && (
@@ -248,79 +304,199 @@ export function BookingDetail({
           </div>
 
           <div className="mt-0">
-            {/* Profile Tab */}
-            {activeTab === "profile" && (
+            {/* Information Tab */}
+            {activeTab === "information" && (
               <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-3">
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Basic Information
-                    </h3>
-                    <dl className="space-y-3">
-                      
-                      
-                      
-                      
-                      
+                <div>
+                  <dl className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <dt className="text-sm font-medium flex items-center gap-1">
+                        <User className="h-3.5 w-3.5" />
+                        Customer
+                      </dt>
+                      <dd className="mt-1 text-sm text-muted-foreground">
+                        {(() => {
+                          if (!data.customer_id) {
+                            return "-";
+                          }
+                          if (isLoadingCustomer) {
+                            return <span className="text-muted-foreground">Loading...</span>;
+                          }
+                          if (customerData?.code && customerData?.name) {
+                            return `${customerData.code} - ${customerData.name}`;
+                          }
+                          if (customerData?.name) {
+                            return customerData.name;
+                          }
+                          if (customerData?.code) {
+                            return customerData.code;
+                          }
+                          return "-";
+                        })()}
+                      </dd>
+                    </div>
+                    {data.event_id && (
                       <div>
-                        <dt className="text-sm font-medium">Code</dt>
+                        <dt className="text-sm font-medium flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          Event
+                        </dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.code)}
+                          {(() => {
+                            if (isLoadingEvent || isLoadingShow) {
+                              return <span className="text-muted-foreground">Loading...</span>;
+                            }
+                            if (showData?.name && eventData?.title) {
+                              return `${showData.name} - ${eventData.title}`;
+                            }
+                            if (eventData?.title) {
+                              return eventData.title;
+                            }
+                            return formatFieldValue(data.event_id);
+                          })()}
                         </dd>
                       </div>
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
+                    )}
+                    {data.created_at && (
                       <div>
-                        <dt className="text-sm font-medium">Name</dt>
+                        <dt className="text-sm font-medium">Created</dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.name)}
+                          {formatDate(data.created_at)}
                         </dd>
                       </div>
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                    </dl>
-                  </div>
-
-                  
-
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Timeline
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.created_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Created</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.created_at)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.updated_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Last Updated</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.updated_at)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                    )}
+                    {data.updated_at && (
+                      <div>
+                        <dt className="text-sm font-medium">Last Updated</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(data.updated_at)}
+                        </dd>
+                      </div>
+                    )}
+                    {data.reserved_until && (
+                      <div>
+                        <dt className="text-sm font-medium">Reserved Until</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(data.reserved_until)}
+                        </dd>
+                      </div>
+                    )}
+                    {data.cancelled_at && (
+                      <div>
+                        <dt className="text-sm font-medium text-destructive">Cancelled At</dt>
+                        <dd className="mt-1 text-sm text-destructive">
+                          {formatDate(data.cancelled_at)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
                 </div>
+
+                {/* Booking Items Section */}
+                {data.items && data.items.length > 0 && (
+                  <div className="mt-8">
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Ticket className="h-4 w-4" />
+                      Booking Items ({data.items.length})
+                    </h3>
+                    <Card className="overflow-hidden border">
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead className="bg-muted/50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                #
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Seat
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Section
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Row
+                              </th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Ticket Number
+                              </th>
+                              <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Price
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {data.items.map((item, index) => (
+                              <tr key={item.id || index} className="hover:bg-muted/30 transition-colors">
+                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                  {index + 1}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-medium">
+                                  {item.seat_number || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                  {item.section_name || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                  {item.row_name || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
+                                  {item.ticket_number || "-"}
+                                </td>
+                                <td className="px-4 py-3 text-sm font-semibold text-right">
+                                  {item.currency || data.currency || "USD"} {item.unit_price?.toFixed(2) || "0.00"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-muted/50 border-t">
+                            <tr>
+                              <td colSpan={5} className="px-4 py-3 text-sm font-medium text-right pr-8">
+                                Subtotal:
+                              </td>
+                              <td className="px-4 py-3 text-sm font-semibold text-right whitespace-nowrap">
+                                {data.currency || "USD"} {data.subtotal_amount?.toFixed(2) || "0.00"}
+                              </td>
+                            </tr>
+                            {data.discount_amount > 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-3 text-sm font-medium text-right pr-8">
+                                  Discount{data.discount_type === "percentage" && data.discount_value ? ` (${data.discount_value}%)` : ""}:
+                                </td>
+                                <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                                  -{data.currency || "USD"} {data.discount_amount?.toFixed(2) || "0.00"}
+                                </td>
+                              </tr>
+                            )}
+                            <tr>
+                              <td colSpan={5} className="px-4 py-3 text-sm font-medium text-right pr-8">
+                                Tax ({((data.tax_rate || 0) * 100).toFixed(0)}%):
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                                {data.currency || "USD"} {data.tax_amount?.toFixed(2) || "0.00"}
+                              </td>
+                            </tr>
+                            <tr className="border-t-2 border-border">
+                              <td colSpan={5} className="px-4 py-3 text-sm font-bold text-right pr-8">
+                                Total:
+                              </td>
+                              <td className="px-4 py-3 text-sm font-bold text-right whitespace-nowrap">
+                                {data.currency || "USD"} {data.total_amount?.toFixed(2) || "0.00"}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colSpan={5} className="px-4 py-3 text-sm font-medium text-right pr-8">
+                                Balance Due:
+                              </td>
+                              <td className="px-4 py-3 text-sm font-semibold text-right whitespace-nowrap">
+                                {data.currency || "USD"} {data.total_amount?.toFixed(2) || "0.00"}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </Card>
+                  </div>
+                )}
               </div>
             )}
 

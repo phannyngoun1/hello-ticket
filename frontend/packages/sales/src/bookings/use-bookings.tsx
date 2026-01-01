@@ -61,8 +61,12 @@ export function useCreateBooking(service: BookingService) {
 
   return useMutation<Booking, Error, CreateBookingInput>({
     mutationFn: (input) => service.createBooking(input),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      // Invalidate event seats for the event to refresh seat statuses
+      if (variables.event_id) {
+        queryClient.invalidateQueries({ queryKey: ["events", variables.event_id, "seats"] });
+      }
     },
   });
 }
@@ -82,10 +86,12 @@ export function useUpdateBooking(service: BookingService) {
 export function useDeleteBooking(service: BookingService) {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, string>({
-    mutationFn: (id) => service.deleteBooking(id),
+  return useMutation<void, Error, { id: string; cancellationReason: string }>({
+    mutationFn: ({ id, cancellationReason }) => service.deleteBooking(id, cancellationReason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      // Invalidate all event seats to refresh seat statuses after cancellation
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     },
   });
 }

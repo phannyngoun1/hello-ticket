@@ -22,7 +22,7 @@ class SearchBookingsQuery:
     """Query to search bookings with optional filters."""
 
     search: Optional[str] = None
-    is_active: Optional[bool] = None
+    status: Optional[str] = None
     skip: int = 0
     limit: int = 50
 

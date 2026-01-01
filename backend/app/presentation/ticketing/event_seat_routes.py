@@ -232,7 +232,8 @@ async def list_event_seats(
             items.append(EventSeatApiMapper.to_response(
                 seat,
                 ticket_number=ticket.ticket_number if ticket else None,
-                ticket_price=ticket.price if ticket else None
+                ticket_price=ticket.price if ticket else None,
+                ticket_status=ticket.status.value if ticket else None
             ))
         
         return EventSeatListResponse(

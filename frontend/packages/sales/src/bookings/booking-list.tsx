@@ -6,19 +6,38 @@
 
 import React, { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit, Trash2 } from "lucide-react";
+import { X, DollarSign } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
-  ConfirmationDialog,
   createActionsColumn,
   createIdentifiedColumn,
   createTextColumn,
   createDateTimeColumn,
   DataTable,
 } from "@truths/custom-ui";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Button,
+  Textarea,
+  Label,
+} from "@truths/ui";
 import { Pagination } from "@truths/shared";
 import type { Booking } from "./types";
+
+/**
+ * Check if a booking status allows payment
+ * Payments can only be made for CONFIRMED or RESERVED bookings
+ */
+function canProcessPayment(status: string): boolean {
+  const normalizedStatus = status.toLowerCase().trim();
+  return normalizedStatus === "confirmed" || normalizedStatus === "reserved";
+}
 
 export interface BookingListProps {
   className?: string;
@@ -27,8 +46,8 @@ export interface BookingListProps {
   error?: Error | null;
   pagination?: Pagination;
   onBookingClick?: (booking: Booking) => void;
-  onEdit?: (booking: Booking) => void;
-  onDelete?: (booking: Booking) => void;
+  onCancel?: (booking: Booking, cancellationReason: string) => void;
+  onPayment?: (booking: Booking) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
@@ -43,8 +62,8 @@ export function BookingList({
   error = null,
   pagination,
   onBookingClick,
-  onEdit,
-  onDelete,
+  onCancel,
+  onPayment,
   onCreate,
   onSearch,
   onPageChange,
@@ -52,12 +71,12 @@ export function BookingList({
   customActions,
 }: BookingListProps) {
   const density = useDensityStyles();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
 
   const getDisplayName = (booking: Booking) => {
-    const value = booking.code;
-    return typeof value === "string" && value.trim().length > 0 ? value : String(booking.id);
+    return booking.booking_number || String(booking.id);
   };
 
   const getInitials = (value: string | undefined) => {
@@ -71,20 +90,18 @@ export function BookingList({
   const columns: ColumnDef<Booking>[] = [
     createIdentifiedColumn<Booking>({
       getDisplayName,
-      getInitials: (item) => getInitials(item.code as string | undefined),
-      header: "Code",
+      getInitials: (item) => getInitials(item.booking_number),
+      header: "Booking Number",
       showAvatar: false,
       onClick: onBookingClick,
       additionalOptions: {
-        id: "code",
+        id: "booking_number",
       },
     }),
-
-
     
     createTextColumn<Booking>({
-      accessorKey: "name",
-      header: "Name",
+      accessorKey: "customer_id",
+      header: "Customer",
       cell: (info) => {
         const value = info.getValue() as string | null | undefined;
         return (
@@ -95,33 +112,92 @@ export function BookingList({
       },
     }),
     
-
+    createTextColumn<Booking>({
+      accessorKey: "status",
+      header: "Status",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+    
+    createTextColumn<Booking>({
+      accessorKey: "total_amount",
+      header: "Total Amount",
+      cell: (info) => {
+        const booking = info.row.original;
+        const amount = info.getValue() as number | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {amount !== undefined && amount !== null
+              ? `${booking.currency || "USD"} ${amount.toFixed(2)}`
+              : "-"}
+          </span>
+        );
+      },
+    }),
+    
+    createTextColumn<Booking>({
+      accessorKey: "payment_status",
+      header: "Payment Status",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+    
+    createDateTimeColumn<Booking>({
+      accessorKey: "created_at",
+      header: "Created At",
+    }),
 
     createActionsColumn<Booking>({
       customActions,
       actions: [
-        ...(onEdit
+        ...(onPayment
           ? [
               {
-                icon: Edit,
-                onClick: (booking: Booking) => onEdit(booking),
-                title: "Edit",
+                icon: DollarSign,
+                onClick: (booking: Booking) => onPayment(booking),
+                title: (booking: Booking) =>
+                  canProcessPayment(booking.status)
+                    ? "Settle Payment"
+                    : `Payment not allowed for status: ${booking.status.toUpperCase()}`,
+                disabledWhen: (booking: Booking) => !canProcessPayment(booking.status),
                 className:
-                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
+                  "h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-600 transition-colors",
               },
             ]
           : []),
-        ...(onDelete
+        ...(onCancel
           ? [
               {
-                icon: Trash2,
+                icon: X,
                 onClick: (booking: Booking) => {
                   setSelectedBooking(booking);
-                  setDeleteConfirmOpen(true);
+                  setCancellationReason("");
+                  setCancelDialogOpen(true);
                 },
-                title: "Delete",
+                title: (booking: Booking) => {
+                  if (booking.status === "cancelled") return "Booking is already cancelled";
+                  if (booking.status === "confirmed") return "Confirmed bookings cannot be cancelled";
+                  if (booking.status === "refunded") return "Refunded bookings cannot be cancelled";
+                  return "Cancel";
+                },
+                disabledWhen: (booking: Booking) => 
+                  booking.status === "cancelled" || 
+                  booking.status === "confirmed" || 
+                  booking.status === "refunded",
                 className:
-                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
+                  "h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors",
               },
             ]
           : []),
@@ -139,35 +215,37 @@ export function BookingList({
       }
     : undefined;
 
-  const handleDeleteConfirmChange = (open: boolean) => {
-    setDeleteConfirmOpen(open);
+  const handleCancelDialogChange = (open: boolean) => {
+    setCancelDialogOpen(open);
     if (!open) {
       setSelectedBooking(null);
+      setCancellationReason("");
     }
   };
 
-  const handleDeleteConfirm = () => {
-    if (selectedBooking && onDelete) {
-      onDelete(selectedBooking);
+  const handleCancelConfirm = () => {
+    if (!cancellationReason.trim()) {
+      return; // Don't proceed if reason is empty
     }
-    setDeleteConfirmOpen(false);
+    if (!selectedBooking) {
+      return;
+    }
+    // Validate booking status before canceling
+    if (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") {
+      return; // Don't proceed if booking is already cancelled, confirmed, or refunded
+    }
+    if (onCancel) {
+      onCancel(selectedBooking, cancellationReason.trim());
+    }
+    setCancelDialogOpen(false);
     setSelectedBooking(null);
+    setCancellationReason("");
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
+  const handleCancelDialogCancel = () => {
+    setCancelDialogOpen(false);
     setSelectedBooking(null);
-  };
-
-  const deleteConfirmAction = {
-    label: "Delete",
-    onClick: handleDeleteConfirm,
-    variant: "destructive" as const,
-  };
-
-  const deleteCancelAction = {
-    label: "Cancel",
-    onClick: handleDeleteCancel,
+    setCancellationReason("");
   };
 
   return (
@@ -187,18 +265,64 @@ export function BookingList({
         loading={loading}
       />
 
-      <ConfirmationDialog
-        open={deleteConfirmOpen}
-        onOpenChange={handleDeleteConfirmChange}
-        title="Delete Booking"
-        description={
-          selectedBooking
-            ? `Are you sure you want to delete "${getDisplayName(selectedBooking)}"? This action cannot be undone.`
-            : "Are you sure you want to delete this booking?"
-        }
-        confirmAction={deleteConfirmAction}
-        cancelAction={deleteCancelAction}
-      />
+      <Dialog open={cancelDialogOpen} onOpenChange={handleCancelDialogChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Booking</DialogTitle>
+            <DialogDescription>
+              {selectedBooking && (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") ? (
+                <span className="text-destructive">
+                  This booking cannot be cancelled. Status: {selectedBooking.status.toUpperCase()}
+                </span>
+              ) : selectedBooking ? (
+                `Are you sure you want to cancel booking "${getDisplayName(selectedBooking)}"? Please provide a reason for cancellation.`
+              ) : (
+                "Are you sure you want to cancel this booking? Please provide a reason for cancellation."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBooking && (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") ? (
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCancelDialogCancel}>
+                Close
+              </Button>
+            </DialogFooter>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cancellation-reason">
+                    Cancellation Reason <span className="text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="cancellation-reason"
+                    placeholder="Enter reason for cancellation..."
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    rows={4}
+                    required
+                  />
+                  {!cancellationReason.trim() && (
+                    <p className="text-sm text-destructive">Cancellation reason is required</p>
+                  )}
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleCancelDialogCancel}>
+                  No, Keep Booking
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleCancelConfirm}
+                  disabled={!cancellationReason.trim()}
+                >
+                  Yes, Cancel Booking
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

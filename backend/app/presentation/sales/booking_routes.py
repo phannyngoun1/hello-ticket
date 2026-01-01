@@ -43,10 +43,31 @@ async def create_booking(
     """Create a new booking"""
 
     try:
+        # Convert request items to command items
+        from app.application.sales.commands_booking import BookingItemCommand
+        items = [
+            BookingItemCommand(
+                event_seat_id=item.event_seat_id,
+                section_name=item.section_name,
+                row_name=item.row_name,
+                seat_number=item.seat_number,
+                unit_price=item.unit_price,
+                total_price=item.total_price,
+                currency=item.currency,
+                ticket_number=item.ticket_number,
+                ticket_status=item.ticket_status,
+            )
+            for item in request.items
+        ]
+        
         command = CreateBookingCommand(
-            code=request.code,
-            name=request.name,
-
+            event_id=request.event_id,
+            items=items,
+            customer_id=request.customer_id,
+            discount_type=request.discount_type,
+            discount_value=request.discount_value,
+            tax_rate=request.tax_rate,
+            currency=request.currency,
         )
         booking = await mediator.send(command)
         return SalesApiMapper.booking_to_response(booking)
@@ -56,8 +77,8 @@ async def create_booking(
 
 @router.get("", response_model=BookingListResponse)
 async def list_bookings(
-    search: Optional[str] = Query(None, description="Search term for booking code or name"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    search: Optional[str] = Query(None, description="Search term for booking number"),
+    status: Optional[str] = Query(None, description="Filter by booking status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
@@ -69,7 +90,7 @@ async def list_bookings(
         result = await mediator.query(
             SearchBookingsQuery(
                 search=search,
-                is_active=is_active,
+                status=status,
                 skip=skip,
                 limit=limit,
             )
@@ -113,9 +134,11 @@ async def update_booking(
     try:
         command = UpdateBookingCommand(
             booking_id=booking_id,
-            code=request.code,
-            name=request.name,
-
+            customer_id=request.customer_id,
+            status=request.status,
+            discount_type=request.discount_type,
+            discount_value=request.discount_value,
+            payment_status=request.payment_status,
         )
         booking = await mediator.send(command)
         return SalesApiMapper.booking_to_response(booking)
@@ -128,13 +151,16 @@ async def update_booking(
 @router.delete("/{booking_id}", status_code=204)
 async def delete_booking(
     booking_id: str,
+    cancellation_reason: str = Query(..., description="Reason for cancellation (required)"),
     current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
-    """Delete a booking (soft-delete by default)"""
+    """Cancel a booking (soft-delete by default)"""
 
     try:
-        await mediator.send(DeleteBookingCommand(booking_id=booking_id))
+        if not cancellation_reason or not cancellation_reason.strip():
+            raise HTTPException(status_code=400, detail="Cancellation reason is required")
+        await mediator.send(DeleteBookingCommand(booking_id=booking_id, cancellation_reason=cancellation_reason.strip()))
         return Response(status_code=204)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

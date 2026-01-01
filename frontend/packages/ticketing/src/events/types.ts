@@ -47,6 +47,7 @@ export interface EventSeat {
   // Ticket information (if ticket exists)
   ticket_number?: string;
   ticket_price?: number;  // Ticket price
+  ticket_status?: string;  // Ticket status (AVAILABLE, RESERVED, CONFIRMED, etc.)
 }
 
 export interface BrokerSeatImportItem {

@@ -73,6 +73,16 @@ class Ticket(AggregateRoot):
         """Generate a unique QR code for the ticket"""
         return f"QR-{self.id[:12].upper()}"
 
+    def reserve(self, booking_id: str, reserved_until: Optional[datetime] = None) -> None:
+        """Reserve ticket for a booking"""
+        if self.status != TicketStatusEnum.AVAILABLE:
+            raise BusinessRuleError(f"Ticket cannot be reserved (current status: {self.status})")
+        self.status = TicketStatusEnum.RESERVED
+        self.booking_id = booking_id
+        self.reserved_at = datetime.now(timezone.utc)
+        self.reserved_until = reserved_until
+        self._touch()
+
     def confirm(self) -> None:
         """Confirm ticket (after payment)"""
         if self.status != TicketStatusEnum.RESERVED:
@@ -85,6 +95,26 @@ class Ticket(AggregateRoot):
         if self.status in [TicketStatusEnum.CANCELLED, TicketStatusEnum.USED]:
             raise BusinessRuleError(f"Ticket cannot be cancelled (current status: {self.status})")
         self.status = TicketStatusEnum.CANCELLED
+        self._touch()
+
+    def release(self) -> None:
+        """Release ticket back to available (e.g., when booking is cancelled)"""
+        # Only release tickets that are reserved or confirmed
+        if self.status not in [TicketStatusEnum.RESERVED, TicketStatusEnum.CONFIRMED]:
+            # If already available or in another state, just clear booking_id if set
+            if self.booking_id:
+                self.booking_id = None
+                self.reserved_at = None
+                self.reserved_until = None
+                self._touch()
+            return
+        
+        # Set status back to available
+        self.status = TicketStatusEnum.AVAILABLE
+        # Clear booking association
+        self.booking_id = None
+        self.reserved_at = None
+        self.reserved_until = None
         self._touch()
 
     def mark_as_used(self) -> None:

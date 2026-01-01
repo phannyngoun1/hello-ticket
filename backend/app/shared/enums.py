@@ -426,6 +426,35 @@ class EventSeatStatusEnum(str, Enum):
     BLOCKED = "blocked"
 
 
+class BookingStatusEnum(str, Enum):
+    """Booking transaction status enumeration"""
+    PENDING = "pending"
+    RESERVED = "reserved"
+    CONFIRMED = "confirmed"
+    PAID = "paid"
+    CANCELLED = "cancelled"
+    REFUNDED = "refunded"
+
+
+class PaymentStatusEnum(str, Enum):
+    """Payment status enumeration"""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    REFUNDED = "refunded"
+
+
+class PaymentMethodEnum(str, Enum):
+    """Payment method enumeration"""
+    CREDIT_CARD = "credit_card"
+    DEBIT_CARD = "debit_card"
+    PAYPAL = "paypal"
+    BANK_TRANSFER = "bank_transfer"
+    CASH = "cash"
+    OTHER = "other"
+
+
 class TicketStatusEnum(str, Enum):
     """Ticket status enumeration"""
     AVAILABLE = "available"  # Created and available for sale (not yet reserved)

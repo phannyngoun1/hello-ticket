@@ -27,6 +27,7 @@ from app.shared.container_registrations.seat import register_seat_container, reg
 from app.shared.container_registrations.organizer import register_organizer_container, register_organizer_mediator
 from app.shared.container_registrations.event_type import register_event_type_container, register_event_type_mediator
 from app.shared.container_registrations.booking import register_booking_container, register_booking_mediator
+from app.shared.container_registrations.payment import register_payment_container, register_payment_mediator
 from app.shared.container_registrations.show import register_show_container, register_show_mediator
 from app.shared.container_registrations.event import register_event_container, register_event_mediator
 from app.shared.container_registrations.event_seat import register_event_seat_container, register_event_seat_mediator
@@ -77,6 +78,8 @@ def setup_container() -> Container:
 
     #bookings
     register_booking_container(container)
+    #payments (depends on bookings)
+    register_payment_container(container)
 
     #shows
     register_show_container(container)
@@ -114,6 +117,7 @@ def setup_mediator(container: Container) -> Mediator:
     register_organizer_mediator(mediator)
     register_event_type_mediator(mediator)
     register_booking_mediator(mediator)
+    register_payment_mediator(mediator)
     register_show_mediator(mediator)
     register_event_mediator(mediator)
     register_event_seat_mediator(mediator)

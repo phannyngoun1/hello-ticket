@@ -4,16 +4,22 @@
  * Display detailed information about an event.
  */
 
-import { Card, Button } from "@truths/ui";
+import { Card, Tabs } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Calendar, Clock, Database, Settings, RefreshCw, Upload, Armchair, ExternalLink } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Database,
+  Settings,
+  Info,
+  Package,
+} from "lucide-react";
 import type { Event, EventConfigurationType } from "./types";
 import { EventConfigurationType as EventConfigurationTypeEnum } from "./types";
 import { useShow, useShowService } from "../shows";
 import { useLayout, useLayoutService } from "../layouts";
-import { useEventService } from "./event-provider";
-import { useInitializeEventSeats, useEventSeats } from "./use-events";
 import { useState } from "react";
+import { EventInventory } from "./event-inventory";
 
 export interface EventDetailProps {
   className?: string;
@@ -28,9 +34,11 @@ export function EventDetail({
   loading = false,
   error = null,
 }: EventDetailProps) {
+  const [activeTab, setActiveTab] = useState<"profile" | "inventory">(
+    "profile"
+  );
   const showService = useShowService();
   const layoutService = useLayoutService();
-  const eventService = useEventService();
 
   // Fetch show and layout data
   const { data: showData } = useShow(showService, data?.show_id || null);
@@ -38,30 +46,6 @@ export function EventDetail({
     layoutService,
     data?.layout_id || null
   );
-
-  const { data: seatsData, isLoading: isLoadingSeats } = useEventSeats(
-    eventService,
-    data?.id || "",
-    { limit: 1 }
-  );
-
-  const initializeSeatsMutation = useInitializeEventSeats(eventService);
-  const [isInitializing, setIsInitializing] = useState(false);
-
-  const handleInitializeSeats = async () => {
-    if (!data?.id) return;
-    setIsInitializing(true);
-    try {
-      await initializeSeatsMutation.mutateAsync({
-        eventId: data.id,
-        generateTickets: false, // Default to false, tickets can be created later
-      });
-    } catch (err) {
-      console.error("Failed to initialize seats:", err);
-    } finally {
-      setIsInitializing(false);
-    }
-  };
 
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
@@ -144,185 +128,190 @@ export function EventDetail({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
-      <div className="space-y-6">
-        <div className="pb-6 border-b">
-          <h2 className="mb-4 text-foreground font-semibold text-lg">
-            {showData?.name || showData?.code || "Event Information"}
-          </h2>
-          <dl className="space-y-3">
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                <Calendar className="h-4 w-4 text-primary" />
-                Start Date & Time
-              </dt>
-              <dd className="text-sm text-muted-foreground">
-                {formatDate(data.start_dt)}
-              </dd>
+    <Card className={cn("p-6", className)}>
+      <div>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
+              <Calendar className="h-10 w-10 text-primary" />
             </div>
-
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                <Clock className="h-4 w-4 text-primary" />
-                Duration
-              </dt>
-              <dd className="text-sm text-muted-foreground">
-                {formatDuration(data.duration_minutes)}
-              </dd>
+            <div>
+              <h2 className="text-xl font-semibold">{data.title || "Event"}</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {showData?.name || showData?.code || data.id}
+              </p>
             </div>
-
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium min-w-[140px]">Title</dt>
-              <dd className="text-sm text-muted-foreground">
-                {formatFieldValue(data.title)}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="pb-6 border-b">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Location & Configuration
-          </h3>
-          <dl className="space-y-3">
-            {data.layout_id && (
-              <div className="flex items-center gap-2">
-                <dt className="text-sm font-medium min-w-[140px]">Layout</dt>
-                <dd className="text-sm text-muted-foreground">
-                  {layoutData?.name || formatFieldValue(data.layout_id)}
-                </dd>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium min-w-[140px]">Show</dt>
-              <dd className="text-sm text-muted-foreground">
-                {showData?.name ||
-                  showData?.code ||
-                  formatFieldValue(data.show_id)}
-              </dd>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                <Settings className="h-4 w-4 text-primary" />
-                Configuration Type
-              </dt>
-              <dd className="text-sm text-muted-foreground">
-                {formatConfigurationType(data.configuration_type)}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="pb-6 border-b">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Timeline
-          </h3>
-          <dl className="space-y-3">
-            {data.created_at && (
-              <div className="flex items-center gap-2">
-                <dt className="text-sm font-medium min-w-[140px]">Created</dt>
-                <dd className="text-sm text-muted-foreground">
-                  {formatDate(data.created_at)}
-                </dd>
-              </div>
-            )}
-            {data.updated_at && (
-              <div className="flex items-center gap-2">
-                <dt className="text-sm font-medium min-w-[140px]">
-                  Last Updated
-                </dt>
-                <dd className="text-sm text-muted-foreground">
-                  {formatDate(data.updated_at)}
-                </dd>
-              </div>
-            )}
-          </dl>
-        </div>
-
-        <div className="pt-2">
-          <h3 className="mb-2 text-xs font-medium text-muted-foreground flex items-center gap-1.5 uppercase tracking-wider">
-            <Armchair className="h-3.5 w-3.5 text-primary" />
-            Inventory Management
-          </h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg border">
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="text-xs font-medium">Seat Inventory</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isLoadingSeats
-                      ? "Loading..."
-                      : seatsData?.pagination.total === 0
-                      ? "No seats initialized"
-                      : `${seatsData?.pagination.total} seats`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                {data.configuration_type ===
-                  EventConfigurationTypeEnum.SEAT_SETUP && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleInitializeSeats}
-                    disabled={isInitializing || !data.layout_id}
-                    className="gap-1.5 h-7 text-xs px-2"
-                  >
-                    <RefreshCw
-                      className={cn("h-3.5 w-3.5", isInitializing && "animate-spin")}
-                    />
-                    {seatsData?.pagination.total === 0
-                      ? "Initialize"
-                      : "Regenerate"}
-                  </Button>
-                )}
-                {data.configuration_type ===
-                  EventConfigurationTypeEnum.TICKET_IMPORT && (
-                  <Button size="sm" variant="outline" className="gap-1.5 h-7 text-xs px-2">
-                    <Upload className="h-3.5 w-3.5" />
-                    Import
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="default"
-                  asChild
-                  className="gap-1.5 h-7 text-xs px-2"
-                >
-                  <a href={`/ticketing/events/${data.id}/inventory`}>
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Manage
-                  </a>
-                </Button>
-              </div>
-            </div>
-            {data.configuration_type ===
-              EventConfigurationTypeEnum.SEAT_SETUP &&
-              !data.layout_id && (
-                <p className="text-xs text-destructive px-1">
-                  A layout must be assigned to initialize seats.
-                </p>
-              )}
           </div>
         </div>
 
-        <div className="pt-6 border-t mt-6">
-          <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
-            <Database className="h-4 w-4 text-primary" />
-            System Metadata
-          </h3>
-          <dl className="space-y-3">
-            <div className="flex items-center gap-2">
-              <dt className="text-sm font-medium min-w-[140px]">Tenant ID</dt>
-              <dd className="text-sm text-muted-foreground font-mono">
-                {formatFieldValue(data.tenant_id)}
-              </dd>
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as any)}
+        >
+          <div className="border-b mb-4">
+            <div className="flex gap-4">
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "profile"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("profile")}
+              >
+                <span className="flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Profile
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "inventory"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("inventory")}
+              >
+                <span className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Inventory
+                </span>
+              </button>
             </div>
-          </dl>
-        </div>
+          </div>
+
+          <div className="mt-0">
+            {/* Profile Tab - Keep mounted but hide when inactive */}
+            <div
+              className={cn("space-y-6", activeTab !== "profile" && "hidden")}
+            >
+              <div className="pb-6 border-b">
+                <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Event Information
+                </h3>
+                <dl className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      Start Date & Time
+                    </dt>
+                    <dd className="text-sm text-muted-foreground">
+                      {formatDate(data.start_dt)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
+                      <Clock className="h-4 w-4 text-primary" />
+                      Duration
+                    </dt>
+                    <dd className="text-sm text-muted-foreground">
+                      {formatDuration(data.duration_minutes)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium min-w-[140px]">Title</dt>
+                    <dd className="text-sm text-muted-foreground">
+                      {formatFieldValue(data.title)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="pb-6 border-b">
+                <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Location & Configuration
+                </h3>
+                <dl className="space-y-3">
+                  {data.layout_id && (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-sm font-medium min-w-[140px]">
+                        Layout
+                      </dt>
+                      <dd className="text-sm text-muted-foreground">
+                        {layoutData?.name || formatFieldValue(data.layout_id)}
+                      </dd>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium min-w-[140px]">Show</dt>
+                    <dd className="text-sm text-muted-foreground">
+                      {showData?.name ||
+                        showData?.code ||
+                        formatFieldValue(data.show_id)}
+                    </dd>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
+                      <Settings className="h-4 w-4 text-primary" />
+                      Configuration Type
+                    </dt>
+                    <dd className="text-sm text-muted-foreground">
+                      {formatConfigurationType(data.configuration_type)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="pb-6 border-b">
+                <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Timeline
+                </h3>
+                <dl className="space-y-3">
+                  {data.created_at && (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-sm font-medium min-w-[140px]">
+                        Created
+                      </dt>
+                      <dd className="text-sm text-muted-foreground">
+                        {formatDate(data.created_at)}
+                      </dd>
+                    </div>
+                  )}
+                  {data.updated_at && (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-sm font-medium min-w-[140px]">
+                        Last Updated
+                      </dt>
+                      <dd className="text-sm text-muted-foreground">
+                        {formatDate(data.updated_at)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
+              <div className="pt-6 border-t mt-6">
+                <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
+                  <Database className="h-4 w-4 text-primary" />
+                  System Metadata
+                </h3>
+                <dl className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <dt className="text-sm font-medium min-w-[140px]">
+                      Tenant ID
+                    </dt>
+                    <dd className="text-sm text-muted-foreground font-mono">
+                      {formatFieldValue(data.tenant_id)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+
+            {/* Inventory Tab - Keep mounted but hide when inactive */}
+            <div className={cn(activeTab !== "inventory" && "hidden")}>
+              {data?.id && <EventInventory eventId={data.id} />}
+            </div>
+          </div>
+        </Tabs>
       </div>
-    </div>
+    </Card>
   );
 }
