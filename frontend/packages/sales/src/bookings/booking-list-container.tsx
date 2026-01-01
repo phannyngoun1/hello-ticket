@@ -7,17 +7,28 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { toast } from "@truths/ui";
 import type { Pagination } from "@truths/shared";
-import type { Booking, CreateBookingInput, UpdateBookingInput, BookingFilter } from "./types";
+import type { Booking, CreateBookingInput, BookingFilter } from "./types";
 import { BookingList } from "./booking-list";
 import { CreateBookingDialog } from "./create-booking-dialog";
-import { EditBookingDialog } from "./edit-booking-dialog";
 import {
   useBookings,
   useCreateBooking,
-  useUpdateBooking,
   useDeleteBooking,
 } from "./use-bookings";
 import { useBookingService } from "./booking-provider";
+import { PaymentDialog } from "../payments/payment-dialog";
+import { useCreatePayment } from "../payments/use-payments";
+import { PaymentService } from "../payments/payment-service";
+import { api } from "@truths/api";
+
+/**
+ * Check if a booking status allows payment
+ * Payments can only be made for CONFIRMED or RESERVED bookings
+ */
+function canProcessPayment(status: string): boolean {
+  const normalizedStatus = status.toLowerCase().trim();
+  return normalizedStatus === "confirmed" || normalizedStatus === "reserved";
+}
 
 export interface BookingListContainerProps {
   onNavigateToBooking?: (id: string) => void;
@@ -37,8 +48,20 @@ export function BookingListContainer({
   const [filter, setFilter] = useState<BookingFilter>({});
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [bookingForPayment, setBookingForPayment] = useState<Booking | null>(null);
+
+  // Create payment service
+  const paymentService = useMemo(
+    () =>
+      new PaymentService({
+        apiClient: api,
+        endpoints: {
+          payments: "/api/v1/sales/payments",
+        },
+      }),
+    []
+  );
   const prevAutoOpenRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -55,8 +78,8 @@ export function BookingListContainer({
   });
 
   const createMutation = useCreateBooking(bookingService);
-  const updateMutation = useUpdateBooking(bookingService);
   const deleteMutation = useDeleteBooking(bookingService);
+  const createPaymentMutation = useCreatePayment(paymentService);
 
   const bookings = data?.data ?? [];
   const paginationData = data?.pagination;
@@ -68,25 +91,53 @@ export function BookingListContainer({
     setCreateDialogOpen(true);
   }, [onNavigateToCreate]);
 
-  const handleEdit = useCallback((booking: Booking) => {
-    setBookingToEdit(booking);
-    setEditDialogOpen(true);
-  }, []);
-
-  const handleDelete = useCallback(
-    async (booking: Booking) => {
+  const handleCancel = useCallback(
+    async (booking: Booking, cancellationReason: string) => {
       try {
-        await deleteMutation.mutateAsync(booking.id);
-        toast({ title: "Success", description: "Booking deleted successfully" });
+        await deleteMutation.mutateAsync({ id: booking.id, cancellationReason });
+        toast({ title: "Success", description: "Booking cancelled successfully" });
       } catch (err) {
         toast({
           title: "Error",
-          description: err instanceof Error ? err.message : "Failed to delete booking",
+          description: err instanceof Error ? err.message : "Failed to cancel booking",
           variant: "destructive",
         });
       }
     },
     [deleteMutation]
+  );
+
+  const handlePayment = useCallback((booking: Booking) => {
+    // Validate booking status before opening payment dialog
+    if (!canProcessPayment(booking.status)) {
+      toast({
+        title: "Payment Not Allowed",
+        description: `Payments can only be processed for bookings with status CONFIRMED or RESERVED. Current status: ${booking.status.toUpperCase()}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setBookingForPayment(booking);
+    setPaymentDialogOpen(true);
+  }, []);
+
+  const handlePaymentSubmit = useCallback(
+    async (input: import("../payments/types").CreatePaymentInput) => {
+      try {
+        await createPaymentMutation.mutateAsync(input);
+        toast({ title: "Success", description: "Payment processed successfully" });
+        setPaymentDialogOpen(false);
+        setBookingForPayment(null);
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: err instanceof Error ? err.message : "Failed to process payment",
+          variant: "destructive",
+        });
+        throw err;
+      }
+    },
+    [createPaymentMutation]
   );
 
   const handleSearch = useCallback((query: string) => {
@@ -121,25 +172,6 @@ export function BookingListContainer({
     [createMutation, onCreateDialogClose]
   );
 
-  const handleEditSubmit = useCallback(
-    async (id: string, input: UpdateBookingInput) => {
-      try {
-        await updateMutation.mutateAsync({ id, input });
-        toast({ title: "Success", description: "Booking updated successfully" });
-        setEditDialogOpen(false);
-        setBookingToEdit(null);
-      } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : "Failed to update booking",
-          variant: "destructive",
-        });
-        throw err;
-      }
-    },
-    [updateMutation]
-  );
-
   const handleNavigateToBooking = useCallback(
     (booking: Booking) => {
       onNavigateToBooking?.(booking.id);
@@ -164,8 +196,8 @@ export function BookingListContainer({
         loading={isLoading}
         error={error as Error | null}
         onBookingClick={handleNavigateToBooking}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onCancel={handleCancel}
+        onPayment={handlePayment}
         onCreate={handleCreate}
         onSearch={handleSearch}
         pagination={serverPagination}
@@ -184,16 +216,17 @@ export function BookingListContainer({
         onSubmit={handleCreateSubmit}
       />
 
-      <EditBookingDialog
-        open={editDialogOpen && !!bookingToEdit}
+      <PaymentDialog
+        open={paymentDialogOpen && !!bookingForPayment}
         onOpenChange={(open) => {
-          setEditDialogOpen(open);
+          setPaymentDialogOpen(open);
           if (!open) {
-            setBookingToEdit(null);
+            setBookingForPayment(null);
           }
         }}
-        onSubmit={handleEditSubmit}
-        booking={bookingToEdit}
+        onSubmit={handlePaymentSubmit}
+        booking={bookingForPayment}
+        isLoading={createPaymentMutation.isPending}
       />
     </>
   );

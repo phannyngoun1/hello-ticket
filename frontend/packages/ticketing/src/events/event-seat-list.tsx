@@ -22,7 +22,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@truths/ui";
-import { RefreshCw, Search, Trash2, X, Filter, Ticket, Check } from "lucide-react";
+import { RefreshCw, Search, Trash2, X, Filter, Ticket, Check, Plus, ShoppingCart } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import {
@@ -43,6 +43,12 @@ export interface EventSeatListProps {
   onDeleteSeat?: (seatId: string) => void;
   onCreateTickets?: (seatIds: string[], ticketPrice: number) => void;
   className?: string;
+  onSeatSelect?: (eventSeat: EventSeat, checked: boolean) => void;
+  selectedSeatIds?: Set<string>;
+  showSelection?: boolean;
+  onAddToBooking?: (seatIds: string[]) => void;
+  showAddToBooking?: boolean;
+  bookedSeatIds?: Set<string>; // Seats already in booking list
 }
 
 export function EventSeatList({
@@ -53,6 +59,12 @@ export function EventSeatList({
   onDeleteSeat,
   onCreateTickets,
   className,
+  onSeatSelect,
+  selectedSeatIds: externalSelectedSeatIds,
+  showSelection = true,
+  onAddToBooking,
+  showAddToBooking = false,
+  bookedSeatIds = new Set(),
 }: EventSeatListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<Set<EventSeatStatus>>(
@@ -61,9 +73,17 @@ export function EventSeatList({
   const [sectionFilter, setSectionFilter] = useState<Set<string>>(new Set());
   const [sectionSearchQuery, setSectionSearchQuery] = useState("");
   const [statusSearchQuery, setStatusSearchQuery] = useState("");
-  const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(
+  const [internalSelectedSeatIds, setInternalSelectedSeatIds] = useState<Set<string>>(
     new Set()
   );
+  
+  // When showAddToBooking is true, always use internal selection state
+  // Otherwise, use external if provided, or internal state
+  const selectedSeatIds = showAddToBooking
+    ? internalSelectedSeatIds
+    : externalSelectedSeatIds !== undefined 
+      ? externalSelectedSeatIds 
+      : internalSelectedSeatIds;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreatingTickets, setIsCreatingTickets] = useState(false);
@@ -184,50 +204,163 @@ export function EventSeatList({
     return sortedSections;
   }, [filteredSeats]);
 
-  const getStatusBadge = (status: EventSeatStatus) => {
+  // Get status color for visual indicator (border/background)
+  const getStatusColor = (seat: EventSeat): string => {
+    // Check ticket status first (takes priority)
+    if (seat.ticket_status) {
+      const statusUpper = String(seat.ticket_status).toUpperCase().trim();
+      switch (statusUpper) {
+        case "AVAILABLE":
+          return "border-l-4 border-l-green-500";
+        case "RESERVED":
+          return "border-l-4 border-l-yellow-500";
+        case "CONFIRMED":
+          return "border-l-4 border-l-blue-500";
+        case "CANCELLED":
+          return "border-l-4 border-l-red-500";
+        case "USED":
+          return "border-l-4 border-l-gray-500";
+        case "TRANSFERRED":
+          return "border-l-4 border-l-purple-500";
+        default:
+          break;
+      }
+    }
+    
+    // Fall back to event-seat status
+    const statusUpper = String(seat.status).toUpperCase().trim();
+    switch (statusUpper) {
+      case "AVAILABLE":
+        return "border-l-4 border-l-green-500";
+      case "RESERVED":
+        return "border-l-4 border-l-yellow-500";
+      case "SOLD":
+        return "border-l-4 border-l-blue-500";
+      case "HELD":
+        return "border-l-4 border-l-purple-500";
+      case "BLOCKED":
+        return "border-l-4 border-l-red-500";
+      default:
+        return "border-l-4 border-l-gray-500";
+    }
+  };
+
+  // Check if seat is available for selection/booking
+  const isSeatAvailable = (seat: EventSeat): boolean => {
+    // Check ticket status first (takes priority)
+    if (seat.ticket_status) {
+      const statusUpper = String(seat.ticket_status).toUpperCase().trim();
+      return statusUpper === "AVAILABLE";
+    }
+    
+    // Fall back to event-seat status
+    const statusUpper = String(seat.status).toUpperCase().trim();
+    return statusUpper === "AVAILABLE";
+  };
+
+  const getStatusBadge = (status: EventSeatStatus, ticketStatus?: string) => {
+    // Use ticket status if available, otherwise use event-seat status
+    const displayStatus = ticketStatus || status;
+    const statusUpper = String(displayStatus).toUpperCase().trim();
+    
     const variants: Record<
-      EventSeatStatus,
+      string,
       "default" | "secondary" | "destructive" | "outline"
     > = {
       AVAILABLE: "outline",
       RESERVED: "outline",
       SOLD: "default",
+      CONFIRMED: "default",
+      CANCELLED: "destructive",
+      USED: "secondary",
+      TRANSFERRED: "outline",
       HELD: "outline",
       BLOCKED: "destructive",
     };
 
-    const colors: Record<EventSeatStatus, string> = {
+    const colors: Record<string, string> = {
       AVAILABLE: "bg-green-50 text-green-700 border-green-200",
       RESERVED: "bg-yellow-50 text-yellow-700 border-yellow-200",
       SOLD: "bg-blue-50 text-blue-700 border-blue-200",
+      CONFIRMED: "bg-blue-50 text-blue-700 border-blue-200",
+      CANCELLED: "bg-red-50 text-red-700 border-red-200",
+      USED: "bg-gray-50 text-gray-700 border-gray-200",
+      TRANSFERRED: "bg-purple-50 text-purple-700 border-purple-200",
       HELD: "bg-purple-50 text-purple-700 border-purple-200",
       BLOCKED: "bg-red-50 text-red-700 border-red-200",
     };
 
     return (
-      <Badge variant={variants[status]} className={colors[status]}>
-        {status}
+      <Badge 
+        variant={variants[statusUpper] || "outline"} 
+        className={colors[statusUpper] || "bg-gray-50 text-gray-700 border-gray-200"}
+      >
+        {displayStatus}
       </Badge>
     );
   };
 
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedSeatIds(new Set(filteredSeats.map((seat) => seat.id)));
+    if (showAddToBooking) {
+      // When in booking mode, use internal selection
+      // Only select seats that are not already booked
+      if (checked) {
+        const selectableSeats = filteredSeats
+          .filter((seat) => !bookedSeatIds.has(seat.id))
+          .map((seat) => seat.id);
+        setInternalSelectedSeatIds(new Set(selectableSeats));
+      } else {
+        setInternalSelectedSeatIds(new Set());
+      }
+    } else if (externalSelectedSeatIds !== undefined) {
+      // External control - notify parent
+      filteredSeats.forEach((seat) => {
+        // Only select seats that are not already booked
+        if (!bookedSeatIds.has(seat.id) && onSeatSelect) {
+          onSeatSelect(seat, checked);
+        }
+      });
     } else {
-      setSelectedSeatIds(new Set());
+      // Internal control
+      if (checked) {
+        const selectableSeats = filteredSeats
+          .filter((seat) => !bookedSeatIds.has(seat.id))
+          .map((seat) => seat.id);
+        setInternalSelectedSeatIds(new Set(selectableSeats));
+      } else {
+        setInternalSelectedSeatIds(new Set());
+      }
     }
   };
 
-  const handleSelectSeat = (seatId: string, checked: boolean) => {
-    const newSelected = new Set(selectedSeatIds);
-    if (checked) {
-      newSelected.add(seatId);
-    } else {
-      newSelected.delete(seatId);
+  const handleSelectSeat = (seat: EventSeat, checked: boolean) => {
+    // Don't allow selecting seats that are not available or already booked
+    if (!isSeatAvailable(seat) || bookedSeatIds.has(seat.id)) {
+      return;
     }
-    setSelectedSeatIds(newSelected);
+
+    if (showAddToBooking) {
+      // When in booking mode, use internal selection
+      const newSelected = new Set(internalSelectedSeatIds);
+      if (checked) {
+        newSelected.add(seat.id);
+      } else {
+        newSelected.delete(seat.id);
+      }
+      setInternalSelectedSeatIds(newSelected);
+    } else if (onSeatSelect) {
+      onSeatSelect(seat, checked);
+    } else if (externalSelectedSeatIds === undefined) {
+      // Internal control only if no external control
+      const newSelected = new Set(internalSelectedSeatIds);
+      if (checked) {
+        newSelected.add(seat.id);
+      } else {
+        newSelected.delete(seat.id);
+      }
+      setInternalSelectedSeatIds(newSelected);
+    }
   };
 
   const handleDeleteSelected = () => {
@@ -296,8 +429,25 @@ export function EventSeatList({
     }
   };
 
+  // Calculate allSelected - only consider selectable seats (available and not already booked)
+  const selectableSeats = useMemo(() => {
+    return filteredSeats.filter((seat) => {
+      // Check ticket status first (takes priority)
+      if (seat.ticket_status) {
+        const statusUpper = String(seat.ticket_status).toUpperCase().trim();
+        if (statusUpper !== "AVAILABLE") return false;
+      } else {
+        // Fall back to event-seat status
+        const statusUpper = String(seat.status).toUpperCase().trim();
+        if (statusUpper !== "AVAILABLE") return false;
+      }
+      // Must not be already booked
+      return !bookedSeatIds.has(seat.id);
+    });
+  }, [filteredSeats, bookedSeatIds]);
+
   const allSelected =
-    filteredSeats.length > 0 && selectedSeatIds.size === filteredSeats.length;
+    selectableSeats.length > 0 && selectedSeatIds.size === selectableSeats.length;
 
   if (isLoading) {
     return (
@@ -519,6 +669,56 @@ export function EventSeatList({
 
         return (
           <div className="space-y-2">
+            {/* Add to Booking Bar - Show when showAddToBooking is true */}
+            {showAddToBooking && onAddToBooking && (
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
+                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                  {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""} selected
+                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setInternalSelectedSeatIds(new Set());
+                    }}
+                    className="h-7 px-2 text-xs"
+                    title="Clear selection"
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => {
+                      if (onAddToBooking && selectedSeatIds.size > 0) {
+                        // Filter out seats already in booking
+                        const seatsToAdd = Array.from(selectedSeatIds).filter(
+                          (seatId) => !bookedSeatIds.has(seatId)
+                        );
+                        if (seatsToAdd.length > 0) {
+                          onAddToBooking(seatsToAdd);
+                          // Clear selection after adding
+                          setInternalSelectedSeatIds(new Set());
+                        }
+                      }
+                    }}
+                    className="h-7 px-3 gap-1.5"
+                    title="Add selected seats to booking"
+                    disabled={
+                      selectedSeatIds.size === 0 ||
+                      Array.from(selectedSeatIds).every((seatId) =>
+                        bookedSeatIds.has(seatId)
+                      )
+                    }
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5" />
+                    <span className="text-xs">Add to Booking</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Create Tickets Bar - Only for seats without tickets */}
             {hasSeatsWithoutTickets && onCreateTickets && (
               <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
@@ -543,33 +743,47 @@ export function EventSeatList({
             )}
 
             {/* Delete Action Bar - For all selected seats */}
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
-              <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""}{" "}
-                selected
-              </span>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedSeatIds(new Set())}
-                  className="h-7 w-7 p-0 rounded-r-none border-r-0"
-                  title="Clear all selection"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDeleteSelected}
-                  disabled={!onDelete && !onDeleteSeat}
-                  className="h-7 w-7 p-0 rounded-l-none"
-                  title="Delete selected"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+            {!showAddToBooking && (
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
+                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                  {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""}{" "}
+                  selected
+                </span>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (externalSelectedSeatIds === undefined) {
+                        setInternalSelectedSeatIds(new Set());
+                      } else if (onSeatSelect) {
+                        // Clear all selections by unchecking all
+                        eventSeats.forEach((seat) => {
+                          if (selectedSeatIds.has(seat.id)) {
+                            onSeatSelect(seat, false);
+                          }
+                        });
+                      }
+                    }}
+                    className="h-7 w-7 p-0 rounded-r-none border-r-0"
+                    title="Clear all selection"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  {(onDelete || onDeleteSeat) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteSelected}
+                      className="h-7 w-7 p-0 rounded-l-none"
+                      title="Delete selected"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })()}
@@ -585,10 +799,14 @@ export function EventSeatList({
               id="select-all"
               checked={allSelected}
               onCheckedChange={handleSelectAll}
+              disabled={selectableSeats.length === 0}
             />
             <label
               htmlFor="select-all"
-              className="text-sm text-muted-foreground cursor-pointer"
+              className={cn(
+                "text-sm text-muted-foreground",
+                selectableSeats.length > 0 && "cursor-pointer"
+              )}
             >
               Select all
             </label>
@@ -635,32 +853,47 @@ export function EventSeatList({
                   .join(" • ");
 
                 const isSelected = selectedSeatIds.has(seat.id);
+                const isBooked = bookedSeatIds.has(seat.id);
+                const isAvailable = isSeatAvailable(seat);
+                const isDisabled = !isAvailable || isBooked;
 
                 return (
                   <Item
                     key={seat.id}
                     onClick={() => {
-                      // TODO: Open seat detail/edit dialog
-                      console.log("Seat clicked:", seat);
+                      // Don't allow selection if not available or already booked
+                      if (!isDisabled) {
+                        handleSelectSeat(seat, !isSelected);
+                      }
                     }}
                     className={cn(
                       isSelected && "bg-accent/50 border-primary",
+                      isDisabled && "opacity-60 cursor-not-allowed",
+                      getStatusColor(seat),
                       "min-w-0"
                     )}
                   >
-                    <ItemActions className="flex-shrink-0">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) => {
-                          handleSelectSeat(seat.id, checked as boolean);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </ItemActions>
+                    {showSelection && (
+                      <ItemActions className="flex-shrink-0">
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => {
+                            if (!isDisabled) {
+                              handleSelectSeat(seat, checked as boolean);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          disabled={isDisabled}
+                        />
+                      </ItemActions>
+                    )}
                     <ItemContent className="min-w-0">
                       <div className="flex items-start justify-between gap-4 min-w-0">
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          <ItemTitle className="truncate">{location}</ItemTitle>
+                          <div className="flex items-center gap-2 mb-1">
+                            <ItemTitle className="truncate">{location}</ItemTitle>
+                            {getStatusBadge(seat.status, seat.ticket_status)}
+                          </div>
                           {details && (
                             <ItemDescription className="truncate">
                               {details}
@@ -668,7 +901,29 @@ export function EventSeatList({
                           )}
                         </div>
                         <ItemActions className="flex-shrink-0">
-                          {getStatusBadge(seat.status)}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Add this individual seat to booking
+                              if (showAddToBooking && onAddToBooking && !isDisabled) {
+                                onAddToBooking([seat.id]);
+                              }
+                            }}
+                            className="h-7 w-7 p-0"
+                            aria-label="Add to booking"
+                            title={
+                              isBooked
+                                ? "Already in booking"
+                                : !isAvailable
+                                  ? "Seat not available"
+                                  : "Add to booking"
+                            }
+                            disabled={isDisabled}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
                         </ItemActions>
                       </div>
                     </ItemContent>

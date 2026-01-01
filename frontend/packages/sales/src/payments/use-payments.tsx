@@ -1,0 +1,33 @@
+/**
+ * Payment Hooks
+ *
+ * React Query hooks for payment operations
+ */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Payment, CreatePaymentInput } from "./types";
+import type { PaymentService } from "./payment-service";
+
+export function useCreatePayment(service: PaymentService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<Payment, Error, CreatePaymentInput>({
+    mutationFn: (input) => service.createPayment(input),
+    onSuccess: (data) => {
+      // Invalidate bookings to refresh payment status
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      // Invalidate payments for this booking
+      queryClient.invalidateQueries({ queryKey: ["payments", "booking", data.booking_id] });
+    },
+  });
+}
+
+export function usePaymentsByBooking(service: PaymentService, bookingId: string | null) {
+  return useQuery<Payment[]>({
+    queryKey: ["payments", "booking", bookingId],
+    queryFn: () => (bookingId ? service.getPaymentsByBooking(bookingId) : Promise.resolve([])),
+    enabled: !!bookingId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+

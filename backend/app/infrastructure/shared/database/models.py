@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum, BookingStatusEnum, PaymentStatusEnum, PaymentMethodEnum
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
 
@@ -26,16 +26,53 @@ operational_metadata = MetaData()
 # SALES MODULE
 
 class BookingModel(SQLModel, table=True):
-    """Booking master data database model"""
+    """Booking database model - represents a booking with tickets"""
     __tablename__ = "bookings"
     metadata = operational_metadata
     
     id: str = Field(primary_key=True, default_factory=generate_id)
     tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    booking_number: str = Field(index=True, unique=True)  # Unique booking reference number
+    
+    # References
+    customer_id: Optional[str] = Field(default=None, index=True)  # Optional customer
+    event_id: str = Field(index=True, foreign_key="events.id")
+    
+    # Status
+    status: str = Field(
+        sa_column=Column(SAEnum(BookingStatusEnum, native_enum=False), index=True),
+        default=BookingStatusEnum.PENDING
+    )
+    
+    # Pricing
+    subtotal_amount: float = Field(default=0.0)
+    discount_amount: float = Field(default=0.0)
+    discount_type: Optional[str] = Field(default=None)  # 'percentage' or 'amount'
+    discount_value: Optional[float] = Field(default=None)  # The discount percentage or amount
+    tax_amount: float = Field(default=0.0)
+    tax_rate: float = Field(default=0.0)  # Tax rate used (e.g., 0.1 for 10%)
+    total_amount: float = Field(default=0.0)
+    currency: str = Field(default="USD")
+    
+    # Payment
+    payment_status: Optional[str] = Field(
+        default=None,
+        sa_column=Column(SAEnum(PaymentStatusEnum, native_enum=False), index=True)
+    )
+    
+    # Reservation
+    reserved_until: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    # Cancellation
+    cancelled_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    cancellation_reason: Optional[str] = Field(default=None)
+    
     version: int = Field(default=0)
     
     created_at: datetime = Field(
@@ -46,15 +83,110 @@ class BookingModel(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
     )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
+    
+    __table_args__ = (
+        Index('ix_bookings_tenant_status', 'tenant_id', 'status'),
+        Index('ix_bookings_tenant_event', 'tenant_id', 'event_id'),
+        Index('ix_bookings_tenant_customer', 'tenant_id', 'customer_id'),
+        Index('ix_bookings_booking_number', 'booking_number', unique=True),
+        Index('ix_bookings_payment_status', 'payment_status'),
+    )
+
+
+class BookingItemModel(SQLModel, table=True):
+    """Booking item database model - represents a ticket line item in a booking"""
+    __tablename__ = "booking_items"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    booking_id: str = Field(index=True, foreign_key="bookings.id")
+    
+    # Ticket/Seat reference
+    event_seat_id: str = Field(index=True, foreign_key="event_seats.id")
+    ticket_id: Optional[str] = Field(default=None, index=True, foreign_key="tickets.id")  # Created after booking
+    
+    # Seat information (cached for reference)
+    section_name: Optional[str] = Field(default=None)
+    row_name: Optional[str] = Field(default=None)
+    seat_number: Optional[str] = Field(default=None)
+    
+    # Pricing
+    unit_price: float = Field(default=0.0)
+    total_price: float = Field(default=0.0)  # Usually same as unit_price for tickets (quantity=1)
+    currency: str = Field(default="USD")
+    
+    # Ticket details (cached)
+    ticket_number: Optional[str] = Field(default=None, index=True)
+    ticket_status: Optional[str] = Field(
         default=None,
+        sa_column=Column(SAEnum(TicketStatusEnum, native_enum=False))
+    )
+    
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
     )
     
     __table_args__ = (
-        Index('ix_bookings_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_bookings_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_bookings_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+        Index('ix_booking_items_booking', 'tenant_id', 'booking_id'),
+        Index('ix_booking_items_event_seat', 'event_seat_id'),
+        Index('ix_booking_items_ticket', 'ticket_id'),
+    )
+
+
+class PaymentModel(SQLModel, table=True):
+    """Payment database model - represents a payment transaction for a booking"""
+    __tablename__ = "payments"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    booking_id: str = Field(index=True, foreign_key="bookings.id")
+    
+    # Payment details
+    amount: float = Field(default=0.0)
+    currency: str = Field(default="USD")
+    payment_method: str = Field(
+        sa_column=Column(SAEnum(PaymentMethodEnum, native_enum=False), index=True)
+    )
+    status: str = Field(
+        sa_column=Column(SAEnum(PaymentStatusEnum, native_enum=False), index=True),
+        default=PaymentStatusEnum.PENDING
+    )
+    
+    # Transaction reference
+    transaction_reference: Optional[str] = Field(default=None, index=True)
+    notes: Optional[str] = Field(default=None)
+    
+    # Processing
+    processed_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_payments_tenant_booking', 'tenant_id', 'booking_id'),
+        Index('ix_payments_tenant_status', 'tenant_id', 'status'),
+        Index('ix_payments_booking', 'booking_id'),
+        Index('ix_payments_transaction_ref', 'transaction_reference'),
     )
 
 

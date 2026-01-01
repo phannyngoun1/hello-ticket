@@ -26,6 +26,36 @@ export interface EventInventoryViewerProps {
   imageUrl?: string;
   isLoading?: boolean;
   className?: string;
+  onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
+  selectedSeatIds?: Set<string>;
+}
+
+// Get color for ticket status (takes priority over event-seat status)
+function getTicketStatusColor(ticketStatus?: string): {
+  fill: string;
+  stroke: string;
+} | null {
+  if (!ticketStatus) return null;
+
+  // Normalize status - handle both enum values and string values
+  const statusUpper = String(ticketStatus).toUpperCase().trim();
+  switch (statusUpper) {
+    case "AVAILABLE":
+      return { fill: "#10b981", stroke: "#059669" }; // green
+    case "RESERVED":
+      return { fill: "#f59e0b", stroke: "#d97706" }; // yellow/orange
+    case "CONFIRMED":
+      return { fill: "#3b82f6", stroke: "#2563eb" }; // blue
+    case "CANCELLED":
+      return { fill: "#ef4444", stroke: "#dc2626" }; // red
+    case "USED":
+      return { fill: "#6b7280", stroke: "#4b5563" }; // gray
+    case "TRANSFERRED":
+      return { fill: "#a855f7", stroke: "#9333ea" }; // purple
+    default:
+      // If ticket status doesn't match, return null to fall back to event-seat status
+      return null;
+  }
 }
 
 // Get color for seat status
@@ -33,33 +63,23 @@ function getSeatStatusColor(status: EventSeatStatus): {
   fill: string;
   stroke: string;
 } {
-  switch (status) {
-    case EventSeatStatusEnum.AVAILABLE:
+  // Normalize status to handle both enum values and string values
+  const statusUpper = String(status).toUpperCase().trim();
+
+  switch (statusUpper) {
+    case "AVAILABLE":
       return { fill: "#10b981", stroke: "#059669" }; // green
-    case EventSeatStatusEnum.RESERVED:
+    case "RESERVED":
       return { fill: "#f59e0b", stroke: "#d97706" }; // yellow
-    case EventSeatStatusEnum.SOLD:
+    case "SOLD":
       return { fill: "#3b82f6", stroke: "#2563eb" }; // blue
-    case EventSeatStatusEnum.HELD:
+    case "HELD":
       return { fill: "#a855f7", stroke: "#9333ea" }; // purple
-    case EventSeatStatusEnum.BLOCKED:
+    case "BLOCKED":
       return { fill: "#ef4444", stroke: "#dc2626" }; // red
     default:
       return { fill: "#9ca3af", stroke: "#6b7280" }; // gray
   }
-}
-
-// Convert percentage coordinates to stage coordinates
-function percentageToStage(
-  x: number,
-  y: number,
-  stageWidth: number,
-  stageHeight: number
-) {
-  return {
-    x: (x / 100) * stageWidth,
-    y: (y / 100) * stageHeight,
-  };
 }
 
 interface SeatMarkerProps {
@@ -69,6 +89,7 @@ interface SeatMarkerProps {
   y: number;
   isHovered: boolean;
   isSpacePressed: boolean;
+  isSelected?: boolean;
   onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: () => void;
@@ -82,26 +103,43 @@ function SeatMarker({
   y,
   isHovered,
   isSpacePressed,
+  isSelected = false,
   onMouseEnter,
   onMouseMove,
   onMouseLeave,
   onClick,
 }: SeatMarkerProps) {
-  // Get colors based on status - use both fill and border to show status
-  const statusColors = eventSeat
-    ? getSeatStatusColor(eventSeat.status)
-    : { fill: "#9ca3af", stroke: "#6b7280" };
+  // Get colors based on ticket status first (takes priority), then event-seat status
+  let statusColors: { fill: string; stroke: string };
+
+  // Check ticket status first (takes priority)
+  if (eventSeat?.ticket_status) {
+    const ticketColors = getTicketStatusColor(eventSeat.ticket_status);
+    if (ticketColors) {
+      statusColors = ticketColors;
+    } else {
+      // Ticket status exists but doesn't match known values, fall back to event-seat status
+      statusColors = getSeatStatusColor(eventSeat.status);
+    }
+  } else if (eventSeat) {
+    // No ticket status, use event-seat status
+    statusColors = getSeatStatusColor(eventSeat.status);
+  } else {
+    // No event seat - use gray
+    statusColors = { fill: "#9ca3af", stroke: "#6b7280" };
+  }
 
   // Use a lighter version of the status color for fill, and darker for border
   // This ensures the status is visible even if borders are hard to see
-  const fillColor = eventSeat ? statusColors.fill : "#f3f4f6";
-  const borderColor = statusColors.stroke;
+  // If selected, use a different color to indicate selection
+  const fillColor = isSelected ? "#3b82f6" : statusColors.fill;
+  const borderColor = isSelected ? "#2563eb" : statusColors.stroke;
 
-  const radius = isHovered ? 12 : 10;
+  const radius = isHovered || isSelected ? 12 : 10;
 
   // Build tooltip text with seat details
   const tooltipText = eventSeat
-    ? `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nStatus: ${eventSeat.status}`
+    ? `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nEvent Seat: ${eventSeat.status}${eventSeat.ticket_status ? `\nTicket: ${eventSeat.ticket_status}` : ""}`
     : `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nNo event seat`;
 
   return (
@@ -162,6 +200,8 @@ export function EventInventoryViewer({
   imageUrl,
   isLoading = false,
   className,
+  onSeatClick,
+  selectedSeatIds = new Set(),
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -661,6 +701,10 @@ export function EventInventoryViewer({
                 }
               }
 
+              const isSelected = Boolean(
+                seat.id && selectedSeatIds.has(seat.id)
+              );
+
               return (
                 <SeatMarker
                   key={seat.id}
@@ -670,6 +714,7 @@ export function EventInventoryViewer({
                   y={y}
                   isHovered={hoveredSeatId === seat.id}
                   isSpacePressed={isSpacePressed}
+                  isSelected={isSelected}
                   onMouseEnter={(e) => {
                     setHoveredSeatId(seat.id);
                     setHoveredSeatData({ seat, eventSeat });
@@ -683,8 +728,12 @@ export function EventInventoryViewer({
                     setHoveredSeatData(null);
                   }}
                   onClick={() => {
-                    // TODO: Open seat detail/edit dialog
-                    console.log("Seat clicked:", seat, eventSeat);
+                    if (onSeatClick) {
+                      onSeatClick(seat.id, eventSeat);
+                    } else {
+                      // TODO: Open seat detail/edit dialog
+                      console.log("Seat clicked:", seat, eventSeat);
+                    }
                   }}
                 />
               );
