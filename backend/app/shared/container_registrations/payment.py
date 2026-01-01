@@ -12,6 +12,7 @@ from app.domain.ticketing.ticket_repositories import TicketRepository
 from app.domain.ticketing.event_seat_repositories import EventSeatRepository
 from app.infrastructure.ticketing.ticket_repository import SQLTicketRepository
 from app.infrastructure.ticketing.event_seat_repository import SQLEventSeatRepository
+from app.domain.shared.repositories import SequenceRepository
 
 
 def register_payment_container(container: Container) -> None:
@@ -38,12 +39,16 @@ def register_payment_container(container: Container) -> None:
         event_seat_repository = SQLEventSeatRepository()
         container.register(EventSeatRepository, instance=event_seat_repository)
     
+    # Get sequence repository
+    sequence_repository = container.resolve(SequenceRepository)
+    
     # Register Payment command handler
     payment_command_handler = PaymentCommandHandler(
         payment_repository=payment_repository,
         booking_repository=booking_repository,
         ticket_repository=ticket_repository,
         event_seat_repository=event_seat_repository,
+        sequence_repository=sequence_repository,
     )
     container.register(PaymentCommandHandler, instance=payment_command_handler)
 

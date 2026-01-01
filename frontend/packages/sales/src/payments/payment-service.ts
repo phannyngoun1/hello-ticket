@@ -48,6 +48,23 @@ export class PaymentService {
   }
 
   /**
+   * Get all payments for the current tenant
+   */
+  async getAllPayments(): Promise<Payment[]> {
+    try {
+      const baseEndpoint = this.endpoints.payments.replace(/\/$/, "");
+      const response = await this.apiClient.get<PaymentListDTO>(
+        baseEndpoint,
+        { requiresAuth: true }
+      );
+      return response.items.map((item) => this.transformPayment(item));
+    } catch (error) {
+      console.error("Error fetching all payments:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Get payments for a booking
    */
   async getPaymentsByBooking(bookingId: string): Promise<Payment[]> {
@@ -65,6 +82,24 @@ export class PaymentService {
   }
 
   /**
+   * Void/cancel a payment
+   */
+  async voidPayment(paymentId: string): Promise<Payment> {
+    try {
+      const baseEndpoint = this.endpoints.payments.replace(/\/$/, "");
+      const response = await this.apiClient.post<PaymentDTO>(
+        `${baseEndpoint}/${paymentId}/cancel`,
+        {},
+        { requiresAuth: true }
+      );
+      return this.transformPayment(response);
+    } catch (error) {
+      console.error(`Error voiding payment ${paymentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Transform API response to domain model
    */
   private transformPayment(dto: PaymentDTO): Payment {
@@ -72,6 +107,7 @@ export class PaymentService {
       id: dto.id,
       tenant_id: dto.tenant_id,
       booking_id: dto.booking_id,
+      payment_code: dto.payment_code || undefined,
       amount: dto.amount,
       currency: dto.currency,
       payment_method: dto.payment_method as PaymentMethod,
@@ -91,6 +127,7 @@ interface PaymentDTO {
   id: string;
   tenant_id: string;
   booking_id: string;
+  payment_code?: string | null;
   amount: number;
   currency: string;
   payment_method: string;

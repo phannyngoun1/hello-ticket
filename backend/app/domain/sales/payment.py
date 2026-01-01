@@ -21,7 +21,8 @@ class Payment(AggregateRoot):
         amount: float,
         payment_method: PaymentMethodEnum,
         payment_id: Optional[str] = None,
-        status: PaymentStatusEnum = PaymentStatusEnum.PENDING,
+        payment_code: Optional[str] = None,
+        status: PaymentStatusEnum = PaymentStatusEnum.COMPLETED,
         currency: str = "USD",
         transaction_reference: Optional[str] = None,
         notes: Optional[str] = None,
@@ -35,6 +36,7 @@ class Payment(AggregateRoot):
         self.id = payment_id or generate_id()
         self.tenant_id = tenant_id
         self.booking_id = booking_id
+        self.payment_code = payment_code
         self.amount = amount
         self.payment_method = payment_method
         self.status = status
@@ -48,43 +50,27 @@ class Payment(AggregateRoot):
         
         self._validate()
     
-    def mark_as_processing(self) -> None:
-        """Mark payment as processing."""
-        if self.status != PaymentStatusEnum.PENDING:
-            raise BusinessRuleError(f"Payment can only be marked as processing from PENDING status (current: {self.status})")
-        self.status = PaymentStatusEnum.PROCESSING
-        self._touch()
-    
     def mark_as_completed(self) -> None:
         """Mark payment as completed."""
-        if self.status not in [PaymentStatusEnum.PENDING, PaymentStatusEnum.PROCESSING]:
-            raise BusinessRuleError(f"Payment can only be completed from PENDING or PROCESSING status (current: {self.status})")
+        if self.status == PaymentStatusEnum.VOID:
+            raise BusinessRuleError("Cannot mark void payment as completed")
         self.status = PaymentStatusEnum.COMPLETED
         self.processed_at = datetime.now(timezone.utc)
         self._touch()
     
-    def mark_as_failed(self) -> None:
-        """Mark payment as failed."""
-        if self.status == PaymentStatusEnum.COMPLETED:
-            raise BusinessRuleError("Cannot mark completed payment as failed")
-        self.status = PaymentStatusEnum.FAILED
-        self._touch()
-    
-    def mark_as_refunded(self) -> None:
-        """Mark payment as refunded."""
+    def void(self) -> None:
+        """Void payment. Can only void completed payments."""
+        if self.status == PaymentStatusEnum.VOID:
+            raise BusinessRuleError("Payment is already void")
         if self.status != PaymentStatusEnum.COMPLETED:
-            raise BusinessRuleError(f"Only completed payments can be refunded (current: {self.status})")
-        self.status = PaymentStatusEnum.REFUNDED
+            raise BusinessRuleError(f"Only completed payments can be voided (current: {self.status})")
+        self.status = PaymentStatusEnum.VOID
         self._touch()
     
+    # Legacy method name - redirects to void()
     def cancel(self) -> None:
-        """Cancel payment."""
-        if self.status == PaymentStatusEnum.COMPLETED:
-            raise BusinessRuleError("Cannot cancel completed payment")
-        if self.status == PaymentStatusEnum.CANCELLED:
-            raise BusinessRuleError("Payment is already cancelled")
-        self.status = PaymentStatusEnum.CANCELLED
-        self._touch()
+        """Cancel/void payment. Alias for void()."""
+        self.void()
     
     def _validate(self) -> None:
         """Validate payment data."""

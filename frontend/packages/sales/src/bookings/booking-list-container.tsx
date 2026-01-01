@@ -17,17 +17,23 @@ import {
 } from "./use-bookings";
 import { useBookingService } from "./booking-provider";
 import { PaymentDialog } from "../payments/payment-dialog";
+import { VoidPaymentsDialog } from "../payments/void-payments-dialog";
 import { useCreatePayment } from "../payments/use-payments";
 import { PaymentService } from "../payments/payment-service";
 import { api } from "@truths/api";
 
 /**
  * Check if a booking status allows payment
- * Payments can only be made for CONFIRMED or RESERVED bookings
+ * Payments can be made for PENDING, RESERVED, or CONFIRMED bookings
+ * (PENDING is allowed for direct agency bookings where payment can be taken immediately)
  */
 function canProcessPayment(status: string): boolean {
   const normalizedStatus = status.toLowerCase().trim();
-  return normalizedStatus === "confirmed" || normalizedStatus === "reserved";
+  return (
+    normalizedStatus === "pending" ||
+    normalizedStatus === "confirmed" ||
+    normalizedStatus === "reserved"
+  );
 }
 
 export interface BookingListContainerProps {
@@ -49,7 +55,9 @@ export function BookingListContainer({
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [voidPaymentDialogOpen, setVoidPaymentDialogOpen] = useState(false);
   const [bookingForPayment, setBookingForPayment] = useState<Booking | null>(null);
+  const [bookingForVoidPayment, setBookingForVoidPayment] = useState<Booking | null>(null);
 
   // Create payment service
   const paymentService = useMemo(
@@ -112,13 +120,18 @@ export function BookingListContainer({
     if (!canProcessPayment(booking.status)) {
       toast({
         title: "Payment Not Allowed",
-        description: `Payments can only be processed for bookings with status CONFIRMED or RESERVED. Current status: ${booking.status.toUpperCase()}`,
+        description: `Payments can only be processed for bookings with status PENDING, CONFIRMED, or RESERVED. Current status: ${booking.status.toUpperCase()}`,
         variant: "destructive",
       });
       return;
     }
     setBookingForPayment(booking);
     setPaymentDialogOpen(true);
+  }, []);
+
+  const handleVoidPayment = useCallback((booking: Booking) => {
+    setBookingForVoidPayment(booking);
+    setVoidPaymentDialogOpen(true);
   }, []);
 
   const handlePaymentSubmit = useCallback(
@@ -198,6 +211,7 @@ export function BookingListContainer({
         onBookingClick={handleNavigateToBooking}
         onCancel={handleCancel}
         onPayment={handlePayment}
+        onVoidPayment={handleVoidPayment}
         onCreate={handleCreate}
         onSearch={handleSearch}
         pagination={serverPagination}
@@ -227,6 +241,17 @@ export function BookingListContainer({
         onSubmit={handlePaymentSubmit}
         booking={bookingForPayment}
         isLoading={createPaymentMutation.isPending}
+      />
+
+      <VoidPaymentsDialog
+        open={voidPaymentDialogOpen && !!bookingForVoidPayment}
+        onOpenChange={(open) => {
+          setVoidPaymentDialogOpen(open);
+          if (!open) {
+            setBookingForVoidPayment(null);
+          }
+        }}
+        booking={bookingForVoidPayment}
       />
     </>
   );

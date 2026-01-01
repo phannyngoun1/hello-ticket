@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
-from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum, BookingStatusEnum, PaymentStatusEnum, PaymentMethodEnum
+from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum, BookingStatusEnum, BookingPaymentStatusEnum, PaymentStatusEnum, PaymentMethodEnum
 # Create separate metadata for operational models to avoid mixing with platform models
 operational_metadata = MetaData()
 
@@ -57,8 +57,9 @@ class BookingModel(SQLModel, table=True):
     # Payment
     payment_status: Optional[str] = Field(
         default=None,
-        sa_column=Column(SAEnum(PaymentStatusEnum, native_enum=False), index=True)
+        sa_column=Column(SAEnum(BookingPaymentStatusEnum, native_enum=False), nullable=True, index=True)
     )
+    due_balance: float = Field(default=0.0)  # Remaining balance to be paid
     
     # Reservation
     reserved_until: Optional[datetime] = Field(
@@ -120,7 +121,7 @@ class BookingItemModel(SQLModel, table=True):
     ticket_number: Optional[str] = Field(default=None, index=True)
     ticket_status: Optional[str] = Field(
         default=None,
-        sa_column=Column(SAEnum(TicketStatusEnum, native_enum=False))
+        sa_column=Column(SAEnum(TicketStatusEnum, native_enum=False), nullable=True)
     )
     
     version: int = Field(default=0)
@@ -149,6 +150,7 @@ class PaymentModel(SQLModel, table=True):
     id: str = Field(primary_key=True, default_factory=generate_id)
     tenant_id: str = Field(index=True)
     booking_id: str = Field(index=True, foreign_key="bookings.id")
+    payment_code: Optional[str] = Field(default=None, index=True)
     
     # Payment details
     amount: float = Field(default=0.0)
@@ -158,7 +160,7 @@ class PaymentModel(SQLModel, table=True):
     )
     status: str = Field(
         sa_column=Column(SAEnum(PaymentStatusEnum, native_enum=False), index=True),
-        default=PaymentStatusEnum.PENDING
+        default=PaymentStatusEnum.COMPLETED
     )
     
     # Transaction reference

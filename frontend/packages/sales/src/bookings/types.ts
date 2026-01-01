@@ -38,7 +38,8 @@ export interface Booking {
     tax_rate: number;
     total_amount: number;
     currency: string;
-    payment_status?: string; // 'pending' | 'processing' | 'completed' | 'failed' | 'refunded'
+    payment_status?: string; // 'pending' | 'processing' | 'paid' | 'failed' | 'refunded'
+    due_balance: number; // Remaining balance to be paid
     reserved_until?: Date;
     cancelled_at?: Date;
     cancellation_reason?: string;

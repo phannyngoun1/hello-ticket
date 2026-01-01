@@ -20,6 +20,7 @@ class PaymentResponse(BaseModel):
     id: str
     tenant_id: str
     booking_id: str
+    payment_code: Optional[str] = None
     amount: float
     currency: str
     payment_method: str
