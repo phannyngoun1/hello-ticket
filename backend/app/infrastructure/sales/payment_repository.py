@@ -35,6 +35,7 @@ class SQLPaymentRepository(PaymentRepository):
             payment_id=model.id,  # payment_id parameter maps to id in Payment.__init__
             tenant_id=model.tenant_id,
             booking_id=model.booking_id,
+            payment_code=model.payment_code,
             amount=model.amount,
             payment_method=PaymentMethodEnum(model.payment_method),
             status=PaymentStatusEnum(model.status),
@@ -53,6 +54,7 @@ class SQLPaymentRepository(PaymentRepository):
             id=payment.id,
             tenant_id=payment.tenant_id,
             booking_id=payment.booking_id,
+            payment_code=payment.payment_code,
             amount=payment.amount,
             payment_method=payment.payment_method.value,
             status=payment.status.value,

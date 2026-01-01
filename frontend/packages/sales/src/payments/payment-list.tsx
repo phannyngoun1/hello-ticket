@@ -44,7 +44,7 @@ export function PaymentList({
   const density = useDensityStyles();
 
   const getDisplayName = (payment: Payment) => {
-    return payment.id.slice(0, 8).toUpperCase();
+    return payment.payment_code || payment.id.slice(0, 8).toUpperCase();
   };
 
   const getInitials = (value: string | undefined) => {
@@ -84,8 +84,8 @@ export function PaymentList({
   const columns: ColumnDef<Payment>[] = [
     createIdentifiedColumn<Payment>({
       getDisplayName,
-      getInitials: (item) => getInitials(item.id),
-      header: "Payment ID",
+      getInitials: (item) => getInitials(item.payment_code || item.id),
+      header: "Payment Code",
       showAvatar: false,
       onClick: onPaymentClick,
       additionalOptions: {
@@ -172,7 +172,8 @@ export function PaymentList({
         columns={columns}
         loading={loading}
         error={error}
-        pagination={tablePagination}
+        manualPagination={false}
+        serverPagination={tablePagination}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         onSearch={onSearch}

@@ -4,7 +4,7 @@ Booking mapper - handles conversion between domain entities and database models
 from typing import Optional, List
 from app.domain.sales.booking import Booking, BookingItem
 from app.infrastructure.shared.database.models import BookingModel, BookingItemModel
-from app.shared.enums import BookingStatusEnum, PaymentStatusEnum
+from app.shared.enums import BookingStatusEnum, BookingPaymentStatusEnum
 
 
 class BookingMapper:
@@ -42,7 +42,7 @@ class BookingMapper:
         
         # Convert status enums
         status = BookingStatusEnum(booking_model.status) if booking_model.status else BookingStatusEnum.PENDING
-        payment_status = PaymentStatusEnum(booking_model.payment_status) if booking_model.payment_status else None
+        payment_status = BookingPaymentStatusEnum(booking_model.payment_status) if booking_model.payment_status else None
         
         return Booking(
             tenant_id=booking_model.tenant_id,
@@ -61,6 +61,7 @@ class BookingMapper:
             total_amount=booking_model.total_amount,
             currency=booking_model.currency,
             payment_status=payment_status,
+            due_balance=booking_model.due_balance,
             reserved_until=booking_model.reserved_until,
             cancelled_at=booking_model.cancelled_at,
             cancellation_reason=booking_model.cancellation_reason,
@@ -94,7 +95,8 @@ class BookingMapper:
             tax_rate=booking.tax_rate,
             total_amount=booking.total_amount,
             currency=booking.currency,
-            payment_status=booking.payment_status.value if booking.payment_status and isinstance(booking.payment_status, PaymentStatusEnum) else booking.payment_status,
+            payment_status=booking.payment_status.value if booking.payment_status and isinstance(booking.payment_status, BookingPaymentStatusEnum) else booking.payment_status,
+            due_balance=booking.due_balance,
             reserved_until=booking.reserved_until,
             cancelled_at=booking.cancelled_at,
             cancellation_reason=booking.cancellation_reason,

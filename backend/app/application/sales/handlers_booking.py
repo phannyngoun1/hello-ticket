@@ -177,8 +177,8 @@ class BookingCommandHandler:
 
         # Update payment status if provided
         if command.payment_status is not None:
-            from app.shared.enums import PaymentStatusEnum
-            booking.payment_status = PaymentStatusEnum(command.payment_status)
+            from app.shared.enums import BookingPaymentStatusEnum
+            booking.payment_status = BookingPaymentStatusEnum(command.payment_status)
 
         saved = await self._booking_repository.save(booking)
         

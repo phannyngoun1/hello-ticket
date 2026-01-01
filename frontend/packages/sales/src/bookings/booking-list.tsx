@@ -6,7 +6,7 @@
 
 import React, { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { X, DollarSign } from "lucide-react";
+import { X, DollarSign, Ban } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
@@ -32,11 +32,84 @@ import type { Booking } from "./types";
 
 /**
  * Check if a booking status allows payment
- * Payments can only be made for CONFIRMED or RESERVED bookings
+ * Payments can be made for PENDING, RESERVED, or CONFIRMED bookings
+ * (PENDING is allowed for direct agency bookings where payment can be taken immediately)
  */
 function canProcessPayment(status: string): boolean {
   const normalizedStatus = status.toLowerCase().trim();
-  return normalizedStatus === "confirmed" || normalizedStatus === "reserved";
+  return (
+    normalizedStatus === "pending" ||
+    normalizedStatus === "confirmed" ||
+    normalizedStatus === "reserved"
+  );
+}
+
+/**
+ * Check if a booking can be cancelled
+ * Only pending bookings without payments can be cancelled
+ */
+function canCancelBooking(booking: Booking): boolean {
+  const normalizedStatus = booking.status.toLowerCase().trim();
+  if (normalizedStatus !== "pending") {
+    return false;
+  }
+  // Check if booking has any payments (partial or full)
+  // payment_status will be "processing" (partial) or "completed" (full) if payments exist
+  const paymentStatus = booking.payment_status?.toLowerCase().trim();
+  // Only allow cancellation if payment_status is "pending" or undefined/null (no payments)
+  return !paymentStatus || paymentStatus === "pending";
+}
+
+/**
+ * Get cancellation reason message
+ */
+function getCancellationReason(booking: Booking): string {
+  const normalizedStatus = booking.status.toLowerCase().trim();
+  if (normalizedStatus === "cancelled") {
+    return "Booking is already cancelled";
+  }
+  if (normalizedStatus !== "pending") {
+    return `Only pending bookings can be cancelled. Current status: ${booking.status.toUpperCase()}`;
+  }
+  const paymentStatus = booking.payment_status?.toLowerCase().trim();
+  if (paymentStatus && paymentStatus !== "pending") {
+    return `Cannot cancel booking with payments. Payment status: ${booking.payment_status?.toUpperCase()}`;
+  }
+  return "Cancel";
+}
+
+/**
+ * Check if a booking has voidable payments
+ * Payments can be voided if booking has payment_status of 'processing' or 'completed'
+ * and booking is not cancelled
+ */
+function canVoidPayment(booking: Booking): boolean {
+  const normalizedStatus = booking.status.toLowerCase().trim();
+  // Cannot void payments for cancelled bookings
+  if (normalizedStatus === "cancelled") {
+    return false;
+  }
+  const paymentStatus = booking.payment_status?.toLowerCase().trim();
+  // Can void if payment_status indicates payments exist (processing or completed)
+  return paymentStatus === "processing" || paymentStatus === "paid";
+}
+
+/**
+ * Get void payment reason message
+ */
+function getVoidPaymentReason(booking: Booking): string {
+  const normalizedStatus = booking.status.toLowerCase().trim();
+  if (normalizedStatus === "cancelled") {
+    return "Cannot void payments for cancelled bookings";
+  }
+  const paymentStatus = booking.payment_status?.toLowerCase().trim();
+  if (!paymentStatus || paymentStatus === "pending") {
+    return "No payments to void";
+  }
+  if (paymentStatus === "refunded") {
+    return "Payments are already refunded";
+  }
+  return "Void Payment";
 }
 
 export interface BookingListProps {
@@ -48,6 +121,7 @@ export interface BookingListProps {
   onBookingClick?: (booking: Booking) => void;
   onCancel?: (booking: Booking, cancellationReason: string) => void;
   onPayment?: (booking: Booking) => void;
+  onVoidPayment?: (booking: Booking) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
@@ -64,6 +138,7 @@ export function BookingList({
   onBookingClick,
   onCancel,
   onPayment,
+  onVoidPayment,
   onCreate,
   onSearch,
   onPageChange,
@@ -167,13 +242,30 @@ export function BookingList({
               {
                 icon: DollarSign,
                 onClick: (booking: Booking) => onPayment(booking),
-                title: (booking: Booking) =>
-                  canProcessPayment(booking.status)
+                title: (booking: Booking) => {
+                  if (booking.payment_status === "paid") {
+                    return "Booking is fully paid";
+                  }
+                  return canProcessPayment(booking.status)
                     ? "Settle Payment"
-                    : `Payment not allowed for status: ${booking.status.toUpperCase()}`,
-                disabledWhen: (booking: Booking) => !canProcessPayment(booking.status),
+                    : `Payment not allowed for status: ${booking.status.toUpperCase()}`;
+                },
+                disabledWhen: (booking: Booking) => 
+                  !canProcessPayment(booking.status) || booking.payment_status === "paid",
                 className:
                   "h-7 w-7 p-0 hover:bg-green-500/10 hover:text-green-600 transition-colors",
+              },
+            ]
+          : []),
+        ...(onVoidPayment
+          ? [
+              {
+                icon: Ban,
+                onClick: (booking: Booking) => onVoidPayment(booking),
+                title: (booking: Booking) => getVoidPaymentReason(booking),
+                disabledWhen: (booking: Booking) => !canVoidPayment(booking),
+                className:
+                  "h-7 w-7 p-0 hover:bg-orange-500/10 hover:text-orange-600 transition-colors",
               },
             ]
           : []),
@@ -186,16 +278,8 @@ export function BookingList({
                   setCancellationReason("");
                   setCancelDialogOpen(true);
                 },
-                title: (booking: Booking) => {
-                  if (booking.status === "cancelled") return "Booking is already cancelled";
-                  if (booking.status === "confirmed") return "Confirmed bookings cannot be cancelled";
-                  if (booking.status === "refunded") return "Refunded bookings cannot be cancelled";
-                  return "Cancel";
-                },
-                disabledWhen: (booking: Booking) => 
-                  booking.status === "cancelled" || 
-                  booking.status === "confirmed" || 
-                  booking.status === "refunded",
+                title: (booking: Booking) => getCancellationReason(booking),
+                disabledWhen: (booking: Booking) => !canCancelBooking(booking),
                 className:
                   "h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors",
               },
@@ -230,9 +314,9 @@ export function BookingList({
     if (!selectedBooking) {
       return;
     }
-    // Validate booking status before canceling
-    if (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") {
-      return; // Don't proceed if booking is already cancelled, confirmed, or refunded
+    // Validate booking can be cancelled
+    if (!canCancelBooking(selectedBooking)) {
+      return; // Don't proceed if booking cannot be cancelled
     }
     if (onCancel) {
       onCancel(selectedBooking, cancellationReason.trim());
@@ -270,9 +354,9 @@ export function BookingList({
           <DialogHeader>
             <DialogTitle>Cancel Booking</DialogTitle>
             <DialogDescription>
-              {selectedBooking && (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") ? (
+              {selectedBooking && !canCancelBooking(selectedBooking) ? (
                 <span className="text-destructive">
-                  This booking cannot be cancelled. Status: {selectedBooking.status.toUpperCase()}
+                  This booking cannot be cancelled. {getCancellationReason(selectedBooking)}
                 </span>
               ) : selectedBooking ? (
                 `Are you sure you want to cancel booking "${getDisplayName(selectedBooking)}"? Please provide a reason for cancellation.`
@@ -281,7 +365,7 @@ export function BookingList({
               )}
             </DialogDescription>
           </DialogHeader>
-          {selectedBooking && (selectedBooking.status === "cancelled" || selectedBooking.status === "confirmed" || selectedBooking.status === "refunded") ? (
+          {selectedBooking && !canCancelBooking(selectedBooking) ? (
             <DialogFooter>
               <Button variant="outline" onClick={handleCancelDialogCancel}>
                 Close

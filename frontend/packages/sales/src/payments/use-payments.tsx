@@ -31,3 +31,17 @@ export function usePaymentsByBooking(service: PaymentService, bookingId: string 
   });
 }
 
+export function useVoidPayment(service: PaymentService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<Payment, Error, string>({
+    mutationFn: (paymentId) => service.voidPayment(paymentId),
+    onSuccess: (data) => {
+      // Invalidate bookings to refresh payment status
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      // Invalidate payments for this booking
+      queryClient.invalidateQueries({ queryKey: ["payments", "booking", data.booking_id] });
+    },
+  });
+}
+

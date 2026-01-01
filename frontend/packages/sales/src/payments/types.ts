@@ -2,7 +2,7 @@
  * Payment Types
  */
 
-export type PaymentMethod = 
+export type PaymentMethod =
   | "credit_card"
   | "debit_card"
   | "paypal"
@@ -10,18 +10,15 @@ export type PaymentMethod =
   | "cash"
   | "other";
 
-export type PaymentStatus = 
-  | "pending"
-  | "processing"
+export type PaymentStatus =
   | "completed"
-  | "failed"
-  | "refunded"
-  | "cancelled";
+  | "void";
 
 export interface Payment {
   id: string;
   tenant_id: string;
   booking_id: string;
+  payment_code?: string;
   amount: number;
   currency: string;
   payment_method: PaymentMethod;

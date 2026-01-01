@@ -359,13 +359,9 @@ class VehicleStatusEnum(str, Enum):
 # ============================================================================
 
 class PaymentStatusEnum(str, Enum):
-    """Payment processing status"""
-    PENDING = "pending"
-    PROCESSING = "processing"
+    """Payment processing status - only COMPLETED and VOID are supported"""
     COMPLETED = "completed"
-    FAILED = "failed"
-    REFUNDED = "refunded"
-    CANCELLED = "cancelled"
+    VOID = "void"
 
 
 class PaymentMethodEnum(str, Enum):
@@ -436,13 +432,16 @@ class BookingStatusEnum(str, Enum):
     REFUNDED = "refunded"
 
 
-class PaymentStatusEnum(str, Enum):
-    """Payment status enumeration"""
+class BookingPaymentStatusEnum(str, Enum):
+    """Booking payment status enumeration - tracks overall payment status of a booking"""
     PENDING = "pending"
     PROCESSING = "processing"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    PAID = "paid"
     REFUNDED = "refunded"
+    CANCELLED = "cancelled"
+
+
+# PaymentStatusEnum already defined above - removed duplicate
 
 
 class PaymentMethodEnum(str, Enum):

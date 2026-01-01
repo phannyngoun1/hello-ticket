@@ -33,14 +33,12 @@ export function PaymentListContainer({
     []
   );
 
-  // For now, we'll need to fetch all payments
+  // Fetch all payments
   // TODO: Add pagination support to the backend API
   const { data: payments = [], isLoading, error } = useQuery({
     queryKey: ["payments", "all"],
     queryFn: async () => {
-      // Since we don't have a list endpoint yet, we'll return empty for now
-      // This can be enhanced when backend supports payment listing
-      return [];
+      return paymentService.getAllPayments();
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -65,6 +63,16 @@ export function PaymentListContainer({
     [onNavigateToPayment]
   );
 
+  // Calculate pagination with total and totalPages
+  const paginationWithTotal = useMemo(() => {
+    const total = payments.length;
+    return {
+      ...pagination,
+      total,
+      totalPages: Math.ceil(total / pagination.pageSize),
+    };
+  }, [pagination, payments.length]);
+
   return (
     <PaymentList
       payments={payments}
@@ -72,7 +80,7 @@ export function PaymentListContainer({
       error={error as Error | null}
       onPaymentClick={handleNavigateToPayment}
       onSearch={handleSearch}
-      pagination={pagination}
+      pagination={paginationWithTotal}
       onPageChange={handlePageChange}
       onPageSizeChange={handlePageSizeChange}
     />

@@ -37,6 +37,7 @@ interface BookingDTO {
   total_amount: number;
   currency: string;
   payment_status?: string;
+  due_balance: number;
   reserved_until?: string;
   cancelled_at?: string;
   cancellation_reason?: string;
@@ -64,6 +65,7 @@ function transformBooking(dto: BookingDTO): Booking {
     total_amount: dto.total_amount,
     currency: dto.currency,
     payment_status: dto.payment_status,
+    due_balance: dto.due_balance,
     reserved_until: dto.reserved_until ? new Date(dto.reserved_until) : undefined,
     cancelled_at: dto.cancelled_at ? new Date(dto.cancelled_at) : undefined,
     cancellation_reason: dto.cancellation_reason,

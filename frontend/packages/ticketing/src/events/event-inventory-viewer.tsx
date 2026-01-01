@@ -131,9 +131,9 @@ function SeatMarker({
 
   // Use a lighter version of the status color for fill, and darker for border
   // This ensures the status is visible even if borders are hard to see
-  // If selected, use a different color to indicate selection
-  const fillColor = isSelected ? "#3b82f6" : statusColors.fill;
-  const borderColor = isSelected ? "#2563eb" : statusColors.stroke;
+  // If selected, use a different color (cyan/teal) to indicate selection (distinct from sold/blue)
+  const fillColor = isSelected ? "#06b6d4" : statusColors.fill;
+  const borderColor = isSelected ? "#0891b2" : statusColors.stroke;
 
   const radius = isHovered || isSelected ? 12 : 10;
 

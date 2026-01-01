@@ -13,3 +13,9 @@ class CreatePaymentCommand:
     transaction_reference: str | None = None
     notes: str | None = None
 
+
+@dataclass
+class CancelPaymentCommand:
+    """Command to cancel/void a payment"""
+    payment_id: str
+

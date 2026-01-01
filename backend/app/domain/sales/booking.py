@@ -8,7 +8,7 @@ from decimal import Decimal
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
 from app.shared.utils import generate_id
-from app.shared.enums import BookingStatusEnum, PaymentStatusEnum
+from app.shared.enums import BookingStatusEnum, BookingPaymentStatusEnum
 
 
 class BookingItem:
@@ -61,7 +61,8 @@ class Booking(AggregateRoot):
         tax_rate: float = 0.0,
         total_amount: Optional[float] = None,
         currency: str = "USD",
-        payment_status: Optional[PaymentStatusEnum] = None,
+        payment_status: Optional[BookingPaymentStatusEnum] = None,
+        due_balance: Optional[float] = None,
         reserved_until: Optional[datetime] = None,
         cancelled_at: Optional[datetime] = None,
         cancellation_reason: Optional[str] = None,
@@ -105,6 +106,8 @@ class Booking(AggregateRoot):
         
         # Payment
         self.payment_status = payment_status
+        # Due balance defaults to total_amount if not provided (for new bookings with no payments)
+        self.due_balance = due_balance if due_balance is not None else self.total_amount
         
         # Reservation
         self.reserved_until = reserved_until or (now + timedelta(minutes=15))  # Default 15 min reservation
@@ -183,25 +186,30 @@ class Booking(AggregateRoot):
     
     def mark_as_paid(self) -> None:
         """Mark booking as paid. Payment details are handled by a separate payment table."""
-        if self.status not in [BookingStatusEnum.CONFIRMED, BookingStatusEnum.RESERVED]:
-            raise BusinessRuleError("Booking must be confirmed or reserved before payment")
+        # Allow payment for PENDING (direct agency bookings), RESERVED, or CONFIRMED statuses
+        if self.status not in [BookingStatusEnum.PENDING, BookingStatusEnum.CONFIRMED, BookingStatusEnum.RESERVED]:
+            raise BusinessRuleError("Booking must be pending, confirmed, or reserved before payment")
         
         self.status = BookingStatusEnum.PAID
-        self.payment_status = PaymentStatusEnum.COMPLETED
+        self.payment_status = BookingPaymentStatusEnum.PAID
         self.reserved_until = None  # Clear reservation timeout
         
         self._touch()
     
     def cancel(self, reason: Optional[str] = None) -> None:
-        """Cancel the booking."""
-        if self.status == BookingStatusEnum.PAID:
-            raise BusinessRuleError("Paid bookings cannot be cancelled directly. Use refund instead.")
+        """Cancel the booking. Only pending bookings without payments can be cancelled."""
         if self.status == BookingStatusEnum.CANCELLED:
             raise BusinessRuleError("Booking is already cancelled.")
-        if self.status == BookingStatusEnum.CONFIRMED:
-            raise BusinessRuleError("Confirmed bookings cannot be cancelled.")
-        if self.status == BookingStatusEnum.REFUNDED:
-            raise BusinessRuleError("Refunded bookings cannot be cancelled.")
+        if self.status != BookingStatusEnum.PENDING:
+            raise BusinessRuleError(f"Only pending bookings can be cancelled. Current status: {self.status.value}")
+        
+        # Check if booking has any payments (partial or full)
+        # payment_status will be PROCESSING (partial) or PAID (full) if payments exist
+        if self.payment_status and self.payment_status != BookingPaymentStatusEnum.PENDING:
+            raise BusinessRuleError(
+                f"Cannot cancel booking with payments. Booking has payment status: {self.payment_status.value}. "
+                f"Only bookings without payments (pending payment status) can be cancelled."
+            )
         
         self.status = BookingStatusEnum.CANCELLED
         self.cancelled_at = datetime.now(timezone.utc)
@@ -216,7 +224,7 @@ class Booking(AggregateRoot):
             raise BusinessRuleError("Only paid bookings can be refunded")
         
         self.status = BookingStatusEnum.REFUNDED
-        self.payment_status = PaymentStatusEnum.REFUNDED
+        self.payment_status = BookingPaymentStatusEnum.REFUNDED
         self.cancelled_at = datetime.now(timezone.utc)
         self.cancellation_reason = reason
         self.reserved_until = None
@@ -271,6 +279,7 @@ class Booking(AggregateRoot):
         amount_after_discount = self.subtotal_amount - self.discount_amount
         self.tax_amount = amount_after_discount * self.tax_rate
         self.total_amount = amount_after_discount + self.tax_amount
+        # Note: due_balance should be updated separately when payments are made
     
     def _validate(self) -> None:
         """Validate booking transaction data and business rules."""
