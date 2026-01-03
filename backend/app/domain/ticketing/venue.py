@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
@@ -18,7 +18,22 @@ class Venue(AggregateRoot):
         code: str,
         name: str,
         venue_id: Optional[str] = None,
+        description: Optional[str] = None,
         image_url: Optional[str] = None,
+        venue_type: Optional[str] = None,
+        capacity: Optional[int] = None,
+        parking_info: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        amenities: Optional[List[str]] = None,
+        opening_hours: Optional[str] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+        website: Optional[str] = None,
+        street_address: Optional[str] = None,
+        city: Optional[str] = None,
+        state_province: Optional[str] = None,
+        postal_code: Optional[str] = None,
+        country: Optional[str] = None,
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
         created_at: Optional[datetime] = None,
@@ -32,7 +47,22 @@ class Venue(AggregateRoot):
         self.tenant_id = tenant_id
         self.code = self._validate_code(code) if code else None
         self.name = self._validate_name(name)
+        self.description = description
         self.image_url = image_url
+        self.venue_type = venue_type
+        self.capacity = capacity
+        self.parking_info = parking_info
+        self.accessibility = accessibility
+        self.amenities = amenities or []
+        self.opening_hours = opening_hours
+        self.phone = phone
+        self.email = email
+        self.website = website
+        self.street_address = street_address
+        self.city = city
+        self.state_province = state_province
+        self.postal_code = postal_code
+        self.country = country
 
         self.is_active = is_active
         self.attributes = attributes or {}
@@ -48,15 +78,60 @@ class Venue(AggregateRoot):
         *,
         code: Optional[str] = None,
         name: Optional[str] = None,
+        description: Optional[str] = None,
         image_url: Optional[str] = None,
+        venue_type: Optional[str] = None,
+        capacity: Optional[int] = None,
+        parking_info: Optional[str] = None,
+        accessibility: Optional[str] = None,
+        amenities: Optional[List[str]] = None,
+        opening_hours: Optional[str] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+        website: Optional[str] = None,
+        street_address: Optional[str] = None,
+        city: Optional[str] = None,
+        state_province: Optional[str] = None,
+        postal_code: Optional[str] = None,
+        country: Optional[str] = None,
     ) -> None:
         """Update venue master data with validation."""
         if code is not None:
             self.code = self._validate_code(code)
         if name is not None:
             self.name = self._validate_name(name)
+        if description is not None:
+            self.description = description
         if image_url is not None:
             self.image_url = image_url
+        if venue_type is not None:
+            self.venue_type = venue_type
+        if capacity is not None:
+            self.capacity = capacity
+        if parking_info is not None:
+            self.parking_info = parking_info
+        if accessibility is not None:
+            self.accessibility = accessibility
+        if amenities is not None:
+            self.amenities = amenities
+        if opening_hours is not None:
+            self.opening_hours = opening_hours
+        if phone is not None:
+            self.phone = phone
+        if email is not None:
+            self.email = email
+        if website is not None:
+            self.website = website
+        if street_address is not None:
+            self.street_address = street_address
+        if city is not None:
+            self.city = city
+        if state_province is not None:
+            self.state_province = state_province
+        if postal_code is not None:
+            self.postal_code = postal_code
+        if country is not None:
+            self.country = country
 
         self._validate()
         self._touch()

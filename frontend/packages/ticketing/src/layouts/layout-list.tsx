@@ -4,17 +4,24 @@
  * Displays a list of layouts for a venue with ability to add new layouts
  */
 
-import React, { useState } from "react";
-import { Button, Card, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Label } from "@truths/ui";
-import { Plus, Edit, Trash2, MapPin } from "lucide-react";
+import { useState } from "react";
 import {
-  useLayoutsByVenue,
-  useCreateLayout,
-  useDeleteLayout,
-} from "./use-layouts";
+  Button,
+  Card,
+  Item,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
+  Badge,
+} from "@truths/ui";
+import { Edit, Trash2, MapPin, LayoutGrid, Loader2 } from "lucide-react";
+import { useLayoutsByVenue, useDeleteLayout } from "./use-layouts";
 import { useLayoutService } from "./layout-provider";
 import type { Layout } from "./types";
 import { ConfirmationDialog } from "@truths/custom-ui";
+import { cn } from "@truths/ui/lib/utils";
 
 export interface LayoutListProps {
   venueId: string;
@@ -34,30 +41,9 @@ export function LayoutList({
     isLoading,
     error,
   } = useLayoutsByVenue(service, venueId);
-  const createMutation = useCreateLayout(service);
   const deleteMutation = useDeleteLayout(service);
-  const [isCreating, setIsCreating] = useState(false);
-  const [newLayoutName, setNewLayoutName] = useState("");
-  const [newLayoutDesignMode, setNewLayoutDesignMode] = useState<"seat-level" | "section-level">("seat-level");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [layoutToDelete, setLayoutToDelete] = useState<string | null>(null);
-
-  const handleCreate = async () => {
-    if (!newLayoutName.trim()) return;
-
-    try {
-      await createMutation.mutateAsync({
-        venue_id: venueId,
-        name: newLayoutName.trim(),
-        design_mode: newLayoutDesignMode,
-      });
-      setNewLayoutName("");
-      setNewLayoutDesignMode("seat-level");
-      setIsCreating(false);
-    } catch (error) {
-      console.error("Failed to create layout:", error);
-    }
-  };
 
   const handleDelete = async (layoutId: string) => {
     setLayoutToDelete(layoutId);
@@ -77,187 +63,161 @@ export function LayoutList({
     }
   };
 
+  const getDesignModeLabel = (mode?: string) => {
+    if (mode === "seat-level") return "Seat Level";
+    if (mode === "section-level") return "Section Level";
+    return "Not Set";
+  };
+
   if (isLoading) {
-    return <div className="p-4 text-muted-foreground">Loading layouts...</div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading layouts...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-destructive">
-        Error loading layouts:{" "}
-        {error instanceof Error ? error.message : "Unknown error"}
-      </div>
+      <Card className="p-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="rounded-full bg-destructive/10 p-3">
+            <MapPin className="h-5 w-5 text-destructive" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-destructive">
+              Error loading layouts
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {error instanceof Error ? error.message : "Unknown error"}
+            </p>
+          </div>
+        </div>
+      </Card>
     );
   }
 
   return (
     <>
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Layouts</h3>
-        {!isCreating && (
-          <Button
-            onClick={() => setIsCreating(true)}
-            size="sm"
-            variant="outline"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Layout
-          </Button>
+      <div className="space-y-3">
+        {!layouts || layouts.length === 0 ? (
+          <Card className="p-12">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="rounded-full bg-muted p-4">
+                <LayoutGrid className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground mb-1">
+                  No layouts yet
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Click "Add Layout" in the header to create your first layout
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {layouts.map((layout) => (
+              <Item
+                key={layout.id}
+                className={cn("group", !layout.is_active && "opacity-60")}
+              >
+                <ItemMedia>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <LayoutGrid className="h-5 w-5 text-primary" />
+                  </div>
+                </ItemMedia>
+                <ItemContent className="min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <ItemTitle className="flex items-center gap-2">
+                        <span className="truncate">{layout.name}</span>
+                        {layout.design_mode && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs shrink-0"
+                          >
+                            {getDesignModeLabel(layout.design_mode)}
+                          </Badge>
+                        )}
+                        {!layout.is_active && (
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            Inactive
+                          </Badge>
+                        )}
+                      </ItemTitle>
+                      {layout.description && (
+                        <ItemDescription className="line-clamp-2">
+                          {layout.description}
+                        </ItemDescription>
+                      )}
+                      {!layout.description && (
+                        <ItemDescription className="text-xs">
+                          Created{" "}
+                          {new Date(layout.created_at).toLocaleDateString()}
+                        </ItemDescription>
+                      )}
+                    </div>
+                  </div>
+                </ItemContent>
+                <ItemActions>
+                  {onNavigateToDesigner && (
+                    <Button
+                      onClick={() => onNavigateToDesigner(layout.id)}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      title="Design layout"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onEdit && (
+                    <Button
+                      onClick={() => onEdit(layout)}
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      title="Edit layout"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    onClick={() => handleDelete(layout.id)}
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    title="Delete layout"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </ItemActions>
+              </Item>
+            ))}
+          </div>
         )}
       </div>
 
-      {isCreating && (
-        <Card className="p-4">
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="layout-name" className="text-sm font-medium mb-1.5 block">
-                  Layout Name
-                </Label>
-                <input
-                  id="layout-name"
-                  type="text"
-                  placeholder="Layout name"
-                  value={newLayoutName}
-                  onChange={(e) => setNewLayoutName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleCreate();
-                    } else if (e.key === "Escape") {
-                      setIsCreating(false);
-                      setNewLayoutName("");
-                      setNewLayoutDesignMode("seat-level");
-                    }
-                  }}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="design-mode" className="text-sm font-medium mb-1.5 block">
-                  Design Mode
-                </Label>
-                <Select value={newLayoutDesignMode} onValueChange={(v) => setNewLayoutDesignMode(v as "seat-level" | "section-level")}>
-                  <SelectTrigger id="design-mode" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seat-level">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">Seat Level</span>
-                        <span className="text-xs text-muted-foreground">Place seats directly on venue floor plan</span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="section-level">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">Section Level</span>
-                        <span className="text-xs text-muted-foreground">Define sections first, then add seats to each section</span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <p className="text-xs text-muted-foreground">
-              Design mode cannot be changed after seats are added
-            </p>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCreate}
-                size="sm"
-                disabled={!newLayoutName.trim()}
-              >
-                Create
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsCreating(false);
-                  setNewLayoutName("");
-                  setNewLayoutDesignMode("seat-level");
-                }}
-                size="sm"
-                variant="outline"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {!layouts || layouts.length === 0 ? (
-        <Card className="p-8 text-center text-muted-foreground">
-          <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No layouts yet. Click "Add Layout" to create one.</p>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {layouts.map((layout) => (
-            <Card key={layout.id} className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-semibold mb-1">{layout.name}</h4>
-                  {layout.description && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {layout.description}
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-3">
-                    {onNavigateToDesigner && (
-                      <Button
-                        onClick={() => onNavigateToDesigner(layout.id)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <MapPin className="h-3 w-3 mr-1" />
-                        Design
-                      </Button>
-                    )}
-                    {onEdit && (
-                      <Button
-                        onClick={() => onEdit(layout)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => handleDelete(layout.id)}
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-
-    <ConfirmationDialog
-      open={deleteConfirmOpen}
-      onOpenChange={setDeleteConfirmOpen}
-      title="Delete Layout"
-      description="Are you sure you want to delete this layout? This action cannot be undone and will remove all associated seats."
-      confirmAction={{
-        label: "Delete",
-        variant: "destructive",
-        onClick: handleConfirmDelete,
-        loading: deleteMutation.isPending,
-      }}
-      cancelAction={{
-        label: "Cancel",
-      }}
-    />
-  </>
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Layout"
+        description="Are you sure you want to delete this layout? This action cannot be undone and will remove all associated seats."
+        confirmAction={{
+          label: "Delete",
+          variant: "destructive",
+          onClick: handleConfirmDelete,
+          loading: deleteMutation.isPending,
+        }}
+        cancelAction={{
+          label: "Cancel",
+        }}
+      />
+    </>
   );
 }

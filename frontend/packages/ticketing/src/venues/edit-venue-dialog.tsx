@@ -38,15 +38,22 @@ export function EditVenueDialog({
   const defaultValues = useMemo(() => {
     if (!venue) return undefined;
     return {
-
-
-      code: venue.code ?? "",
-
-
-
       name: venue.name ?? "",
-
-
+      description: venue.description ?? "",
+      venue_type: venue.venue_type ?? "",
+      capacity: venue.capacity ?? undefined,
+      parking_info: venue.parking_info ?? "",
+      accessibility: venue.accessibility ?? "",
+      amenities: venue.amenities?.join(", ") ?? "",
+      opening_hours: venue.opening_hours ?? "",
+      phone: venue.phone ?? "",
+      email: venue.email ?? "",
+      website: venue.website ?? "",
+      street_address: venue.street_address ?? "",
+      city: venue.city ?? "",
+      state_province: venue.state_province ?? "",
+      postal_code: venue.postal_code ?? "",
+      country: venue.country ?? "",
     };
   }, [venue]);
 
@@ -69,15 +76,23 @@ export function EditVenueDialog({
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
     return (data: VenueFormData): UpdateVenueInput => ({
-
-
       code: undefined,
-
-
-
       name: data.name,
-
-
+      description: data.description || undefined,
+      venue_type: data.venue_type || undefined,
+      capacity: data.capacity || undefined,
+      parking_info: data.parking_info || undefined,
+      accessibility: data.accessibility || undefined,
+      amenities: data.amenities && data.amenities.length > 0 ? data.amenities : undefined,
+      opening_hours: data.opening_hours || undefined,
+      phone: data.phone || undefined,
+      email: data.email || undefined,
+      website: data.website || undefined,
+      street_address: data.street_address || undefined,
+      city: data.city || undefined,
+      state_province: data.state_province || undefined,
+      postal_code: data.postal_code || undefined,
+      country: data.country || undefined,
     });
   }, []);
 

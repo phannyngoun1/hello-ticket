@@ -50,7 +50,22 @@ class VenueCommandHandler:
             tenant_id=tenant_id,
             code=code_value,
             name=command.name,
-
+            description=command.description,
+            image_url=command.image_url,
+            venue_type=command.venue_type,
+            capacity=command.capacity,
+            parking_info=command.parking_info,
+            accessibility=command.accessibility,
+            amenities=command.amenities,
+            opening_hours=command.opening_hours,
+            phone=command.phone,
+            email=command.email,
+            website=command.website,
+            street_address=command.street_address,
+            city=command.city,
+            state_province=command.state_province,
+            postal_code=command.postal_code,
+            country=command.country,
         )
 
         saved = await self._venue_repository.save(venue)
@@ -74,8 +89,38 @@ class VenueCommandHandler:
             update_kwargs['code'] = command.code
         if command.name is not None:
             update_kwargs['name'] = command.name
+        if command.description is not None:
+            update_kwargs['description'] = command.description
         if command.image_url is not None:
             update_kwargs['image_url'] = command.image_url
+        if command.venue_type is not None:
+            update_kwargs['venue_type'] = command.venue_type
+        if command.capacity is not None:
+            update_kwargs['capacity'] = command.capacity
+        if command.parking_info is not None:
+            update_kwargs['parking_info'] = command.parking_info
+        if command.accessibility is not None:
+            update_kwargs['accessibility'] = command.accessibility
+        if command.amenities is not None:
+            update_kwargs['amenities'] = command.amenities
+        if command.opening_hours is not None:
+            update_kwargs['opening_hours'] = command.opening_hours
+        if command.phone is not None:
+            update_kwargs['phone'] = command.phone
+        if command.email is not None:
+            update_kwargs['email'] = command.email
+        if command.website is not None:
+            update_kwargs['website'] = command.website
+        if command.street_address is not None:
+            update_kwargs['street_address'] = command.street_address
+        if command.city is not None:
+            update_kwargs['city'] = command.city
+        if command.state_province is not None:
+            update_kwargs['state_province'] = command.state_province
+        if command.postal_code is not None:
+            update_kwargs['postal_code'] = command.postal_code
+        if command.country is not None:
+            update_kwargs['country'] = command.country
         venue.update_details(**update_kwargs)
 
         saved = await self._venue_repository.save(venue)
