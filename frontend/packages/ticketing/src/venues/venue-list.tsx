@@ -6,12 +6,11 @@
 
 import React, { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Phone, Mail, MapPin } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
   ConfirmationDialog,
-  createActionsColumn,
   createIdentifiedColumn,
   createTextColumn,
   createDateTimeColumn,
@@ -80,11 +79,22 @@ export function VenueList({
       },
     }),
 
-
-    
     createTextColumn<Venue>({
       accessorKey: "name",
       header: "Name",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("font-medium", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Venue>({
+      accessorKey: "venue_type",
+      header: "Type",
       cell: (info) => {
         const value = info.getValue() as string | null | undefined;
         return (
@@ -94,38 +104,96 @@ export function VenueList({
         );
       },
     }),
-    
 
+    createTextColumn<Venue>({
+      accessorKey: "phone",
+      header: "Phone",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <div className="flex items-center gap-2">
+            {value ? (
+              <>
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className={cn("text-muted-foreground", density.textSize)}>
+                  {value}
+                </span>
+              </>
+            ) : (
+              <span className={cn("text-muted-foreground", density.textSize)}>
+                -
+              </span>
+            )}
+          </div>
+        );
+      },
+    }),
 
-    createActionsColumn<Venue>({
-      customActions,
-      actions: [
-        ...(onEdit
-          ? [
-              {
-                icon: Edit,
-                onClick: (venue: Venue) => onEdit(venue),
-                title: "Edit",
-                className:
-                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
-              },
-            ]
-          : []),
-        ...(onDelete
-          ? [
-              {
-                icon: Trash2,
-                onClick: (venue: Venue) => {
-                  setSelectedVenue(venue);
-                  setDeleteConfirmOpen(true);
-                },
-                title: "Delete",
-                className:
-                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
-              },
-            ]
-          : []),
-      ],
+    createTextColumn<Venue>({
+      accessorKey: "email",
+      header: "Email",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <div className="flex items-center gap-2">
+            {value ? (
+              <>
+                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className={cn("text-muted-foreground", density.textSize)}>
+                  {value}
+                </span>
+              </>
+            ) : (
+              <span className={cn("text-muted-foreground", density.textSize)}>
+                -
+              </span>
+            )}
+          </div>
+        );
+      },
+    }),
+
+    createTextColumn<Venue>({
+      accessorKey: "city",
+      header: "Location",
+      cell: (info) => {
+        const venue = info.row.original;
+        const city = venue.city;
+        const state = venue.state_province;
+        const country = venue.country;
+        const location = [city, state, country].filter(Boolean).join(", ");
+        return (
+          <div className="flex items-center gap-2">
+            {location ? (
+              <>
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className={cn("text-muted-foreground", density.textSize)}>
+                  {location}
+                </span>
+              </>
+            ) : (
+              <span className={cn("text-muted-foreground", density.textSize)}>
+                -
+              </span>
+            )}
+          </div>
+        );
+      },
+    }),
+
+    createDateTimeColumn<Venue>({
+      accessorKey: "created_at",
+      header: "Created",
+      cell: (info) => {
+        const value = info.getValue() as Date | string | null | undefined;
+        if (!value) return <span className={cn("text-muted-foreground", density.textSize)}>-</span>;
+        const date = value instanceof Date ? value : new Date(value);
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {date.toLocaleDateString()}
+          </span>
+        );
+      },
     }),
   ];
 

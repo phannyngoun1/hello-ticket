@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid } from "lucide-react";
+import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon, Layers, Grid3x3, Users } from "lucide-react";
 import { Venue } from "./types";
 import { LayoutList, useLayoutService, useCreateLayout, useLayoutsByVenue } from "../layouts";
 
@@ -60,7 +60,7 @@ export function VenueDetail({
 
   customActions,
 }: VenueDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "seats" | "metadata">(
+  const [activeTab, setActiveTab] = useState<"seats" | "details" | "contact" | "address" | "metadata">(
     "seats"
   );
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -179,6 +179,38 @@ export function VenueDetail({
             </div>
           </div>
 
+          {/* Statistics - middle */}
+          <div className="flex items-center gap-4 flex-1 justify-center">
+            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                <LayoutGrid className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Layouts</span>
+                <span className="text-lg font-bold">{layouts?.length ?? 0}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                <Layers className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Sections</span>
+                <span className="text-lg font-bold">-</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">Seats</span>
+                <span className="text-lg font-bold">-</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               {customActions?.(data)}
@@ -222,6 +254,7 @@ export function VenueDetail({
           </div>
         </div>
 
+
         {/* Tabs */}
         <Tabs
           value={activeTab}
@@ -246,15 +279,43 @@ export function VenueDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
+                  activeTab === "details"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => setActiveTab("profile")}
+                onClick={() => setActiveTab("details")}
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Information
+                  Details
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "contact"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("contact")}
+              >
+                <span className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Contact
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "address"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("address")}
+              >
+                <span className="flex items-center gap-2">
+                  <MapPinIcon className="h-4 w-4" />
+                  Address
                 </span>
               </button>
               {hasMetadata && (
@@ -277,12 +338,12 @@ export function VenueDetail({
           </div>
 
           <div className="mt-0">
-            {/* Information Tab */}
-            {activeTab === "profile" && (
+            {/* Details Tab */}
+            {activeTab === "details" && (
               <div className="space-y-6">
                 {/* Description */}
                 {data.description && (
-                  <div>
+                  <div className="bg-muted/50 rounded-lg p-4">
                     <h3 className="mb-2 text-sm font-medium text-muted-foreground uppercase tracking-wider">
                       Description
                     </h3>
@@ -292,98 +353,69 @@ export function VenueDetail({
                   </div>
                 )}
 
-                {/* Statistics */}
-                <div>
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Statistics
-                  </h3>
-                  <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <dt className="text-sm font-medium">Layouts</dt>
-                      <dd className="mt-1 text-2xl font-semibold">
-                        {layouts?.length ?? 0}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium">Sections</dt>
-                      <dd className="mt-1 text-2xl font-semibold">
-                        {/* TODO: Calculate from layouts when sections data is available */}
-                        -
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium">Seats</dt>
-                      <dd className="mt-1 text-2xl font-semibold">
-                        {/* TODO: Calculate from layouts when seats data is available */}
-                        -
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Venue Details
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Venue Information
                     </h3>
-                    <dl className="space-y-3">
+                    <dl className="space-y-4">
                       {data.venue_type && (
                         <div>
-                          <dt className="text-sm font-medium">Venue Type</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
+                          <dt className="text-sm font-medium mb-1">Venue Type</dt>
+                          <dd className="text-sm text-muted-foreground">
                             {formatFieldValue(data.venue_type)}
                           </dd>
                         </div>
                       )}
                       {data.capacity && (
                         <div>
-                          <dt className="text-sm font-medium">Capacity</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
+                          <dt className="text-sm font-medium mb-1">Capacity</dt>
+                          <dd className="text-sm text-muted-foreground">
                             {data.capacity.toLocaleString()} seats
+                          </dd>
+                        </div>
+                      )}
+                      {data.opening_hours && (
+                        <div>
+                          <dt className="text-sm font-medium mb-1">Opening Hours</dt>
+                          <dd className="text-sm text-muted-foreground whitespace-pre-line">
+                            {formatFieldValue(data.opening_hours)}
                           </dd>
                         </div>
                       )}
                     </dl>
                   </div>
 
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Facilities
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Facilities & Amenities
                     </h3>
-                    <dl className="space-y-3">
+                    <dl className="space-y-4">
                       {data.parking_info && (
                         <div>
-                          <dt className="text-sm font-medium">Parking</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
+                          <dt className="text-sm font-medium mb-1">Parking</dt>
+                          <dd className="text-sm text-muted-foreground">
                             {formatFieldValue(data.parking_info)}
                           </dd>
                         </div>
                       )}
                       {data.accessibility && (
                         <div>
-                          <dt className="text-sm font-medium">Accessibility</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
+                          <dt className="text-sm font-medium mb-1">Accessibility</dt>
+                          <dd className="text-sm text-muted-foreground">
                             {formatFieldValue(data.accessibility)}
                           </dd>
                         </div>
                       )}
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Additional Information
-                    </h3>
-                    <dl className="space-y-3">
                       {data.amenities && data.amenities.length > 0 && (
                         <div>
-                          <dt className="text-sm font-medium">Amenities</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <div className="flex flex-wrap gap-1">
+                          <dt className="text-sm font-medium mb-2">Amenities</dt>
+                          <dd className="text-sm text-muted-foreground">
+                            <div className="flex flex-wrap gap-2">
                               {data.amenities.map((amenity, index) => (
                                 <span
                                   key={index}
-                                  className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium"
+                                  className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
                                 >
                                   {amenity}
                                 </span>
@@ -392,111 +424,132 @@ export function VenueDetail({
                           </dd>
                         </div>
                       )}
-                      {data.opening_hours && (
-                        <div>
-                          <dt className="text-sm font-medium">Opening Hours</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground whitespace-pre-line">
-                            {formatFieldValue(data.opening_hours)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Contact Information
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.phone && (
-                        <div>
-                          <dt className="text-sm font-medium">Phone</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <a href={`tel:${data.phone}`} className="hover:underline">
-                              {data.phone}
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                      {data.email && (
-                        <div>
-                          <dt className="text-sm font-medium">Email</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <a href={`mailto:${data.email}`} className="hover:underline">
-                              {data.email}
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                      {data.website && (
-                        <div>
-                          <dt className="text-sm font-medium">Website</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <a href={data.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                              {data.website}
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Address
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.street_address && (
-                        <div>
-                          <dt className="text-sm font-medium">Street</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {data.street_address}
-                          </dd>
-                        </div>
-                      )}
-                      {(data.city || data.state_province || data.postal_code) && (
-                        <div>
-                          <dt className="text-sm font-medium">City, State, ZIP</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {[data.city, data.state_province, data.postal_code].filter(Boolean).join(", ")}
-                          </dd>
-                        </div>
-                      )}
-                      {data.country && (
-                        <div>
-                          <dt className="text-sm font-medium">Country</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {data.country}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Timeline
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.created_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Created</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.created_at)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.updated_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Last Updated</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.updated_at)}
-                          </dd>
-                        </div>
-                      )}
                     </dl>
                   </div>
                 </div>
+
+                {/* Timeline */}
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                    Timeline
+                  </h3>
+                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {data.created_at && (
+                      <div>
+                        <dt className="text-sm font-medium mb-1">Created</dt>
+                        <dd className="text-sm text-muted-foreground">
+                          {formatDate(data.created_at)}
+                        </dd>
+                      </div>
+                    )}
+                    {data.updated_at && (
+                      <div>
+                        <dt className="text-sm font-medium mb-1">Last Updated</dt>
+                        <dd className="text-sm text-muted-foreground">
+                          {formatDate(data.updated_at)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              </div>
+            )}
+
+            {/* Contact Tab */}
+            {activeTab === "contact" && (
+              <div className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {(data.phone || data.email || data.website) ? (
+                    <>
+                      {data.phone && (
+                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                          <Phone className="h-5 w-5 text-primary mt-0.5" />
+                          <div className="flex-1">
+                            <dt className="text-sm font-medium mb-1">Phone</dt>
+                            <dd className="text-sm">
+                              <a href={`tel:${data.phone}`} className="text-primary hover:underline">
+                                {data.phone}
+                              </a>
+                            </dd>
+                          </div>
+                        </div>
+                      )}
+                      {data.email && (
+                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                          <Mail className="h-5 w-5 text-primary mt-0.5" />
+                          <div className="flex-1">
+                            <dt className="text-sm font-medium mb-1">Email</dt>
+                            <dd className="text-sm">
+                              <a href={`mailto:${data.email}`} className="text-primary hover:underline">
+                                {data.email}
+                              </a>
+                            </dd>
+                          </div>
+                        </div>
+                      )}
+                      {data.website && (
+                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg md:col-span-2">
+                          <Globe className="h-5 w-5 text-primary mt-0.5" />
+                          <div className="flex-1">
+                            <dt className="text-sm font-medium mb-1">Website</dt>
+                            <dd className="text-sm">
+                              <a href={data.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                                {data.website}
+                              </a>
+                            </dd>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="col-span-2 text-center py-8 text-muted-foreground">
+                      No contact information available
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Address Tab */}
+            {activeTab === "address" && (
+              <div className="space-y-6">
+                {(data.street_address || data.city || data.state_province || data.postal_code || data.country) ? (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+                      <MapPinIcon className="h-5 w-5 text-primary mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        {data.street_address && (
+                          <div>
+                            <dt className="text-sm font-medium mb-1">Street Address</dt>
+                            <dd className="text-sm text-muted-foreground">
+                              {data.street_address}
+                            </dd>
+                          </div>
+                        )}
+                        {(data.city || data.state_province || data.postal_code) && (
+                          <div>
+                            <dt className="text-sm font-medium mb-1">City, State, ZIP</dt>
+                            <dd className="text-sm text-muted-foreground">
+                              {[data.city, data.state_province, data.postal_code].filter(Boolean).join(", ")}
+                            </dd>
+                          </div>
+                        )}
+                        {data.country && (
+                          <div>
+                            <dt className="text-sm font-medium mb-1">Country</dt>
+                            <dd className="text-sm text-muted-foreground">
+                              {data.country}
+                            </dd>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No address information available
+                  </div>
+                )}
               </div>
             )}
 

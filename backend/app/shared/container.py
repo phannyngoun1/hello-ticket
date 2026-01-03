@@ -33,6 +33,7 @@ from app.shared.container_registrations.event import register_event_container, r
 from app.shared.container_registrations.event_seat import register_event_seat_container, register_event_seat_mediator
 from app.shared.container_registrations.tag import register_tag_container, register_tag_mediator
 from app.shared.container_registrations.attachment import register_attachment_container, register_attachment_mediator
+from app.shared.container_registrations.venue_type import register_venue_type_container, register_venue_type_mediator
 def setup_container() -> Container:
     """Set up dependency injection container"""
     container = Container()
@@ -95,6 +96,9 @@ def setup_container() -> Container:
     #event-seats
     register_event_seat_container(container)
 
+    #venue types
+    register_venue_type_container(container)
+
     return container
 
 def setup_mediator(container: Container) -> Mediator:
@@ -129,6 +133,7 @@ def setup_mediator(container: Container) -> Mediator:
     register_show_mediator(mediator)
     register_event_mediator(mediator)
     register_event_seat_mediator(mediator)
+    register_venue_type_mediator(mediator)
     return mediator
 
 

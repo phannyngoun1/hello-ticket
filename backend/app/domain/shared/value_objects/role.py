@@ -125,6 +125,12 @@ class Permission(str, Enum):
     VIEW_TICKETING_EVENT = "ticketing_event:view"
     MANAGE_TICKETING_EVENT = "ticketing_event:manage"
 
+    # Ticketing - Venue Types permissions
+    CREATE_TICKETING_VENUE_TYPE = "ticketing_venue_type:create"
+    VIEW_TICKETING_VENUE_TYPE = "ticketing_venue_type:view"
+    MANAGE_TICKETING_VENUE_TYPE = "ticketing_venue_type:manage"
+
+
 # Role to permissions mapping
 ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.ADMIN: {
@@ -181,6 +187,9 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
 
         # Ticketing - Events
         Permission.CREATE_TICKETING_EVENT, Permission.VIEW_TICKETING_EVENT, Permission.MANAGE_TICKETING_EVENT,
+
+        # Ticketing - Venue Types
+        Permission.CREATE_TICKETING_VENUE_TYPE, Permission.VIEW_TICKETING_VENUE_TYPE, Permission.MANAGE_TICKETING_VENUE_TYPE,
 
     },
     UserRole.MANAGER: {

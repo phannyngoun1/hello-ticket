@@ -36,3 +36,4 @@ import { registerTicketingComponent } from './registry';
 
 // Component registrations will go here
 export * from './event-types';
+export * from './venue-types';
