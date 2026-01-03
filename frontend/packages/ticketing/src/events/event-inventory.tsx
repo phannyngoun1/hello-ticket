@@ -522,6 +522,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           sections={layoutWithSeats.sections}
           existingEventSeats={eventSeats}
           loading={initializeSeatsMutation.isPending}
+          designMode={layoutWithSeats.layout.design_mode}
         />
       )}
 

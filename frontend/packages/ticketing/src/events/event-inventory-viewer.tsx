@@ -5,10 +5,11 @@
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { Stage, Layer, Image, Circle, Group, Text, Rect } from "react-konva";
+import { Stage, Layer, Image, Circle, Group, Text } from "react-konva";
 import Konva from "konva";
 import { createPortal } from "react-dom";
 import { cn } from "@truths/ui/lib/utils";
+import { ArrowLeft } from "lucide-react";
 import { ZoomControls } from "../seats/seat-designer/components/zoom-controls";
 import type { Layout } from "../layouts/types";
 import type { Section } from "../layouts/types";
@@ -96,6 +97,21 @@ interface SeatMarkerProps {
   onClick: () => void;
 }
 
+interface SectionMarkerProps {
+  section: Section;
+  x: number;
+  y: number;
+  isHovered: boolean;
+  isSpacePressed: boolean;
+  totalSeats: number;
+  eventSeatCount: number;
+  statusCounts: Record<string, number>;
+  onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+  onMouseLeave: () => void;
+  onClick: () => void;
+}
+
 function SeatMarker({
   seat,
   eventSeat,
@@ -136,11 +152,6 @@ function SeatMarker({
   const borderColor = isSelected ? "#0891b2" : statusColors.stroke;
 
   const radius = isHovered || isSelected ? 12 : 10;
-
-  // Build tooltip text with seat details
-  const tooltipText = eventSeat
-    ? `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nEvent Seat: ${eventSeat.status}${eventSeat.ticket_status ? `\nTicket: ${eventSeat.ticket_status}` : ""}`
-    : `${seat.section_name || ""} ${seat.row} ${seat.seat_number}\nNo event seat`;
 
   return (
     <Group
@@ -190,6 +201,128 @@ function SeatMarker({
   );
 }
 
+function SectionMarker({
+  section,
+  x,
+  y,
+  isHovered,
+  isSpacePressed,
+  eventSeatCount,
+  statusCounts,
+  onMouseEnter,
+  onMouseMove,
+  onMouseLeave,
+  onClick,
+}: SectionMarkerProps) {
+  const textRef = useRef<Konva.Text>(null);
+  const groupRef = useRef<Konva.Group>(null);
+  const [isHoveredState, setIsHoveredState] = useState(false);
+
+  // Determine section status color based on event seats
+  // Priority: SOLD > RESERVED > HELD > BLOCKED > AVAILABLE
+  let statusColor = { fill: "#9ca3af", stroke: "#6b7280" }; // gray (no event seats)
+  if (eventSeatCount > 0) {
+    if (statusCounts["SOLD"] > 0) {
+      statusColor = { fill: "#3b82f6", stroke: "#2563eb" }; // blue
+    } else if (statusCounts["RESERVED"] > 0) {
+      statusColor = { fill: "#f59e0b", stroke: "#d97706" }; // yellow
+    } else if (statusCounts["HELD"] > 0) {
+      statusColor = { fill: "#a855f7", stroke: "#9333ea" }; // purple
+    } else if (statusCounts["BLOCKED"] > 0) {
+      statusColor = { fill: "#ef4444", stroke: "#dc2626" }; // red
+    } else if (statusCounts["AVAILABLE"] > 0) {
+      statusColor = { fill: "#10b981", stroke: "#059669" }; // green
+    }
+  }
+
+  // Animate border on hover
+  useEffect(() => {
+    const text = textRef.current;
+    if (!text) return;
+
+    const hoverStrokeColor =
+      isHovered || isHoveredState ? statusColor.stroke : statusColor.stroke;
+    const hoverStrokeWidth = isHovered || isHoveredState ? 3 : 2;
+
+    text.to({
+      backgroundStroke: hoverStrokeColor,
+      backgroundStrokeWidth: hoverStrokeWidth,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+  }, [isHovered, isHoveredState, statusColor]);
+
+  return (
+    <Group
+      ref={groupRef}
+      x={x}
+      y={y}
+      onMouseEnter={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor = "pointer";
+        }
+        setIsHoveredState(true);
+        onMouseEnter(e);
+      }}
+      onMouseMove={(e) => {
+        if (onMouseMove) {
+          onMouseMove(e);
+        }
+      }}
+      onMouseLeave={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor = isSpacePressed ? "grabbing" : "default";
+        }
+        setIsHoveredState(false);
+        onMouseLeave();
+      }}
+      onClick={(e) => {
+        e.cancelBubble = true;
+        onClick();
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        onClick();
+      }}
+      onMouseDown={(e) => {
+        e.cancelBubble = true;
+      }}
+    >
+      <Text
+        ref={textRef}
+        text={section.name}
+        fontSize={14}
+        fontFamily="Arial"
+        fill="#1e40af"
+        padding={8}
+        align="center"
+        verticalAlign="middle"
+        backgroundFill={statusColor.fill}
+        backgroundStroke={statusColor.stroke}
+        backgroundStrokeWidth={isHovered || isHoveredState ? 3 : 2}
+        cornerRadius={4}
+        x={-30}
+        y={-10}
+        shadowBlur={2}
+        shadowColor="rgba(0,0,0,0.2)"
+      />
+      {(isHovered || isHoveredState) && (
+        <Circle
+          radius={18}
+          fill="transparent"
+          stroke={statusColor.stroke}
+          strokeWidth={2}
+          opacity={0.5}
+          x={0}
+          y={0}
+        />
+      )}
+    </Group>
+  );
+}
+
 export function EventInventoryViewer({
   layout,
   layoutSeats,
@@ -226,6 +359,16 @@ export function EventInventoryViewer({
     seat: Seat;
     eventSeat?: EventSeat;
   } | null>(null);
+  const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null);
+  const [hoveredSectionData, setHoveredSectionData] = useState<{
+    section: Section;
+    seatCount: number;
+    eventSeatCount: number;
+    statusSummary: Record<string, number>;
+  } | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null
+  );
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -238,9 +381,97 @@ export function EventInventoryViewer({
     return map;
   }, [sections]);
 
+  // Calculate section statistics for section-level layouts
+  const sectionStats = useMemo(() => {
+    if (layout.design_mode !== "section-level") return new Map();
+
+    const stats = new Map<
+      string,
+      {
+        section: Section;
+        totalSeats: number;
+        eventSeats: EventSeat[];
+        statusCounts: Record<string, number>;
+        eventSeatCount: number;
+      }
+    >();
+
+    sections.forEach((section) => {
+      // Get all seats in this section
+      const sectionSeats = layoutSeats.filter(
+        (seat) => seat.section_id === section.id
+      );
+
+      // Get all event seats for this section
+      const sectionEventSeats: EventSeat[] = [];
+      sectionSeats.forEach((seat) => {
+        // Try by seat_id
+        if (seat.id && seatStatusMap.has(seat.id)) {
+          sectionEventSeats.push(seatStatusMap.get(seat.id)!);
+        } else if (seat.row && seat.seat_number) {
+          // Try by location
+          const sectionName = section.name;
+          const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
+          const eventSeat = locationStatusMap.get(key);
+          if (eventSeat) {
+            sectionEventSeats.push(eventSeat);
+          }
+        }
+      });
+
+      // Count statuses
+      const statusCounts: Record<string, number> = {};
+      sectionEventSeats.forEach((eventSeat) => {
+        const status = eventSeat.status;
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      });
+
+      stats.set(section.id, {
+        section,
+        totalSeats: sectionSeats.length,
+        eventSeats: sectionEventSeats,
+        statusCounts,
+        eventSeatCount: sectionEventSeats.length,
+      });
+    });
+
+    return stats;
+  }, [
+    layout.design_mode,
+    sections,
+    layoutSeats,
+    seatStatusMap,
+    locationStatusMap,
+    sectionNameMap,
+  ]);
+
+  // Get selected section for drill-down
+  const selectedSection = useMemo(() => {
+    if (!selectedSectionId) return null;
+    return sections.find((s) => s.id === selectedSectionId) || null;
+  }, [selectedSectionId, sections]);
+
+  // Get image URL - use section image if in drill-down mode, otherwise use layout image
+  const displayImageUrl = useMemo(() => {
+    if (selectedSection?.image_url) {
+      return selectedSection.image_url;
+    }
+    return imageUrl;
+  }, [selectedSection, imageUrl]);
+
+  // Filter seats by selected section when in drill-down mode
+  const displayedSeats = useMemo(() => {
+    if (layout.design_mode === "section-level" && selectedSectionId) {
+      return layoutSeats.filter(
+        (seat) => seat.section_id === selectedSectionId
+      );
+    }
+    return layoutSeats;
+  }, [layout.design_mode, selectedSectionId, layoutSeats]);
+
   // Load image
   useEffect(() => {
-    if (!imageUrl) {
+    if (!displayImageUrl) {
       setImage(null);
       setImageLoaded(false);
       return;
@@ -256,8 +487,8 @@ export function EventInventoryViewer({
       setImage(null);
       setImageLoaded(false);
     };
-    img.src = imageUrl;
-  }, [imageUrl]);
+    img.src = displayImageUrl;
+  }, [displayImageUrl]);
 
   // Update container size
   useEffect(() => {
@@ -326,6 +557,12 @@ export function EventInventoryViewer({
   }, []);
 
   const handleResetZoom = useCallback(() => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  const handleBackToSections = useCallback(() => {
+    setSelectedSectionId(null);
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
   }, []);
@@ -672,75 +909,147 @@ export function EventInventoryViewer({
               listening={true}
             />
 
-            {/* Seats */}
-            {layoutSeats.map((seat) => {
-              if (!seat.x_coordinate || !seat.y_coordinate) return null;
+            {/* Render sections for section-level layouts, seats for seat-level layouts */}
+            {layout.design_mode === "section-level" && !selectedSectionId
+              ? // Section-level: Display sections (when not in drill-down mode)
+                sections.map((section) => {
+                  const stats = sectionStats.get(section.id);
+                  if (!stats) return null;
 
-              // Convert percentage coordinates to stage coordinates using same logic as layout designer
-              const { x, y } = percentageToStage(
-                seat.x_coordinate,
-                seat.y_coordinate
-              );
+                  // Use section coordinates if available, otherwise skip
+                  if (!section.x_coordinate || !section.y_coordinate)
+                    return null;
 
-              // Find event seat by seat_id or location
-              let eventSeat: EventSeat | undefined;
-              // First try by seat_id (most reliable)
-              if (seat.id && seatStatusMap.has(seat.id)) {
-                eventSeat = seatStatusMap.get(seat.id);
-              }
-              // Fallback to location-based matching (for broker imports or when seat_id is missing)
-              if (!eventSeat && seat.row && seat.seat_number) {
-                // Try location-based matching with section name
-                const sectionName =
-                  seat.section_name || sectionNameMap.get(seat.section_id);
-                if (sectionName) {
-                  // Try with seat.row (layout seat uses 'row') - event seats use row_name
-                  // The backend should set row_name to match row when initializing from layout
-                  const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
-                  eventSeat = locationStatusMap.get(key);
-                }
-              }
+                  const { x, y } = percentageToStage(
+                    section.x_coordinate,
+                    section.y_coordinate
+                  );
 
-              const isSelected = Boolean(
-                seat.id && selectedSeatIds.has(seat.id)
-              );
+                  return (
+                    <SectionMarker
+                      key={section.id}
+                      section={section}
+                      x={x}
+                      y={y}
+                      isHovered={hoveredSectionId === section.id}
+                      isSpacePressed={isSpacePressed}
+                      totalSeats={stats.totalSeats}
+                      eventSeatCount={stats.eventSeatCount}
+                      statusCounts={stats.statusCounts}
+                      onMouseEnter={(e) => {
+                        setHoveredSectionId(section.id);
+                        setHoveredSectionData({
+                          section,
+                          seatCount: stats.totalSeats,
+                          eventSeatCount: stats.eventSeats.length,
+                          statusSummary: stats.statusCounts,
+                        });
+                        updatePopoverPosition(e);
+                      }}
+                      onMouseMove={updatePopoverPosition}
+                      onMouseLeave={() => {
+                        setHoveredSectionId(null);
+                        setHoveredSeatPosition(null);
+                        setHoveredSectionData(null);
+                      }}
+                      onClick={() => {
+                        // Drill down to show seats in this section
+                        setSelectedSectionId(section.id);
+                        setZoomLevel(1);
+                        setPanOffset({ x: 0, y: 0 });
+                      }}
+                    />
+                  );
+                })
+              : // Seat-level or section drill-down: Display individual seats
+                displayedSeats.map((seat) => {
+                  if (!seat.x_coordinate || !seat.y_coordinate) return null;
 
-              return (
-                <SeatMarker
-                  key={seat.id}
-                  seat={seat}
-                  eventSeat={eventSeat}
-                  x={x}
-                  y={y}
-                  isHovered={hoveredSeatId === seat.id}
-                  isSpacePressed={isSpacePressed}
-                  isSelected={isSelected}
-                  onMouseEnter={(e) => {
-                    setHoveredSeatId(seat.id);
-                    setHoveredSeatData({ seat, eventSeat });
-                    // Calculate position immediately
-                    updatePopoverPosition(e);
-                  }}
-                  onMouseMove={updatePopoverPosition}
-                  onMouseLeave={() => {
-                    setHoveredSeatId(null);
-                    setHoveredSeatPosition(null);
-                    setHoveredSeatData(null);
-                  }}
-                  onClick={() => {
-                    if (onSeatClick) {
-                      onSeatClick(seat.id, eventSeat);
-                    } else {
-                      // TODO: Open seat detail/edit dialog
-                      console.log("Seat clicked:", seat, eventSeat);
+                  // Convert percentage coordinates to stage coordinates using same logic as layout designer
+                  const { x, y } = percentageToStage(
+                    seat.x_coordinate,
+                    seat.y_coordinate
+                  );
+
+                  // Find event seat by seat_id or location
+                  let eventSeat: EventSeat | undefined;
+                  // First try by seat_id (most reliable)
+                  if (seat.id && seatStatusMap.has(seat.id)) {
+                    eventSeat = seatStatusMap.get(seat.id);
+                  }
+                  // Fallback to location-based matching (for broker imports or when seat_id is missing)
+                  if (!eventSeat && seat.row && seat.seat_number) {
+                    // Try location-based matching with section name
+                    const sectionName =
+                      seat.section_name || sectionNameMap.get(seat.section_id);
+                    if (sectionName) {
+                      // Try with seat.row (layout seat uses 'row') - event seats use row_name
+                      // The backend should set row_name to match row when initializing from layout
+                      const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
+                      eventSeat = locationStatusMap.get(key);
                     }
-                  }}
-                />
-              );
-            })}
+                  }
+
+                  const isSelected = Boolean(
+                    seat.id && selectedSeatIds.has(seat.id)
+                  );
+
+                  return (
+                    <SeatMarker
+                      key={seat.id}
+                      seat={seat}
+                      eventSeat={eventSeat}
+                      x={x}
+                      y={y}
+                      isHovered={hoveredSeatId === seat.id}
+                      isSpacePressed={isSpacePressed}
+                      isSelected={isSelected}
+                      onMouseEnter={(e) => {
+                        setHoveredSeatId(seat.id);
+                        setHoveredSeatData({ seat, eventSeat });
+                        // Calculate position immediately
+                        updatePopoverPosition(e);
+                      }}
+                      onMouseMove={updatePopoverPosition}
+                      onMouseLeave={() => {
+                        setHoveredSeatId(null);
+                        setHoveredSeatPosition(null);
+                        setHoveredSeatData(null);
+                      }}
+                      onClick={() => {
+                        if (onSeatClick) {
+                          onSeatClick(seat.id, eventSeat);
+                        } else {
+                          // TODO: Open seat detail/edit dialog
+                          console.log("Seat clicked:", seat, eventSeat);
+                        }
+                      }}
+                    />
+                  );
+                })}
           </Layer>
         </Stage>
       </div>
+
+      {/* Section Breadcrumb with Back Icon - Show when in section drill-down mode */}
+      {layout.design_mode === "section-level" &&
+        selectedSectionId &&
+        selectedSection && (
+          <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBackToSections}
+                className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 transition-colors"
+                title="Back to Sections"
+              >
+                <ArrowLeft className="h-4 w-4 text-gray-700" />
+              </button>
+              <div className="text-sm font-medium text-gray-900">
+                Section: {selectedSection.name}
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Zoom Controls */}
       <ZoomControls
@@ -751,30 +1060,142 @@ export function EventInventoryViewer({
         onResetZoom={handleResetZoom}
       />
 
-      {/* Legend */}
-      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
-        <div className="text-xs font-medium mb-2">Seat Status</div>
-        <div className="space-y-1">
-          {Object.entries(EventSeatStatusEnum).map(([key, value]) => {
-            const colors = getSeatStatusColor(value);
-            return (
-              <div key={key} className="flex items-center gap-2 text-xs">
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor: colors.fill,
-                    border: `1px solid ${colors.stroke}`,
-                  }}
-                />
-                <span>{key}</span>
-              </div>
-            );
-          })}
+      {/* Legend - Only show when not in section drill-down mode or show in different position */}
+      {!(layout.design_mode === "section-level" && selectedSectionId) && (
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+          <div className="text-xs font-medium mb-2">Seat Status</div>
+          <div className="space-y-1">
+            {Object.entries(EventSeatStatusEnum).map(([key, value]) => {
+              const colors = getSeatStatusColor(value);
+              return (
+                <div key={key} className="flex items-center gap-2 text-xs">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor: colors.fill,
+                      border: `1px solid ${colors.stroke}`,
+                    }}
+                  />
+                  <span>{key}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Seat Tooltip/Popover - Rendered via Portal */}
-      {hoveredSeatId &&
+      {/* Legend for section drill-down mode - positioned differently */}
+      {layout.design_mode === "section-level" && selectedSectionId && (
+        <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+          <div className="text-xs font-medium mb-2">Seat Status</div>
+          <div className="space-y-1">
+            {Object.entries(EventSeatStatusEnum).map(([key, value]) => {
+              const colors = getSeatStatusColor(value);
+              return (
+                <div key={key} className="flex items-center gap-2 text-xs">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor: colors.fill,
+                      border: `1px solid ${colors.stroke}`,
+                    }}
+                  />
+                  <span>{key}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Section Tooltip/Popover for section-level layouts */}
+      {layout.design_mode === "section-level" &&
+        hoveredSectionId &&
+        hoveredSeatPosition &&
+        hoveredSectionData &&
+        createPortal(
+          <div
+            className="fixed z-[9999] rounded-lg border border-gray-300 bg-white p-4 shadow-2xl"
+            style={{
+              left: `${hoveredSeatPosition.x}px`,
+              top: `${hoveredSeatPosition.y}px`,
+              pointerEvents: "none",
+              width: "320px",
+              backgroundColor: "#ffffff",
+              opacity: 1,
+              backdropFilter: "none",
+            }}
+          >
+            <div className="space-y-3">
+              <div>
+                <h4 className="font-semibold text-sm mb-1">
+                  Section Information
+                </h4>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Section Name:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSectionData.section.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Seats:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSectionData.seatCount}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Event Seats:</span>
+                    <span className="font-medium text-gray-900">
+                      {hoveredSectionData.eventSeatCount} /{" "}
+                      {hoveredSectionData.seatCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {Object.keys(hoveredSectionData.statusSummary).length > 0 && (
+                <div className="border-t pt-3">
+                  <h4 className="font-semibold text-sm mb-1">Status Summary</h4>
+                  <div className="space-y-1.5 text-sm">
+                    {Object.entries(hoveredSectionData.statusSummary).map(
+                      ([status, count]) => {
+                        const colors = getSeatStatusColor(
+                          status as EventSeatStatus
+                        );
+                        return (
+                          <div
+                            key={status}
+                            className="flex justify-between items-center"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{
+                                  backgroundColor: colors.fill,
+                                  border: `1px solid ${colors.stroke}`,
+                                }}
+                              />
+                              <span className="text-gray-600">{status}:</span>
+                            </div>
+                            <span className="font-medium text-gray-900">
+                              {count}
+                            </span>
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Seat Tooltip/Popover for seat-level layouts - Rendered via Portal */}
+      {layout.design_mode !== "section-level" &&
+        hoveredSeatId &&
         hoveredSeatPosition &&
         hoveredSeatData &&
         createPortal(

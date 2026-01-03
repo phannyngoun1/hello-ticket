@@ -12,7 +12,17 @@ import { useForm, useFieldArray } from "react-hook-form";
 import type { Seat } from "../seats";
 import type { Section } from "../layouts";
 import type { EventSeat } from "./types";
-import { DollarSign, Ticket, Info, Plus, X, Check, ChevronDown, ChevronRight, Settings2 } from "lucide-react";
+import {
+  DollarSign,
+  Ticket,
+  Info,
+  Plus,
+  X,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Settings2,
+} from "lucide-react";
 
 export interface InitializeSeatsDialogProps {
   open: boolean;
@@ -22,6 +32,7 @@ export interface InitializeSeatsDialogProps {
   sections: Section[];
   existingEventSeats?: EventSeat[];
   loading?: boolean;
+  designMode?: "seat-level" | "section-level";
 }
 
 export interface InitializeSeatsData {
@@ -52,10 +63,21 @@ export function InitializeSeatsDialog({
   sections,
   existingEventSeats = [],
   loading = false,
+  designMode = "seat-level",
 }: InitializeSeatsDialogProps) {
-  const [sectionSelectionMode, setSectionSelectionMode] = useState<"all" | "include" | "exclude">("all");
-  const [selectedSections, setSelectedSections] = useState<Set<string>>(new Set());
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [sectionSelectionMode, setSectionSelectionMode] = useState<
+    "all" | "include" | "exclude"
+  >("all");
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set()
+  );
+
+  // Default to per_section pricing for section-level layouts
+  const defaultPricingMode =
+    designMode === "section-level" ? "per_section" : "same";
 
   const {
     register,
@@ -70,7 +92,7 @@ export function InitializeSeatsDialog({
     defaultValues: {
       defaultPrice: "0",
       generateTicketCodes: false,
-      pricingMode: "same",
+      pricingMode: defaultPricingMode,
       sectionPricing: [],
       seatPricing: [],
       sectionSelection: "all",
@@ -78,12 +100,22 @@ export function InitializeSeatsDialog({
     },
   });
 
-  const { fields: sectionPricingFields, append: appendSection, remove: removeSection, update: updateSection } = useFieldArray({
+  const {
+    fields: sectionPricingFields,
+    append: appendSection,
+    remove: removeSection,
+    update: updateSection,
+  } = useFieldArray({
     control,
     name: "sectionPricing",
   });
 
-  const { fields: seatPricingFields, append: appendSeat, remove: removeSeat, update: updateSeat } = useFieldArray({
+  const {
+    fields: seatPricingFields,
+    append: appendSeat,
+    remove: removeSeat,
+    update: updateSeat,
+  } = useFieldArray({
     control,
     name: "seatPricing",
   });
@@ -105,17 +137,21 @@ export function InitializeSeatsDialog({
   const existingSeatIds = useMemo(() => {
     const seatIdSet = new Set<string>();
     const locationSet = new Set<string>();
-    
+
     existingEventSeats.forEach((eventSeat) => {
       if (eventSeat.seat_id) {
         seatIdSet.add(eventSeat.seat_id);
       }
-      if (eventSeat.section_name && eventSeat.row_name && eventSeat.seat_number) {
+      if (
+        eventSeat.section_name &&
+        eventSeat.row_name &&
+        eventSeat.seat_number
+      ) {
         const key = `${eventSeat.section_name}|${eventSeat.row_name}|${eventSeat.seat_number}`;
         locationSet.add(key);
       }
     });
-    
+
     return { seatIdSet, locationSet };
   }, [existingEventSeats]);
 
@@ -147,13 +183,16 @@ export function InitializeSeatsDialog({
         if (!selectedSections.has(layoutSeat.section_id)) {
           return false;
         }
-      } else if (sectionSelectionMode === "exclude" && selectedSections.size > 0) {
+      } else if (
+        sectionSelectionMode === "exclude" &&
+        selectedSections.size > 0
+      ) {
         // Exclude seats from selected sections
         if (selectedSections.has(layoutSeat.section_id)) {
           return false;
         }
       }
-      
+
       return true;
     });
   }, [availableSeats, sectionSelectionMode, selectedSections]);
@@ -179,11 +218,13 @@ export function InitializeSeatsDialog({
         grouped.set(seat.section_id, { id: seat.section_id, count: 1 });
       }
     });
-    return Array.from(grouped.entries()).map(([sectionId, data]) => ({
-      sectionId,
-      sectionName: sectionNameMap.get(sectionId) || "Unknown",
-      count: data.count,
-    })).sort((a, b) => a.sectionName.localeCompare(b.sectionName));
+    return Array.from(grouped.entries())
+      .map(([sectionId, data]) => ({
+        sectionId,
+        sectionName: sectionNameMap.get(sectionId) || "Unknown",
+        count: data.count,
+      }))
+      .sort((a, b) => a.sectionName.localeCompare(b.sectionName));
   }, [availableSeats, sectionNameMap]);
 
   // Get seat count by section for missing seats (after filters applied)
@@ -197,11 +238,13 @@ export function InitializeSeatsDialog({
         grouped.set(seat.section_id, { id: seat.section_id, count: 1 });
       }
     });
-    return Array.from(grouped.entries()).map(([sectionId, data]) => ({
-      sectionId,
-      sectionName: sectionNameMap.get(sectionId) || "Unknown",
-      count: data.count,
-    })).sort((a, b) => a.sectionName.localeCompare(b.sectionName));
+    return Array.from(grouped.entries())
+      .map(([sectionId, data]) => ({
+        sectionId,
+        sectionName: sectionNameMap.get(sectionId) || "Unknown",
+        count: data.count,
+      }))
+      .sort((a, b) => a.sectionName.localeCompare(b.sectionName));
   }, [missingSeats, sectionNameMap]);
 
   const totalSeats = layoutSeats.length;
@@ -220,9 +263,53 @@ export function InitializeSeatsDialog({
     return grouped;
   }, [missingSeats]);
 
+  // Reset form and set default pricing mode when dialog opens
+  useEffect(() => {
+    if (open) {
+      const defaultPricingMode =
+        designMode === "section-level" ? "per_section" : "same";
+      reset({
+        defaultPrice: "0",
+        generateTicketCodes: false,
+        pricingMode: defaultPricingMode,
+        sectionPricing: [],
+        seatPricing: [],
+        sectionSelection: "all",
+        selectedSectionIds: [],
+      });
+      setSectionSelectionMode("all");
+      setSelectedSections(new Set());
+      setExpandedSections(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, designMode]);
+
+  // Initialize section pricing for section-level layouts when pricing mode is per_section
+  useEffect(() => {
+    if (
+      open &&
+      designMode === "section-level" &&
+      pricingMode === "per_section" &&
+      sectionPricingFields.length === 0
+    ) {
+      // Initialize with all sections that have seats
+      missingSeatsBySection.forEach((section) => {
+        appendSection({
+          section_id: section.sectionId,
+          price: defaultPrice || "0",
+        });
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, designMode, pricingMode, missingSeatsBySection]);
+
   // Remove excluded sections from pricing configuration when they're excluded
   useEffect(() => {
-    if (sectionSelectionMode === "exclude" && pricingMode === "per_section" && selectedSections.size > 0) {
+    if (
+      sectionSelectionMode === "exclude" &&
+      pricingMode === "per_section" &&
+      selectedSections.size > 0
+    ) {
       // Remove pricing fields for excluded sections
       const fieldsToRemove: number[] = [];
       sectionPricingFields.forEach((field, index) => {
@@ -231,7 +318,7 @@ export function InitializeSeatsDialog({
         }
       });
       // Remove in reverse order to maintain indices
-      fieldsToRemove.reverse().forEach(index => {
+      fieldsToRemove.reverse().forEach((index) => {
         removeSection(index);
       });
     }
@@ -269,7 +356,9 @@ export function InitializeSeatsDialog({
     }
     // Check section price
     if (pricingMode === "per_section") {
-      const sectionPricing = sectionPricingFields.find((sp) => sp.section_id === seat.section_id);
+      const sectionPricing = sectionPricingFields.find(
+        (sp) => sp.section_id === seat.section_id
+      );
       if (sectionPricing) {
         return sectionPricing.price;
       }
@@ -278,10 +367,15 @@ export function InitializeSeatsDialog({
   };
 
   const setSeatPrice = (seatId: string, price: string) => {
-    const existingIndex = seatPricingFields.findIndex((sp) => sp.seat_id === seatId);
+    const existingIndex = seatPricingFields.findIndex(
+      (sp) => sp.seat_id === seatId
+    );
     if (existingIndex >= 0) {
       // Update existing using setValue to ensure form state is updated
-      setValue(`seatPricing.${existingIndex}.price`, price, { shouldValidate: true, shouldDirty: true });
+      setValue(`seatPricing.${existingIndex}.price`, price, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     } else {
       // Add new - appendSeat will add to the form array with the price value
       appendSeat({ seat_id: seatId, price });
@@ -289,7 +383,9 @@ export function InitializeSeatsDialog({
   };
 
   const removeSeatPrice = (seatId: string) => {
-    const existingIndex = seatPricingFields.findIndex((sp) => sp.seat_id === seatId);
+    const existingIndex = seatPricingFields.findIndex(
+      (sp) => sp.seat_id === seatId
+    );
     if (existingIndex >= 0) {
       removeSeat(existingIndex);
     }
@@ -333,9 +429,13 @@ export function InitializeSeatsDialog({
       // If excluding and removing from exclusion, add back to pricing if needed
       if (sectionSelectionMode === "exclude" && pricingMode === "per_section") {
         // Check if section should be in pricing (it's not excluded anymore)
-        const sectionInMissingSeats = missingSeatsBySection.find(s => s.sectionId === sectionId);
+        const sectionInMissingSeats = missingSeatsBySection.find(
+          (s) => s.sectionId === sectionId
+        );
         if (sectionInMissingSeats) {
-          const existingIndex = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+          const existingIndex = sectionPricingFields.findIndex(
+            (f) => f.section_id === sectionId
+          );
           if (existingIndex < 0) {
             appendSection({
               section_id: sectionId,
@@ -348,7 +448,9 @@ export function InitializeSeatsDialog({
       newSet.add(sectionId);
       // If excluding and adding to exclusion, remove from pricing
       if (sectionSelectionMode === "exclude" && pricingMode === "per_section") {
-        const existingIndex = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+        const existingIndex = sectionPricingFields.findIndex(
+          (f) => f.section_id === sectionId
+        );
         if (existingIndex >= 0) {
           removeSection(existingIndex);
         }
@@ -370,7 +472,11 @@ export function InitializeSeatsDialog({
     <FullScreenDialog
       open={open}
       onClose={onClose}
-      title={hasMissingSeats ? `Add ${missingSeatsCount} Missing Seats` : "Initialize Event Seats"}
+      title={
+        hasMissingSeats
+          ? `Add ${missingSeatsCount} Missing Seats`
+          : "Initialize Event Seats"
+      }
       loading={loading}
       onSubmit={handleSubmit(handleFormSubmit)}
       showCancelButton={true}
@@ -385,21 +491,32 @@ export function InitializeSeatsDialog({
             <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1">
               <h3 className="font-medium text-blue-900 mb-1">
-                {hasMissingSeats ? "Add Seats to Event" : "Initialize Seats from Layout"}
+                {hasMissingSeats
+                  ? "Add Seats to Event"
+                  : "Initialize Seats from Layout"}
               </h3>
               <p className="text-sm text-blue-800">
                 {hasMissingSeats ? (
                   <>
-                    There {missingSeatsCount === 1 ? "is" : "are"} {missingSeatsCount} seat{missingSeatsCount !== 1 ? "s" : ""} in the layout
-                    that {missingSeatsCount === 1 ? "hasn't" : "haven't"} been added to this event yet.
+                    There {missingSeatsCount === 1 ? "is" : "are"}{" "}
+                    {missingSeatsCount} seat{missingSeatsCount !== 1 ? "s" : ""}{" "}
+                    in the layout that{" "}
+                    {missingSeatsCount === 1 ? "hasn't" : "haven't"} been added
+                    to this event yet.
                     {existingSeatsCount > 0 && (
-                      <> {existingSeatsCount} seat{existingSeatsCount !== 1 ? "s are" : " is"} already assigned.</>
+                      <>
+                        {" "}
+                        {existingSeatsCount} seat
+                        {existingSeatsCount !== 1 ? "s are" : " is"} already
+                        assigned.
+                      </>
                     )}
                   </>
                 ) : (
                   <>
-                    This will create {totalSeats} event seat{totalSeats !== 1 ? "s" : ""} from the
-                    layout seats. You can set pricing per section and configure ticket generation.
+                    This will create {totalSeats} event seat
+                    {totalSeats !== 1 ? "s" : ""} from the layout seats. You can
+                    set pricing per section and configure ticket generation.
                   </>
                 )}
               </p>
@@ -418,7 +535,9 @@ export function InitializeSeatsDialog({
             {hasMissingSeats && (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Already Assigned:</span>
+                  <span className="text-muted-foreground">
+                    Already Assigned:
+                  </span>
                   <Badge variant="outline">{existingSeatsCount}</Badge>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -426,21 +545,32 @@ export function InitializeSeatsDialog({
                     <Plus className="h-4 w-4 text-green-600" />
                     Seats to Add:
                   </span>
-                  <Badge className="bg-green-600 text-white">{missingSeatsCount}</Badge>
+                  <Badge className="bg-green-600 text-white">
+                    {missingSeatsCount}
+                  </Badge>
                 </div>
               </>
             )}
             <div className="border-t pt-2">
               <p className="text-sm font-medium mb-2">
-                {hasMissingSeats ? "Missing Seats by Section:" : "Seats by Section:"}
+                {hasMissingSeats
+                  ? "Missing Seats by Section:"
+                  : "Seats by Section:"}
               </p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {missingSeatsBySection.map(({ sectionId, sectionName, count }) => (
-                  <div key={sectionId} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{sectionName}:</span>
-                    <span className="font-medium">{count}</span>
-                  </div>
-                ))}
+                {missingSeatsBySection.map(
+                  ({ sectionId, sectionName, count }) => (
+                    <div
+                      key={sectionId}
+                      className="flex justify-between text-sm"
+                    >
+                      <span className="text-muted-foreground">
+                        {sectionName}:
+                      </span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -510,9 +640,14 @@ export function InitializeSeatsDialog({
                       onChange={() => {
                         setSectionSelectionMode("exclude");
                         // Remove excluded sections from pricing if any are already selected
-                        if (pricingMode === "per_section" && selectedSections.size > 0) {
+                        if (
+                          pricingMode === "per_section" &&
+                          selectedSections.size > 0
+                        ) {
                           selectedSections.forEach((sectionId) => {
-                            const index = sectionPricingFields.findIndex(f => f.section_id === sectionId);
+                            const index = sectionPricingFields.findIndex(
+                              (f) => f.section_id === sectionId
+                            );
                             if (index >= 0) {
                               removeSection(index);
                             }
@@ -526,50 +661,66 @@ export function InitializeSeatsDialog({
                 </div>
               </div>
 
-              {(sectionSelectionMode === "include" || sectionSelectionMode === "exclude") && (
+              {(sectionSelectionMode === "include" ||
+                sectionSelectionMode === "exclude") && (
                 <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
                   {availableSeatsBySection.length > 0 ? (
                     <>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {/* Show only sections that have seats available to add (stable list, doesn't change when checkboxes are toggled) */}
-                        {availableSeatsBySection.map(({ sectionId, sectionName, count }) => {
-                          const isExcluded = sectionSelectionMode === "exclude" && selectedSections.has(sectionId);
-                          const isIncluded = sectionSelectionMode === "include" && selectedSections.has(sectionId);
-                          
-                          return (
-                            <label
-                              key={sectionId}
-                              className={`flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted ${
-                                isExcluded ? "opacity-50" : ""
-                              }`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedSections.has(sectionId)}
-                                onChange={() => toggleSectionSelection(sectionId)}
-                                className="h-4 w-4"
-                              />
-                              <span className="text-sm">
-                                {sectionName} ({count} seats)
-                              </span>
-                            </label>
-                          );
-                        })}
+                        {availableSeatsBySection.map(
+                          ({ sectionId, sectionName, count }) => {
+                            const isExcluded =
+                              sectionSelectionMode === "exclude" &&
+                              selectedSections.has(sectionId);
+                            const isIncluded =
+                              sectionSelectionMode === "include" &&
+                              selectedSections.has(sectionId);
+
+                            return (
+                              <label
+                                key={sectionId}
+                                className={`flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-muted ${
+                                  isExcluded ? "opacity-50" : ""
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSections.has(sectionId)}
+                                  onChange={() =>
+                                    toggleSectionSelection(sectionId)
+                                  }
+                                  className="h-4 w-4"
+                                />
+                                <span className="text-sm">
+                                  {sectionName} ({count} seats)
+                                </span>
+                              </label>
+                            );
+                          }
+                        )}
                       </div>
-                      {sectionSelectionMode === "exclude" && selectedSections.size > 0 && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {selectedSections.size} section{selectedSections.size !== 1 ? "s" : ""} will be excluded from initialization
-                        </p>
-                      )}
-                      {sectionSelectionMode === "include" && selectedSections.size > 0 && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Only {selectedSections.size} selected section{selectedSections.size !== 1 ? "s" : ""} will be included
-                        </p>
-                      )}
+                      {sectionSelectionMode === "exclude" &&
+                        selectedSections.size > 0 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {selectedSections.size} section
+                            {selectedSections.size !== 1 ? "s" : ""} will be
+                            excluded from initialization
+                          </p>
+                        )}
+                      {sectionSelectionMode === "include" &&
+                        selectedSections.size > 0 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Only {selectedSections.size} selected section
+                            {selectedSections.size !== 1 ? "s" : ""} will be
+                            included
+                          </p>
+                        )}
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      All seats have already been initialized. No sections available for selection.
+                      All seats have already been initialized. No sections
+                      available for selection.
                     </p>
                   )}
                 </div>
@@ -616,7 +767,10 @@ export function InitializeSeatsDialog({
               {/* Default Price (for same mode or fallback) */}
               {pricingMode === "same" && (
                 <div className="space-y-2">
-                  <Label htmlFor="defaultPrice" className="flex items-center gap-2">
+                  <Label
+                    htmlFor="defaultPrice"
+                    className="flex items-center gap-2"
+                  >
                     <DollarSign className="h-4 w-4" />
                     Price (per seat)
                   </Label>
@@ -646,7 +800,8 @@ export function InitializeSeatsDialog({
                   <div className="flex items-center justify-between">
                     <Label>Section Prices</Label>
                     <p className="text-xs text-muted-foreground">
-                      Set prices per section. Expand sections to set individual seat prices.
+                      Set prices per section. Expand sections to set individual
+                      seat prices.
                     </p>
                   </div>
                   <div className="space-y-2 border rounded-lg p-3 max-h-96 overflow-y-auto">
@@ -654,19 +809,27 @@ export function InitializeSeatsDialog({
                       const sectionFieldIndex = sectionPricingFields.findIndex(
                         (f) => f.section_id === section.sectionId
                       );
-                      const sectionSeats = seatsBySection.get(section.sectionId) || [];
-                      const isExpanded = expandedSections.has(section.sectionId);
+                      const sectionSeats =
+                        seatsBySection.get(section.sectionId) || [];
+                      const isExpanded = expandedSections.has(
+                        section.sectionId
+                      );
                       const hasSeatOverrides = seatPricingFields.some((sp) =>
                         sectionSeats.some((s) => s.id === sp.seat_id)
                       );
 
                       return (
-                        <div key={section.sectionId} className="border rounded-lg p-3 space-y-3">
+                        <div
+                          key={section.sectionId}
+                          className="border rounded-lg p-3 space-y-3"
+                        >
                           {/* Section Header */}
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
-                              onClick={() => toggleSectionExpansion(section.sectionId)}
+                              onClick={() =>
+                                toggleSectionExpansion(section.sectionId)
+                              }
                               className="flex items-center gap-2 hover:bg-muted p-1 rounded"
                             >
                               {isExpanded ? (
@@ -691,11 +854,17 @@ export function InitializeSeatsDialog({
                                   min="0"
                                   placeholder="0.00"
                                   className="mt-1"
-                                  {...register(`sectionPricing.${sectionFieldIndex}.price` as const, {
-                                    required: "Price is required",
-                                    min: { value: 0, message: "Price must be 0 or greater" },
-                                    valueAsNumber: false,
-                                  })}
+                                  {...register(
+                                    `sectionPricing.${sectionFieldIndex}.price` as const,
+                                    {
+                                      required: "Price is required",
+                                      min: {
+                                        value: 0,
+                                        message: "Price must be 0 or greater",
+                                      },
+                                      valueAsNumber: false,
+                                    }
+                                  )}
                                 />
                               ) : (
                                 <Input
@@ -737,10 +906,17 @@ export function InitializeSeatsDialog({
                                     // Get current section price from form values
                                     let sectionPrice = defaultPrice || "0";
                                     if (sectionFieldIndex >= 0) {
-                                      const currentSectionPrice = getValues(`sectionPricing.${sectionFieldIndex}.price`);
-                                      sectionPrice = currentSectionPrice || sectionPricingFields[sectionFieldIndex]?.price || defaultPrice || "0";
+                                      const currentSectionPrice = getValues(
+                                        `sectionPricing.${sectionFieldIndex}.price`
+                                      );
+                                      sectionPrice =
+                                        currentSectionPrice ||
+                                        sectionPricingFields[sectionFieldIndex]
+                                          ?.price ||
+                                        defaultPrice ||
+                                        "0";
                                     }
-                                    
+
                                     // Apply section price to all seats in section
                                     sectionSeats.forEach((seat) => {
                                       setSeatPrice(seat.id, sectionPrice);
@@ -752,9 +928,10 @@ export function InitializeSeatsDialog({
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                                 {sectionSeats.map((seat) => {
-                                  const seatPriceIndex = seatPricingFields.findIndex(
-                                    (sp) => sp.seat_id === seat.id
-                                  );
+                                  const seatPriceIndex =
+                                    seatPricingFields.findIndex(
+                                      (sp) => sp.seat_id === seat.id
+                                    );
                                   const currentPrice = getSeatPrice(seat);
                                   const hasOverride = seatPriceIndex >= 0;
 
@@ -762,7 +939,9 @@ export function InitializeSeatsDialog({
                                     <div
                                       key={seat.id}
                                       className={`flex items-center gap-2 p-2 rounded border ${
-                                        hasOverride ? "bg-blue-50 border-blue-200" : ""
+                                        hasOverride
+                                          ? "bg-blue-50 border-blue-200"
+                                          : ""
                                       }`}
                                     >
                                       <div className="flex-1 min-w-0">
@@ -777,7 +956,13 @@ export function InitializeSeatsDialog({
                                           className="h-8 text-sm"
                                           value={
                                             seatPriceIndex >= 0
-                                              ? (watch(`seatPricing.${seatPriceIndex}.price`) as string | undefined) || seatPricingFields[seatPriceIndex]?.price || ""
+                                              ? (watch(
+                                                  `seatPricing.${seatPriceIndex}.price`
+                                                ) as string | undefined) ||
+                                                seatPricingFields[
+                                                  seatPriceIndex
+                                                ]?.price ||
+                                                ""
                                               : ""
                                           }
                                           onChange={(e) => {
@@ -785,7 +970,14 @@ export function InitializeSeatsDialog({
                                             if (value && value !== "") {
                                               // Set or update the seat price
                                               if (seatPriceIndex >= 0) {
-                                                setValue(`seatPricing.${seatPriceIndex}.price`, value, { shouldValidate: true, shouldDirty: true });
+                                                setValue(
+                                                  `seatPricing.${seatPriceIndex}.price`,
+                                                  value,
+                                                  {
+                                                    shouldValidate: true,
+                                                    shouldDirty: true,
+                                                  }
+                                                );
                                               } else {
                                                 setSeatPrice(seat.id, value);
                                               }
@@ -802,7 +994,9 @@ export function InitializeSeatsDialog({
                                           variant="ghost"
                                           size="sm"
                                           className="h-6 w-6 p-0"
-                                          onClick={() => removeSeatPrice(seat.id)}
+                                          onClick={() =>
+                                            removeSeatPrice(seat.id)
+                                          }
                                           title="Remove override (use section price)"
                                         >
                                           <X className="h-3 w-3" />
@@ -839,7 +1033,10 @@ export function InitializeSeatsDialog({
                   {...register("generateTicketCodes")}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="generateTicketCodes" className="flex items-center gap-2 cursor-pointer">
+                <Label
+                  htmlFor="generateTicketCodes"
+                  className="flex items-center gap-2 cursor-pointer"
+                >
                   <Ticket className="h-4 w-4" />
                   Generate Tickets
                 </Label>
@@ -847,14 +1044,16 @@ export function InitializeSeatsDialog({
 
               {generateTicketCodes && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  Tickets will be created for all seats with AVAILABLE status, ready for sale.
-                  Ticket numbers will be generated automatically.
+                  Tickets will be created for all seats with AVAILABLE status,
+                  ready for sale. Ticket numbers will be generated
+                  automatically.
                 </p>
               )}
 
               {!generateTicketCodes && (
                 <p className="text-xs text-muted-foreground pl-6">
-                  Seats will be created without tickets. Tickets can be created later from the seat list.
+                  Seats will be created without tickets. Tickets can be created
+                  later from the seat list.
                 </p>
               )}
             </div>
@@ -865,7 +1064,9 @@ export function InitializeSeatsDialog({
             <h3 className="font-medium mb-3">Preview</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Seats to {hasMissingSeats ? "add" : "create"}:</span>
+                <span className="text-muted-foreground">
+                  Seats to {hasMissingSeats ? "add" : "create"}:
+                </span>
                 <span className="font-medium">{missingSeatsCount}</span>
               </div>
               <div className="flex justify-between">
@@ -890,9 +1091,7 @@ export function InitializeSeatsDialog({
               </div>
               <div className="flex justify-between font-medium pt-2 border-t">
                 <span>Total value:</span>
-                <span>
-                  ${calculateTotalValue().toFixed(2)}
-                </span>
+                <span>${calculateTotalValue().toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -901,4 +1100,3 @@ export function InitializeSeatsDialog({
     </FullScreenDialog>
   );
 }
-
