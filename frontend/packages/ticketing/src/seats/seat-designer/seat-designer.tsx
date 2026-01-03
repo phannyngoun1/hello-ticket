@@ -669,6 +669,8 @@ export function SeatDesigner({
   }, [shapeOverlays]);
 
   // Handle Konva image click - uses percentage coordinates from LayoutCanvas
+  // Note: This should NOT be called when drawing shapes with shape tools (drag-to-draw)
+  // Shape tools use handleShapeDraw instead, which is called from onMouseUp in layout-canvas
   const handleKonvaImageClick = useCallback(
     (
       _e: Konva.KonvaEventObject<MouseEvent>,
@@ -679,6 +681,14 @@ export function SeatDesigner({
       // If pointer tool is selected (no shape tool), don't create markers - only deselection happens
       if (!selectedShapeTool) {
         return; // Just deselect, don't create anything
+      }
+
+      // If a shape tool is selected, shapes should be created via drag-to-draw (handleShapeDraw)
+      // This click handler should not create markers when shape tools are active
+      // This prevents duplicate markers from being created and ensures all shapes behave the same
+      // All shapes (rectangle, circle, ellipse, polygon, freeform) use the same drag-to-draw behavior
+      if (selectedShapeTool) {
+        return; // Shape tools use drag-to-draw, not click-to-place
       }
 
       const { x, y } = percentageCoords;
