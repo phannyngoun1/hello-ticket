@@ -103,6 +103,26 @@ function ShapeRenderer({
       return <Line {...baseProps} points={points} closed={true} />;
     }
 
+    case PlacementShapeType.FREEFORM: {
+      if (!shape.points || shape.points.length < 4) {
+        // Need at least 2 points (x, y, x, y)
+        const radius = 12;
+        return <Circle {...baseProps} radius={radius} />;
+      }
+      // Convert percentage points to absolute coordinates
+      // Freeform points are relative to center (0, 0)
+      const points = shape.points.map((p, index) => {
+        if (index % 2 === 0) {
+          // x coordinate
+          return (p / 100) * imageWidth;
+        } else {
+          // y coordinate
+          return (p / 100) * imageHeight;
+        }
+      });
+      return <Line {...baseProps} points={points} closed={false} tension={0.5} />;
+    }
+
     default:
       // Default to circle
       return <Circle {...baseProps} radius={12} />;
@@ -274,6 +294,14 @@ function SeatMarkerComponent({
       const currentHeight = shape.height ? (shape.height / 100) * imageHeight : 20;
       updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
       updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+    } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
+      // Scale all points proportionally
+      const avgScale = (scaleX + scaleY) / 2;
+      updatedShape.points = shape.points.map((p) => p * avgScale);
+    } else if (shape.type === PlacementShapeType.POLYGON && shape.points) {
+      // Scale polygon points proportionally
+      const avgScale = (scaleX + scaleY) / 2;
+      updatedShape.points = shape.points.map((p) => p * avgScale);
     }
     
     updatedShape.rotation = rotation;
@@ -447,6 +475,14 @@ function SectionMarkerComponent({
       const currentHeight = shape.height ? (shape.height / 100) * imageHeight : 20;
       updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
       updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+    } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
+      // Scale all points proportionally
+      const avgScale = (scaleX + scaleY) / 2;
+      updatedShape.points = shape.points.map((p) => p * avgScale);
+    } else if (shape.type === PlacementShapeType.POLYGON && shape.points) {
+      // Scale polygon points proportionally
+      const avgScale = (scaleX + scaleY) / 2;
+      updatedShape.points = shape.points.map((p) => p * avgScale);
     }
     
     updatedShape.rotation = rotation;
@@ -678,6 +714,7 @@ export function LayoutCanvas({
   const [isDrawingShape, setIsDrawingShape] = useState(false);
   const [drawStartPos, setDrawStartPos] = useState<{ x: number; y: number } | null>(null);
   const [drawCurrentPos, setDrawCurrentPos] = useState<{ x: number; y: number } | null>(null);
+  const [freeformPath, setFreeformPath] = useState<Array<{ x: number; y: number }>>([]);
   const previewShapeRef = useRef<Konva.Group>(null);
 
   // Handle Space key for panning
@@ -1005,6 +1042,11 @@ export function LayoutCanvas({
           setIsDrawingShape(true);
           setDrawStartPos(percentageCoords);
           setDrawCurrentPos(percentageCoords);
+          
+          // For freeform, start tracking path points
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            setFreeformPath([percentageCoords]);
+          }
           return;
         }
 
@@ -1033,65 +1075,110 @@ export function LayoutCanvas({
             pointerPos.y
           );
           setDrawCurrentPos(percentageCoords);
+          
+          // For freeform, add point to path
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            setFreeformPath((prev) => {
+              // Only add if moved enough (reduce point density)
+              if (prev.length === 0) {
+                return [percentageCoords];
+              }
+              const lastPoint = prev[prev.length - 1];
+              const distance = Math.sqrt(
+                Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                Math.pow(percentageCoords.y - lastPoint.y, 2)
+              );
+              // Add point if moved at least 0.1% (reduces point density for smoother paths)
+              if (distance >= 0.1) {
+                return [...prev, percentageCoords];
+              }
+              return prev;
+            });
+          }
         }
       }}
       onMouseUp={(e) => {
         if (isPanning) {
           setIsPanning(false);
           onPanEnd?.();
-        } else if (isDrawingShape && drawStartPos && drawCurrentPos && selectedShapeTool && onShapeDraw) {
-          // Calculate shape dimensions from drag
-          const startX = drawStartPos.x;
-          const startY = drawStartPos.y;
-          const endX = drawCurrentPos.x;
-          const endY = drawCurrentPos.y;
-          
-          // Calculate distance moved - require minimum drag distance
-          const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
-          const minDragDistance = 0.3; // 0.3% of image - minimum drag distance to create shape
-          
-          if (distance >= minDragDistance) {
-            // Valid drag - create shape with dragged dimensions
-            const minSize = 1.5; // 1.5% of image
-            const width = Math.max(minSize, Math.abs(endX - startX));
-            const height = Math.max(minSize, Math.abs(endY - startY));
+        } else if (isDrawingShape && drawStartPos && selectedShapeTool && onShapeDraw) {
+          // Handle freeform drawing
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            if (freeformPath.length >= 4) {
+              // Calculate center from path points
+              const sumX = freeformPath.reduce((sum, p) => sum + p.x, 0);
+              const sumY = freeformPath.reduce((sum, p) => sum + p.y, 0);
+              const centerX = sumX / freeformPath.length;
+              const centerY = sumY / freeformPath.length;
+              
+              // Convert points to be relative to center (as percentages)
+              const points: number[] = [];
+              freeformPath.forEach((point) => {
+                points.push(point.x - centerX, point.y - centerY);
+              });
+              
+              const shape: PlacementShape = {
+                type: PlacementShapeType.FREEFORM,
+                points,
+              };
+              onShapeDraw(shape, centerX, centerY);
+            }
+            // Reset freeform path
+            setFreeformPath([]);
+          } else if (drawCurrentPos) {
+            // Handle other shape types (drag to draw)
+            const startX = drawStartPos.x;
+            const startY = drawStartPos.y;
+            const endX = drawCurrentPos.x;
+            const endY = drawCurrentPos.y;
             
-            const centerX = (startX + endX) / 2;
-            const centerY = (startY + endY) / 2;
+            // Calculate distance moved - require minimum drag distance
+            const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+            const minDragDistance = 0.3; // 0.3% of image - minimum drag distance to create shape
+            
+            if (distance >= minDragDistance) {
+              // Valid drag - create shape with dragged dimensions
+              const minSize = 1.5; // 1.5% of image
+              const width = Math.max(minSize, Math.abs(endX - startX));
+              const height = Math.max(minSize, Math.abs(endY - startY));
+              
+              const centerX = (startX + endX) / 2;
+              const centerY = (startY + endY) / 2;
 
-            // Create shape based on type with reasonable defaults
-            let shape: PlacementShape;
-            if (selectedShapeTool === PlacementShapeType.CIRCLE) {
-              const radius = Math.max(width, height) / 2;
-              shape = {
-                type: PlacementShapeType.CIRCLE,
-                radius: Math.max(0.8, radius), // Minimum 0.8% for visibility
-              };
-              onShapeDraw(shape, centerX, centerY);
-            } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
-              shape = {
-                type: PlacementShapeType.RECTANGLE,
-                width: Math.max(1.0, width),
-                height: Math.max(1.0, height),
-                cornerRadius: 2, // Slight rounding for better appearance
-              };
-              onShapeDraw(shape, centerX, centerY, width, height);
-            } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
-              shape = {
-                type: PlacementShapeType.ELLIPSE,
-                width: Math.max(1.0, width),
-                height: Math.max(1.0, height),
-              };
-              onShapeDraw(shape, centerX, centerY, width, height);
-            } else if (selectedShapeTool === PlacementShapeType.POLYGON) {
-              // For polygon, use default hexagon shape with reasonable size
-              shape = {
-                type: PlacementShapeType.POLYGON,
-                points: [
-                  -1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0
-                ],
-              };
-              onShapeDraw(shape, centerX, centerY);
+              // Create shape based on type with reasonable defaults
+              let shape: PlacementShape;
+              if (selectedShapeTool === PlacementShapeType.CIRCLE) {
+                const radius = Math.max(width, height) / 2;
+                shape = {
+                  type: PlacementShapeType.CIRCLE,
+                  radius: Math.max(0.8, radius), // Minimum 0.8% for visibility
+                };
+                onShapeDraw(shape, centerX, centerY);
+              } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
+                shape = {
+                  type: PlacementShapeType.RECTANGLE,
+                  width: Math.max(1.0, width),
+                  height: Math.max(1.0, height),
+                  cornerRadius: 2, // Slight rounding for better appearance
+                };
+                onShapeDraw(shape, centerX, centerY, width, height);
+              } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
+                shape = {
+                  type: PlacementShapeType.ELLIPSE,
+                  width: Math.max(1.0, width),
+                  height: Math.max(1.0, height),
+                };
+                onShapeDraw(shape, centerX, centerY, width, height);
+              } else if (selectedShapeTool === PlacementShapeType.POLYGON) {
+                // For polygon, use default hexagon shape with reasonable size
+                shape = {
+                  type: PlacementShapeType.POLYGON,
+                  points: [
+                    -1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0
+                  ],
+                };
+                onShapeDraw(shape, centerX, centerY);
+              }
             }
           }
           // If drag was too small, just cancel the drawing without creating anything
@@ -1106,6 +1193,29 @@ export function LayoutCanvas({
         if (isPanning) {
           setIsPanning(false);
           onPanEnd?.();
+        } else if (isDrawingShape && selectedShapeTool === PlacementShapeType.FREEFORM && freeformPath.length >= 4 && onShapeDraw) {
+          // Complete freeform shape when mouse leaves canvas
+          const sumX = freeformPath.reduce((sum, p) => sum + p.x, 0);
+          const sumY = freeformPath.reduce((sum, p) => sum + p.y, 0);
+          const centerX = sumX / freeformPath.length;
+          const centerY = sumY / freeformPath.length;
+          
+          const points: number[] = [];
+          freeformPath.forEach((point) => {
+            points.push(point.x - centerX, point.y - centerY);
+          });
+          
+          const shape: PlacementShape = {
+            type: PlacementShapeType.FREEFORM,
+            points,
+          };
+          onShapeDraw(shape, centerX, centerY);
+          
+          // Reset drawing state
+          setIsDrawingShape(false);
+          setDrawStartPos(null);
+          setDrawCurrentPos(null);
+          setFreeformPath([]);
         }
       }}
       style={{
@@ -1294,61 +1404,100 @@ export function LayoutCanvas({
         })}
 
         {/* Preview shape while drawing */}
-        {isDrawingShape && drawStartPos && drawCurrentPos && selectedShapeTool && (() => {
-          const startX = drawStartPos.x;
-          const startY = drawStartPos.y;
-          const endX = drawCurrentPos.x;
-          const endY = drawCurrentPos.y;
-          
-          const minSize = 1.5;
-          const width = Math.max(minSize, Math.abs(endX - startX));
-          const height = Math.max(minSize, Math.abs(endY - startY));
-          
-          const centerX = (startX + endX) / 2;
-          const centerY = (startY + endY) / 2;
-          
-          const { x, y } = percentageToStage(centerX, centerY);
-          
-          let previewShape: PlacementShape;
-          if (selectedShapeTool === PlacementShapeType.CIRCLE) {
-            const radius = Math.max(width, height) / 2;
-            previewShape = {
-              type: PlacementShapeType.CIRCLE,
-              radius: Math.max(0.8, radius),
-            };
-          } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
-            previewShape = {
-              type: PlacementShapeType.RECTANGLE,
-              width: Math.max(1.0, width),
-              height: Math.max(1.0, height),
-              cornerRadius: 2,
-            };
-          } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
-            previewShape = {
-              type: PlacementShapeType.ELLIPSE,
-              width: Math.max(1.0, width),
-              height: Math.max(1.0, height),
-            };
-          } else {
-            previewShape = {
-              type: PlacementShapeType.POLYGON,
-              points: [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0],
-            };
+        {isDrawingShape && drawStartPos && selectedShapeTool && (() => {
+          // Handle freeform preview
+          if (selectedShapeTool === PlacementShapeType.FREEFORM && freeformPath.length >= 2) {
+            // Calculate center from path points
+            const sumX = freeformPath.reduce((sum, p) => sum + p.x, 0);
+            const sumY = freeformPath.reduce((sum, p) => sum + p.y, 0);
+            const centerX = sumX / freeformPath.length;
+            const centerY = sumY / freeformPath.length;
+            
+            // Convert points to be relative to center
+            const points: number[] = [];
+            freeformPath.forEach((point) => {
+              points.push(point.x - centerX, point.y - centerY);
+            });
+            
+            const { x, y } = percentageToStage(centerX, centerY);
+            
+            return (
+              <Group ref={previewShapeRef} x={x} y={y}>
+                <ShapeRenderer
+                  shape={{
+                    type: PlacementShapeType.FREEFORM,
+                    points,
+                  }}
+                  fill="rgba(59, 130, 246, 0.15)"
+                  stroke="#3b82f6"
+                  strokeWidth={2.5}
+                  imageWidth={displayedWidth}
+                  imageHeight={displayedHeight}
+                  opacity={0.8}
+                />
+              </Group>
+            );
           }
+          
+          // Handle other shape types (drag to draw)
+          if (drawCurrentPos) {
+            const startX = drawStartPos.x;
+            const startY = drawStartPos.y;
+            const endX = drawCurrentPos.x;
+            const endY = drawCurrentPos.y;
+            
+            const minSize = 1.5;
+            const width = Math.max(minSize, Math.abs(endX - startX));
+            const height = Math.max(minSize, Math.abs(endY - startY));
+            
+            const centerX = (startX + endX) / 2;
+            const centerY = (startY + endY) / 2;
+            
+            const { x, y } = percentageToStage(centerX, centerY);
+            
+            let previewShape: PlacementShape;
+            if (selectedShapeTool === PlacementShapeType.CIRCLE) {
+              const radius = Math.max(width, height) / 2;
+              previewShape = {
+                type: PlacementShapeType.CIRCLE,
+                radius: Math.max(0.8, radius),
+              };
+            } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
+              previewShape = {
+                type: PlacementShapeType.RECTANGLE,
+                width: Math.max(1.0, width),
+                height: Math.max(1.0, height),
+                cornerRadius: 2,
+              };
+            } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
+              previewShape = {
+                type: PlacementShapeType.ELLIPSE,
+                width: Math.max(1.0, width),
+                height: Math.max(1.0, height),
+              };
+            } else {
+              previewShape = {
+                type: PlacementShapeType.POLYGON,
+                points: [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0],
+              };
+            }
 
-          return (
-            <Group ref={previewShapeRef} x={x} y={y}>
-              <ShapeRenderer
-                shape={previewShape}
-                fill="rgba(59, 130, 246, 0.15)"
-                stroke="#3b82f6"
-                strokeWidth={2.5}
-                imageWidth={displayedWidth}
-                imageHeight={displayedHeight}
-                opacity={0.8}
-              />
-            </Group>
-          );
+            return (
+              <Group ref={previewShapeRef} x={x} y={y}>
+                <ShapeRenderer
+                  shape={previewShape}
+                  fill="rgba(59, 130, 246, 0.15)"
+                  stroke="#3b82f6"
+                  strokeWidth={2.5}
+                  imageWidth={displayedWidth}
+                  imageHeight={displayedHeight}
+                  opacity={0.8}
+                />
+              </Group>
+            );
+          }
+          
+          return null;
         })()}
       </Layer>
     </Stage>

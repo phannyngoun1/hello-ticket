@@ -1754,6 +1754,8 @@ export function SeatDesigner({
                 selectedSection={venueType === "large" ? selectedSectionMarker : null}
                 onSeatEdit={handleSeatEdit}
                 onSectionEdit={handleSectionEdit}
+                onSeatDelete={handleDeleteSeat}
+                onSectionDelete={handleDeleteSection}
               />
             </>
           )}

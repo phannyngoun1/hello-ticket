@@ -5,7 +5,7 @@
  */
 
 import { Card } from "@truths/ui";
-import { Circle, Square, Hexagon, MousePointer2, Edit } from "lucide-react";
+import { Circle, Square, Hexagon, MousePointer2, Edit, PenTool, Trash2 } from "lucide-react";
 import { PlacementShapeType, type SeatMarker, type SectionMarker } from "../types";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -16,6 +16,8 @@ export interface ShapeToolboxProps {
   selectedSection?: SectionMarker | null;
   onSeatEdit?: (seat: SeatMarker) => void;
   onSectionEdit?: (section: SectionMarker) => void;
+  onSeatDelete?: (seat: SeatMarker) => void;
+  onSectionDelete?: (section: SectionMarker) => void;
   className?: string;
 }
 
@@ -26,6 +28,8 @@ export function ShapeToolbox({
   selectedSection,
   onSeatEdit,
   onSectionEdit,
+  onSeatDelete,
+  onSectionDelete,
   className,
 }: ShapeToolboxProps) {
   const shapes = [
@@ -49,9 +53,14 @@ export function ShapeToolbox({
       icon: Hexagon,
       label: "Polygon",
     },
+    {
+      type: PlacementShapeType.FREEFORM,
+      icon: PenTool,
+      label: "Freeform",
+    },
   ];
 
-  // Get marker name and edit handler
+  // Get marker name and edit/delete handlers
   const selectedMarker = selectedSeat || selectedSection;
   const markerName = selectedSeat
     ? `${selectedSeat.seat.section} ${selectedSeat.seat.row}-${selectedSeat.seat.seatNumber}`
@@ -62,6 +71,11 @@ export function ShapeToolbox({
     ? () => onSeatEdit(selectedSeat)
     : selectedSection && onSectionEdit
       ? () => onSectionEdit(selectedSection)
+      : undefined;
+  const handleDelete = selectedSeat && onSeatDelete
+    ? () => onSeatDelete(selectedSeat)
+    : selectedSection && onSectionDelete
+      ? () => onSectionDelete(selectedSection)
       : undefined;
 
   return (
@@ -115,26 +129,44 @@ export function ShapeToolbox({
           </div>
         </div>
         
-        {/* Selected marker name - shown on the right */}
+        {/* Selected marker name with edit and delete actions - shown on the right */}
         {selectedMarker && markerName && (
-          <button
-            type="button"
-            onClick={handleEdit}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 rounded border transition-all",
-              "hover:bg-accent hover:border-accent-foreground",
-              "bg-background border-border",
-              handleEdit && "cursor-pointer"
-            )}
-            title={handleEdit ? "Click to edit" : undefined}
-          >
-            <span className="text-xs font-medium text-foreground whitespace-nowrap">
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
               {markerName}
             </span>
             {handleEdit && (
-              <Edit className="h-3 w-3 text-muted-foreground" />
+              <button
+                type="button"
+                onClick={handleEdit}
+                className={cn(
+                  "flex items-center justify-center p-1 rounded border transition-all",
+                  "hover:bg-accent hover:border-accent-foreground",
+                  "bg-background border-border"
+                )}
+                title="Click to edit"
+              >
+                <Edit className="h-3 w-3 text-muted-foreground" />
+              </button>
             )}
-          </button>
+            {handleDelete && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                className={cn(
+                  "flex items-center justify-center p-1 rounded border transition-all",
+                  "hover:bg-destructive hover:border-destructive hover:text-destructive-foreground",
+                  "bg-background border-border"
+                )}
+                title="Delete marker"
+              >
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </Card>
