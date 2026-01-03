@@ -12,6 +12,7 @@ export enum PlacementShapeType {
   RECTANGLE = "rectangle",
   ELLIPSE = "ellipse",
   POLYGON = "polygon",
+  FREEFORM = "freeform",
 }
 
 /**
@@ -22,10 +23,11 @@ export interface PlacementShape {
   // For circle: radius
   // For rectangle/ellipse: width and height
   // For polygon: array of points relative to center
+  // For freeform: array of [x, y] pairs as percentages (path points)
   width?: number; // Percentage of image width
   height?: number; // Percentage of image height
   radius?: number; // Percentage of image (for circle)
-  points?: number[]; // Array of [x, y] pairs as percentages (for polygon)
+  points?: number[]; // Array of [x, y] pairs as percentages (for polygon/freeform)
   rotation?: number; // Rotation in degrees
   cornerRadius?: number; // For rounded rectangles
 }

@@ -217,6 +217,7 @@ export function SectionDetailView({
                   onSetIsEditingViewingSeat(false);
                   seatEditFormReset({});
                 }}
+                onSeatDelete={onDeleteSeat}
               />
             )}
 
