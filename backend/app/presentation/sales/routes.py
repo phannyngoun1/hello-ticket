@@ -68,7 +68,6 @@ async def create_customer(
             linkedin_url=request.linkedin_url,
             instagram_handle=request.instagram_handle,
             website=request.website,
-            tag_ids=request.tag_ids or [],
             priority=request.priority,
             notes=request.notes,
             public_notes=request.public_notes,
@@ -133,7 +132,6 @@ async def update_customer(
     """Update customer fields"""
 
     try:
-        # Tags should be managed via tag service - only accept tag_ids
         command = UpdateCustomerCommand(
             customer_id=customer_id,
             name=request.name,
@@ -166,7 +164,6 @@ async def update_customer(
             linkedin_url=request.linkedin_url,
             instagram_handle=request.instagram_handle,
             website=request.website,
-            tag_ids=request.tag_ids,
             priority=request.priority,
             status=request.status,
             status_reason=request.status_reason,

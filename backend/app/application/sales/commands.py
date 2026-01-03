@@ -36,7 +36,6 @@ class CreateCustomerCommand:
     linkedin_url: Optional[str] = None
     instagram_handle: Optional[str] = None
     website: Optional[str] = None
-    tag_ids: List[str] = field(default_factory=list)  # Tag IDs to link to customer
     priority: Optional[str] = None
     notes: Optional[str] = None
     public_notes: Optional[str] = None
@@ -75,7 +74,6 @@ class UpdateCustomerCommand:
     linkedin_url: Optional[str] = None
     instagram_handle: Optional[str] = None
     website: Optional[str] = None
-    tag_ids: Optional[List[str]] = None  # Tag IDs to link to customer
     priority: Optional[str] = None
     status: Optional[str] = None  # "active" or "inactive"
     status_reason: Optional[str] = None

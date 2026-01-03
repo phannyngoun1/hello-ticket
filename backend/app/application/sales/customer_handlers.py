@@ -13,7 +13,6 @@ from app.application.sales.queries import (
 )
 from app.domain.sales.repositories import CustomerRepository, CustomerSearchResult
 from app.domain.sales.customer import Customer
-from app.domain.shared.tag_repository import TagLinkRepository
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
 
@@ -25,10 +24,8 @@ class CustomerCommandHandler:
     def __init__(
         self,
         customer_repository: CustomerRepository,
-        tag_link_repository: TagLinkRepository,
     ):
         self._customer_repository = customer_repository
-        self._tag_link_repository = tag_link_repository
 
     async def handle_create_customer(self, command: CreateCustomerCommand) -> Customer:
         tenant_id = require_tenant_context()
@@ -79,21 +76,6 @@ class CustomerCommandHandler:
         )
 
         saved = await self._customer_repository.save(customer)
-        
-        # Set tags via TagLink (always set, even if empty list to clear existing tags)
-        if command.tag_ids is not None:
-            try:
-                await self._tag_link_repository.set_tags_for_entity(
-                    tenant_id=tenant_id,
-                    entity_type="customer",
-                    entity_id=saved.id,
-                    tag_ids=command.tag_ids,
-                )
-                logger.info("Set %d tags for customer %s", len(command.tag_ids), saved.id)
-            except Exception as e:
-                logger.error("Failed to set tags for customer %s: %s", saved.id, str(e))
-                # Don't fail customer creation if tag setting fails
-                # Tags can be set later via tag management
         
         logger.info("Created customer %s with code %s for tenant=%s", saved.id, saved.code, tenant_id)
         return saved
@@ -150,21 +132,6 @@ class CustomerCommandHandler:
         )
 
         saved = await self._customer_repository.save(customer)
-        
-        # Set tags via TagLink (only if explicitly provided, None means don't change tags)
-        if command.tag_ids is not None:
-            try:
-                await self._tag_link_repository.set_tags_for_entity(
-                    tenant_id=tenant_id,
-                    entity_type="customer",
-                    entity_id=saved.id,
-                    tag_ids=command.tag_ids,
-                )
-                logger.info("Set %d tags for customer %s", len(command.tag_ids), saved.id)
-            except Exception as e:
-                logger.error("Failed to set tags for customer %s: %s", saved.id, str(e))
-                # Don't fail customer update if tag setting fails
-                # Tags can be set later via tag management
         
         logger.info("Updated customer %s for tenant=%s", saved.id, tenant_id)
         return saved

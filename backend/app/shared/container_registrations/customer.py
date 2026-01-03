@@ -46,10 +46,9 @@ def register_customer_container(container: Container) -> None:
     customer_repository = SQLCustomerRepository(tag_link_repository=tag_link_repository)
     container.register(CustomerRepository, instance=customer_repository)
     
-    # Register Customer command handler with TagLinkRepository
+    # Register Customer command handler
     customer_command_handler = CustomerCommandHandler(
-        customer_repository=customer_repository,
-        tag_link_repository=tag_link_repository
+        customer_repository=customer_repository
     )
     container.register(CustomerCommandHandler, instance=customer_command_handler)
     

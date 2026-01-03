@@ -265,7 +265,7 @@ export function CustomerAttachmentsDialog({
                 {attachments.map((attachment) => (
                   <Item
                     key={attachment.id}
-                    className="w-full min-w-0 gap-2 p-3"
+                    className="w-full min-w-0 gap-4 p-3"
                   >
                     <ItemMedia className="text-muted-foreground">
                       {getFileIcon(attachment.mime_type)}
@@ -279,7 +279,7 @@ export function CustomerAttachmentsDialog({
                         {attachment.mime_type}
                       </ItemDescription>
                     </ItemContent>
-                    <ItemActions className="gap-1">
+                    <ItemActions className="gap-2 ml-2">
                       <Button
                         variant="ghost"
                         size="sm"
