@@ -116,14 +116,17 @@ export interface DataListProps<T extends DataListItem> {
     lg?: number;
   };
 
-  /** View mode: 'card' for grid/card view, 'list' for list view */
-  viewMode?: "card" | "list";
+  /** View mode: 'card' for grid/card view, 'list' for list view, 'calendar' for calendar view */
+  viewMode?: "card" | "list" | "calendar";
 
   /** Default view mode */
-  defaultViewMode?: "card" | "list";
+  defaultViewMode?: "card" | "list" | "calendar";
 
   /** Called when view mode changes */
-  onViewModeChange?: (viewMode: "card" | "list") => void;
+  onViewModeChange?: (viewMode: "card" | "list" | "calendar") => void;
+  
+  /** Custom calendar view renderer (used when viewMode is 'calendar') */
+  renderCalendarView?: () => React.ReactNode;
 
   /** Show view mode toggle (card/list) */
   showViewToggle?: boolean;

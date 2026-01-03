@@ -165,16 +165,6 @@ export function ShowDetail({
     [data?.id, images, service]
   );
 
-  const getShowDisplayName = () => {
-    return data?.code || data?.id || "";
-
-    return data?.id || "";
-  };
-
-  const displayName = useMemo(
-    () => (data ? getShowDisplayName() : ""),
-    [data, data?.code]
-  );
 
   // Internal handlers for actions when callbacks aren't provided
   const handleInternalEdit = useCallback(() => {
@@ -404,13 +394,7 @@ export function ShowDetail({
               <Info className="h-10 w-10 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{displayName}</h2>
-
-              {data.code && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Code: {data.code}
-                </p>
-              )}
+              <h2 className="text-xl font-semibold">{data.name || "Untitled Show"}</h2>
             </div>
           </div>
 
@@ -454,7 +438,7 @@ export function ShowDetail({
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
+                  Information
                 </span>
               </button>
               <button
@@ -525,31 +509,10 @@ export function ShowDetail({
               </div>
             )}
 
-            {/* Profile Tab */}
+            {/* Information Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Basic Information
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium">Code</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.code)}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt className="text-sm font-medium">Name</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.name)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-
                   <div>
                     <h3 className="mb-4 text-sm font-medium text-muted-foreground">
                       Timeline

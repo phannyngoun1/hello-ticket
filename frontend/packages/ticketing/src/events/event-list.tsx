@@ -26,6 +26,7 @@ import {
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
 import { EventStatus as EventStatusEnum } from "./types";
+import { EventCalendarView } from "./event-calendar-view";
 
 export interface EventListProps {
   className?: string;
@@ -81,7 +82,7 @@ export function EventList({
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [statusChangeConfirmOpen, setStatusChangeConfirmOpen] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{ event: Event; newStatus: EventStatus } | null>(null);
-  const [viewMode, setViewMode] = useState<"card" | "list">("card");
+  const [viewMode, setViewMode] = useState<"card" | "calendar">("card");
 
   const formatDateTime = (date: Date) => {
     return new Date(date).toLocaleString();
@@ -278,39 +279,6 @@ export function EventList({
     return (item: EventListItem) => {
       const statusVariant = getStatusVariant(item.event.status);
       
-      // List view - horizontal row layout
-      if (viewMode === "list") {
-        return (
-          <div
-            className="group flex items-center gap-4 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/50 cursor-pointer"
-            onClick={() => handleItemClick(item)}
-          >
-            {/* Title and Date */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-foreground truncate">{item.name}</h4>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.description}</p>
-            </div>
-
-            {/* Duration */}
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-[80px]">
-              <Clock className="h-3 w-3 flex-shrink-0" />
-              <span className="font-semibold text-foreground whitespace-nowrap">
-                {formatDuration(item.event.duration_minutes)}
-              </span>
-            </div>
-
-            {/* Status */}
-            <div className="min-w-[100px] flex justify-end">
-              {renderStatusBadge(item.event, statusVariant)}
-            </div>
-
-            {/* Actions */}
-            <div className="min-w-[60px] flex justify-end">
-              {renderActions(item)}
-            </div>
-          </div>
-        );
-      }
 
       // Card view - vertical card layout
       return (
@@ -338,7 +306,7 @@ export function EventList({
         </div>
       );
     };
-  }, [onEdit, onDelete, onManageInventory, onStatusChange, customActions, onEventClick, statusOptions, viewMode]);
+  }, [onEdit, onDelete, onManageInventory, onStatusChange, customActions, onEventClick, statusOptions]);
 
   const handleDeleteConfirmChange = (open: boolean) => {
     setDeleteConfirmOpen(open);
@@ -408,6 +376,12 @@ export function EventList({
         onViewModeChange={setViewMode}
         showViewToggle={showViewToggle}
         gridCols={{ default: 1, md: 2, lg: 3 }}
+        renderCalendarView={() => (
+          <EventCalendarView
+            events={events}
+            onEventClick={onEventClick}
+          />
+        )}
       />
 
       <ConfirmationDialog
