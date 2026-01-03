@@ -31,6 +31,7 @@ from app.shared.container_registrations.payment import register_payment_containe
 from app.shared.container_registrations.show import register_show_container, register_show_mediator
 from app.shared.container_registrations.event import register_event_container, register_event_mediator
 from app.shared.container_registrations.event_seat import register_event_seat_container, register_event_seat_mediator
+from app.shared.container_registrations.tag import register_tag_container, register_tag_mediator
 def setup_container() -> Container:
     """Set up dependency injection container"""
     container = Container()
@@ -47,6 +48,9 @@ def setup_container() -> Container:
     
     # Shared services
     register_code_generator_container(container)
+    
+    # Shared domain modules (tags - must be registered before entities that use them)
+    register_tag_container(container)
     
     # Domain modules
     register_customer_container(container)
@@ -105,6 +109,7 @@ def setup_mediator(container: Container) -> Mediator:
     
     # Register module mediators
     register_user_mediator(mediator)
+    register_tag_mediator(mediator)  # Tags must be registered before entities that use them
     register_customer_mediator(mediator)
     register_customer_type_mediator(mediator)
     register_customer_group_mediator(mediator)
@@ -139,4 +144,14 @@ def get_mediator() -> Mediator:
         Configured mediator instance
     """
     return _mediator
+
+
+def get_container() -> Container:
+    """
+    Get the global container instance
+    
+    Returns:
+        Configured container instance
+    """
+    return container
 

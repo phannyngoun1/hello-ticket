@@ -1,5 +1,7 @@
-import { User, ShoppingCart, FileText } from "lucide-react";
+import { User, ShoppingCart, FileText, RotateCcw } from "lucide-react";
 import type { QuickAction } from "@truths/custom-ui";
+import { cacheManager } from "@truths/utils";
+import { clearPersistedQueryCache } from "../../providers/query-provider";
 
 /**
  * Get app-specific quick actions for the command palette
@@ -29,6 +31,22 @@ export function getAppQuickActions(
                 if (navigate) {
                     navigate({ to: "/sales/customers?action=create" });
                 }
+            },
+        },
+        {
+            icon: RotateCcw,
+            label: "Invalidate Query Cache",
+            value: "action-invalidate-cache",
+            keywords: ["cache", "clear", "invalidate", "refresh", "reset"],
+            action: () => {
+                // Clear React Query in-memory cache
+                if (cacheManager.queryClient) {
+                    cacheManager.queryClient.clear();
+                }
+                // Clear React Query persisted cache (fire and forget)
+                clearPersistedQueryCache().catch((error) => {
+                    console.error("Failed to clear persisted query cache:", error);
+                });
             },
         },
     ];

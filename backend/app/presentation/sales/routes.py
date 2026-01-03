@@ -1,5 +1,6 @@
 """FastAPI routes for sales customers"""
-from typing import Optional
+from typing import Optional, List
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -37,8 +38,40 @@ async def create_customer(
 
     try:
         command = CreateCustomerCommand(
-            code=request.code,
             name=request.name,
+            email=request.email,
+            phone=request.phone,
+            business_name=request.business_name,
+            street_address=request.street_address,
+            city=request.city,
+            state_province=request.state_province,
+            postal_code=request.postal_code,
+            country=request.country,
+            date_of_birth=request.date_of_birth,
+            gender=request.gender,
+            nationality=request.nationality,
+            id_number=request.id_number,
+            id_type=request.id_type,
+            event_preferences=request.event_preferences,
+            seating_preferences=request.seating_preferences,
+            accessibility_needs=request.accessibility_needs,
+            dietary_restrictions=request.dietary_restrictions,
+            emergency_contact_name=request.emergency_contact_name,
+            emergency_contact_phone=request.emergency_contact_phone,
+            emergency_contact_relationship=request.emergency_contact_relationship,
+            preferred_language=request.preferred_language,
+            marketing_opt_in=request.marketing_opt_in,
+            email_marketing=request.email_marketing,
+            sms_marketing=request.sms_marketing,
+            facebook_url=request.facebook_url,
+            twitter_handle=request.twitter_handle,
+            linkedin_url=request.linkedin_url,
+            instagram_handle=request.instagram_handle,
+            website=request.website,
+            tag_ids=request.tag_ids or [],
+            priority=request.priority,
+            notes=request.notes,
+            public_notes=request.public_notes,
         )
         customer = await mediator.send(command)
         return SalesApiMapper.customer_to_response(customer)
@@ -100,10 +133,45 @@ async def update_customer(
     """Update customer fields"""
 
     try:
+        # Tags should be managed via tag service - only accept tag_ids
         command = UpdateCustomerCommand(
             customer_id=customer_id,
-            code=request.code,
             name=request.name,
+            email=request.email,
+            phone=request.phone,
+            business_name=request.business_name,
+            street_address=request.street_address,
+            city=request.city,
+            state_province=request.state_province,
+            postal_code=request.postal_code,
+            country=request.country,
+            date_of_birth=request.date_of_birth,
+            gender=request.gender,
+            nationality=request.nationality,
+            id_number=request.id_number,
+            id_type=request.id_type,
+            event_preferences=request.event_preferences,
+            seating_preferences=request.seating_preferences,
+            accessibility_needs=request.accessibility_needs,
+            dietary_restrictions=request.dietary_restrictions,
+            emergency_contact_name=request.emergency_contact_name,
+            emergency_contact_phone=request.emergency_contact_phone,
+            emergency_contact_relationship=request.emergency_contact_relationship,
+            preferred_language=request.preferred_language,
+            marketing_opt_in=request.marketing_opt_in,
+            email_marketing=request.email_marketing,
+            sms_marketing=request.sms_marketing,
+            facebook_url=request.facebook_url,
+            twitter_handle=request.twitter_handle,
+            linkedin_url=request.linkedin_url,
+            instagram_handle=request.instagram_handle,
+            website=request.website,
+            tag_ids=request.tag_ids,
+            priority=request.priority,
+            status=request.status,
+            status_reason=request.status_reason,
+            notes=request.notes,
+            public_notes=request.public_notes,
         )
         customer = await mediator.send(command)
         return SalesApiMapper.customer_to_response(customer)

@@ -8,6 +8,7 @@ export * from './customer-form';
 
 export * from './create-customer-dialog';
 export * from './edit-customer-dialog';
+export * from './customer-tags-dialog';
 
 export * from './customer-service';
 export * from './use-customers';

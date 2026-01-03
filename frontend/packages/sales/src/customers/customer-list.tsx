@@ -81,6 +81,94 @@ export function CustomerList({
       },
     }),
 
+    createTextColumn<Customer>({
+      accessorKey: "name",
+      header: "Name",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("font-medium", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Customer>({
+      accessorKey: "email",
+      header: "Email",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Customer>({
+      accessorKey: "phone",
+      header: "Phone",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Customer>({
+      accessorKey: "business_name",
+      header: "Business Name",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Customer>({
+      accessorKey: "city",
+      header: "City",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Customer>({
+      accessorKey: "priority",
+      header: "Priority",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        if (!value) return <span className={cn("text-muted-foreground", density.textSize)}>-</span>;
+        const priorityColors = {
+          high: "text-destructive",
+          medium: "text-yellow-600",
+          low: "text-muted-foreground",
+        };
+        return (
+          <span className={cn(
+            "capitalize",
+            priorityColors[value.toLowerCase() as keyof typeof priorityColors] || "text-muted-foreground",
+            density.textSize
+          )}>
+            {value}
+          </span>
+        );
+      },
+    }),
+
     createActionsColumn<Customer>({
       customActions,
       actions: [

@@ -55,15 +55,44 @@ export function CreateCustomerDialog({
   };
 
   const buildPayload = useMemo(() => {
-    return (data: CustomerFormData): CreateCustomerInput => ({
-      code: data.code,
-
-      name: data.name,
-
-      status: "active",
-
-      business_name: "",
-    });
+    return (data: CustomerFormData): CreateCustomerInput => {
+      return {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        business_name: data.business_name || undefined,
+        street_address: data.street_address || undefined,
+        city: data.city || undefined,
+        state_province: data.state_province || undefined,
+        postal_code: data.postal_code || undefined,
+        country: data.country || undefined,
+        date_of_birth: data.date_of_birth || undefined,
+        gender: data.gender || undefined,
+        nationality: data.nationality || undefined,
+        id_number: data.id_number || undefined,
+        id_type: data.id_type || undefined,
+        event_preferences: data.event_preferences || undefined,
+        seating_preferences: data.seating_preferences || undefined,
+        accessibility_needs: data.accessibility_needs || undefined,
+        dietary_restrictions: data.dietary_restrictions || undefined,
+        emergency_contact_name: data.emergency_contact_name || undefined,
+        emergency_contact_phone: data.emergency_contact_phone || undefined,
+        emergency_contact_relationship: data.emergency_contact_relationship || undefined,
+        preferred_language: data.preferred_language || undefined,
+        marketing_opt_in: data.marketing_opt_in || false,
+        email_marketing: data.email_marketing || false,
+        sms_marketing: data.sms_marketing || false,
+        facebook_url: data.facebook_url || undefined,
+        twitter_handle: data.twitter_handle || undefined,
+        linkedin_url: data.linkedin_url || undefined,
+        instagram_handle: data.instagram_handle || undefined,
+        website: data.website || undefined,
+        priority: data.priority || undefined,
+        notes: data.notes || undefined,
+        public_notes: data.public_notes || undefined,
+        status: "active",
+      };
+    };
   }, []);
 
   const handleConfirmSubmit = async () => {
