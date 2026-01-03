@@ -7,8 +7,10 @@
 import { Button, Card, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input, Label } from "@truths/ui";
 import { Save, Trash2, X, MoreVertical, Image as ImageIcon, List } from "lucide-react";
 import { LayoutCanvas } from "../layout-canvas";
-import { ImageUploadCard, SeatPlacementControls, ZoomControls, DatasheetView } from "./index";
+import { ImageUploadCard, SeatPlacementControls, ZoomControls, DatasheetView, ShapeSelector, ShapeToolbox } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
+import type { PlacementShape } from "../types";
+import { PlacementShapeType } from "../types";
 import { useState } from "react";
 
 export interface SectionDetailViewProps {
@@ -34,7 +36,9 @@ export interface SectionDetailViewProps {
   onSectionImageSelect: (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+  onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   onImageClick: (e: any, coords?: { x: number; y: number }) => void;
+  onDeselect?: () => void;
   onWheel: (e: any, isSpacePressed: boolean) => void;
   onPan: (delta: { x: number; y: number }) => void;
   onZoomIn: () => void;
@@ -74,7 +78,9 @@ export function SectionDetailView({
   onSectionImageSelect,
   onSeatClick,
   onSeatDragEnd,
+  onSeatShapeTransform,
   onImageClick,
+  onDeselect,
   onWheel,
   onPan,
   onZoomIn,
@@ -88,6 +94,14 @@ export function SectionDetailView({
   onSetIsEditingViewingSeat,
   onSetSelectedSeat,
   seatEditFormReset,
+  placementShape,
+  onPlacementShapeChange,
+  selectedShapeTool,
+  onShapeToolSelect,
+  onShapeDraw,
+  shapeOverlays,
+  selectedOverlayId,
+  onShapeOverlayClick,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   return (
@@ -193,6 +207,18 @@ export function SectionDetailView({
               viewingSection={viewingSection}
               onNewSection={onNewSection}
             />
+            {onShapeToolSelect && (
+              <ShapeToolbox
+                selectedShapeType={selectedShapeTool || null}
+                onShapeTypeSelect={onShapeToolSelect}
+                selectedSeat={selectedSeat}
+                onSeatEdit={(seat) => {
+                  onSetViewingSeat(seat);
+                  onSetIsEditingViewingSeat(false);
+                  seatEditFormReset({});
+                }}
+              />
+            )}
 
             {/* Canvas Container */}
             <div
@@ -217,12 +243,19 @@ export function SectionDetailView({
                   panOffset={panOffset}
                   onSeatClick={onSeatClick}
                   onSeatDragEnd={onSeatDragEnd}
+                  onSeatShapeTransform={onSeatShapeTransform}
                   onImageClick={onImageClick}
+                  onDeselect={onDeselect}
+                  onShapeDraw={onShapeDraw}
+                  onShapeOverlayClick={onShapeOverlayClick}
                   onWheel={onWheel}
                   onPan={onPan}
                   containerWidth={containerDimensions.width}
                   containerHeight={containerDimensions.height}
                   venueType="small"
+                  selectedShapeTool={selectedShapeTool || null}
+                  shapeOverlays={shapeOverlays}
+                  selectedOverlayId={selectedOverlayId}
                 />
               ) : (
                 <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">

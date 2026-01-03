@@ -34,3 +34,9 @@ export type { DatasheetViewProps } from "./datasheet-view";
 export { SelectedSectionSheet } from "./selected-section-sheet";
 export * from "./manage-sections-sheet";
 export type { SelectedSectionSheetProps } from "./selected-section-sheet";
+
+export { ShapeSelector } from "./shape-selector";
+export type { ShapeSelectorProps } from "./shape-selector";
+
+export { ShapeToolbox } from "./shape-toolbox";
+export type { ShapeToolboxProps } from "./shape-toolbox";

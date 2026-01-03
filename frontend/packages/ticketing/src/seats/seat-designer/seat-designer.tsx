@@ -62,6 +62,8 @@ import {
   DatasheetView,
   SelectedSectionSheet,
   ManageSectionsSheet,
+  ShapeSelector,
+  ShapeToolbox,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -71,6 +73,7 @@ import type {
   SeatInfo,
   SeatMarker,
 } from "./types";
+import { PlacementShapeType, type PlacementShape } from "./types";
 export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
 
 export function SeatDesigner({
@@ -173,6 +176,28 @@ export function SeatDesigner({
     id: string;
     name: string;
   } | null>(null);
+
+  // Shape state for placement marks
+  const [placementShape, setPlacementShape] = useState<PlacementShape>({
+    type: PlacementShapeType.CIRCLE,
+    radius: 1.2,
+  });
+  
+  // Selected shape tool from toolbox
+  const [selectedShapeTool, setSelectedShapeTool] = useState<PlacementShapeType | null>(null);
+  
+  // Shape overlays for making areas clickable
+  const [shapeOverlays, setShapeOverlays] = useState<Array<{
+    id: string;
+    x: number;
+    y: number;
+    shape: PlacementShape;
+    onClick?: () => void;
+    onHover?: () => void;
+    label?: string;
+    isSelected?: boolean;
+  }>>([]);
+  const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
@@ -342,10 +367,24 @@ export function SeatDesigner({
     }
   }, [sectionsData, initialSections, designMode]);
 
+  // Track the last loaded data to prevent unnecessary reloads
+  const lastInitialSeatsRef = useRef<typeof initialSeats>();
+  const lastExistingSeatsRef = useRef<typeof existingSeats>();
+  
   // Load existing seats when fetched or when initialSeats provided
   useEffect(() => {
+    // Only reload if the data source actually changed
+    const initialSeatsChanged = initialSeats !== lastInitialSeatsRef.current;
+    const existingSeatsChanged = existingSeats !== lastExistingSeatsRef.current;
+    
+    if (!initialSeatsChanged && !existingSeatsChanged && lastInitialSeatsRef.current !== undefined) {
+      // Data hasn't changed, don't reload (preserves newly created seats)
+      return;
+    }
+
     // If initialSeats is provided, use it directly (from combined endpoint)
     if (initialSeats) {
+      lastInitialSeatsRef.current = initialSeats;
       if (initialSeats.length > 0) {
         const markers: SeatMarker[] = initialSeats.map((seat) => ({
           id: seat.id,
@@ -366,6 +405,7 @@ export function SeatDesigner({
       }
     } else if (existingSeats) {
       // Fallback to query result if initialSeats not provided
+      lastExistingSeatsRef.current = existingSeats;
       if (existingSeats.items && existingSeats.items.length > 0) {
         const markers: SeatMarker[] = existingSeats.items.map((seat) => ({
           id: seat.id,
@@ -380,12 +420,12 @@ export function SeatDesigner({
           },
         }));
         setSeats(markers);
-      } else {
-        // Layout exists but has no seats yet - start with empty array
+      } else if (lastInitialSeatsRef.current === undefined && lastExistingSeatsRef.current === undefined) {
+        // Only reset on first load when no data exists
         setSeats([]);
       }
-    } else if (!isLoading && !seatsError && !initialSeats) {
-      // Query completed but no data - reset seats (only if not using initialSeats)
+    } else if (!isLoading && !seatsError && !initialSeats && lastInitialSeatsRef.current === undefined && lastExistingSeatsRef.current === undefined) {
+      // Query completed but no data - reset seats only on first load
       setSeats([]);
     }
   }, [existingSeats, initialSeats, isLoading, seatsError]);
@@ -530,6 +570,104 @@ export function SeatDesigner({
     setPanOffset({ x: 0, y: 0 });
   };
 
+  // Handle shape drawing from canvas - creates section (section-level) or seat (seat-level)
+  const handleShapeDraw = useCallback(
+    (
+      shape: PlacementShape,
+      x: number,
+      y: number,
+      width?: number,
+      height?: number
+    ) => {
+      const clampedX = Math.max(0, Math.min(100, x));
+      const clampedY = Math.max(0, Math.min(100, y));
+      
+      const finalShape: PlacementShape = {
+        ...shape,
+        ...(width && { width }),
+        ...(height && { height }),
+      };
+
+      // When shape tool is selected, always create seat markers
+      if (selectedShapeTool) {
+        const seatValues = seatPlacementForm.getValues();
+        const newSeat: SeatMarker = {
+          id: `temp-${Date.now()}`,
+          x: clampedX,
+          y: clampedY,
+          seat: {
+            section: viewingSection?.name || seatValues.section,
+            sectionId: viewingSection?.id || seatValues.sectionId,
+            row: seatValues.row,
+            seatNumber: seatValues.seatNumber,
+            seatType: seatValues.seatType,
+          },
+          shape: finalShape,
+          isNew: true,
+        };
+        setSeats((prev) => [...prev, newSeat]);
+        // Increment seat number for next placement
+        const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
+        seatPlacementForm.setValue("seatNumber", nextSeatNumber);
+        return; // Exit early when creating seat from shape tool
+      }
+
+      // Section-level layout: create section (only for large venues on main floor, when no shape tool)
+      if (designMode === "section-level" && venueType === "large" && isPlacingSections && !viewingSection) {
+        // Store coordinates and open section form
+        setPendingSectionCoordinates({ x: clampedX, y: clampedY });
+        // Store shape to apply after section is created
+        setPlacementShape(finalShape);
+        setIsSectionFormOpen(true);
+        setEditingSectionId(null);
+        sectionForm.reset({ name: "" });
+        return; // Don't create seat when creating section
+      }
+      
+      // Create seat marker with shape (for normal seat placement mode)
+      if (isPlacingSeats) {
+        const seatValues = seatPlacementForm.getValues();
+        const newSeat: SeatMarker = {
+          id: `temp-${Date.now()}`,
+          x: clampedX,
+          y: clampedY,
+          seat: {
+            section: viewingSection?.name || seatValues.section,
+            sectionId: viewingSection?.id || seatValues.sectionId,
+            row: seatValues.row,
+            seatNumber: seatValues.seatNumber,
+            seatType: seatValues.seatType,
+          },
+          shape: finalShape,
+          isNew: true,
+        };
+        setSeats((prev) => [...prev, newSeat]);
+        // Increment seat number for next placement
+        const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
+        seatPlacementForm.setValue("seatNumber", nextSeatNumber);
+      }
+    },
+    [
+      designMode,
+      venueType,
+      viewingSection,
+      isPlacingSeats,
+      isPlacingSections,
+      seatPlacementForm,
+      sectionForm,
+      selectedShapeTool,
+    ]
+  );
+  
+  // Handle shape overlay click
+  const handleShapeOverlayClick = useCallback((overlayId: string) => {
+    setSelectedOverlayId(overlayId);
+    const overlay = shapeOverlays.find((o) => o.id === overlayId);
+    if (overlay) {
+      overlay.onClick?.();
+    }
+  }, [shapeOverlays]);
+
   // Handle Konva image click - uses percentage coordinates from LayoutCanvas
   const handleKonvaImageClick = useCallback(
     (
@@ -537,6 +675,11 @@ export function SeatDesigner({
       percentageCoords?: { x: number; y: number }
     ) => {
       if (!percentageCoords) return;
+
+      // If pointer tool is selected (no shape tool), don't create markers - only deselection happens
+      if (!selectedShapeTool) {
+        return; // Just deselect, don't create anything
+      }
 
       const { x, y } = percentageCoords;
 
@@ -554,6 +697,7 @@ export function SeatDesigner({
             seatNumber: seatValues.seatNumber,
             seatType: seatValues.seatType,
           },
+          shape: placementShape,
           isNew: true,
         };
         setSeats((prev) => [...prev, newSeat]);
@@ -584,6 +728,7 @@ export function SeatDesigner({
             seatNumber: seatValues.seatNumber,
             seatType: seatValues.seatType,
           },
+          shape: placementShape,
           isNew: true,
         };
         setSeats((prev) => [...prev, newSeat]);
@@ -599,6 +744,7 @@ export function SeatDesigner({
       isPlacingSections,
       seatPlacementForm,
       sectionForm,
+      selectedShapeTool,
     ]
   );
 
@@ -642,6 +788,40 @@ export function SeatDesigner({
     []
   );
 
+  // Handle seat shape transform (resize/rotate)
+  const handleSeatShapeTransform = useCallback(
+    (seatId: string, shape: PlacementShape) => {
+      setSeats((prev) =>
+        prev.map((seat) =>
+          seat.id === seatId
+            ? {
+                ...seat,
+                shape,
+              }
+            : seat
+        )
+      );
+    },
+    []
+  );
+
+  // Handle section shape transform (resize/rotate)
+  const handleSectionShapeTransform = useCallback(
+    (sectionId: string, shape: PlacementShape) => {
+      setSectionMarkers((prev) =>
+        prev.map((section) =>
+          section.id === sectionId
+            ? {
+                ...section,
+                shape,
+              }
+            : section
+        )
+      );
+    },
+    []
+  );
+
   // Handle section click from Konva
   const handleKonvaSectionClick = useCallback((section: SectionMarker) => {
     // Open section detail view directly instead of showing sheet
@@ -676,13 +856,29 @@ export function SeatDesigner({
     setPanOffset({ x: 0, y: 0 });
   };
 
-  // Handle seat marker click
+  // Handle seat marker click - only select, don't open sheet
   const handleSeatClick = (seat: SeatMarker) => {
-    // Show seat details in Sheet for viewing/editing/deleting
+    // Just select the seat for transform controls, don't open the sheet
     setSelectedSeat(seat);
+    // Don't set viewingSeat - this prevents the sheet from opening
+  };
+
+  // Handle seat edit from toolbox - opens the seat data sheet
+  const handleSeatEdit = (seat: SeatMarker) => {
     setViewingSeat(seat);
     setIsEditingViewingSeat(false);
     seatEditForm.reset();
+  };
+
+  // Handle section edit from toolbox - opens the section form
+  const handleSectionEdit = (section: SectionMarker) => {
+    handleEditSectionFromSheet(section);
+  };
+
+  // Handle deselection - clear all selections when clicking on empty space
+  const handleDeselect = () => {
+    setSelectedSeat(null);
+    setSelectedSectionMarker(null);
   };
 
   // Section form helpers (Sheet)
@@ -772,8 +968,14 @@ export function SeatDesigner({
           y: coordinates.y,
           imageUrl: section.image_url || undefined,
           isNew: false,
+          shape: placementShape, // Apply the shape that was drawn
         };
         setSectionMarkers((prev) => [...prev, newSectionMarker]);
+        // Clear placement shape after use
+        setPlacementShape({
+          type: PlacementShapeType.CIRCLE,
+          radius: 1.2,
+        });
         // Don't auto-select the new section to avoid opening the Selected Section sheet
         // setSelectedSectionMarker(newSectionMarker);
       }
@@ -1306,7 +1508,9 @@ export function SeatDesigner({
           onSectionImageSelect={handleSectionImageSelect}
           onSeatClick={handleSeatClick}
           onSeatDragEnd={handleKonvaSeatDragEnd}
+          onSeatShapeTransform={handleSeatShapeTransform}
           onImageClick={handleKonvaImageClick}
+          onDeselect={handleDeselect}
           onWheel={handleKonvaWheel}
           onPan={handlePan}
           onZoomIn={handleZoomIn}
@@ -1324,6 +1528,14 @@ export function SeatDesigner({
           onSetIsEditingViewingSeat={setIsEditingViewingSeat}
           onSetSelectedSeat={setSelectedSeat}
           seatEditFormReset={seatEditForm.reset}
+          placementShape={placementShape}
+          onPlacementShapeChange={setPlacementShape}
+          selectedShapeTool={selectedShapeTool}
+          onShapeToolSelect={setSelectedShapeTool}
+          onShapeDraw={handleShapeDraw}
+          shapeOverlays={shapeOverlays}
+          selectedOverlayId={selectedOverlayId}
+          onShapeOverlayClick={handleShapeOverlayClick}
         />
         {/* Seat Edit Sheet - needed for section detail view */}
         <SeatEditSheet
@@ -1521,19 +1733,29 @@ export function SeatDesigner({
         <div className="space-y-4">
           {/* Seat Placement Controls Panel - On Top (Small Venue) */}
           {venueType === "small" && (
-            <SeatPlacementControls
-              form={seatPlacementForm}
-              uniqueSections={getUniqueSections()}
-              sectionsData={sectionsData}
-              sectionSelectValue={sectionSelectValue}
-              onSectionSelectValueChange={setSectionSelectValue}
-              onNewSection={() => {
-                setIsSectionFormOpen(true);
-                setEditingSectionId(null);
-                sectionForm.reset({ name: "" });
-              }}
-              onManageSections={() => setIsManageSectionsOpen(true)}
-            />
+            <>
+              <SeatPlacementControls
+                form={seatPlacementForm}
+                uniqueSections={getUniqueSections()}
+                sectionsData={sectionsData}
+                sectionSelectValue={sectionSelectValue}
+                onSectionSelectValueChange={setSectionSelectValue}
+                onNewSection={() => {
+                  setIsSectionFormOpen(true);
+                  setEditingSectionId(null);
+                  sectionForm.reset({ name: "" });
+                }}
+                onManageSections={() => setIsManageSectionsOpen(true)}
+              />
+              <ShapeToolbox
+                selectedShapeType={selectedShapeTool}
+                onShapeTypeSelect={setSelectedShapeTool}
+                selectedSeat={selectedSeat}
+                selectedSection={venueType === "large" ? selectedSectionMarker : null}
+                onSeatEdit={handleSeatEdit}
+                onSectionEdit={handleSectionEdit}
+              />
+            </>
           )}
 
           {/* Canvas Container */}
@@ -1561,12 +1783,20 @@ export function SeatDesigner({
                 onSeatClick={handleSeatClick}
                 onSectionClick={handleKonvaSectionClick}
                 onSeatDragEnd={handleKonvaSeatDragEnd}
+                onSeatShapeTransform={handleSeatShapeTransform}
+                onSectionShapeTransform={handleSectionShapeTransform}
                 onImageClick={handleKonvaImageClick}
+                onDeselect={handleDeselect}
+                onShapeDraw={handleShapeDraw}
+                onShapeOverlayClick={handleShapeOverlayClick}
                 onWheel={handleKonvaWheel}
                 onPan={handlePan}
                 containerWidth={containerDimensions.width}
                 containerHeight={containerDimensions.height}
                 venueType={venueType}
+                selectedShapeTool={selectedShapeTool}
+                shapeOverlays={shapeOverlays}
+                selectedOverlayId={selectedOverlayId}
               />
             ) : (
               <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
