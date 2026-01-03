@@ -644,9 +644,15 @@ export function SeatDesigner({
 
   // Handle section click from Konva
   const handleKonvaSectionClick = useCallback((section: SectionMarker) => {
-    // Select for editing
-    setSelectedSectionMarker(section);
-  }, []);
+    // Open section detail view directly instead of showing sheet
+    setViewingSection(section);
+    // Update seat placement form with section name
+    seatPlacementForm.setValue("section", section.name);
+    setSelectedSectionMarker(null);
+    // Reset zoom when switching sections
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  }, [seatPlacementForm]);
 
   // Handle seat marker click - used elsewhere in the component
   const handleSectionMarkerClick = (

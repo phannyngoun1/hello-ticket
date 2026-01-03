@@ -24,11 +24,12 @@
   "license": "MIT",
   "dependencies": {
     "@tanstack/react-table": "^8.11.2",
-    "@truths/ui": "*",
     "@truths/shared": "*",
+    "@truths/ui": "*",
     "lucide-react": "^0.303.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-photo-view": "^1.2.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

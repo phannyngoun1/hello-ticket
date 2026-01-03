@@ -17,7 +17,7 @@ import { Card } from "@truths/ui";
 import { Button } from "@truths/ui";
 import { Input } from "@truths/ui";
 import { Badge } from "@truths/ui";
-import { LayoutGrid, List, Edit, Trash2, Users, FileText, Database } from "lucide-react";
+import { LayoutGrid, Calendar, Edit, Trash2, Users, FileText, Database } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { userPreferences } from "@truths/utils";
 import { DataListProps, DataListItem } from "./types";
@@ -52,6 +52,7 @@ export function DataList<T extends DataListItem>({
   defaultViewMode = "card",
   onViewModeChange,
   showViewToggle = true,
+  renderCalendarView,
 }: DataListProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -75,23 +76,26 @@ export function DataList<T extends DataListItem>({
     return cached || defaultViewMode;
   }, [componentId, defaultViewMode, controlledViewMode]);
   
-  const [internalViewMode, setInternalViewMode] = useState<"card" | "list">(initialViewMode);
+  const [internalViewMode, setInternalViewMode] = useState<"card" | "list" | "calendar">(initialViewMode as "card" | "list" | "calendar");
   
   // Use controlled viewMode if provided, otherwise use internal state
   const viewMode = controlledViewMode ?? internalViewMode;
   
   // Save to centralized user preferences when view mode changes (only for uncontrolled mode)
   useEffect(() => {
-    if (!controlledViewMode && internalViewMode) {
-      userPreferences.setDataListView(componentId, internalViewMode);
+    if (!controlledViewMode && internalViewMode && internalViewMode !== "calendar") {
+      // Only save card/list to preferences, not calendar
+      userPreferences.setDataListView(componentId, internalViewMode as "card" | "list");
     }
   }, [internalViewMode, controlledViewMode, componentId]);
   
-  const handleViewModeChange = (newViewMode: "card" | "list") => {
+  const handleViewModeChange = (newViewMode: "card" | "list" | "calendar") => {
     if (!controlledViewMode) {
       setInternalViewMode(newViewMode);
-      // Save to centralized user preferences immediately
-      userPreferences.setDataListView(componentId, newViewMode);
+      // Save to centralized user preferences immediately (only for card/list)
+      if (newViewMode !== "calendar") {
+        userPreferences.setDataListView(componentId, newViewMode as "card" | "list");
+      }
     }
     onViewModeChange?.(newViewMode);
   };
@@ -129,13 +133,13 @@ export function DataList<T extends DataListItem>({
         <LayoutGrid className="h-3.5 w-3.5" />
       </Button>
       <Button
-        variant={viewMode === "list" ? "default" : "ghost"}
+        variant={viewMode === "calendar" ? "default" : "ghost"}
         size="sm"
-        onClick={() => handleViewModeChange("list")}
+        onClick={() => handleViewModeChange("calendar")}
         className="h-8 px-2.5"
-        title="List view"
+        title="Calendar view"
       >
-        <List className="h-3.5 w-3.5" />
+        <Calendar className="h-3.5 w-3.5" />
       </Button>
     </div>
   );
@@ -245,10 +249,13 @@ export function DataList<T extends DataListItem>({
           </div>
         )}
 
-        {/* Item Cards or List */}
+        {/* Item Cards, List, or Calendar */}
         {!loading && filteredItems.length > 0 && (
           <>
-            {viewMode === "card" ? (
+            {viewMode === "calendar" && renderCalendarView ? (
+              // Calendar View
+              renderCalendarView()
+            ) : viewMode === "card" ? (
               // Card/Grid View
               <div className={gridColsClass}>
                 {filteredItems.map((item) => {
