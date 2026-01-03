@@ -898,7 +898,24 @@ class VenueModel(SQLModel, table=True):
     tenant_id: str = Field(index=True)
     code: str = Field(index=True)
     name: str
+    description: Optional[str] = None
     image_url: Optional[str] = None  # URL for venue seat map image
+    venue_type: Optional[str] = None  # Theater, Stadium, Concert Hall, etc.
+    capacity: Optional[int] = None  # Total seating capacity
+    parking_info: Optional[str] = None  # Parking availability/details
+    accessibility: Optional[str] = None  # Accessibility features
+    amenities: Optional[list] = Field(default=None, sa_column=Column(ARRAY(String)))  # List of amenities (WiFi, concessions, etc.)
+    opening_hours: Optional[str] = None  # Operating hours
+    # Contact Information
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+    # Address Information
+    street_address: Optional[str] = None
+    city: Optional[str] = None
+    state_province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: Optional[str] = None
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)

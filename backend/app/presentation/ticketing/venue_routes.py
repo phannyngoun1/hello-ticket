@@ -46,7 +46,22 @@ async def create_venue(
         command = CreateVenueCommand(
             code=request.code,
             name=request.name,
-
+            description=request.description,
+            image_url=request.image_url,
+            venue_type=request.venue_type,
+            capacity=request.capacity,
+            parking_info=request.parking_info,
+            accessibility=request.accessibility,
+            amenities=request.amenities,
+            opening_hours=request.opening_hours,
+            phone=request.phone,
+            email=request.email,
+            website=request.website,
+            street_address=request.street_address,
+            city=request.city,
+            state_province=request.state_province,
+            postal_code=request.postal_code,
+            country=request.country,
         )
         venue = await mediator.send(command)
         return TicketingApiMapper.venue_to_response(venue)
@@ -115,7 +130,22 @@ async def update_venue(
             venue_id=venue_id,
             code=request.code,
             name=request.name,
+            description=request.description,
             image_url=request.image_url,
+            venue_type=request.venue_type,
+            capacity=request.capacity,
+            parking_info=request.parking_info,
+            accessibility=request.accessibility,
+            amenities=request.amenities,
+            opening_hours=request.opening_hours,
+            phone=request.phone,
+            email=request.email,
+            website=request.website,
+            street_address=request.street_address,
+            city=request.city,
+            state_province=request.state_province,
+            postal_code=request.postal_code,
+            country=request.country,
         )
         venue = await mediator.send(command)
         return TicketingApiMapper.venue_to_response(venue)

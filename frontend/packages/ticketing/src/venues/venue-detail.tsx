@@ -13,11 +13,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Tabs,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database, MapPin } from "lucide-react";
+import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid } from "lucide-react";
 import { Venue } from "./types";
-import { LayoutList } from "../layouts";
+import { LayoutList, useLayoutService, useCreateLayout, useLayoutsByVenue } from "../layouts";
 
 export interface VenueDetailProps {
   className?: string;
@@ -48,20 +61,24 @@ export function VenueDetail({
   customActions,
 }: VenueDetailProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "seats" | "metadata">(
-    "profile"
+    "seats"
   );
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newLayoutName, setNewLayoutName] = useState("");
+  const [newLayoutDesignMode, setNewLayoutDesignMode] = useState<"seat-level" | "section-level">("seat-level");
 
   // All hooks must be called before any early returns
+  const layoutService = useLayoutService();
+  const createLayoutMutation = useCreateLayout(layoutService);
+  const { data: layouts } = useLayoutsByVenue(layoutService, data?.id ?? null);
 
   const getVenueDisplayName = () => {
-    return data?.code || data?.id || "";
-
-    return data?.id || "";
+    return data?.name || data?.id || "";
   };
 
   const displayName = useMemo(
     () => (data ? getVenueDisplayName() : ""),
-    [data, data?.code]
+    [data, data?.name]
   );
 
   const formatDate = (value?: Date | string) => {
@@ -126,6 +143,23 @@ export function VenueDetail({
 
   const hasMetadata = showMetadata;
 
+  const handleCreateLayout = async () => {
+    if (!data || !newLayoutName.trim()) return;
+
+    try {
+      await createLayoutMutation.mutateAsync({
+        venue_id: data.id,
+        name: newLayoutName.trim(),
+        design_mode: newLayoutDesignMode,
+      });
+      setNewLayoutName("");
+      setNewLayoutDesignMode("seat-level");
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create layout:", error);
+    }
+  };
+
   return (
     <Card className={cn("p-6", className)}>
       <div>
@@ -137,7 +171,6 @@ export function VenueDetail({
             </div>
             <div>
               <h2 className="text-xl font-semibold">{displayName}</h2>
-
               {data.code && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Code: {data.code}
@@ -149,6 +182,24 @@ export function VenueDetail({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               {customActions?.(data)}
+              {editable && onEdit && (
+                <Button
+                  onClick={() => onEdit(data)}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
+              <Button
+                onClick={() => setIsCreateDialogOpen(true)}
+                size="sm"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Layout
+              </Button>
             </div>
             <div>
               <DropdownMenu>
@@ -181,6 +232,20 @@ export function VenueDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "seats"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("seats")}
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  Layout
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
                   activeTab === "profile"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -189,21 +254,7 @@ export function VenueDetail({
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "seats"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("seats")}
-              >
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Layout
+                  Information
                 </span>
               </button>
               {hasMetadata && (
@@ -226,33 +277,204 @@ export function VenueDetail({
           </div>
 
           <div className="mt-0">
-            {/* Profile Tab */}
+            {/* Information Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-3">
+                {/* Description */}
+                {data.description && (
                   <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Basic Information
+                    <h3 className="mb-2 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Description
+                    </h3>
+                    <p className="text-sm text-foreground whitespace-pre-line">
+                      {data.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Statistics */}
+                <div>
+                  <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                    Statistics
+                  </h3>
+                  <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <dt className="text-sm font-medium">Layouts</dt>
+                      <dd className="mt-1 text-2xl font-semibold">
+                        {layouts?.length ?? 0}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium">Sections</dt>
+                      <dd className="mt-1 text-2xl font-semibold">
+                        {/* TODO: Calculate from layouts when sections data is available */}
+                        -
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-sm font-medium">Seats</dt>
+                      <dd className="mt-1 text-2xl font-semibold">
+                        {/* TODO: Calculate from layouts when seats data is available */}
+                        -
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Venue Details
                     </h3>
                     <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium">Code</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.code)}
-                        </dd>
-                      </div>
-
-                      <div>
-                        <dt className="text-sm font-medium">Name</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.name)}
-                        </dd>
-                      </div>
+                      {data.venue_type && (
+                        <div>
+                          <dt className="text-sm font-medium">Venue Type</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.venue_type)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.capacity && (
+                        <div>
+                          <dt className="text-sm font-medium">Capacity</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {data.capacity.toLocaleString()} seats
+                          </dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
 
                   <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Facilities
+                    </h3>
+                    <dl className="space-y-3">
+                      {data.parking_info && (
+                        <div>
+                          <dt className="text-sm font-medium">Parking</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.parking_info)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.accessibility && (
+                        <div>
+                          <dt className="text-sm font-medium">Accessibility</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.accessibility)}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Additional Information
+                    </h3>
+                    <dl className="space-y-3">
+                      {data.amenities && data.amenities.length > 0 && (
+                        <div>
+                          <dt className="text-sm font-medium">Amenities</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap gap-1">
+                              {data.amenities.map((amenity, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center rounded-md bg-secondary px-2 py-1 text-xs font-medium"
+                                >
+                                  {amenity}
+                                </span>
+                              ))}
+                            </div>
+                          </dd>
+                        </div>
+                      )}
+                      {data.opening_hours && (
+                        <div>
+                          <dt className="text-sm font-medium">Opening Hours</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground whitespace-pre-line">
+                            {formatFieldValue(data.opening_hours)}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Contact Information
+                    </h3>
+                    <dl className="space-y-3">
+                      {data.phone && (
+                        <div>
+                          <dt className="text-sm font-medium">Phone</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            <a href={`tel:${data.phone}`} className="hover:underline">
+                              {data.phone}
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                      {data.email && (
+                        <div>
+                          <dt className="text-sm font-medium">Email</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            <a href={`mailto:${data.email}`} className="hover:underline">
+                              {data.email}
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                      {data.website && (
+                        <div>
+                          <dt className="text-sm font-medium">Website</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            <a href={data.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              {data.website}
+                            </a>
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Address
+                    </h3>
+                    <dl className="space-y-3">
+                      {data.street_address && (
+                        <div>
+                          <dt className="text-sm font-medium">Street</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {data.street_address}
+                          </dd>
+                        </div>
+                      )}
+                      {(data.city || data.state_province || data.postal_code) && (
+                        <div>
+                          <dt className="text-sm font-medium">City, State, ZIP</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {[data.city, data.state_province, data.postal_code].filter(Boolean).join(", ")}
+                          </dd>
+                        </div>
+                      )}
+                      {data.country && (
+                        <div>
+                          <dt className="text-sm font-medium">Country</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {data.country}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
                       Timeline
                     </h3>
                     <dl className="space-y-3">
@@ -307,6 +529,78 @@ export function VenueDetail({
           </div>
         </Tabs>
       </div>
+
+      {/* Create Layout Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Layout</DialogTitle>
+            <DialogDescription>
+              Create a new layout for this venue. Design mode cannot be changed after seats are added.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="layout-name">Layout Name</Label>
+              <Input
+                id="layout-name"
+                placeholder="Layout name"
+                value={newLayoutName}
+                onChange={(e) => setNewLayoutName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newLayoutName.trim()) {
+                    handleCreateLayout();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="design-mode">Design Mode</Label>
+              <Select
+                value={newLayoutDesignMode}
+                onValueChange={(v) => setNewLayoutDesignMode(v as "seat-level" | "section-level")}
+              >
+                <SelectTrigger id="design-mode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seat-level">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Seat Level</span>
+                      <span className="text-xs text-muted-foreground">Place seats directly on venue floor plan</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="section-level">
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">Section Level</span>
+                      <span className="text-xs text-muted-foreground">Define sections first, then add seats to each section</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsCreateDialogOpen(false);
+                setNewLayoutName("");
+                setNewLayoutDesignMode("seat-level");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateLayout}
+              disabled={!newLayoutName.trim() || createLayoutMutation.isPending}
+            >
+              {createLayoutMutation.isPending ? "Creating..." : "Create"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
