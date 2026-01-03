@@ -194,8 +194,6 @@ export function CustomerListContainer({
         loading={isLoading}
         error={error as Error | null}
         onCustomerClick={handleNavigateToCustomer}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
         onCreate={handleCreate}
         onSearch={handleSearch}
         pagination={serverPagination}
