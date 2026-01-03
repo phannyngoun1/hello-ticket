@@ -23,6 +23,8 @@ export * from './utils/types';
 // Services
 export * from './services';
 export * from './tags/tag-service';
+export * from './attachments/attachment-service';
+export * from './attachments/types';
 
 // Filter Strategy Utilities
 export * from './filter-strategy';

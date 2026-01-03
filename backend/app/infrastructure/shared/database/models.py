@@ -1337,3 +1337,29 @@ class FileUploadModel(SQLModel, table=True):
     )
 
 
+class AttachmentLinkModel(SQLModel, table=True):
+    """AttachmentLink database model - polymorphic many-to-many relationship between file uploads and entities"""
+    __tablename__ = "attachment_links"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    file_upload_id: str = Field(index=True, foreign_key="file_uploads.id")
+    entity_type: str = Field(index=True)  # e.g., "customer", "event", "booking"
+    entity_id: str = Field(index=True)  # ID of the linked entity
+    attachment_type: str = Field(default="document", index=True)  # e.g., "profile_photo", "document", "contract"
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_attachment_links_tenant_file', 'tenant_id', 'file_upload_id'),
+        Index('ix_attachment_links_entity', 'entity_type', 'entity_id'),
+        Index('ix_attachment_links_tenant_entity', 'tenant_id', 'entity_type', 'entity_id'),
+        Index('ix_attachment_links_type', 'tenant_id', 'entity_type', 'entity_id', 'attachment_type'),
+        Index('ix_attachment_links_unique', 'file_upload_id', 'entity_type', 'entity_id', unique=True),
+    )
+
+

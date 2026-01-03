@@ -14,12 +14,15 @@ import {
   useDeleteCustomer,
   EditCustomerDialog,
   CustomerTagsDialog,
+  ProfilePhotoUpload,
+  CustomerAttachmentsDialog,
   type Customer,
 } from "@truths/sales";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { useToast } from "@truths/ui";
-import { TagService } from "@truths/shared";
+import { TagService, AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
+import { useQuery } from "@tanstack/react-query";
 
 function CustomerDetailContent({ id }: { id: string }) {
   const navigate = useNavigate();
@@ -30,12 +33,29 @@ function CustomerDetailContent({ id }: { id: string }) {
   const { toast } = useToast();
   
   const tagService = new TagService({ apiClient: api });
+  const attachmentService = new AttachmentService({ apiClient: api });
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
+  const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<FileUpload | null>(null);
+
+  // Load profile photo
+  const { data: profilePhotoData, refetch: refetchProfilePhoto } = useQuery({
+    queryKey: ["profilePhoto", customer?.id, "customer"],
+    queryFn: () =>
+      customer
+        ? attachmentService.getProfilePhoto("customer", customer.id)
+        : null,
+    enabled: !!customer,
+  });
+
+  useEffect(() => {
+    setProfilePhoto(profilePhotoData || null);
+  }, [profilePhotoData]);
 
   useEffect(() => {
     if (!customer) return;
@@ -208,6 +228,29 @@ function CustomerDetailContent({ id }: { id: string }) {
     [customer, refetch, toast, tagService]
   );
 
+  const handleProfilePhotoChange = useCallback(
+    async (photo: FileUpload | null) => {
+      setProfilePhoto(photo);
+      await refetchProfilePhoto();
+    },
+    [refetchProfilePhoto]
+  );
+
+  const handleManageAttachments = useCallback((cus: Customer) => {
+    setAttachmentsDialogOpen(true);
+  }, []);
+
+  const handleAttachmentsSave = useCallback(
+    async (attachments: FileUpload[]) => {
+      // Attachments are already saved, just refetch if needed
+      toast({
+        title: "Success",
+        description: "Attachments updated successfully",
+      });
+    },
+    [toast]
+  );
+
   return (
     <>
       <CustomerDetail
@@ -222,6 +265,18 @@ function CustomerDetailContent({ id }: { id: string }) {
         onCreateBooking={handleCreateBooking}
         onViewBookings={handleViewBookings}
         onManageTags={handleManageTags}
+        onManageAttachments={handleManageAttachments}
+        profilePhoto={profilePhoto}
+        profilePhotoComponent={
+          customer ? (
+            <ProfilePhotoUpload
+              customer={customer}
+              attachmentService={attachmentService}
+              currentPhoto={profilePhoto}
+              onPhotoChange={handleProfilePhotoChange}
+            />
+          ) : undefined
+        }
       />
 
       {customer && (
@@ -310,6 +365,15 @@ function CustomerDetailContent({ id }: { id: string }) {
             customer={customer}
             tagService={tagService}
             onSave={handleTagsSave}
+            loading={false}
+          />
+
+          <CustomerAttachmentsDialog
+            open={attachmentsDialogOpen}
+            onOpenChange={setAttachmentsDialogOpen}
+            customer={customer}
+            attachmentService={attachmentService}
+            onSave={handleAttachmentsSave}
             loading={false}
           />
         </>

@@ -108,6 +108,7 @@ function transformCustomer(dto: CustomerDTO): Customer {
     public_notes: dto.public_notes ?? undefined,
     createdAt: dto.created_at ? new Date(dto.created_at) : new Date(),
     updatedAt: dto.updated_at ? new Date(dto.updated_at) : undefined,
+    deactivatedAt: dto.deactivated_at ? new Date(dto.deactivated_at) : undefined,
   };
 }
 

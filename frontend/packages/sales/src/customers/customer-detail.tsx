@@ -6,22 +6,22 @@
  * @author Phanny
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Button,
   Card,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Tabs,
   Badge,
-  Separator,
+  Item,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
-  MoreVertical,
   Info,
   Database,
   Trash2,
@@ -35,7 +35,6 @@ import {
   ShoppingCart,
   Users,
   FileText,
-  ExternalLink,
   Copy,
   CheckCircle2,
   XCircle,
@@ -43,8 +42,16 @@ import {
   Building2,
   Share2,
   Tag,
+  Download,
+  Image as ImageIcon,
+  File,
+  Loader2,
 } from "lucide-react";
 import { ActionList, type ActionItem } from "@truths/custom-ui";
+import { AttachmentService, FileUpload } from "@truths/shared";
+import { api } from "@truths/api";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
 import { Customer } from "../types";
 
 export interface CustomerDetailProps {
@@ -55,6 +62,7 @@ export interface CustomerDetailProps {
   showActivity?: boolean;
   showMetadata?: boolean;
   editable?: boolean;
+  attachmentService?: AttachmentService;
   onEdit?: (cus: Customer) => void;
   onDelete?: (cus: Customer) => void;
   onActivate?: (cus: Customer) => void;
@@ -62,6 +70,9 @@ export interface CustomerDetailProps {
   onCreateBooking?: (cus: Customer) => void;
   onViewBookings?: (cus: Customer) => void;
   onManageTags?: (cus: Customer) => void;
+  onManageAttachments?: (cus: Customer) => void;
+  profilePhoto?: { url: string } | null;
+  profilePhotoComponent?: React.ReactNode;
   customActions?: (cus: Customer) => React.ReactNode;
 }
 
@@ -72,6 +83,7 @@ export function CustomerDetail({
   error = null,
   showMetadata = false,
   editable = true,
+  attachmentService,
   onEdit,
   onDelete,
   onActivate,
@@ -79,25 +91,40 @@ export function CustomerDetail({
   onCreateBooking,
   onViewBookings,
   onManageTags,
+  onManageAttachments,
+  profilePhotoComponent,
   customActions,
 }: CustomerDetailProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "profile" | "account" | "social" | "metadata">("overview");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "profile" | "account" | "social" | "metadata" | "documents"
+  >("overview");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<FileUpload[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+
+  // Auto-create AttachmentService if not provided
+  const attachmentServiceInstance = useMemo(() => {
+    if (attachmentService) return attachmentService;
+    return new AttachmentService({
+      apiClient: api,
+      endpoints: {
+        attachments: "/api/v1/shared/attachments",
+        entityAttachments: "/api/v1/shared/attachments/entity",
+        profilePhoto: "/api/v1/shared/attachments/entity",
+      },
+    });
+  }, [attachmentService]);
 
   // All hooks must be called before any early returns
 
   const getCustomerDisplayName = () => {
-
     return cus?.code || cus?.id || "";
 
     return cus?.id || "";
   };
 
   const displayName = useMemo(
-    () =>
-      cus
-        ? getCustomerDisplayName()
-        : "",
+    () => (cus ? getCustomerDisplayName() : ""),
     [cus, cus?.code]
   );
 
@@ -131,6 +158,56 @@ export function CustomerDetail({
     }
   };
 
+  // Load documents when documents tab is active
+  const loadDocuments = useCallback(async () => {
+    if (!cus?.id || !attachmentServiceInstance) {
+      return;
+    }
+    setIsLoadingDocuments(true);
+    try {
+      const response = await attachmentServiceInstance.getAttachmentsForEntity(
+        "customer",
+        cus.id,
+        "document"
+      );
+      setDocuments(response.items || []);
+    } catch (error) {
+      console.error("Failed to load documents:", error);
+      setDocuments([]);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  }, [cus?.id, attachmentServiceInstance]);
+
+  useEffect(() => {
+    if (activeTab === "documents" && cus?.id && attachmentServiceInstance) {
+      loadDocuments();
+    }
+  }, [activeTab, cus?.id, attachmentServiceInstance, loadDocuments]);
+
+  const handleDownload = useCallback((file: FileUpload) => {
+    const link = document.createElement("a");
+    link.href = file.url;
+    link.download = file.original_name;
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, []);
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith("image/")) {
+      return <ImageIcon className="h-5 w-5" />;
+    }
+    return <File className="h-5 w-5" />;
+  };
+
   const copyToClipboard = async (text: string, field: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -143,7 +220,7 @@ export function CustomerDetail({
 
   // Build action items
   const actionItems: ActionItem[] = [];
-  
+
   if (editable && cus && onEdit) {
     actionItems.push({
       id: "edit",
@@ -174,7 +251,7 @@ export function CustomerDetail({
     });
   }
 
-  const isActive = cus?.status === 'active';
+  const isActive = cus?.status === "active";
 
   if (cus && isActive && onDeactivate) {
     actionItems.push({
@@ -202,6 +279,16 @@ export function CustomerDetail({
       label: "Manage Tags",
       icon: <Tag className="h-3.5 w-3.5" />,
       onClick: () => onManageTags(cus),
+      variant: "outline",
+    });
+  }
+
+  if (cus && editable && onManageAttachments) {
+    actionItems.push({
+      id: "manage-attachments",
+      label: "Manage Documents",
+      icon: <FileText className="h-3.5 w-3.5" />,
+      onClick: () => onManageAttachments(cus),
       variant: "outline",
     });
   }
@@ -254,14 +341,18 @@ export function CustomerDetail({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-
-              <Info className="h-10 w-10 text-primary" />
-
-            </div>
+            {profilePhotoComponent ? (
+              <div className="flex-shrink-0">{profilePhotoComponent}</div>
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
+                <Info className="h-10 w-10 text-primary" />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-semibold">{cus.name || displayName}</h2>
+                <h2 className="text-xl font-semibold">
+                  {cus.name || displayName}
+                </h2>
                 <Badge
                   variant={isActive ? "default" : "secondary"}
                   className={cn(
@@ -412,6 +503,20 @@ export function CustomerDetail({
                   </span>
                 </button>
               )}
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  activeTab === "documents"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("documents")}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Documents {documents.length > 0 && `(${documents.length})`}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -435,7 +540,10 @@ export function CustomerDetail({
                       <dt className="text-sm font-medium">Email</dt>
                       <dd className="mt-1 text-sm text-muted-foreground">
                         {cus.email ? (
-                          <a href={`mailto:${cus.email}`} className="text-primary hover:underline">
+                          <a
+                            href={`mailto:${cus.email}`}
+                            className="text-primary hover:underline"
+                          >
                             {cus.email}
                           </a>
                         ) : (
@@ -447,7 +555,10 @@ export function CustomerDetail({
                       <dt className="text-sm font-medium">Phone</dt>
                       <dd className="mt-1 text-sm text-muted-foreground">
                         {cus.phone ? (
-                          <a href={`tel:${cus.phone}`} className="text-primary hover:underline">
+                          <a
+                            href={`tel:${cus.phone}`}
+                            className="text-primary hover:underline"
+                          >
                             {cus.phone}
                           </a>
                         ) : (
@@ -459,7 +570,12 @@ export function CustomerDetail({
                       <dt className="text-sm font-medium">Website</dt>
                       <dd className="mt-1 text-sm text-muted-foreground">
                         {cus.website ? (
-                          <a href={cus.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          <a
+                            href={cus.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
                             {cus.website}
                           </a>
                         ) : (
@@ -471,7 +587,11 @@ export function CustomerDetail({
                 </div>
 
                 {/* 2. Address Information */}
-                {(cus.street_address || cus.city || cus.state_province || cus.postal_code || cus.country) && (
+                {(cus.street_address ||
+                  cus.city ||
+                  cus.state_province ||
+                  cus.postal_code ||
+                  cus.country) && (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
@@ -480,7 +600,9 @@ export function CustomerDetail({
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {cus.street_address && (
                         <div className="md:col-span-2 lg:col-span-3">
-                          <dt className="text-sm font-medium">Street Address</dt>
+                          <dt className="text-sm font-medium">
+                            Street Address
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(cus.street_address)}
                           </dd>
@@ -496,7 +618,9 @@ export function CustomerDetail({
                       )}
                       {cus.state_province && (
                         <div>
-                          <dt className="text-sm font-medium">State/Province</dt>
+                          <dt className="text-sm font-medium">
+                            State/Province
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(cus.state_province)}
                           </dd>
@@ -528,7 +652,11 @@ export function CustomerDetail({
             {activeTab === "profile" && (
               <div className="space-y-8">
                 {/* Customer Profile */}
-                {(cus.date_of_birth || cus.gender || cus.nationality || cus.id_number || cus.id_type) && (
+                {(cus.date_of_birth ||
+                  cus.gender ||
+                  cus.nationality ||
+                  cus.id_number ||
+                  cus.id_type) && (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground">
                       Personal Information
@@ -579,9 +707,15 @@ export function CustomerDetail({
                 )}
 
                 {/* Preferences & Settings */}
-                {(cus.event_preferences || cus.seating_preferences || cus.accessibility_needs || 
-                  cus.dietary_restrictions || cus.preferred_language || cus.emergency_contact_name ||
-                  cus.marketing_opt_in !== undefined || cus.email_marketing !== undefined || cus.sms_marketing !== undefined) && (
+                {(cus.event_preferences ||
+                  cus.seating_preferences ||
+                  cus.accessibility_needs ||
+                  cus.dietary_restrictions ||
+                  cus.preferred_language ||
+                  cus.emergency_contact_name ||
+                  cus.marketing_opt_in !== undefined ||
+                  cus.email_marketing !== undefined ||
+                  cus.sms_marketing !== undefined) && (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground">
                       Preferences & Settings
@@ -590,7 +724,9 @@ export function CustomerDetail({
                       <div className="grid gap-4 md:grid-cols-2">
                         {cus.event_preferences && (
                           <div>
-                            <dt className="text-sm font-medium">Event Preferences</dt>
+                            <dt className="text-sm font-medium">
+                              Event Preferences
+                            </dt>
                             <dd className="mt-1 text-sm text-muted-foreground">
                               {formatFieldValue(cus.event_preferences)}
                             </dd>
@@ -598,7 +734,9 @@ export function CustomerDetail({
                         )}
                         {cus.seating_preferences && (
                           <div>
-                            <dt className="text-sm font-medium">Seating Preferences</dt>
+                            <dt className="text-sm font-medium">
+                              Seating Preferences
+                            </dt>
                             <dd className="mt-1 text-sm text-muted-foreground">
                               {formatFieldValue(cus.seating_preferences)}
                             </dd>
@@ -606,7 +744,9 @@ export function CustomerDetail({
                         )}
                         {cus.accessibility_needs && (
                           <div>
-                            <dt className="text-sm font-medium">Accessibility Needs</dt>
+                            <dt className="text-sm font-medium">
+                              Accessibility Needs
+                            </dt>
                             <dd className="mt-1 text-sm text-muted-foreground">
                               {formatFieldValue(cus.accessibility_needs)}
                             </dd>
@@ -614,7 +754,9 @@ export function CustomerDetail({
                         )}
                         {cus.dietary_restrictions && (
                           <div>
-                            <dt className="text-sm font-medium">Dietary Restrictions</dt>
+                            <dt className="text-sm font-medium">
+                              Dietary Restrictions
+                            </dt>
                             <dd className="mt-1 text-sm text-muted-foreground">
                               {formatFieldValue(cus.dietary_restrictions)}
                             </dd>
@@ -622,7 +764,9 @@ export function CustomerDetail({
                         )}
                         {cus.preferred_language && (
                           <div>
-                            <dt className="text-sm font-medium">Preferred Language</dt>
+                            <dt className="text-sm font-medium">
+                              Preferred Language
+                            </dt>
                             <dd className="mt-1 text-sm text-muted-foreground">
                               {formatFieldValue(cus.preferred_language)}
                             </dd>
@@ -630,13 +774,19 @@ export function CustomerDetail({
                         )}
                       </div>
 
-                      {(cus.emergency_contact_name || cus.emergency_contact_phone || cus.emergency_contact_relationship) && (
+                      {(cus.emergency_contact_name ||
+                        cus.emergency_contact_phone ||
+                        cus.emergency_contact_relationship) && (
                         <div className="pt-2 border-t">
-                          <h4 className="text-sm font-medium mb-3">Emergency Contact</h4>
+                          <h4 className="text-sm font-medium mb-3">
+                            Emergency Contact
+                          </h4>
                           <div className="grid gap-4 md:grid-cols-3">
                             {cus.emergency_contact_name && (
                               <div>
-                                <dt className="text-sm font-medium">Contact Name</dt>
+                                <dt className="text-sm font-medium">
+                                  Contact Name
+                                </dt>
                                 <dd className="mt-1 text-sm text-muted-foreground">
                                   {formatFieldValue(cus.emergency_contact_name)}
                                 </dd>
@@ -644,10 +794,15 @@ export function CustomerDetail({
                             )}
                             {cus.emergency_contact_phone && (
                               <div>
-                                <dt className="text-sm font-medium">Contact Phone</dt>
+                                <dt className="text-sm font-medium">
+                                  Contact Phone
+                                </dt>
                                 <dd className="mt-1 text-sm text-muted-foreground">
                                   {cus.emergency_contact_phone ? (
-                                    <a href={`tel:${cus.emergency_contact_phone}`} className="text-primary hover:underline">
+                                    <a
+                                      href={`tel:${cus.emergency_contact_phone}`}
+                                      className="text-primary hover:underline"
+                                    >
                                       {cus.emergency_contact_phone}
                                     </a>
                                   ) : (
@@ -658,9 +813,13 @@ export function CustomerDetail({
                             )}
                             {cus.emergency_contact_relationship && (
                               <div>
-                                <dt className="text-sm font-medium">Relationship</dt>
+                                <dt className="text-sm font-medium">
+                                  Relationship
+                                </dt>
                                 <dd className="mt-1 text-sm text-muted-foreground">
-                                  {formatFieldValue(cus.emergency_contact_relationship)}
+                                  {formatFieldValue(
+                                    cus.emergency_contact_relationship
+                                  )}
                                 </dd>
                               </div>
                             )}
@@ -668,40 +827,59 @@ export function CustomerDetail({
                         </div>
                       )}
 
-                      {(cus.marketing_opt_in !== undefined || cus.email_marketing !== undefined || cus.sms_marketing !== undefined) && (
+                      {(cus.marketing_opt_in !== undefined ||
+                        cus.email_marketing !== undefined ||
+                        cus.sms_marketing !== undefined) && (
                         <div className="pt-2 border-t">
-                          <h4 className="text-sm font-medium mb-3">Marketing Preferences</h4>
+                          <h4 className="text-sm font-medium mb-3">
+                            Marketing Preferences
+                          </h4>
                           <div className="flex flex-wrap gap-4">
                             {cus.marketing_opt_in !== undefined && (
                               <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.marketing_opt_in ? "bg-green-500" : "bg-gray-300"
-                                )} />
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    cus.marketing_opt_in
+                                      ? "bg-green-500"
+                                      : "bg-gray-300"
+                                  )}
+                                />
                                 <span className="text-sm text-muted-foreground">
-                                  Marketing Opt-in: {cus.marketing_opt_in ? "Yes" : "No"}
+                                  Marketing Opt-in:{" "}
+                                  {cus.marketing_opt_in ? "Yes" : "No"}
                                 </span>
                               </div>
                             )}
                             {cus.email_marketing !== undefined && (
                               <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.email_marketing ? "bg-green-500" : "bg-gray-300"
-                                )} />
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    cus.email_marketing
+                                      ? "bg-green-500"
+                                      : "bg-gray-300"
+                                  )}
+                                />
                                 <span className="text-sm text-muted-foreground">
-                                  Email Marketing: {cus.email_marketing ? "Yes" : "No"}
+                                  Email Marketing:{" "}
+                                  {cus.email_marketing ? "Yes" : "No"}
                                 </span>
                               </div>
                             )}
                             {cus.sms_marketing !== undefined && (
                               <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.sms_marketing ? "bg-green-500" : "bg-gray-300"
-                                )} />
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    cus.sms_marketing
+                                      ? "bg-green-500"
+                                      : "bg-gray-300"
+                                  )}
+                                />
                                 <span className="text-sm text-muted-foreground">
-                                  SMS Marketing: {cus.sms_marketing ? "Yes" : "No"}
+                                  SMS Marketing:{" "}
+                                  {cus.sms_marketing ? "Yes" : "No"}
                                 </span>
                               </div>
                             )}
@@ -718,8 +896,12 @@ export function CustomerDetail({
             {activeTab === "account" && (
               <div className="space-y-8">
                 {/* Account Management */}
-                {(cus.account_manager_id || cus.sales_representative_id || cus.customer_since || 
-                  cus.last_purchase_date || cus.total_purchase_amount !== undefined || cus.last_contact_date) && (
+                {(cus.account_manager_id ||
+                  cus.sales_representative_id ||
+                  cus.customer_since ||
+                  cus.last_purchase_date ||
+                  cus.total_purchase_amount !== undefined ||
+                  cus.last_contact_date) && (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
                       <Users className="h-4 w-4" />
@@ -728,7 +910,9 @@ export function CustomerDetail({
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {cus.account_manager_id && (
                         <div>
-                          <dt className="text-sm font-medium">Account Manager</dt>
+                          <dt className="text-sm font-medium">
+                            Account Manager
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(cus.account_manager_id)}
                           </dd>
@@ -736,7 +920,9 @@ export function CustomerDetail({
                       )}
                       {cus.sales_representative_id && (
                         <div>
-                          <dt className="text-sm font-medium">Sales Representative</dt>
+                          <dt className="text-sm font-medium">
+                            Sales Representative
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(cus.sales_representative_id)}
                           </dd>
@@ -821,11 +1007,11 @@ export function CustomerDetail({
                         </dd>
                       </div>
                     )}
-                    {cus.deactivated_at && (
+                    {cus.deactivatedAt && (
                       <div>
                         <dt className="text-sm font-medium">Deactivated At</dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(cus.deactivated_at)}
+                          {formatDate(cus.deactivatedAt)}
                         </dd>
                       </div>
                     )}
@@ -838,7 +1024,10 @@ export function CustomerDetail({
             {activeTab === "social" && (
               <div className="space-y-8">
                 {/* Social & Online */}
-                {(cus.facebook_url || cus.twitter_handle || cus.linkedin_url || cus.instagram_handle) && (
+                {(cus.facebook_url ||
+                  cus.twitter_handle ||
+                  cus.linkedin_url ||
+                  cus.instagram_handle) && (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground">
                       Social & Online
@@ -848,7 +1037,12 @@ export function CustomerDetail({
                         <div>
                           <dt className="text-sm font-medium">Facebook</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            <a href={cus.facebook_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            <a
+                              href={cus.facebook_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
                               {cus.facebook_url}
                             </a>
                           </dd>
@@ -858,7 +1052,9 @@ export function CustomerDetail({
                         <div>
                           <dt className="text-sm font-medium">Twitter/X</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            {cus.twitter_handle.startsWith("@") ? cus.twitter_handle : `@${cus.twitter_handle}`}
+                            {cus.twitter_handle.startsWith("@")
+                              ? cus.twitter_handle
+                              : `@${cus.twitter_handle}`}
                           </dd>
                         </div>
                       )}
@@ -866,7 +1062,12 @@ export function CustomerDetail({
                         <div>
                           <dt className="text-sm font-medium">LinkedIn</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            <a href={cus.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            <a
+                              href={cus.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline"
+                            >
                               {cus.linkedin_url}
                             </a>
                           </dd>
@@ -876,7 +1077,9 @@ export function CustomerDetail({
                         <div>
                           <dt className="text-sm font-medium">Instagram</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            {cus.instagram_handle.startsWith("@") ? cus.instagram_handle : `@${cus.instagram_handle}`}
+                            {cus.instagram_handle.startsWith("@")
+                              ? cus.instagram_handle
+                              : `@${cus.instagram_handle}`}
                           </dd>
                         </div>
                       )}
@@ -885,7 +1088,11 @@ export function CustomerDetail({
                 )}
 
                 {/* Tags & Classification */}
-                {(cus.tags && cus.tags.length > 0) || cus.priority || cus.notes || cus.public_notes || editable ? (
+                {(cus.tags && cus.tags.length > 0) ||
+                cus.priority ||
+                cus.notes ||
+                cus.public_notes ||
+                editable ? (
                   <div>
                     <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
                       <Tag className="h-4 w-4" />
@@ -897,7 +1104,10 @@ export function CustomerDetail({
                         <div>
                           <dt className="text-sm font-medium mb-2 flex items-center gap-2">
                             <Tag className="h-4 w-4" />
-                            Tags {cus.tags && cus.tags.length > 0 && `(${cus.tags.length})`}
+                            Tags{" "}
+                            {cus.tags &&
+                              cus.tags.length > 0 &&
+                              `(${cus.tags.length})`}
                           </dt>
                           <dd className="mt-1">
                             {cus.tags && cus.tags.length > 0 ? (
@@ -922,28 +1132,35 @@ export function CustomerDetail({
                           </dd>
                         </div>
                       ) : null}
-                      
+
                       {/* Priority */}
                       {cus.priority && (
                         <div>
                           <dt className="text-sm font-medium">Priority</dt>
                           <dd className="mt-1">
-                            <span className={cn(
-                              "inline-flex items-center px-2 py-1 rounded text-xs font-medium capitalize",
-                              cus.priority.toLowerCase() === "high" && "bg-destructive/10 text-destructive",
-                              cus.priority.toLowerCase() === "medium" && "bg-yellow-500/10 text-yellow-600",
-                              cus.priority.toLowerCase() === "low" && "bg-muted text-muted-foreground"
-                            )}>
+                            <span
+                              className={cn(
+                                "inline-flex items-center px-2 py-1 rounded text-xs font-medium capitalize",
+                                cus.priority.toLowerCase() === "high" &&
+                                  "bg-destructive/10 text-destructive",
+                                cus.priority.toLowerCase() === "medium" &&
+                                  "bg-yellow-500/10 text-yellow-600",
+                                cus.priority.toLowerCase() === "low" &&
+                                  "bg-muted text-muted-foreground"
+                              )}
+                            >
                               {cus.priority}
                             </span>
                           </dd>
                         </div>
                       )}
-                      
+
                       {/* Notes */}
                       {cus.notes && (
                         <div>
-                          <dt className="text-sm font-medium">Internal Notes</dt>
+                          <dt className="text-sm font-medium">
+                            Internal Notes
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
                             {formatFieldValue(cus.notes)}
                           </dd>
@@ -977,6 +1194,103 @@ export function CustomerDetail({
                     </pre>
                   </div>
                 </Card>
+              </div>
+            )}
+
+            {/* Documents Tab */}
+            {activeTab === "documents" && (
+              <div className="space-y-6">
+                {isLoadingDocuments ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : documents.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm font-medium mb-1">No documents</p>
+                    <p className="text-xs">
+                      {onManageAttachments
+                        ? "Click 'Manage Documents' to upload files"
+                        : "No documents have been uploaded"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 w-full">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">
+                        Attached Documents ({documents.length})
+                      </label>
+                    </div>
+                    <PhotoProvider>
+                      <div className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-hidden w-full">
+                        {documents.map((attachment) => {
+                          const isImage =
+                            attachment.mime_type.startsWith("image/");
+                          return (
+                            <Item
+                              key={attachment.id}
+                              className="w-full min-w-0 gap-2 p-3"
+                            >
+                              <ItemMedia className="text-muted-foreground">
+                                {isImage ? (
+                                  <PhotoView src={attachment.url}>
+                                    <img
+                                      src={attachment.url}
+                                      alt={attachment.original_name}
+                                      className="h-10 w-10 object-cover rounded cursor-pointer border border-border"
+                                    />
+                                  </PhotoView>
+                                ) : (
+                                  getFileIcon(attachment.mime_type)
+                                )}
+                              </ItemMedia>
+                              <ItemContent className="overflow-hidden">
+                                <ItemTitle className="truncate">
+                                  {isImage ? (
+                                    <PhotoView src={attachment.url}>
+                                      <span className="cursor-pointer hover:text-primary">
+                                        {attachment.original_name}
+                                      </span>
+                                    </PhotoView>
+                                  ) : (
+                                    attachment.original_name
+                                  )}
+                                </ItemTitle>
+                                <ItemDescription className="truncate text-xs">
+                                  {formatFileSize(attachment.size)} •{" "}
+                                  {attachment.mime_type}
+                                </ItemDescription>
+                              </ItemContent>
+                              <ItemActions className="gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    window.open(attachment.url, "_blank")
+                                  }
+                                  disabled={loading}
+                                  className="h-8 px-2 text-xs"
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDownload(attachment)}
+                                  disabled={loading}
+                                  className="h-8 w-8"
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </ItemActions>
+                            </Item>
+                          );
+                        })}
+                      </div>
+                    </PhotoProvider>
+                  </div>
+                )}
               </div>
             )}
           </div>
