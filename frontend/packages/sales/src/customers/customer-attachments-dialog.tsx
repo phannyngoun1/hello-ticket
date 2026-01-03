@@ -26,6 +26,7 @@ import {
 import { X, Upload, File, Loader2, Image as ImageIcon } from "lucide-react";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { uploadService } from "@truths/shared";
+import { ConfirmationDialog } from "@truths/custom-ui";
 import { Customer } from "../types";
 
 export interface CustomerAttachmentsDialogProps {
@@ -48,6 +49,9 @@ export function CustomerAttachmentsDialog({
   const [attachments, setAttachments] = useState<FileUpload[]>([]);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [attachmentToDelete, setAttachmentToDelete] =
+    useState<FileUpload | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Load attachments when dialog opens
@@ -131,34 +135,43 @@ export function CustomerAttachmentsDialog({
     [customer.id, attachmentService, loadAttachments]
   );
 
-  const handleRemove = useCallback(
-    async (fileUploadId: string) => {
-      if (!confirm("Are you sure you want to remove this attachment?")) {
-        return;
-      }
+  const handleRemoveClick = useCallback((attachment: FileUpload) => {
+    setAttachmentToDelete(attachment);
+    setDeleteConfirmOpen(true);
+  }, []);
 
-      setRemoving(fileUploadId);
-      try {
-        await attachmentService.unlinkAttachment(
-          "customer",
-          customer.id,
-          fileUploadId
-        );
-        await loadAttachments();
-        onSave?.(attachments.filter((a) => a.id !== fileUploadId));
-      } catch (error) {
-        console.error("Failed to remove attachment:", error);
-        alert(
-          error instanceof Error
-            ? error.message
-            : "Failed to remove attachment. Please try again."
-        );
-      } finally {
-        setRemoving(null);
-      }
-    },
-    [customer.id, attachmentService, attachments, loadAttachments, onSave]
-  );
+  const handleRemoveConfirm = useCallback(async () => {
+    if (!attachmentToDelete) return;
+
+    setRemoving(attachmentToDelete.id);
+    try {
+      await attachmentService.unlinkAttachment(
+        "customer",
+        customer.id,
+        attachmentToDelete.id
+      );
+      await loadAttachments();
+      onSave?.(attachments.filter((a) => a.id !== attachmentToDelete.id));
+      setDeleteConfirmOpen(false);
+      setAttachmentToDelete(null);
+    } catch (error) {
+      console.error("Failed to remove attachment:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove attachment. Please try again."
+      );
+    } finally {
+      setRemoving(null);
+    }
+  }, [
+    customer.id,
+    attachmentService,
+    attachments,
+    loadAttachments,
+    onSave,
+    attachmentToDelete,
+  ]);
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) {
@@ -175,8 +188,11 @@ export function CustomerAttachmentsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-[1200px]">
-        <DialogHeader>
+      <DialogContent
+        className="w-[90vw] max-w-[1200px] max-h-[90vh] !grid !grid-rows-[auto_1fr_auto] gap-0 p-6 overflow-hidden"
+        style={{ maxHeight: "90vh" }}
+      >
+        <DialogHeader className="flex-shrink-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
             <File className="h-5 w-5" />
             Manage Documents
@@ -190,9 +206,9 @@ export function CustomerAttachmentsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="overflow-y-auto min-h-0 space-y-4">
           {/* Upload Section */}
-          <div className="space-y-2">
+          <div className="space-y-2 flex-shrink-0 pt-2">
             <label
               htmlFor={`attachments-${customer.id}`}
               className="text-sm font-medium"
@@ -232,17 +248,20 @@ export function CustomerAttachmentsDialog({
             </p>
           </div>
 
-          <Separator />
+          <Separator className="flex-shrink-0" />
 
           {/* Attachments List */}
-          <div className="space-y-2 w-full">
-            <div className="flex items-center justify-between">
+          <div className="space-y-2 w-full flex flex-col pb-4">
+            <div className="flex items-center justify-between flex-shrink-0">
               <label className="text-sm font-medium">
                 Attached Documents ({attachments.length})
               </label>
             </div>
             {attachments.length > 0 ? (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto overflow-x-hidden w-full">
+              <div
+                className="overflow-y-auto overflow-x-hidden w-full space-y-2 pr-2"
+                style={{ maxHeight: "calc(90vh - 350px)" }}
+              >
                 {attachments.map((attachment) => (
                   <Item
                     key={attachment.id}
@@ -273,7 +292,7 @@ export function CustomerAttachmentsDialog({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleRemove(attachment.id)}
+                        onClick={() => handleRemoveClick(attachment)}
                         disabled={loading || removing === attachment.id}
                         className="h-8 w-8"
                       >
@@ -288,7 +307,7 @@ export function CustomerAttachmentsDialog({
                 ))}
               </div>
             ) : (
-              <div className="min-h-[100px] p-6 border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-center">
+              <div className="min-h-[100px] p-6 border-2 border-dashed rounded-lg bg-muted/20 flex flex-col items-center justify-center text-center flex-shrink-0">
                 <File className="h-8 w-8 text-muted-foreground/50 mb-2" />
                 <p className="text-sm font-medium text-muted-foreground mb-1">
                   No documents attached
@@ -301,7 +320,7 @@ export function CustomerAttachmentsDialog({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -311,6 +330,34 @@ export function CustomerAttachmentsDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ConfirmationDialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open);
+          if (!open) {
+            setAttachmentToDelete(null);
+          }
+        }}
+        title="Remove Document"
+        description={
+          attachmentToDelete
+            ? `Are you sure you want to remove "${attachmentToDelete.original_name}"? This action cannot be undone.`
+            : "Are you sure you want to remove this document?"
+        }
+        confirmAction={{
+          label: "Remove",
+          variant: "destructive",
+          onClick: handleRemoveConfirm,
+          loading: removing !== null,
+          disabled: removing !== null,
+        }}
+        cancelAction={{
+          label: "Cancel",
+          variant: "outline",
+          disabled: removing !== null,
+        }}
+      />
     </Dialog>
   );
 }
