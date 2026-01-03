@@ -8,6 +8,7 @@ import {
 import {
   VenueDetail,
   VenueProvider,
+  VenueTypeProvider,
   LayoutProvider,
   useVenue,
   useVenueService,
@@ -120,9 +121,18 @@ export function ViewVenuePage() {
 
   return (
     <VenueProvider config={serviceConfig}>
-      <LayoutProvider config={layoutServiceConfig}>
-        <VenueDetailContent id={id} />
-      </LayoutProvider>
+      <VenueTypeProvider
+        config={{
+          apiClient: api,
+          endpoints: {
+            venueTypes: "/api/v1/ticketing/venue-types",
+          },
+        }}
+      >
+        <LayoutProvider config={layoutServiceConfig}>
+          <VenueDetailContent id={id} />
+        </LayoutProvider>
+      </VenueTypeProvider>
     </VenueProvider>
   );
 }

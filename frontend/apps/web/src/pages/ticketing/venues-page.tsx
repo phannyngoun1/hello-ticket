@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { VenueListContainer, VenueProvider } from "@truths/ticketing";
+import { VenueListContainer, VenueProvider, VenueTypeProvider } from "@truths/ticketing";
 import { api } from "@truths/api";
 
 export function VenuePage() {
@@ -17,20 +17,29 @@ export function VenuePage() {
         },
       }}
     >
-      <div className="space-y-4">
-        <VenueListContainer
-          autoOpenCreate={autoOpenCreate}
-          onCreateDialogClose={() =>
-            navigate({ to: "/ticketing/venues", search: {}})
-          }
-          onNavigateToVenue={(id) =>
-            navigate({
-              to: "/ticketing/venues/$id",
-              params: { id },
-            })
-          }
-        />
-      </div>
+      <VenueTypeProvider
+        config={{
+          apiClient: api,
+          endpoints: {
+            venueTypes: "/api/v1/ticketing/venue-types",
+          },
+        }}
+      >
+        <div className="space-y-4">
+          <VenueListContainer
+            autoOpenCreate={autoOpenCreate}
+            onCreateDialogClose={() =>
+              navigate({ to: "/ticketing/venues", search: {}})
+            }
+            onNavigateToVenue={(id) =>
+              navigate({
+                to: "/ticketing/venues/$id",
+                params: { id },
+              })
+            }
+          />
+        </div>
+      </VenueTypeProvider>
     </VenueProvider>
   );
 }

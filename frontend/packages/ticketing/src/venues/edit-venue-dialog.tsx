@@ -189,7 +189,6 @@ export function EditVenueDialog({
             defaultValues={defaultValues}
             onSubmit={handleFormSubmit}
             isLoading={isSubmitting}
-            mode="edit"
           />
         </div>
       </FullScreenDialog>

@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from .venue_type_routes import router as venue_type_router
 from .event_routes import router as event_router
 from .event_seat_routes import router as event_seat_router
 from .show_routes import router as show_router
@@ -20,6 +21,8 @@ router.include_router(event_type_router)
 router.include_router(show_router)
 router.include_router(event_router)
 router.include_router(event_seat_router)
+router.include_router(venue_type_router)
+router.include_router(venue_type_router)
 
 # Export as ticketing_router for consistency
 ticketing_router = router

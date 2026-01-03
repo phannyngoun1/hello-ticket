@@ -46,6 +46,7 @@ import { Route as SalesBookingsIndexRouteImport } from './routes/sales/bookings/
 import { Route as TicketingVenuesIdRouteImport } from './routes/ticketing/venues/$id'
 import { Route as TicketingShowsIdRouteImport } from './routes/ticketing/shows/$id'
 import { Route as TicketingOrganizersIdRouteImport } from './routes/ticketing/organizers/$id'
+import { Route as SettingsTicketingVenueTypesRouteImport } from './routes/settings/ticketing/venue-types'
 import { Route as SettingsTicketingEventTypesRouteImport } from './routes/settings/ticketing/event-types'
 import { Route as SettingsSalesTestTreesRouteImport } from './routes/settings/sales/test-trees'
 import { Route as SettingsSalesTestBasicsRouteImport } from './routes/settings/sales/test-basics'
@@ -244,6 +245,12 @@ const TicketingOrganizersIdRoute = TicketingOrganizersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => TicketingOrganizersRoute,
 } as any)
+const SettingsTicketingVenueTypesRoute =
+  SettingsTicketingVenueTypesRouteImport.update({
+    id: '/settings/ticketing/venue-types',
+    path: '/settings/ticketing/venue-types',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsTicketingEventTypesRoute =
   SettingsTicketingEventTypesRouteImport.update({
     id: '/settings/ticketing/event-types',
@@ -335,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
+  '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
@@ -375,6 +383,7 @@ export interface FileRoutesByTo {
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
+  '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
@@ -425,6 +434,7 @@ export interface FileRoutesById {
   '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
   '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
+  '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
   '/ticketing/shows/$id': typeof TicketingShowsIdRoute
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/settings/sales/test-basics'
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
+    | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
@@ -516,6 +527,7 @@ export interface FileRouteTypes {
     | '/settings/sales/test-basics'
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
+    | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
@@ -565,6 +577,7 @@ export interface FileRouteTypes {
     | '/settings/sales/test-basics'
     | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
+    | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
     | '/ticketing/shows/$id'
     | '/ticketing/venues/$id'
@@ -610,6 +623,7 @@ export interface RootRouteChildren {
   SettingsSalesTestBasicsRoute: typeof SettingsSalesTestBasicsRoute
   SettingsSalesTestTreesRoute: typeof SettingsSalesTestTreesRoute
   SettingsTicketingEventTypesRoute: typeof SettingsTicketingEventTypesRoute
+  SettingsTicketingVenueTypesRoute: typeof SettingsTicketingVenueTypesRoute
   TicketingEventsEventIdInventoryRoute: typeof TicketingEventsEventIdInventoryRoute
 }
 
@@ -874,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TicketingOrganizersIdRouteImport
       parentRoute: typeof TicketingOrganizersRoute
     }
+    '/settings/ticketing/venue-types': {
+      id: '/settings/ticketing/venue-types'
+      path: '/settings/ticketing/venue-types'
+      fullPath: '/settings/ticketing/venue-types'
+      preLoaderRoute: typeof SettingsTicketingVenueTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/ticketing/event-types': {
       id: '/settings/ticketing/event-types'
       path: '/settings/ticketing/event-types'
@@ -1107,6 +1128,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsSalesTestBasicsRoute: SettingsSalesTestBasicsRoute,
   SettingsSalesTestTreesRoute: SettingsSalesTestTreesRoute,
   SettingsTicketingEventTypesRoute: SettingsTicketingEventTypesRoute,
+  SettingsTicketingVenueTypesRoute: SettingsTicketingVenueTypesRoute,
   TicketingEventsEventIdInventoryRoute: TicketingEventsEventIdInventoryRoute,
 }
 export const routeTree = rootRouteImport

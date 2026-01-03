@@ -156,7 +156,6 @@ export function CreateVenueDialog({
             key={formKey}
             onSubmit={handleFormSubmit}
             isLoading={isSubmitting}
-            mode="create"
           />
         </div>
       </FullScreenDialog>
