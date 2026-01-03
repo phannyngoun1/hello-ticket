@@ -101,6 +101,7 @@ export interface Customer {
     public_notes?: string;
     createdAt: Date;
     updatedAt?: Date;
+    deactivatedAt?: Date;
 }
 
 export interface CreateCustomerInput {

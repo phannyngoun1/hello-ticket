@@ -27,7 +27,8 @@
     "@truths/shared": "*",
     "@truths/ui": "*",
     "@truths/utils": "*",
-    "react": "^18.3.1"
+    "react": "^18.3.1",
+    "react-photo-view": "^1.2.7"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

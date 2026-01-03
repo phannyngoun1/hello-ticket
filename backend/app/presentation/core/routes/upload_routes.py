@@ -54,7 +54,21 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp",
 }
 
+ALLOWED_DOCUMENT_TYPES = {
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
+    "text/plain",
+    "text/csv",
+}
+
+ALLOWED_FILE_TYPES = ALLOWED_IMAGE_TYPES | ALLOWED_DOCUMENT_TYPES
+
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB for images
+MAX_DOCUMENT_SIZE = 20 * 1024 * 1024  # 20MB for documents
 
 
 @router.post("/", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
@@ -75,22 +89,23 @@ async def upload_file(
     # Set tenant context for repository
     set_tenant_context(current_user.tenant_id)
     
-    # Validate file type (for now, only images)
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
+    # Validate file type
+    if file.content_type not in ALLOWED_FILE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type {file.content_type} not allowed. Allowed types: {', '.join(ALLOWED_IMAGE_TYPES)}"
+            detail=f"File type {file.content_type} not allowed. Allowed types: images ({', '.join(ALLOWED_IMAGE_TYPES)}) and documents ({', '.join(ALLOWED_DOCUMENT_TYPES)})"
         )
     
     # Read file content
     content = await file.read()
     file_size = len(content)
     
-    # Validate file size
-    if file_size > MAX_FILE_SIZE:
+    # Validate file size based on file type
+    max_size = MAX_IMAGE_SIZE if file.content_type in ALLOWED_IMAGE_TYPES else MAX_DOCUMENT_SIZE
+    if file_size > max_size:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File size {file_size} bytes exceeds maximum allowed size of {MAX_FILE_SIZE} bytes"
+            detail=f"File size {file_size} bytes exceeds maximum allowed size of {max_size} bytes for {file.content_type}"
         )
     
     # Generate unique filename
