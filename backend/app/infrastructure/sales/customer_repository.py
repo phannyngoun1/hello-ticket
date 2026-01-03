@@ -1,6 +1,7 @@
 """In-memory CustomerRepository implementation (temporary)."""
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Optional
 from datetime import datetime, timezone
 
@@ -54,4 +55,26 @@ class InMemoryCustomerRepository(CustomerRepository):
         customer.is_active = False
         customer.deactivated_at = datetime.now(timezone.utc)
         return True
+
+    async def generate_next_code(self, tenant_id: str) -> str:
+        """Generate the next available customer code in format C-000000"""
+        # Get all customers for this tenant
+        customers = list(self._by_tenant.get(tenant_id, {}).values())
+        
+        # Pattern to match C-XXXXXX format
+        pattern = re.compile(r'^C-(\d+)$', re.IGNORECASE)
+        
+        max_number = 0
+        for customer in customers:
+            match = pattern.match(customer.code)
+            if match:
+                try:
+                    number = int(match.group(1))
+                    max_number = max(max_number, number)
+                except ValueError:
+                    continue
+        
+        # Increment and format
+        next_number = max_number + 1
+        return f"C-{next_number:06d}"
 

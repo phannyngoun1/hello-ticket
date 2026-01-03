@@ -7,7 +7,9 @@ for the Customer domain entity.
 from punq import Container
 from app.shared.mediator import Mediator
 from app.domain.sales.repositories import CustomerRepository
-from app.infrastructure.sales.customer_repository import InMemoryCustomerRepository
+from app.domain.shared.tag_repository import TagLinkRepository, TagRepository
+from app.infrastructure.sales.sql_customer_repository import SQLCustomerRepository
+from app.infrastructure.shared.tag_repository import SQLTagLinkRepository, SQLTagRepository
 from app.application.sales import (
     CustomerCommandHandler,
     CustomerQueryHandler,
@@ -32,12 +34,23 @@ def register_customer_container(container: Container) -> None:
     Args:
         container: The Punq container to register dependencies in
     """
-    # Register Customer repository
-    customer_repository = InMemoryCustomerRepository()
+    # Register TagLink repository (for tag management)
+    tag_link_repository = SQLTagLinkRepository()
+    container.register(TagLinkRepository, instance=tag_link_repository)
+    
+    # Register Tag repository (for tag lookup/creation)
+    tag_repository = SQLTagRepository()
+    container.register(TagRepository, instance=tag_repository)
+    
+    # Register Customer repository (SQL implementation) with TagLinkRepository
+    customer_repository = SQLCustomerRepository(tag_link_repository=tag_link_repository)
     container.register(CustomerRepository, instance=customer_repository)
     
-    # Register Customer command handler
-    customer_command_handler = CustomerCommandHandler(customer_repository=customer_repository)
+    # Register Customer command handler with TagLinkRepository
+    customer_command_handler = CustomerCommandHandler(
+        customer_repository=customer_repository,
+        tag_link_repository=tag_link_repository
+    )
     container.register(CustomerCommandHandler, instance=customer_command_handler)
     
     # Register Customer query handler

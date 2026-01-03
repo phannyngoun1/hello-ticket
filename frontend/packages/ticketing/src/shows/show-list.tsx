@@ -196,6 +196,9 @@ export function ShowList({
             ? `Are you sure you want to delete "${getDisplayName(selectedShow)}"? This action cannot be undone.`
             : "Are you sure you want to delete this show?"
         }
+        confirmText="delete"
+        confirmTextLabel="Type to confirm"
+        confirmTextPlaceholder='Type "delete" to confirm'
         confirmAction={deleteConfirmAction}
         cancelAction={deleteCancelAction}
       />

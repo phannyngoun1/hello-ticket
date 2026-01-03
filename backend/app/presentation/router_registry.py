@@ -26,6 +26,7 @@ from app.presentation.core import (
 from app.presentation.sales import sales_router
 from app.presentation.shared.dependencies import get_mediator_dependency    
 from app.presentation.shared.routes import enum_router
+from app.presentation.shared.routes.tag_routes import router as tag_router
 from app.presentation.ticketing import ticketing_router
 # Router registry - add new routers here
 # Order matters: health and auth routes should typically come first
@@ -49,6 +50,7 @@ ROUTERS = [
     user_preferences_router,  # User preferences management
     navigation_router,  # Centralized navigation
     enum_router,  # Enum values and options for frontend
+    tag_router,  # Tag management (shared)
     ticketing_router,  # Ticketing module
 
 ]

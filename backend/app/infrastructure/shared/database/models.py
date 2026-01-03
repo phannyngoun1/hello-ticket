@@ -12,7 +12,6 @@ from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, create_engine, Index, MetaData
 from sqlalchemy import Column, JSON, ARRAY, String, DateTime, Date, text, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import INET, JSONB
-from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from decimal import Decimal
 from app.shared.utils import generate_id
 from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum, BookingStatusEnum, BookingPaymentStatusEnum, PaymentStatusEnum, PaymentMethodEnum
@@ -444,6 +443,162 @@ class CustomerTypeModel(SQLModel, table=True):
         Index('ix_customer_types_tenant_code', 'tenant_id', 'code', unique=True),
         Index('ix_customer_types_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_customer_types_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+    )
+
+
+class CustomerModel(SQLModel, table=True):
+    """Customer master data database model"""
+    __tablename__ = "customers"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    code: str = Field(index=True)
+    name: str = Field(index=True)
+    
+    # Essential Contact Information
+    email: Optional[str] = Field(default=None, index=True)
+    phone: Optional[str] = Field(default=None)
+    business_name: Optional[str] = Field(default=None)
+    
+    # Address Information
+    street_address: Optional[str] = Field(default=None)
+    city: Optional[str] = Field(default=None, index=True)
+    state_province: Optional[str] = Field(default=None)
+    postal_code: Optional[str] = Field(default=None)
+    country: Optional[str] = Field(default=None)
+    
+    # Customer Profile
+    date_of_birth: Optional[date] = Field(default=None, sa_column=Column(Date))
+    gender: Optional[str] = Field(default=None)
+    nationality: Optional[str] = Field(default=None)
+    id_number: Optional[str] = Field(default=None)
+    id_type: Optional[str] = Field(default=None)
+    
+    # Account Management
+    account_manager_id: Optional[str] = Field(default=None, index=True)
+    sales_representative_id: Optional[str] = Field(default=None, index=True)
+    customer_since: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    last_purchase_date: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    total_purchase_amount: float = Field(default=0.0)
+    last_contact_date: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    # Preferences & Settings
+    event_preferences: Optional[str] = Field(default=None)
+    seating_preferences: Optional[str] = Field(default=None)
+    accessibility_needs: Optional[str] = Field(default=None)
+    dietary_restrictions: Optional[str] = Field(default=None)
+    emergency_contact_name: Optional[str] = Field(default=None)
+    emergency_contact_phone: Optional[str] = Field(default=None)
+    emergency_contact_relationship: Optional[str] = Field(default=None)
+    preferred_language: Optional[str] = Field(default=None)
+    marketing_opt_in: bool = Field(default=False)
+    email_marketing: bool = Field(default=False)
+    sms_marketing: bool = Field(default=False)
+    
+    # Social & Online
+    facebook_url: Optional[str] = Field(default=None)
+    twitter_handle: Optional[str] = Field(default=None)
+    linkedin_url: Optional[str] = Field(default=None)
+    instagram_handle: Optional[str] = Field(default=None)
+    website: Optional[str] = Field(default=None)
+    
+    # Tags & Classification
+    # Tags are now managed via TagLink table, not stored directly in customer table
+    priority: Optional[str] = Field(default=None, index=True)
+    status_reason: Optional[str] = Field(default=None)
+    notes: Optional[str] = Field(default=None)
+    public_notes: Optional[str] = Field(default=None)
+    
+    # System fields
+    is_active: bool = Field(default=True, index=True)
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    deactivated_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_customers_tenant_code', 'tenant_id', 'code', unique=True),
+        Index('ix_customers_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_customers_tenant_email', 'tenant_id', 'email'),
+        Index('ix_customers_code', 'code'),
+        Index('ix_customers_name', 'name'),
+    )
+
+
+# ============================================================================
+# SHARED MODULE - TAGS
+
+class TagModel(SQLModel, table=True):
+    """Tag database model - unified tags reusable across the system"""
+    __tablename__ = "tags"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    name: str = Field(index=True)  # Normalized lowercase name
+    entity_type: str = Field(index=True)  # e.g., "customer", "event", "booking" - specifies which entity type this tag can be used for
+    description: Optional[str] = Field(default=None)
+    color: Optional[str] = Field(default=None)  # Hex color code
+    is_active: bool = Field(default=True, index=True)
+    version: int = Field(default=0)
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    updated_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_tags_tenant_entity_name', 'tenant_id', 'entity_type', 'name', unique=True),
+        Index('ix_tags_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_tags_tenant_entity', 'tenant_id', 'entity_type'),
+    )
+
+
+class TagLinkModel(SQLModel, table=True):
+    """TagLink database model - polymorphic many-to-many relationship between tags and entities"""
+    __tablename__ = "tag_links"
+    metadata = operational_metadata
+    
+    id: str = Field(primary_key=True, default_factory=generate_id)
+    tenant_id: str = Field(index=True)
+    tag_id: str = Field(index=True, foreign_key="tags.id")
+    entity_type: str = Field(index=True)  # e.g., "customer", "event", "booking"
+    entity_id: str = Field(index=True)  # ID of the linked entity
+    
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True))
+    )
+    
+    __table_args__ = (
+        Index('ix_tag_links_tenant_tag', 'tenant_id', 'tag_id'),
+        Index('ix_tag_links_entity', 'entity_type', 'entity_id'),
+        Index('ix_tag_links_tenant_entity', 'tenant_id', 'entity_type', 'entity_id'),
+        Index('ix_tag_links_unique', 'tag_id', 'entity_type', 'entity_id', unique=True),
     )
 
 

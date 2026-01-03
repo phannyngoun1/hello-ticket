@@ -22,6 +22,7 @@ export * from './utils/types';
 
 // Services
 export * from './services';
+export * from './tags/tag-service';
 
 // Filter Strategy Utilities
 export * from './filter-strategy';
