@@ -5,30 +5,108 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { Stage, Layer, Image, Circle, Group, Text, Rect } from "react-konva";
+import { Stage, Layer, Image, Circle, Group, Text, Rect, Ellipse, Line, Transformer } from "react-konva";
 import Konva from "konva";
 import { SeatType } from "../types";
+import { PlacementShapeType, type PlacementShape, type SeatMarker, type SectionMarker } from "./types";
 
-interface SeatMarker {
-  id: string;
-  x: number;
-  y: number;
-  seat: {
-    section: string;
-    row: string;
-    seatNumber: string;
-    seatType: SeatType;
-  };
-  isNew?: boolean;
+// Types are now imported from ./types
+
+/**
+ * Renders a placement shape based on shape configuration
+ */
+interface ShapeRendererProps {
+  shape: PlacementShape;
+  fill: string;
+  stroke: string;
+  strokeWidth: number;
+  imageWidth: number;
+  imageHeight: number;
+  opacity?: number;
 }
 
-interface SectionMarker {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  imageUrl?: string;
-  isNew?: boolean;
+function ShapeRenderer({
+  shape,
+  fill,
+  stroke,
+  strokeWidth,
+  imageWidth,
+  imageHeight,
+  opacity = 1,
+}: ShapeRendererProps) {
+  const baseProps = {
+    fill,
+    stroke,
+    strokeWidth,
+    opacity,
+  };
+
+  switch (shape.type) {
+    case PlacementShapeType.CIRCLE: {
+      const radius = shape.radius
+        ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
+        : 12; // Default radius
+      return <Circle {...baseProps} radius={radius} />;
+    }
+
+    case PlacementShapeType.RECTANGLE: {
+      const width = shape.width
+        ? (shape.width / 100) * imageWidth
+        : 24; // Default width
+      const height = shape.height
+        ? (shape.height / 100) * imageHeight
+        : 24; // Default height
+      return (
+        <Rect
+          {...baseProps}
+          x={-width / 2}
+          y={-height / 2}
+          width={width}
+          height={height}
+          cornerRadius={shape.cornerRadius || 0}
+        />
+      );
+    }
+
+    case PlacementShapeType.ELLIPSE: {
+      const radiusX = shape.width
+        ? (shape.width / 100) * imageWidth / 2
+        : 12; // Default radiusX
+      const radiusY = shape.height
+        ? (shape.height / 100) * imageHeight / 2
+        : 12; // Default radiusY
+      return (
+        <Ellipse
+          {...baseProps}
+          radiusX={radiusX}
+          radiusY={radiusY}
+        />
+      );
+    }
+
+    case PlacementShapeType.POLYGON: {
+      if (!shape.points || shape.points.length < 6) {
+        // Fallback to circle if polygon points are invalid
+        const radius = 12;
+        return <Circle {...baseProps} radius={radius} />;
+      }
+      // Convert percentage points to absolute coordinates
+      const points = shape.points.map((p, index) => {
+        if (index % 2 === 0) {
+          // x coordinate
+          return (p / 100) * imageWidth;
+        } else {
+          // y coordinate
+          return (p / 100) * imageHeight;
+        }
+      });
+      return <Line {...baseProps} points={points} closed={true} />;
+    }
+
+    default:
+      // Default to circle
+      return <Circle {...baseProps} radius={12} />;
+  }
 }
 
 interface LayoutCanvasProps {
@@ -45,10 +123,15 @@ interface LayoutCanvasProps {
   onSectionClick?: (section: SectionMarker) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+  onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
+  onSectionShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   onImageClick?: (
     e: Konva.KonvaEventObject<MouseEvent>,
     percentageCoords?: { x: number; y: number }
   ) => void;
+  onDeselect?: () => void;
+  onShapeDraw?: (shape: PlacementShape, x: number, y: number, width?: number, height?: number) => void;
+  onShapeOverlayClick?: (overlayId: string) => void;
   onWheel?: (
     e: Konva.KonvaEventObject<WheelEvent>,
     isSpacePressed: boolean
@@ -59,6 +142,18 @@ interface LayoutCanvasProps {
   containerWidth: number;
   containerHeight: number;
   venueType: "small" | "large";
+  selectedShapeTool?: PlacementShapeType | null;
+  shapeOverlays?: Array<{
+    id: string;
+    x: number;
+    y: number;
+    shape: PlacementShape;
+    onClick?: () => void;
+    onHover?: () => void;
+    label?: string;
+    isSelected?: boolean;
+  }>;
+  selectedOverlayId?: string | null;
 }
 
 // Seat marker component with hover transitions
@@ -73,7 +168,10 @@ interface SeatMarkerComponentProps {
   isPlacingSections: boolean;
   onSeatClick?: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
+  onShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   colors: { fill: string; stroke: string };
+  imageWidth: number;
+  imageHeight: number;
 }
 
 function SeatMarkerComponent({
@@ -87,84 +185,179 @@ function SeatMarkerComponent({
   isPlacingSections,
   onSeatClick,
   onSeatDragEnd,
+  onShapeTransform,
   colors,
+  imageWidth,
+  imageHeight,
 }: SeatMarkerComponentProps) {
-  const circleRef = useRef<Konva.Circle>(null);
+  const shapeRef = useRef<Konva.Shape>(null);
   const groupRef = useRef<Konva.Group>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Default shape if none specified
+  const defaultShape: PlacementShape = {
+    type: PlacementShapeType.CIRCLE,
+    radius: 1.2, // ~12px at 1000px image width
+  };
+  const shape = seat.shape || defaultShape;
+
+  // Attach transformer when selected
+  useEffect(() => {
+    if (isSelected && groupRef.current && transformerRef.current) {
+      transformerRef.current.nodes([groupRef.current]);
+      transformerRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected]);
+
+  // Calculate bounding box for transformer
+  const getBoundingBox = () => {
+    if (shape.type === PlacementShapeType.CIRCLE) {
+      const radius = shape.radius ? (shape.radius / 100) * Math.min(imageWidth, imageHeight) : 12;
+      return { width: radius * 2, height: radius * 2 };
+    } else if (shape.type === PlacementShapeType.RECTANGLE || shape.type === PlacementShapeType.ELLIPSE) {
+      const width = shape.width ? (shape.width / 100) * imageWidth : 30;
+      const height = shape.height ? (shape.height / 100) * imageHeight : 20;
+      return { width, height };
+    } else {
+      // Polygon - estimate bounding box
+      return { width: 30, height: 30 };
+    }
+  };
+
+  const boundingBox = getBoundingBox();
 
   // Animate border color on hover state change
   useEffect(() => {
-    const circle = circleRef.current;
-    if (!circle || isSelected) return;
+    const shapeNode = shapeRef.current;
+    if (!shapeNode || isSelected) return;
 
     // Determine hover stroke color - brighter version of the original stroke
-    const hoverStrokeColor = isHovered ? "#3b82f6" : colors.stroke;
+    const hoverStrokeColor = isHovered ? colors.stroke : colors.stroke;
 
-    circle.to({
+    shapeNode.to({
       stroke: hoverStrokeColor,
-      strokeWidth: isHovered ? 3 : 2,
+      strokeWidth: isHovered ? 2.5 : 2, // More visible border
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
   }, [isHovered, isSelected, colors.stroke]);
 
+  // Make markers more visible with better colors
+  // Use seat type colors but make them more vibrant and visible
+  const fillColor = isSelected ? colors.fill : colors.fill;
+  const strokeColor = isSelected ? colors.stroke : colors.stroke;
+  const strokeWidth = isSelected ? 2.5 : 2; // More visible border
+  const fillOpacity = isSelected ? 0.5 : 0.35; // More visible opacity
+
+  // Handle transform end - convert back to percentage coordinates
+  const handleTransformEnd = useCallback(() => {
+    if (!groupRef.current || !onShapeTransform) return;
+    
+    const node = groupRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = node.rotation();
+    
+    // Reset scale and apply to dimensions
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    const updatedShape: PlacementShape = { ...shape };
+    
+    if (shape.type === PlacementShapeType.CIRCLE) {
+      const currentRadius = shape.radius ? (shape.radius / 100) * Math.min(imageWidth, imageHeight) : 12;
+      const newRadius = currentRadius * Math.max(scaleX, scaleY);
+      updatedShape.radius = (newRadius / Math.min(imageWidth, imageHeight)) * 100;
+    } else if (shape.type === PlacementShapeType.RECTANGLE || shape.type === PlacementShapeType.ELLIPSE) {
+      const currentWidth = shape.width ? (shape.width / 100) * imageWidth : 30;
+      const currentHeight = shape.height ? (shape.height / 100) * imageHeight : 20;
+      updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
+      updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+    }
+    
+    updatedShape.rotation = rotation;
+    onShapeTransform(seat.id, updatedShape);
+  }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id]);
+
   return (
-    <Group
-      ref={groupRef}
-      x={x}
-      y={y}
-      draggable={isPlacingSeats}
-      onDragEnd={(e) => onSeatDragEnd(seat.id, e)}
-      onMouseDown={(e) => {
-        e.cancelBubble = true;
-      }}
-      onClick={(e) => {
-        e.cancelBubble = true;
-        onSeatClick?.(seat);
-      }}
-      onTap={(e) => {
-        e.cancelBubble = true;
-        onSeatClick?.(seat);
-      }}
-      onMouseEnter={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor = "pointer";
-        }
-        setIsHovered(true);
-      }}
-      onMouseLeave={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor =
-            isPanning || isSpacePressed
-              ? "grab"
-              : isPlacingSeats || isPlacingSections
-                ? "crosshair"
-                : "default";
-        }
-        setIsHovered(false);
-      }}
-    >
-      <Circle
-        ref={circleRef}
-        radius={isSelected ? 14 : 12}
-        fill={isSelected ? "#3b82f6" : colors.fill}
-        stroke={isSelected ? "#1e40af" : colors.stroke}
-        strokeWidth={isSelected ? 3 : 2}
-        shadowBlur={isSelected ? 10 : 0}
-        shadowColor="rgba(0,0,0,0.3)"
-      />
+    <>
+      <Group
+        ref={groupRef}
+        x={x}
+        y={y}
+        rotation={shape.rotation || 0}
+        draggable={isPlacingSeats || isSelected}
+        onDragEnd={(e) => onSeatDragEnd(seat.id, e)}
+        onTransformEnd={handleTransformEnd}
+        onMouseDown={(e) => {
+          e.cancelBubble = true;
+        }}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          onSeatClick?.(seat);
+        }}
+        onTap={(e) => {
+          e.cancelBubble = true;
+          onSeatClick?.(seat);
+        }}
+        onMouseEnter={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor = isSelected ? "move" : "pointer";
+          }
+          setIsHovered(true);
+        }}
+        onMouseLeave={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor =
+              isPanning || isSpacePressed
+                ? "grab"
+                : isPlacingSeats || isPlacingSections
+                  ? "crosshair"
+                  : "pointer"; // Pointer tool shows pointer cursor
+          }
+          setIsHovered(false);
+        }}
+      >
+      <Group ref={shapeRef as any}>
+        <ShapeRenderer
+          shape={shape}
+          fill={fillColor}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
+          opacity={fillOpacity}
+        />
+      </Group>
+      </Group>
       {isSelected && (
-        <Circle
-          radius={16}
-          fill="transparent"
-          stroke="#93c5fd"
-          strokeWidth={2}
+        <Transformer
+          ref={transformerRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Limit minimum size
+            const minSize = 10;
+            if (Math.abs(newBox.width) < minSize || Math.abs(newBox.height) < minSize) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+          rotateEnabled={true}
+          enabledAnchors={[
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "top-center",
+            "bottom-center",
+            "left-center",
+            "right-center",
+          ]}
         />
       )}
-    </Group>
+    </>
   );
 }
 
@@ -180,6 +373,9 @@ interface SectionMarkerComponentProps {
   isPlacingSeats: boolean;
   onSectionClick?: (section: SectionMarker) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
+  onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
+  imageWidth: number;
+  imageHeight: number;
 }
 
 function SectionMarkerComponent({
@@ -193,10 +389,15 @@ function SectionMarkerComponent({
   isPlacingSeats,
   onSectionClick,
   onSectionDoubleClick,
+  onShapeTransform,
+  imageWidth,
+  imageHeight,
 }: SectionMarkerComponentProps) {
   const textRef = useRef<Konva.Text>(null);
   const groupRef = useRef<Konva.Group>(null);
+  const shapeRef = useRef<Konva.Shape>(null);
   const rectRef = useRef<Konva.Rect>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
   const [isHovered, setIsHovered] = useState(false);
   const textPadding = 8;
   
@@ -205,6 +406,52 @@ function SectionMarkerComponent({
   const estimatedTextWidth = section.name.length * 8.5;
   const boxWidth = estimatedTextWidth + textPadding * 2 + 16; // Add extra padding for text box
   const boxHeight = 14 + textPadding * 2; // fontSize + padding
+
+  // Default shape if none specified (rectangle for sections)
+  const defaultShape: PlacementShape = {
+    type: PlacementShapeType.RECTANGLE,
+    width: 3, // ~30px at 1000px image width
+    height: 2, // ~20px at 1000px image height
+  };
+  const shape = section.shape || defaultShape;
+
+  // Attach transformer when selected and shape exists
+  useEffect(() => {
+    if (isSelected && section.shape && groupRef.current && transformerRef.current) {
+      transformerRef.current.nodes([groupRef.current]);
+      transformerRef.current.getLayer()?.batchDraw();
+    }
+  }, [isSelected, section.shape]);
+
+  // Handle transform end - convert back to percentage coordinates
+  const handleTransformEnd = useCallback(() => {
+    if (!groupRef.current || !onShapeTransform || !section.shape) return;
+    
+    const node = groupRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = node.rotation();
+    
+    // Reset scale and apply to dimensions
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    const updatedShape: PlacementShape = { ...shape };
+    
+    if (shape.type === PlacementShapeType.CIRCLE) {
+      const currentRadius = shape.radius ? (shape.radius / 100) * Math.min(imageWidth, imageHeight) : 12;
+      const newRadius = currentRadius * Math.max(scaleX, scaleY);
+      updatedShape.radius = (newRadius / Math.min(imageWidth, imageHeight)) * 100;
+    } else if (shape.type === PlacementShapeType.RECTANGLE || shape.type === PlacementShapeType.ELLIPSE) {
+      const currentWidth = shape.width ? (shape.width / 100) * imageWidth : 30;
+      const currentHeight = shape.height ? (shape.height / 100) * imageHeight : 20;
+      updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
+      updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+    }
+    
+    updatedShape.rotation = rotation;
+    onShapeTransform(section.id, updatedShape);
+  }, [shape, imageWidth, imageHeight, onShapeTransform, section.id, section.shape]);
 
   // Animate border color on hover state change for text
   useEffect(() => {
@@ -223,12 +470,29 @@ function SectionMarkerComponent({
     });
   }, [isHovered, isSelected]);
 
-  // Animate rectangle border on hover state change (when placing sections)
+  // Animate shape border on hover state change (when placing sections)
+  useEffect(() => {
+    const shapeNode = shapeRef.current;
+    if (!shapeNode || !isPlacingSections || isSelected) return;
+
+    // Change border color and width on hover - more visible
+    const hoverStrokeColor = isHovered ? "#1e40af" : "#3b82f6";
+    const hoverStrokeWidth = isHovered ? 2.5 : 2;
+
+    shapeNode.to({
+      stroke: hoverStrokeColor,
+      strokeWidth: hoverStrokeWidth,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+  }, [isHovered, isSelected, isPlacingSections]);
+
+  // Animate rectangle border on hover state change (for text box wrapper)
   useEffect(() => {
     const rect = rectRef.current;
     if (!rect || !isPlacingSections || isSelected) return;
 
-    // Change border color and width on hover - similar to seats
+    // Change border color and width on hover
     const hoverStrokeColor = isHovered ? "#1e3a8a" : "#3b82f6";
     const hoverStrokeWidth = isHovered ? 3 : 2;
 
@@ -241,59 +505,76 @@ function SectionMarkerComponent({
   }, [isHovered, isSelected, isPlacingSections]);
 
   return (
-    <Group
-      ref={groupRef}
-      x={x}
-      y={y}
-      draggable={isPlacingSections}
-      onDragEnd={() => {
-        // Handle section drag end if needed
-      }}
-      onMouseDown={(e) => {
-        e.cancelBubble = true;
-      }}
-      onClick={(e) => {
-        e.cancelBubble = true;
-        onSectionClick?.(section);
-      }}
-      onDblClick={(e) => {
-        e.cancelBubble = true;
-        onSectionDoubleClick?.(section);
-      }}
-      onTap={(e: any) => {
-        e.cancelBubble = true;
-        onSectionClick?.(section);
-      }}
-      onMouseEnter={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor = "pointer";
-        }
-        setIsHovered(true);
-      }}
-      onMouseLeave={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor =
-            isPanning || isSpacePressed
-              ? "grab"
-              : isPlacingSeats || isPlacingSections
-                ? "crosshair"
-                : "default";
-        }
-        setIsHovered(false);
-      }}
-    >
-      {/* Rectangle box wrapper when placing sections */}
-      {isPlacingSections && (
+    <>
+      <Group
+        ref={groupRef}
+        x={x}
+        y={y}
+        rotation={shape.rotation || 0}
+        draggable={isPlacingSections || isSelected}
+        onDragEnd={() => {
+          // Handle section drag end if needed
+        }}
+        onTransformEnd={section.shape ? handleTransformEnd : undefined}
+        onMouseDown={(e) => {
+          e.cancelBubble = true;
+        }}
+        onClick={(e) => {
+          e.cancelBubble = true;
+          onSectionClick?.(section);
+        }}
+        onDblClick={(e) => {
+          e.cancelBubble = true;
+          onSectionDoubleClick?.(section);
+        }}
+        onTap={(e: any) => {
+          e.cancelBubble = true;
+          onSectionClick?.(section);
+        }}
+        onMouseEnter={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor = isSelected && section.shape ? "move" : "pointer";
+          }
+          setIsHovered(true);
+        }}
+        onMouseLeave={(e) => {
+          const container = e.target.getStage()?.container();
+          if (container) {
+            container.style.cursor =
+              isPanning || isSpacePressed
+                ? "grab"
+                : isPlacingSeats || isPlacingSections
+                  ? "crosshair"
+                  : "pointer"; // Pointer tool shows pointer cursor
+          }
+          setIsHovered(false);
+        }}
+      >
+      {/* Shape marker for section (if shape is defined) */}
+      {section.shape && (
+        <Group ref={shapeRef as any}>
+          <ShapeRenderer
+            shape={shape}
+            fill="#60a5fa" // Vibrant blue fill
+            stroke={isSelected ? "#1e40af" : "#2563eb"}
+            strokeWidth={isSelected ? 2.5 : 2}
+            imageWidth={imageWidth}
+            imageHeight={imageHeight}
+            opacity={isSelected ? 0.5 : 0.35}
+          />
+        </Group>
+      )}
+      {/* Rectangle box wrapper when placing sections (for text label) */}
+      {isPlacingSections && !section.shape && (
         <Rect
           ref={rectRef}
           x={-30 - textPadding - 4}
           y={-10 - textPadding - 4}
           width={boxWidth + 8}
           height={boxHeight + 8}
-          fill="rgba(59, 130, 246, 0.1)"
-          stroke="#3b82f6"
+          fill="rgba(96, 165, 250, 0.35)"
+          stroke="#2563eb"
           strokeWidth={2}
           dash={[5, 5]}
           cornerRadius={4}
@@ -317,7 +598,7 @@ function SectionMarkerComponent({
         shadowBlur={0}
         shadowColor="rgba(0,0,0,0.3)"
       />
-      {isSelected && (
+      {isSelected && !section.shape && (
         <Circle
           radius={18}
           fill="transparent"
@@ -327,7 +608,32 @@ function SectionMarkerComponent({
           y={0}
         />
       )}
-    </Group>
+      </Group>
+      {isSelected && section.shape && (
+        <Transformer
+          ref={transformerRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Limit minimum size
+            const minSize = 10;
+            if (Math.abs(newBox.width) < minSize || Math.abs(newBox.height) < minSize) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+          rotateEnabled={true}
+          enabledAnchors={[
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right",
+            "top-center",
+            "bottom-center",
+            "left-center",
+            "right-center",
+          ]}
+        />
+      )}
+    </>
   );
 }
 
@@ -345,7 +651,12 @@ export function LayoutCanvas({
   onSectionClick,
   onSectionDoubleClick,
   onSeatDragEnd,
+  onSeatShapeTransform,
+  onSectionShapeTransform,
   onImageClick,
+  onDeselect,
+  onShapeDraw,
+  onShapeOverlayClick,
   onWheel,
   onPanStart,
   onPan,
@@ -353,6 +664,9 @@ export function LayoutCanvas({
   containerWidth,
   containerHeight,
   venueType,
+  selectedShapeTool,
+  shapeOverlays = [],
+  selectedOverlayId,
 }: LayoutCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
@@ -361,6 +675,10 @@ export function LayoutCanvas({
   const [isPanning, setIsPanning] = useState(false);
   const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [isDrawingShape, setIsDrawingShape] = useState(false);
+  const [drawStartPos, setDrawStartPos] = useState<{ x: number; y: number } | null>(null);
+  const [drawCurrentPos, setDrawCurrentPos] = useState<{ x: number; y: number } | null>(null);
+  const previewShapeRef = useRef<Konva.Group>(null);
 
   // Handle Space key for panning
   useEffect(() => {
@@ -447,15 +765,15 @@ export function LayoutCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
-  // Get seat color based on type
+  // Get seat color based on type - more vibrant colors for visibility
   const getSeatColor = (seatType: SeatType) => {
     switch (seatType) {
       case SeatType.VIP:
-        return { fill: "#facc15", stroke: "#ca8a04" }; // yellow
+        return { fill: "#fbbf24", stroke: "#d97706" }; // vibrant yellow/gold
       case SeatType.WHEELCHAIR:
-        return { fill: "#4ade80", stroke: "#16a34a" }; // green
+        return { fill: "#34d399", stroke: "#059669" }; // vibrant green
       default:
-        return { fill: "#d1d5db", stroke: "#6b7280" }; // gray
+        return { fill: "#60a5fa", stroke: "#2563eb" }; // vibrant blue (instead of gray)
     }
   };
 
@@ -678,21 +996,29 @@ export function LayoutCanvas({
           return;
         }
 
-        // Otherwise, handle image click for placement
-        const percentageCoords = pointerToPercentage(
-          pointerPos.x,
-          pointerPos.y
-        );
-        onImageClick?.(e, percentageCoords);
+        // If shape tool is selected, start drawing (drag to draw)
+        if (selectedShapeTool && onShapeDraw) {
+          const percentageCoords = pointerToPercentage(
+            pointerPos.x,
+            pointerPos.y
+          );
+          setIsDrawingShape(true);
+          setDrawStartPos(percentageCoords);
+          setDrawCurrentPos(percentageCoords);
+          return;
+        }
+
+        // Pointer tool: Only for selection, don't place seats automatically
+        // Seat placement should be done through other UI controls
       }}
       onMouseMove={(e) => {
+        const stage = e.target.getStage();
+        if (!stage) return;
+
+        const pointerPos = stage.getPointerPosition();
+        if (!pointerPos) return;
+
         if (isPanning && isSpacePressed) {
-          const stage = e.target.getStage();
-          if (!stage) return;
-
-          const pointerPos = stage.getPointerPosition();
-          if (!pointerPos) return;
-
           const delta = {
             x: pointerPos.x - panStartPos.x,
             y: pointerPos.y - panStartPos.y,
@@ -700,12 +1026,80 @@ export function LayoutCanvas({
 
           setPanStartPos(pointerPos);
           onPan?.(delta);
+        } else if (isDrawingShape && drawStartPos && selectedShapeTool) {
+          // Update current drawing position for preview
+          const percentageCoords = pointerToPercentage(
+            pointerPos.x,
+            pointerPos.y
+          );
+          setDrawCurrentPos(percentageCoords);
         }
       }}
-      onMouseUp={() => {
+      onMouseUp={(e) => {
         if (isPanning) {
           setIsPanning(false);
           onPanEnd?.();
+        } else if (isDrawingShape && drawStartPos && drawCurrentPos && selectedShapeTool && onShapeDraw) {
+          // Calculate shape dimensions from drag
+          const startX = drawStartPos.x;
+          const startY = drawStartPos.y;
+          const endX = drawCurrentPos.x;
+          const endY = drawCurrentPos.y;
+          
+          // Calculate distance moved - require minimum drag distance
+          const distance = Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2));
+          const minDragDistance = 0.3; // 0.3% of image - minimum drag distance to create shape
+          
+          if (distance >= minDragDistance) {
+            // Valid drag - create shape with dragged dimensions
+            const minSize = 1.5; // 1.5% of image
+            const width = Math.max(minSize, Math.abs(endX - startX));
+            const height = Math.max(minSize, Math.abs(endY - startY));
+            
+            const centerX = (startX + endX) / 2;
+            const centerY = (startY + endY) / 2;
+
+            // Create shape based on type with reasonable defaults
+            let shape: PlacementShape;
+            if (selectedShapeTool === PlacementShapeType.CIRCLE) {
+              const radius = Math.max(width, height) / 2;
+              shape = {
+                type: PlacementShapeType.CIRCLE,
+                radius: Math.max(0.8, radius), // Minimum 0.8% for visibility
+              };
+              onShapeDraw(shape, centerX, centerY);
+            } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
+              shape = {
+                type: PlacementShapeType.RECTANGLE,
+                width: Math.max(1.0, width),
+                height: Math.max(1.0, height),
+                cornerRadius: 2, // Slight rounding for better appearance
+              };
+              onShapeDraw(shape, centerX, centerY, width, height);
+            } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
+              shape = {
+                type: PlacementShapeType.ELLIPSE,
+                width: Math.max(1.0, width),
+                height: Math.max(1.0, height),
+              };
+              onShapeDraw(shape, centerX, centerY, width, height);
+            } else if (selectedShapeTool === PlacementShapeType.POLYGON) {
+              // For polygon, use default hexagon shape with reasonable size
+              shape = {
+                type: PlacementShapeType.POLYGON,
+                points: [
+                  -1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0
+                ],
+              };
+              onShapeDraw(shape, centerX, centerY);
+            }
+          }
+          // If drag was too small, just cancel the drawing without creating anything
+
+          // Reset drawing state
+          setIsDrawingShape(false);
+          setDrawStartPos(null);
+          setDrawCurrentPos(null);
         }
       }}
       onMouseLeave={() => {
@@ -719,9 +1113,9 @@ export function LayoutCanvas({
         cursor:
           isPanning || isSpacePressed
             ? "grab"
-            : isPlacingSeats || isPlacingSections
+            : selectedShapeTool
               ? "crosshair"
-              : "default",
+              : "pointer", // Pointer tool shows pointer cursor
       }}
     >
       <Layer
@@ -742,6 +1136,32 @@ export function LayoutCanvas({
           width={displayedWidth}
           height={displayedHeight}
           listening={true}
+          onClick={(e) => {
+            // Only deselect if clicking directly on the image (not on a marker)
+            // Markers use e.cancelBubble = true to prevent this from firing
+            // Also don't deselect if we're drawing a shape or if a shape tool is selected
+            const target = e.target;
+            if (target && target.name() === "background-image" && !selectedShapeTool && !isDrawingShape) {
+              onDeselect?.();
+            }
+            // Also call onImageClick if provided
+            if (onImageClick) {
+              const pointerPos = e.target.getStage()?.getPointerPosition();
+              if (pointerPos) {
+                const percentageCoords = pointerToPercentage(pointerPos.x, pointerPos.y);
+                onImageClick(e, percentageCoords);
+              } else {
+                onImageClick(e);
+              }
+            }
+          }}
+          onTap={(e) => {
+            // Handle tap for mobile devices
+            const target = e.target;
+            if (target && target.name() === "background-image" && !selectedShapeTool && !isDrawingShape) {
+              onDeselect?.();
+            }
+          }}
         />
 
         {/* Seats */}
@@ -763,7 +1183,10 @@ export function LayoutCanvas({
               isPlacingSections={isPlacingSections}
               onSeatClick={onSeatClick}
               onSeatDragEnd={handleSeatDragEnd}
+              onShapeTransform={onSeatShapeTransform}
               colors={colors}
+              imageWidth={displayedWidth}
+              imageHeight={displayedHeight}
             />
           );
         })}
@@ -787,9 +1210,146 @@ export function LayoutCanvas({
                 isPlacingSeats={isPlacingSeats}
                 onSectionClick={onSectionClick}
                 onSectionDoubleClick={onSectionDoubleClick}
+                onShapeTransform={onSectionShapeTransform}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
               />
             );
           })}
+
+        {/* Shape Overlays - clickable areas on the image */}
+        {shapeOverlays.map((overlay) => {
+          const { x, y } = percentageToStage(overlay.x, overlay.y);
+          const isSelected = selectedOverlayId === overlay.id;
+          
+          return (
+            <Group
+              key={overlay.id}
+              x={x}
+              y={y}
+              rotation={overlay.shape.rotation || 0}
+              listening={true}
+              onClick={(e) => {
+                e.cancelBubble = true;
+                onShapeOverlayClick?.(overlay.id);
+                overlay.onClick?.();
+              }}
+              onTap={(e) => {
+                e.cancelBubble = true;
+                onShapeOverlayClick?.(overlay.id);
+                overlay.onClick?.();
+              }}
+              onMouseDown={(e) => {
+                e.cancelBubble = true;
+              }}
+              onMouseEnter={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) {
+                  container.style.cursor = "pointer";
+                }
+                overlay.onHover?.();
+              }}
+              onMouseLeave={(e) => {
+                const container = e.target.getStage()?.container();
+                if (container) {
+                  container.style.cursor =
+                    isPanning || isSpacePressed
+                      ? "grab"
+                      : selectedShapeTool
+                        ? "crosshair"
+                        : isPlacingSeats || isPlacingSections
+                          ? "crosshair"
+                          : "pointer"; // Pointer tool shows pointer cursor
+                }
+              }}
+            >
+              <ShapeRenderer
+                shape={overlay.shape}
+                fill={isSelected ? "rgba(59, 130, 246, 0.25)" : "rgba(59, 130, 246, 0.1)"}
+                stroke={isSelected ? "#1e40af" : "#3b82f6"}
+                strokeWidth={isSelected ? 3 : 2}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                opacity={0.9}
+              />
+              {overlay.label && (
+                <Text
+                  text={overlay.label}
+                  fontSize={12}
+                  fontFamily="Arial"
+                  fill="#1e40af"
+                  padding={4}
+                  align="center"
+                  verticalAlign="middle"
+                  backgroundFill="rgba(255, 255, 255, 0.95)"
+                  backgroundStroke="#3b82f6"
+                  backgroundStrokeWidth={1}
+                  cornerRadius={2}
+                  x={-20}
+                  y={-8}
+                />
+              )}
+            </Group>
+          );
+        })}
+
+        {/* Preview shape while drawing */}
+        {isDrawingShape && drawStartPos && drawCurrentPos && selectedShapeTool && (() => {
+          const startX = drawStartPos.x;
+          const startY = drawStartPos.y;
+          const endX = drawCurrentPos.x;
+          const endY = drawCurrentPos.y;
+          
+          const minSize = 1.5;
+          const width = Math.max(minSize, Math.abs(endX - startX));
+          const height = Math.max(minSize, Math.abs(endY - startY));
+          
+          const centerX = (startX + endX) / 2;
+          const centerY = (startY + endY) / 2;
+          
+          const { x, y } = percentageToStage(centerX, centerY);
+          
+          let previewShape: PlacementShape;
+          if (selectedShapeTool === PlacementShapeType.CIRCLE) {
+            const radius = Math.max(width, height) / 2;
+            previewShape = {
+              type: PlacementShapeType.CIRCLE,
+              radius: Math.max(0.8, radius),
+            };
+          } else if (selectedShapeTool === PlacementShapeType.RECTANGLE) {
+            previewShape = {
+              type: PlacementShapeType.RECTANGLE,
+              width: Math.max(1.0, width),
+              height: Math.max(1.0, height),
+              cornerRadius: 2,
+            };
+          } else if (selectedShapeTool === PlacementShapeType.ELLIPSE) {
+            previewShape = {
+              type: PlacementShapeType.ELLIPSE,
+              width: Math.max(1.0, width),
+              height: Math.max(1.0, height),
+            };
+          } else {
+            previewShape = {
+              type: PlacementShapeType.POLYGON,
+              points: [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0],
+            };
+          }
+
+          return (
+            <Group ref={previewShapeRef} x={x} y={y}>
+              <ShapeRenderer
+                shape={previewShape}
+                fill="rgba(59, 130, 246, 0.15)"
+                stroke="#3b82f6"
+                strokeWidth={2.5}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                opacity={0.8}
+              />
+            </Group>
+          );
+        })()}
       </Layer>
     </Stage>
   );

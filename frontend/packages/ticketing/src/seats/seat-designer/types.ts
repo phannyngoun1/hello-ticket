@@ -4,6 +4,32 @@
 
 import { SeatType } from "../types";
 
+/**
+ * Shape types for placement marks
+ */
+export enum PlacementShapeType {
+  CIRCLE = "circle",
+  RECTANGLE = "rectangle",
+  ELLIPSE = "ellipse",
+  POLYGON = "polygon",
+}
+
+/**
+ * Shape properties for placement marks
+ */
+export interface PlacementShape {
+  type: PlacementShapeType;
+  // For circle: radius
+  // For rectangle/ellipse: width and height
+  // For polygon: array of points relative to center
+  width?: number; // Percentage of image width
+  height?: number; // Percentage of image height
+  radius?: number; // Percentage of image (for circle)
+  points?: number[]; // Array of [x, y] pairs as percentages (for polygon)
+  rotation?: number; // Rotation in degrees
+  cornerRadius?: number; // For rounded rectangles
+}
+
 export interface SeatDesignerProps {
   venueId: string;
   layoutId: string;
@@ -40,6 +66,7 @@ export interface SectionMarker {
   y: number;
   imageUrl?: string;
   isNew?: boolean;
+  shape?: PlacementShape; // Optional shape for advanced placement
 }
 
 export interface SeatInfo {
@@ -55,6 +82,22 @@ export interface SeatMarker {
   x: number;
   y: number;
   seat: SeatInfo;
+  isNew?: boolean;
+  shape?: PlacementShape; // Optional shape for advanced placement
+}
+
+/**
+ * Shape overlay for making areas on the image clickable
+ */
+export interface ShapeOverlay {
+  id: string;
+  x: number; // Center X in percentage
+  y: number; // Center Y in percentage
+  shape: PlacementShape;
+  onClick?: () => void;
+  onHover?: () => void;
+  label?: string;
+  isSelected?: boolean;
   isNew?: boolean;
 }
 
