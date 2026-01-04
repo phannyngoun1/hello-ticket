@@ -23,13 +23,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@truths/ui";
-import { cn } from "@truths/ui/lib/utils";
 import {
   ConfirmationDialog,
   DataList,
   type DataListItem,
   type StatConfig,
-  type BadgeConfig,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
@@ -67,22 +65,14 @@ export function EventList({
   events = [],
   loading = false,
   error = null,
-  pagination,
   onEventClick,
   onEdit,
   onDelete,
   onManageInventory,
   onStatusChange,
-  onCreate,
   onSearch,
-  onPageChange,
-  onPageSizeChange,
   customActions,
   isDeleting = false,
-  searchable = true,
-  title = "Events",
-  description = "Manage and view events",
-  showViewToggle = true,
 }: EventListProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
