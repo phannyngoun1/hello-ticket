@@ -5,7 +5,14 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Edit, Trash2, Calendar, Clock, MapPin, ChevronDown, Package } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Clock,
+  MapPin,
+  ChevronDown,
+  Package,
+} from "lucide-react";
 import {
   Badge,
   Input,
@@ -16,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@truths/ui";
+import { cn } from "@truths/ui/lib/utils";
 import {
   ConfirmationDialog,
   DataList,
@@ -26,7 +34,6 @@ import {
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
 import { EventStatus as EventStatusEnum } from "./types";
-import { EventCalendarView } from "./event-calendar-view";
 
 export interface EventListProps {
   className?: string;
@@ -81,11 +88,44 @@ export function EventList({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [statusChangeConfirmOpen, setStatusChangeConfirmOpen] = useState(false);
-  const [pendingStatusChange, setPendingStatusChange] = useState<{ event: Event; newStatus: EventStatus } | null>(null);
-  const [viewMode, setViewMode] = useState<"card" | "calendar">("card");
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    event: Event;
+    newStatus: EventStatus;
+  } | null>(null);
 
   const formatDateTime = (date: Date) => {
     return new Date(date).toLocaleString();
+  };
+
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    const month = d.toLocaleDateString("en-US", { month: "short" });
+    const day = d.getDate();
+    return { month, day, fullDate: d };
+  };
+
+  const formatTime = (date: Date) => {
+    const d = new Date(date);
+    const dayOfWeek = d.toLocaleDateString("en-US", { weekday: "short" });
+    const time = d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+    return {
+      dayOfWeek,
+      time,
+      fullTime: d.toLocaleTimeString("en-US", {
+        weekday: "long",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }),
+    };
+  };
+
+  const formatLocation = (city?: string, state?: string, country?: string) => {
+    return [city, state, country].filter(Boolean).join(", ") || "Location TBD";
   };
 
   const formatDuration = (minutes: number) => {
@@ -101,7 +141,9 @@ export function EventList({
     return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
   };
 
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+  const getStatusVariant = (
+    status: string
+  ): "default" | "secondary" | "destructive" | "outline" => {
     switch (status.toLowerCase()) {
       case "draft":
         return "outline";
@@ -130,13 +172,16 @@ export function EventList({
   }, [events]);
 
   // Stats configuration
-  const stats: StatConfig<EventListItem>[] = useMemo(() => [
-    {
-      key: "duration",
-      label: "Duration",
-      value: (item) => formatDuration(item.event.duration_minutes),
-    },
-  ], []);
+  const stats: StatConfig<EventListItem>[] = useMemo(
+    () => [
+      {
+        key: "duration",
+        label: "Duration",
+        value: (item) => formatDuration(item.event.duration_minutes),
+      },
+    ],
+    []
+  );
 
   const handleItemClick = (item: EventListItem) => {
     if (onEventClick) {
@@ -179,7 +224,10 @@ export function EventList({
   }));
 
   // Render status badge with dropdown
-  const renderStatusBadge = (event: Event, statusVariant: "default" | "secondary" | "destructive" | "outline") => {
+  const renderStatusBadge = (
+    event: Event,
+    statusVariant: "default" | "secondary" | "destructive" | "outline"
+  ) => {
     if (onStatusChange) {
       return (
         <DropdownMenu>
@@ -190,7 +238,10 @@ export function EventList({
               className="h-auto p-0 hover:bg-transparent"
               onClick={(e) => e.stopPropagation()}
             >
-              <Badge variant={statusVariant} className="text-xs flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1">
+              <Badge
+                variant={statusVariant}
+                className="text-xs flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
+              >
                 {formatStatus(event.status)}
                 <ChevronDown className="h-3 w-3" />
               </Badge>
@@ -219,8 +270,9 @@ export function EventList({
 
   // Render action buttons
   const renderActions = (item: EventListItem) => {
-    if (!onEdit && !onDelete && !onManageInventory && !customActions) return null;
-    
+    if (!onEdit && !onDelete && !onManageInventory && !customActions)
+      return null;
+
     return (
       <div
         className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -278,35 +330,78 @@ export function EventList({
   const renderItem = useMemo(() => {
     return (item: EventListItem) => {
       const statusVariant = getStatusVariant(item.event.status);
-      
+      const dateInfo = formatDate(item.event.start_dt);
+      const timeInfo = formatTime(item.event.start_dt);
 
-      // Card view - vertical card layout
+      // Card view - compact layout optimized for space
       return (
         <div
-          className="group rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50 cursor-pointer"
+          className="group rounded-lg border bg-card transition-all hover:shadow-md hover:border-primary/20 cursor-pointer overflow-hidden"
           onClick={() => handleItemClick(item)}
         >
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-medium text-foreground">{item.name}</h4>
-              <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+          <div className="flex gap-3 p-3">
+            {/* Date Badge */}
+            <div className="flex-shrink-0">
+              <div className="flex flex-col items-center justify-center w-16 h-16 rounded bg-muted/50 border border-border/50">
+                <span className="text-[10px] font-semibold text-muted-foreground uppercase leading-tight tracking-wide">
+                  {dateInfo.month}
+                </span>
+                <span className="text-xl font-bold text-foreground leading-none mt-0.5">
+                  {dateInfo.day}
+                </span>
+              </div>
             </div>
-            {renderStatusBadge(item.event, statusVariant)}
-          </div>
-          <div className="flex items-center justify-between gap-3 pt-2 border-t border-border/40">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span className="font-semibold text-foreground">
-                {formatDuration(item.event.duration_minutes)}
-              </span>
-              <span>Duration</span>
+
+            {/* Main Content */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+              {/* Header: Title and Status */}
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">
+                  {item.name}
+                </h4>
+                <div className="flex-shrink-0">
+                  {renderStatusBadge(item.event, statusVariant)}
+                </div>
+              </div>
+
+              {/* Time, Location, Duration, and Actions - Single Row */}
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 flex-shrink-0" />
+                    <span className="font-medium text-foreground">
+                      {timeInfo.dayOfWeek}
+                    </span>
+                    <span>{timeInfo.time}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">Venue information</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>{formatDuration(item.event.duration_minutes)}</span>
+                  </div>
+                </div>
+                {renderActions(item) && (
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {renderActions(item)}
+                  </div>
+                )}
+              </div>
             </div>
-            {renderActions(item)}
           </div>
         </div>
       );
     };
-  }, [onEdit, onDelete, onManageInventory, onStatusChange, customActions, onEventClick, statusOptions]);
+  }, [
+    onEdit,
+    onDelete,
+    onManageInventory,
+    onStatusChange,
+    customActions,
+    onEventClick,
+    statusOptions,
+  ]);
 
   const handleDeleteConfirmChange = (open: boolean) => {
     setDeleteConfirmOpen(open);
@@ -356,32 +451,25 @@ export function EventList({
     variant: "outline" as const,
   };
 
-
   return (
     <div className={className}>
+      {/* Header with Create Button */}
+
       <DataList<EventListItem>
         items={eventItems}
         loading={loading}
         error={error}
-        title={title}
-        description={description}
-        onCreate={onCreate}
+        title=""
+        description=""
         onSearch={onSearch}
-        searchable={searchable && !!onSearch}
+        searchable={false}
         onItemClick={handleItemClick}
         renderItem={renderItem}
-        showCreateButton={!!onCreate}
+        showCreateButton={false}
         defaultViewMode="card"
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        showViewToggle={showViewToggle}
-        gridCols={{ default: 1, md: 2, lg: 3 }}
-        renderCalendarView={() => (
-          <EventCalendarView
-            events={events}
-            onEventClick={onEventClick}
-          />
-        )}
+        viewMode="card"
+        showViewToggle={false}
+        gridCols={{ default: 1 }}
       />
 
       <ConfirmationDialog
@@ -439,4 +527,3 @@ export function EventList({
     </div>
   );
 }
-

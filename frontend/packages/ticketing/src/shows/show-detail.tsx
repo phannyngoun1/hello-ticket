@@ -4,7 +4,7 @@
  * Display detailed information about a show with optional edit and activity views.
  */
 
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, {  useState, useEffect, useCallback } from "react";
 import { Button, Card, Tabs, Input, Label } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -23,6 +23,7 @@ import {
   Trash2,
   Upload,
   FileText,
+  Plus,
 } from "lucide-react";
 import { Show, ShowImage, UpdateShowInput } from "./types";
 import { useShowService } from "./show-provider";
@@ -30,6 +31,9 @@ import { EditShowDialog } from "./edit-show-dialog";
 import { useUpdateShow } from "./use-shows";
 import { uploadService } from "@truths/shared";
 import { EventListContainer } from "../events/event-list-container";
+import { CreateEventDialog } from "../events/create-event-dialog";
+import { useEventService } from "../events/event-provider";
+import { useCreateEvent } from "../events/use-events";
 import { Calendar } from "lucide-react";
 
 export interface ShowDetailProps {
@@ -76,10 +80,13 @@ export function ShowDetail({
     useState("");
   const [isDeletingShow, setIsDeletingShow] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showCreateEventDialog, setShowCreateEventDialog] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [noteValue, setNoteValue] = useState("");
   const [isSavingNote, setIsSavingNote] = useState(false);
   const updateShowMutation = useUpdateShow(service);
+  const eventService = useEventService();
+  const createEventMutation = useCreateEvent(eventService);
 
   // Initialize note value when data changes
   useEffect(() => {
@@ -164,7 +171,6 @@ export function ShowDetail({
     },
     [data?.id, images, service]
   );
-
 
   // Internal handlers for actions when callbacks aren't provided
   const handleInternalEdit = useCallback(() => {
@@ -365,6 +371,14 @@ export function ShowDetail({
   // Add Add Image action
   if (data) {
     actionItems.push({
+      id: "add-event",
+      label: "Add Event",
+      icon: <Plus className="h-3.5 w-3.5" />,
+      onClick: () => setShowCreateEventDialog(true),
+      variant: "ghost",
+    });
+
+    actionItems.push({
       id: "add-image",
       label: "Add Image",
       icon: <Upload className="h-3.5 w-3.5" />,
@@ -394,7 +408,9 @@ export function ShowDetail({
               <Info className="h-10 w-10 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{data.name || "Untitled Show"}</h2>
+              <h2 className="text-xl font-semibold">
+                {data.name || "Untitled Show"}
+              </h2>
             </div>
           </div>
 
@@ -779,6 +795,19 @@ export function ShowDetail({
           onSubmit={handleEditSubmit}
           show={data}
           title="Edit Show"
+        />
+      )}
+      
+      {/* Create Event Dialog */}
+      {data?.id && (
+        <CreateEventDialog
+          open={showCreateEventDialog}
+          onOpenChange={setShowCreateEventDialog}
+          showId={data.id}
+          onSubmit={async (input) => {
+             await createEventMutation.mutateAsync(input);
+             setShowCreateEventDialog(false);
+          }}
         />
       )}
     </Card>
