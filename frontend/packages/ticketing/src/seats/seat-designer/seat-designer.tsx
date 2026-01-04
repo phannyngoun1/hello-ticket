@@ -165,6 +165,10 @@ export function SeatDesigner({
   const [viewingSeat, setViewingSeat] = useState<SeatMarker | null>(null);
   const [isEditingViewingSeat, setIsEditingViewingSeat] = useState(false);
 
+  // Copy/paste state
+  const [copiedSeat, setCopiedSeat] = useState<SeatMarker | null>(null);
+  const [copiedSection, setCopiedSection] = useState<SectionMarker | null>(null);
+
   // Seat Edit Form (for editing existing seats)
   const seatEditForm = useForm<SeatFormData>({
     resolver: zodResolver(seatFormSchema),
@@ -184,6 +188,9 @@ export function SeatDesigner({
     name: string;
   } | null>(null);
   const [confirmDeleteWithSeats, setConfirmDeleteWithSeats] = useState(false);
+
+  // Debounce timers for shape updates to prevent rate limiting
+  const seatShapeUpdateTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Shape state for placement marks
   const [placementShape, setPlacementShape] = useState<PlacementShape>({
@@ -991,13 +998,24 @@ export function SeatDesigner({
             : seat
         );
         
-        // Save shape to backend for the updated seat
+        // Save shape to backend for the updated seat (debounced to avoid rate limiting)
         const seat = updated.find((s) => s.id === seatId);
         if (seat && !seat.isNew) {
-          // Use updateCoordinates to save shape along with coordinates
-          seatService.updateCoordinates(seatId, seat.x, seat.y, shape).catch((error) => {
-            console.error("Failed to save seat shape:", error);
-          });
+          // Clear existing timer for this seat
+          const existingTimer = seatShapeUpdateTimersRef.current.get(seatId);
+          if (existingTimer) {
+            clearTimeout(existingTimer);
+          }
+          
+          // Set new debounced timer (500ms delay)
+          const timer = setTimeout(() => {
+            seatService.updateCoordinates(seatId, seat.x, seat.y, shape).catch((error) => {
+              console.error("Failed to save seat shape:", error);
+            });
+            seatShapeUpdateTimersRef.current.delete(seatId);
+          }, 500);
+          
+          seatShapeUpdateTimersRef.current.set(seatId, timer);
         }
         
         return updated;
@@ -1344,14 +1362,9 @@ export function SeatDesigner({
     },
   });
 
-  // Handle arrow key movement for selected markers - defined after updateSectionMutation
+  // Handle keyboard shortcuts (arrow keys, copy, paste) - defined after updateSectionMutation
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Only handle arrow keys
-      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-        return;
-      }
-
       // Don't handle if user is typing in an input/textarea
       const target = event.target as HTMLElement;
       if (
@@ -1359,6 +1372,105 @@ export function SeatDesigner({
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
+        return;
+      }
+
+      // Handle copy (Ctrl+C or Cmd+C)
+      if ((event.ctrlKey || event.metaKey) && event.key === "c") {
+        if (selectedSeat) {
+          event.preventDefault();
+          const currentSeat = seats.find((s) => s.id === selectedSeat.id);
+          if (currentSeat) {
+            setCopiedSeat({ ...currentSeat });
+            setCopiedSection(null); // Clear section copy when copying seat
+          }
+          return;
+        }
+        if (selectedSectionMarker) {
+          event.preventDefault();
+          const currentSection = sectionMarkers.find(
+            (s) => s.id === selectedSectionMarker.id
+          );
+          if (currentSection) {
+            setCopiedSection({ ...currentSection });
+            setCopiedSeat(null); // Clear seat copy when copying section
+          }
+          return;
+        }
+      }
+
+      // Handle paste (Ctrl+V or Cmd+V)
+      if ((event.ctrlKey || event.metaKey) && event.key === "v") {
+        event.preventDefault();
+        
+        // Paste seat
+        if (copiedSeat) {
+          const seatValues = seatPlacementForm.getValues();
+          const offsetX = 2; // 2% offset for pasted seat
+          const offsetY = 2;
+          const newX = Math.min(100, Math.max(0, copiedSeat.x + offsetX));
+          const newY = Math.min(100, Math.max(0, copiedSeat.y + offsetY));
+          
+          // Increment seat number
+          const currentSeatNumber = parseInt(seatValues.seatNumber) || 1;
+          const nextSeatNumber = String(currentSeatNumber + 1);
+          
+          const newSeat: SeatMarker = {
+            id: `temp-${Date.now()}`,
+            x: newX,
+            y: newY,
+            seat: {
+              section: viewingSection?.name || copiedSeat.seat.section,
+              sectionId: viewingSection?.id || copiedSeat.seat.sectionId,
+              row: copiedSeat.seat.row,
+              seatNumber: nextSeatNumber,
+              seatType: copiedSeat.seat.seatType,
+            },
+            shape: copiedSeat.shape ? { ...copiedSeat.shape } : undefined,
+            isNew: true,
+          };
+          
+          setSeats((prev) => [...prev, newSeat]);
+          setSelectedSeat(newSeat);
+          seatPlacementForm.setValue("seatNumber", String(parseInt(nextSeatNumber) + 1));
+          return;
+        }
+        
+        // Paste section
+        if (copiedSection && designMode === "section-level" && venueType === "large") {
+          const offsetX = 2; // 2% offset for pasted section
+          const offsetY = 2;
+          const newX = Math.min(100, Math.max(0, copiedSection.x + offsetX));
+          const newY = Math.min(100, Math.max(0, copiedSection.y + offsetY));
+          
+          // Generate unique section name
+          const baseName = copiedSection.name;
+          const existingNames = sectionMarkers.map((s) => s.name);
+          let newName = baseName;
+          let counter = 1;
+          while (existingNames.includes(newName)) {
+            newName = `${baseName} (${counter})`;
+            counter++;
+          }
+          
+          const newSection: SectionMarker = {
+            id: `temp-${Date.now()}`,
+            name: newName,
+            x: newX,
+            y: newY,
+            imageUrl: copiedSection.imageUrl,
+            shape: copiedSection.shape ? { ...copiedSection.shape } : undefined,
+            isNew: true,
+          };
+          
+          setSectionMarkers((prev) => [...prev, newSection]);
+          setSelectedSectionMarker(newSection);
+          return;
+        }
+      }
+
+      // Only handle arrow keys for movement
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
         return;
       }
 
@@ -1429,19 +1541,8 @@ export function SeatDesigner({
             break;
         }
 
-        // Update section position
+        // Update section position (only local state, no immediate save)
         handleKonvaSectionDragEnd(selectedSectionMarker.id, newX, newY);
-
-        // Save to backend if section is not new
-        if (!currentSection.isNew) {
-          updateSectionMutation.mutate({
-            sectionId: selectedSectionMarker.id,
-            name: currentSection.name,
-            x: newX,
-            y: newY,
-            shape: currentSection.shape,
-          });
-        }
         return;
       }
     };
@@ -1458,14 +1559,21 @@ export function SeatDesigner({
     handleKonvaSeatDragEnd,
     handleKonvaSectionDragEnd,
     updateSectionMutation,
+    copiedSeat,
+    copiedSection,
+    designMode,
+    venueType,
+    viewingSection,
+    seatPlacementForm,
   ]);
 
   // Handle section shape transform (resize/rotate) - defined after mutations
   const handleSectionShapeTransform = useCallback(
     (sectionId: string, shape: PlacementShape) => {
-      // Update local state immediately
+      // Only update local state - don't save to backend immediately
+      // Changes will be saved when user explicitly saves the layout
       setSectionMarkers((prev) => {
-        const updated = prev.map((section) =>
+        return prev.map((section) =>
           section.id === sectionId
             ? {
                 ...section,
@@ -1473,23 +1581,9 @@ export function SeatDesigner({
               }
             : section
         );
-
-        // Save shape to backend for the updated section
-        const section = updated.find((s) => s.id === sectionId);
-        if (section && !section.isNew) {
-          updateSectionMutation.mutate({
-            sectionId,
-            name: section.name,
-            x: section.x,
-            y: section.y,
-            shape,
-          });
-        }
-
-        return updated;
       });
     },
-    [updateSectionMutation]
+    []
   );
 
   const handleSaveSectionForm = sectionForm.handleSubmit((data) => {
@@ -1758,9 +1852,71 @@ export function SeatDesigner({
     setShowSaveConfirmDialog(true);
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     setShowSaveConfirmDialog(false);
-    saveSeatsMutation.mutate(seats);
+    
+    // For section-level layout, save sections first, then seats
+    if (designMode === "section-level" && venueType === "large") {
+      // Save all section markers in batch
+      const sectionsToSave = sectionMarkers.filter((section) => !section.isNew);
+      const newSections = sectionMarkers.filter((section) => section.isNew);
+      
+      try {
+        // Save existing sections (updates)
+        const updatePromises = sectionsToSave.map((section) => {
+          // Get the original section to preserve file_id
+          const originalSection = sectionsData?.find((s) => s.id === section.id);
+          return sectionService.update(section.id, {
+            name: section.name,
+            x_coordinate: section.x,
+            y_coordinate: section.y,
+            shape: section.shape ? JSON.stringify(section.shape) : undefined,
+            // Preserve file_id from original section (only update if explicitly changed via image upload)
+            file_id: originalSection?.file_id || undefined,
+          });
+        });
+        
+        // Save new sections (creates)
+        const createPromises = newSections.map((section) =>
+          sectionService.create({
+            layout_id: layoutId,
+            name: section.name,
+            x_coordinate: section.x,
+            y_coordinate: section.y,
+            shape: section.shape ? JSON.stringify(section.shape) : undefined,
+          })
+        );
+        
+        // Wait for all section saves to complete
+        await Promise.all([...updatePromises, ...createPromises]);
+        
+        // Invalidate sections query to refresh data
+        queryClient.invalidateQueries({
+          queryKey: ["sections", "layout", layoutId],
+        });
+        
+        // Mark all sections as saved
+        setSectionMarkers((prev) =>
+          prev.map((section) => ({ ...section, isNew: false }))
+        );
+        
+        // Then save seats
+        saveSeatsMutation.mutate(seats);
+      } catch (error) {
+        console.error("Failed to save sections:", error);
+        toast({
+          title: "Error",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Failed to save sections. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // For seat-level layout, just save seats
+      saveSeatsMutation.mutate(seats);
+    }
   };
 
   // Delete seat from datasheet
