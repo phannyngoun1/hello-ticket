@@ -4,6 +4,7 @@
  * Sheet for creating and editing sections
  */
 
+import React from "react";
 import { Button, Input, Label, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@truths/ui";
 import { Controller, UseFormReturn } from "react-hook-form";
 import type { SectionFormData } from "../form-schemas";
@@ -29,6 +30,21 @@ export function SectionFormSheet({
   onSave,
   onCancel,
 }: SectionFormSheetProps) {
+  const nameValue = form.watch("name");
+  // Check if name is valid - handle both string and undefined cases
+  const trimmedName = nameValue?.trim() || "";
+  const isNameValid = trimmedName.length > 0;
+  
+  // Trigger validation when form opens or name changes
+  React.useEffect(() => {
+    if (open && nameValue !== undefined) {
+      form.trigger("name");
+    }
+  }, [open, nameValue, form]);
+  
+  // Button should be enabled if name is valid
+  const canSubmit = isNameValid;
+  
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
@@ -74,7 +90,7 @@ export function SectionFormSheet({
             </Button>
             <Button
               onClick={onSave}
-              disabled={isCreating || isUpdating}
+              disabled={isCreating || isUpdating || !canSubmit}
               className="flex-1"
             >
               {editingSectionId ? "Update" : "Create"}

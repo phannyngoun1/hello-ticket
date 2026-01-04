@@ -13,6 +13,7 @@ export interface Section {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    shape?: string | null; // JSON string storing PlacementShape data
     is_active: boolean;
     created_at: Date;
     updated_at: Date;
@@ -24,6 +25,7 @@ export interface CreateSectionInput {
     x_coordinate?: number;
     y_coordinate?: number;
     file_id?: string;
+    shape?: string; // JSON string storing PlacementShape data
 }
 
 export interface UpdateSectionInput {
@@ -31,5 +33,6 @@ export interface UpdateSectionInput {
     x_coordinate?: number;
     y_coordinate?: number;
     file_id?: string;
+    shape?: string; // JSON string storing PlacementShape data
 }
 

@@ -15,12 +15,21 @@ interface SectionDTO {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    shape?: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
 }
 
 function transformSection(dto: SectionDTO): Section {
+    // Preserve shape as string (JSON) - don't convert null to undefined if it's explicitly null
+    // But convert empty string to undefined
+    const shapeValue = dto.shape === null || dto.shape === undefined || dto.shape === '' 
+        ? undefined 
+        : dto.shape;
+    
+    console.log("transformSection - DTO shape:", dto.shape, "Transformed shape:", shapeValue, "Type:", typeof shapeValue);
+    
     return {
         id: dto.id,
         tenant_id: dto.tenant_id,
@@ -30,6 +39,7 @@ function transformSection(dto: SectionDTO): Section {
         y_coordinate: dto.y_coordinate ?? undefined,
         file_id: dto.file_id ?? undefined,
         image_url: dto.image_url ?? undefined,
+        shape: shapeValue,
         is_active: dto.is_active,
         created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
         updated_at: dto.updated_at ? new Date(dto.updated_at) : new Date(),
@@ -47,7 +57,10 @@ export const sectionService = {
             `${BASE_ENDPOINT}/layout/${layoutId}`,
             { requiresAuth: true }
         );
-        return (response.items || []).map(transformSection);
+        console.log("SectionService.getByLayout - Raw API response:", response);
+        const sections = (response.items || []).map(transformSection);
+        console.log("SectionService.getByLayout - Transformed sections:", sections.map(s => ({ id: s.id, name: s.name, shape: s.shape, shapeType: typeof s.shape })));
+        return sections;
     },
 
     /**

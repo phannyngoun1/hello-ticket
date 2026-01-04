@@ -32,6 +32,7 @@ class Seat(AggregateRoot):
         seat_type: SeatType = SeatType.STANDARD,
         x_coordinate: Optional[float] = None,
         y_coordinate: Optional[float] = None,
+        shape: Optional[Dict[str, Any]] = None,  # PlacementShape data
         seat_id: Optional[str] = None,
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
@@ -51,6 +52,7 @@ class Seat(AggregateRoot):
         self.seat_type = seat_type
         self.x_coordinate = x_coordinate
         self.y_coordinate = y_coordinate
+        self.shape = shape
         self.is_active = is_active
         self.attributes = attributes or {}
         self._version = version
@@ -68,6 +70,7 @@ class Seat(AggregateRoot):
         seat_type: Optional[SeatType] = None,
         x_coordinate: Optional[float] = None,
         y_coordinate: Optional[float] = None,
+        shape: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Update seat details with validation."""
         if section_id is not None:
@@ -82,14 +85,18 @@ class Seat(AggregateRoot):
             self.x_coordinate = x_coordinate
         if y_coordinate is not None:
             self.y_coordinate = y_coordinate
+        if shape is not None:
+            self.shape = shape
 
         self._validate()
         self._touch()
 
-    def update_coordinates(self, x: float, y: float) -> None:
+    def update_coordinates(self, x: float, y: float, shape: Optional[Dict[str, Any]] = None) -> None:
         """Update seat coordinates for seat map visualization."""
         self.x_coordinate = x
         self.y_coordinate = y
+        if shape is not None:
+            self.shape = shape
         self._touch()
 
     def activate(self) -> None:

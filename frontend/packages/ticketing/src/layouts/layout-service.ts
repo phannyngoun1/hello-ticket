@@ -142,6 +142,7 @@ export class LayoutService {
           seat_type: string;
           x_coordinate?: number | null;
           y_coordinate?: number | null;
+          shape?: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -155,6 +156,7 @@ export class LayoutService {
           y_coordinate?: number | null;
           file_id?: string | null;
           image_url?: string | null;
+          shape?: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -177,6 +179,7 @@ export class LayoutService {
           seat_type: seat.seat_type as any,
           x_coordinate: seat.x_coordinate ?? undefined,
           y_coordinate: seat.y_coordinate ?? undefined,
+          shape: seat.shape ?? undefined,
           is_active: seat.is_active,
           created_at: seat.created_at ? new Date(seat.created_at) : new Date(),
           updated_at: seat.updated_at ? new Date(seat.updated_at) : new Date(),
@@ -190,6 +193,7 @@ export class LayoutService {
           y_coordinate: section.y_coordinate ?? undefined,
           file_id: section.file_id ?? undefined,
           image_url: section.image_url ?? undefined,
+          shape: section.shape ?? undefined,
           is_active: section.is_active,
           created_at: section.created_at ? new Date(section.created_at) : new Date(),
           updated_at: section.updated_at ? new Date(section.updated_at) : new Date(),

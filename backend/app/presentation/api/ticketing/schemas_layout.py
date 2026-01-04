@@ -1,8 +1,9 @@
 """Pydantic schemas for Layout APIs"""
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Union
+import json
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Import SeatResponse for forward reference
 from app.presentation.api.ticketing.schemas_seat import SeatResponse
@@ -59,6 +60,7 @@ class SectionResponse(BaseModel):
     y_coordinate: Optional[float] = None
     file_id: Optional[str] = None
     image_url: Optional[str] = None  # URL to the section image file (from file_id)
+    shape: Optional[str] = None  # JSON string storing PlacementShape data
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -72,6 +74,20 @@ class SectionCreateRequest(BaseModel):
     x_coordinate: Optional[float] = Field(None, description="X coordinate on main floor plan")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
+    shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
+    
+    @field_validator('shape', mode='before')
+    @classmethod
+    def parse_shape(cls, v):
+        """Parse shape from JSON string to dict if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v  # Return as-is if not valid JSON
+        return v  # Already a dict
 
 
 class SectionUpdateRequest(BaseModel):
@@ -81,6 +97,20 @@ class SectionUpdateRequest(BaseModel):
     x_coordinate: Optional[float] = Field(None, description="X coordinate on main floor plan")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
+    shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
+    
+    @field_validator('shape', mode='before')
+    @classmethod
+    def parse_shape(cls, v):
+        """Parse shape from JSON string to dict if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v  # Return as-is if not valid JSON
+        return v  # Already a dict
 
 
 class SectionListResponse(BaseModel):

@@ -1,5 +1,6 @@
 """FastAPI routes for Ticketing seats"""
 from typing import Optional
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -48,6 +49,19 @@ async def create_seat(
     """Create a new seat"""
 
     try:
+        # Parse shape if provided (convert JSON string to dict)
+        shape_data = None
+        if request.shape:
+            if isinstance(request.shape, str):
+                try:
+                    shape_data = json.loads(request.shape)
+                except json.JSONDecodeError:
+                    raise ValidationError(f"Invalid JSON in shape field: {request.shape}")
+            elif isinstance(request.shape, dict):
+                shape_data = request.shape
+            else:
+                shape_data = request.shape
+        
         command = CreateSeatCommand(
             venue_id=request.venue_id,
             layout_id=request.layout_id,
@@ -57,6 +71,7 @@ async def create_seat(
             seat_type=request.seat_type,
             x_coordinate=request.x_coordinate,
             y_coordinate=request.y_coordinate,
+            shape=shape_data,
         )
         seat = await mediator.send(command)
         return TicketingApiMapper.seat_to_response(seat)
@@ -151,6 +166,19 @@ async def update_seat(
     """Update seat fields"""
 
     try:
+        # Parse shape if provided (convert JSON string to dict)
+        shape_data = None
+        if request.shape:
+            if isinstance(request.shape, str):
+                try:
+                    shape_data = json.loads(request.shape)
+                except json.JSONDecodeError:
+                    raise ValidationError(f"Invalid JSON in shape field: {request.shape}")
+            elif isinstance(request.shape, dict):
+                shape_data = request.shape
+            else:
+                shape_data = request.shape
+        
         command = UpdateSeatCommand(
             seat_id=seat_id,
             section_id=request.section_id,
@@ -159,6 +187,7 @@ async def update_seat(
             seat_type=request.seat_type,
             x_coordinate=request.x_coordinate,
             y_coordinate=request.y_coordinate,
+            shape=shape_data,
         )
         seat = await mediator.send(command)
         return TicketingApiMapper.seat_to_response(seat)
@@ -178,10 +207,24 @@ async def update_seat_coordinates(
     """Update seat coordinates for seat map"""
 
     try:
+        # Parse shape if provided (convert JSON string to dict)
+        shape_data = None
+        if request.shape:
+            if isinstance(request.shape, str):
+                try:
+                    shape_data = json.loads(request.shape)
+                except json.JSONDecodeError:
+                    raise ValidationError(f"Invalid JSON in shape field: {request.shape}")
+            elif isinstance(request.shape, dict):
+                shape_data = request.shape
+            else:
+                shape_data = request.shape
+        
         command = UpdateSeatCoordinatesCommand(
             seat_id=seat_id,
             x_coordinate=request.x_coordinate,
             y_coordinate=request.y_coordinate,
+            shape=shape_data,
         )
         seat = await mediator.send(command)
         return TicketingApiMapper.seat_to_response(seat)

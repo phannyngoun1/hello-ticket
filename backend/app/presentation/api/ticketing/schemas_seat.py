@@ -1,8 +1,9 @@
 """Pydantic schemas for Seat APIs"""
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
+import json
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from app.domain.ticketing.seat import SeatType
 
 
@@ -17,6 +18,20 @@ class SeatCreateRequest(BaseModel):
     seat_type: SeatType = Field(SeatType.STANDARD, description="Seat type")
     x_coordinate: Optional[float] = Field(None, description="X coordinate for seat map")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate for seat map")
+    shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
+    
+    @field_validator('shape', mode='before')
+    @classmethod
+    def parse_shape(cls, v):
+        """Parse shape from JSON string to dict if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v  # Return as-is if not valid JSON
+        return v  # Already a dict
 
 
 class SeatUpdateRequest(BaseModel):
@@ -28,6 +43,20 @@ class SeatUpdateRequest(BaseModel):
     seat_type: Optional[SeatType] = Field(None, description="Seat type")
     x_coordinate: Optional[float] = Field(None, description="X coordinate for seat map")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate for seat map")
+    shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
+    
+    @field_validator('shape', mode='before')
+    @classmethod
+    def parse_shape(cls, v):
+        """Parse shape from JSON string to dict if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v  # Return as-is if not valid JSON
+        return v  # Already a dict
 
 
 class SeatUpdateCoordinatesRequest(BaseModel):
@@ -35,6 +64,20 @@ class SeatUpdateCoordinatesRequest(BaseModel):
 
     x_coordinate: float = Field(..., description="X coordinate for seat map")
     y_coordinate: float = Field(..., description="Y coordinate for seat map")
+    shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
+    
+    @field_validator('shape', mode='before')
+    @classmethod
+    def parse_shape(cls, v):
+        """Parse shape from JSON string to dict if needed"""
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return v  # Return as-is if not valid JSON
+        return v  # Already a dict
 
 
 class SeatResponse(BaseModel):
@@ -51,6 +94,7 @@ class SeatResponse(BaseModel):
     seat_type: SeatType
     x_coordinate: Optional[float]
     y_coordinate: Optional[float]
+    shape: Optional[str] = None  # JSON string storing PlacementShape data
     is_active: bool
     created_at: datetime
     updated_at: datetime

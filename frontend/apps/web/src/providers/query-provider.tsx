@@ -40,7 +40,37 @@ export async function clearPersistedQueryCache() {
   await localStoragePersister.removeClient();
 }
 
+// Helper function to get React Query cache preference from localStorage
+// This is checked once when QueryClient is created - most efficient approach
+function getReactQueryCachePreference(): boolean {
+  try {
+    // Read directly from localStorage for efficiency (userPreferences uses localStorage)
+    // This avoids any async initialization delays
+    const prefsJson = localStorage.getItem("cache:user:preferences");
+    if (!prefsJson) return true; // Default to enabled
+
+    const entry = JSON.parse(prefsJson);
+    const prefs = entry?.value;
+    if (!prefs || !prefs.cache) return true; // Default to enabled
+
+    // Return false only if explicitly set to false
+    return prefs.cache.reactQueryCacheEnabled !== false;
+  } catch {
+    // On any error, default to enabled (backward compatible)
+    return true;
+  }
+}
+
 export function QueryProvider({ children }: QueryProviderProps) {
+  // Default cache times
+  const defaultGcTime = 24 * 60 * 60 * 1000; // 24 hours
+  const defaultStaleTime = 5 * 60 * 1000; // 5 minutes
+
+  // Check preference once when creating QueryClient (most efficient)
+  const reactQueryCacheEnabled = getReactQueryCachePreference();
+  const gcTime = reactQueryCacheEnabled ? defaultGcTime : 0;
+  const staleTime = reactQueryCacheEnabled ? defaultStaleTime : 0;
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -49,8 +79,8 @@ export function QueryProvider({ children }: QueryProviderProps) {
           ...QUERY_CONFIG.defaultOptions,
           queries: {
             ...QUERY_CONFIG.defaultOptions.queries,
-            gcTime: 24 * 60 * 60 * 1000, // 24 hours
-            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime,
+            staleTime,
             refetchOnWindowFocus: false,
             refetchOnReconnect: true,
             // Don't retry cancelled errors
@@ -62,8 +92,9 @@ export function QueryProvider({ children }: QueryProviderProps) {
             },
           },
         },
+        // @ts-expect-error - logger is deprecated but kept for warning suppression
         logger: {
-          log: (...args) => {
+          log: (...args: unknown[]) => {
             // Suppress specific hydration cancellation warnings
             const message = args[0];
             if (
@@ -74,7 +105,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
             }
             console.log(...args);
           },
-          warn: (...args) => {
+          warn: (...args: unknown[]) => {
             // Suppress specific hydration cancellation warnings
             const message = args[0];
             if (

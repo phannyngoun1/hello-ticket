@@ -47,6 +47,7 @@ export interface SeatDesignerProps {
     seat_type: string;
     x_coordinate?: number | null;
     y_coordinate?: number | null;
+    shape?: string | null;
   }>;
   initialSections?: Array<{
     id: string;
@@ -55,6 +56,7 @@ export interface SeatDesignerProps {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    shape?: string | null;
   }>;
   onImageUpload?: (url: string) => void;
   className?: string;

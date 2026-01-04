@@ -69,6 +69,7 @@ class SeatCommandHandler:
             seat_type=command.seat_type,
             x_coordinate=command.x_coordinate,
             y_coordinate=command.y_coordinate,
+            shape=command.shape,
         )
 
         saved = await self._seat_repository.save(seat)
@@ -110,6 +111,7 @@ class SeatCommandHandler:
             seat_type=command.seat_type,
             x_coordinate=command.x_coordinate,
             y_coordinate=command.y_coordinate,
+            shape=command.shape,
         )
 
         saved = await self._seat_repository.save(seat)
@@ -123,7 +125,7 @@ class SeatCommandHandler:
         if not seat:
             raise NotFoundError(f"Seat with ID '{command.seat_id}' not found")
 
-        seat.update_coordinates(command.x_coordinate, command.y_coordinate)
+        seat.update_coordinates(command.x_coordinate, command.y_coordinate, command.shape)
         saved = await self._seat_repository.save(seat)
         logger.info("Updated seat coordinates for seat %s", saved.id)
         return saved
@@ -267,6 +269,16 @@ class SeatCommandHandler:
                         update_kwargs["x_coordinate"] = seat_data["x_coordinate"]
                     if "y_coordinate" in seat_data:
                         update_kwargs["y_coordinate"] = seat_data["y_coordinate"]
+                    if "shape" in seat_data:
+                        # Parse shape from JSON string if needed
+                        shape_data = seat_data["shape"]
+                        if isinstance(shape_data, str):
+                            import json
+                            try:
+                                shape_data = json.loads(shape_data)
+                            except json.JSONDecodeError:
+                                pass  # Keep as string if not valid JSON
+                        update_kwargs["shape"] = shape_data
                     
                     seat.update_details(**update_kwargs)
                     saved = await self._seat_repository.save(seat)
@@ -313,6 +325,17 @@ class SeatCommandHandler:
                             existing_deleted_seat.id, section_id, row, seat_number
                         )
                     
+                    # Parse shape from JSON string if needed
+                    shape_data = None
+                    if "shape" in seat_data and seat_data["shape"]:
+                        shape_data = seat_data["shape"]
+                        if isinstance(shape_data, str):
+                            import json
+                            try:
+                                shape_data = json.loads(shape_data)
+                            except json.JSONDecodeError:
+                                pass  # Keep as string if not valid JSON
+                    
                     seat = Seat(
                         tenant_id=tenant_id,
                         venue_id=command.venue_id,
@@ -323,6 +346,7 @@ class SeatCommandHandler:
                         seat_type=SeatType(seat_data.get("seat_type", "STANDARD")),
                         x_coordinate=seat_data.get("x_coordinate"),
                         y_coordinate=seat_data.get("y_coordinate"),
+                        shape=shape_data,
                     )
                     saved = await self._seat_repository.save(seat)
                     result_seats.append(saved)

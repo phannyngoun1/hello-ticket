@@ -153,7 +153,7 @@ async def get_layout_with_seats(
         from app.infrastructure.shared.database.models import SectionModel
         from app.infrastructure.shared.database.connection import get_session_sync
         from sqlmodel import select
-        from app.presentation.api.ticketing.schemas_layout import SectionResponse
+        from app.presentation.ticketing.section_routes import section_model_to_response
         
         section_responses = []
         section_map = {}
@@ -168,7 +168,7 @@ async def get_layout_with_seats(
             # Build section map for seat responses
             section_map = {section.id: section.name for section in sections}
             
-            # Build section responses
+            # Build section responses using the helper function to properly convert shape
             for section in sections:
                 section_image_url = None
                 if section.file_id:
@@ -176,19 +176,7 @@ async def get_layout_with_seats(
                     if section_file_upload:
                         section_image_url = section_file_upload.url
                 
-                section_responses.append(SectionResponse(
-                    id=section.id,
-                    tenant_id=section.tenant_id,
-                    layout_id=section.layout_id,
-                    name=section.name,
-                    x_coordinate=section.x_coordinate,
-                    y_coordinate=section.y_coordinate,
-                    file_id=section.file_id,
-                    image_url=section_image_url,
-                    is_active=section.is_active,
-                    created_at=section.created_at,
-                    updated_at=section.updated_at,
-                ))
+                section_responses.append(section_model_to_response(section, section_image_url))
         
         seat_responses = []
         for seat in seats:

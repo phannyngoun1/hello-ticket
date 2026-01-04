@@ -15,6 +15,57 @@ logger = logging.getLogger(__name__)
 T = TypeVar('T')
 
 
+async def _is_query_cache_enabled_async() -> bool:
+    """
+    Check if query cache is enabled for the current user (async version).
+    Returns True by default (backward compatible) if user context is not available.
+    """
+    try:
+        from app.infrastructure.shared.audit.audit_logger import get_audit_context
+        audit_context = get_audit_context()
+        
+        if not audit_context or not audit_context.user_id:
+            # No user context, default to enabled
+            return True
+        
+        # Get user preferences to check cache setting
+        try:
+            from app.shared.tenant_context import get_tenant_context
+            from app.shared.container import container
+            from app.domain.core.user.preference_repository import UserPreferenceRepository
+            from app.application.core.user import UserPreferenceService
+            
+            tenant_id = get_tenant_context()
+            if not tenant_id:
+                # No tenant context, default to enabled
+                return True
+            
+            # Get preference service and check cache setting
+            repository = container.resolve(UserPreferenceRepository)
+            service = UserPreferenceService(repository)
+            
+            # Check the cache.queryCacheEnabled preference
+            cache_enabled = await service.get_preference(
+                audit_context.user_id,
+                tenant_id,
+                "cache",
+                "queryCacheEnabled"
+            )
+            
+            # If preference is explicitly set to False, disable cache
+            # Otherwise, default to enabled (backward compatible)
+            if cache_enabled is False:
+                return False
+            
+            return True
+        except Exception as e:
+            logger.debug(f"Could not check user preference for query cache: {e}")
+            return True  # Default to enabled on error
+    except Exception as e:
+        logger.debug(f"Could not get audit context for query cache check: {e}")
+        return True  # Default to enabled on error
+
+
 def cache_query_result(
     ttl: Optional[float] = None,
     key_prefix: str = "query",
@@ -38,8 +89,12 @@ def cache_query_result(
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> T:
-            # Skip caching if cache is disabled
+            # Skip caching if cache service is disabled
             if not cache_service.is_enabled:
+                return await func(*args, **kwargs)
+            
+            # Check if query cache is enabled for this user
+            if not await _is_query_cache_enabled_async():
                 return await func(*args, **kwargs)
             
             # Build cache key

@@ -1,4 +1,5 @@
 """API mapper for Ticketing module"""
+import json
 from typing import Optional
 
 from app.domain.ticketing.venue import Venue
@@ -43,6 +44,18 @@ class TicketingApiMapper:
 
     @staticmethod
     def seat_to_response(seat: Seat) -> SeatResponse:
+        # Convert shape dict to JSON string for API response
+        # Always include shape field, even if None, so frontend knows it exists
+        shape_str = None
+        if hasattr(seat, 'shape') and seat.shape is not None:
+            if isinstance(seat.shape, dict):
+                shape_str = json.dumps(seat.shape)
+            elif isinstance(seat.shape, str):
+                shape_str = seat.shape
+            else:
+                shape_str = json.dumps(seat.shape)
+        # If shape is None, shape_str will be None, which Pydantic will serialize as null
+        
         return SeatResponse(
             id=seat.id,
             tenant_id=seat.tenant_id,
@@ -54,6 +67,7 @@ class TicketingApiMapper:
             seat_type=seat.seat_type,
             x_coordinate=seat.x_coordinate,
             y_coordinate=seat.y_coordinate,
+            shape=shape_str,  # Will be None if no shape, which serializes to null in JSON
             is_active=seat.is_active,
             created_at=seat.created_at,
             updated_at=seat.updated_at,

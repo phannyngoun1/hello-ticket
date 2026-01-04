@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,9 +10,11 @@ import {
   Button,
   cn,
   useToast,
+  Switch,
+  Label,
 } from "@truths/ui";
 import { Trash2, AlertTriangle, RefreshCw, Database } from "lucide-react";
-import { useDensityStyles, storage } from "@truths/utils";
+import { useDensityStyles, storage, userPreferences } from "@truths/utils";
 import { clearPersistedQueryCache } from "../../providers/query-provider";
 
 export function AccountSettingsPage() {
@@ -19,6 +22,96 @@ export function AccountSettingsPage() {
   const density = useDensityStyles();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [queryCacheEnabled, setQueryCacheEnabled] = useState<boolean>(true);
+  const [reactQueryCacheEnabled, setReactQueryCacheEnabled] =
+    useState<boolean>(true);
+
+  // Load cache preferences on mount
+  useEffect(() => {
+    const backendEnabled = userPreferences.get<boolean>(
+      "cache",
+      "queryCacheEnabled"
+    );
+    const frontendEnabled = userPreferences.get<boolean>(
+      "cache",
+      "reactQueryCacheEnabled"
+    );
+    // Default to true if not set (backward compatible)
+    setQueryCacheEnabled(backendEnabled !== false);
+    setReactQueryCacheEnabled(frontendEnabled !== false);
+  }, []);
+
+  const handleQueryCacheToggle = async (enabled: boolean) => {
+    try {
+      setQueryCacheEnabled(enabled);
+      // Update preference - use async to ensure it's saved
+      await userPreferences.setAsync(["cache", "queryCacheEnabled"], enabled);
+
+      toast({
+        title: enabled
+          ? t("pages.settings.account.queryCacheEnabled")
+          : t("pages.settings.account.queryCacheDisabled"),
+        description: enabled
+          ? t("pages.settings.account.queryCacheEnabledDesc")
+          : t("pages.settings.account.queryCacheDisabledDesc"),
+      });
+    } catch (error) {
+      console.error("Failed to update query cache preference:", error);
+      // Revert on error
+      setQueryCacheEnabled(!enabled);
+      toast({
+        title: t("pages.settings.account.preferenceUpdateError"),
+        description: t("pages.settings.account.preferenceUpdateErrorDesc"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReactQueryCacheToggle = async (enabled: boolean) => {
+    try {
+      setReactQueryCacheEnabled(enabled);
+      // Update preference - use async to ensure it's saved
+      await userPreferences.setAsync(
+        ["cache", "reactQueryCacheEnabled"],
+        enabled
+      );
+
+      // Update QueryClient default options for new queries
+      const gcTime = enabled ? 24 * 60 * 60 * 1000 : 0; // 24 hours or 0
+      const staleTime = enabled ? 5 * 60 * 1000 : 0; // 5 minutes or 0
+      
+      queryClient.setDefaultOptions({
+        queries: {
+          gcTime,
+          staleTime,
+        },
+      });
+
+      // Clear React Query cache if disabling
+      if (!enabled) {
+        queryClient.clear();
+        await clearPersistedQueryCache();
+      }
+
+      toast({
+        title: enabled
+          ? t("pages.settings.account.reactQueryCacheEnabled")
+          : t("pages.settings.account.reactQueryCacheDisabled"),
+        description: enabled
+          ? t("pages.settings.account.reactQueryCacheEnabledDesc")
+          : t("pages.settings.account.reactQueryCacheDisabledDesc"),
+      });
+    } catch (error) {
+      console.error("Failed to update React Query cache preference:", error);
+      // Revert on error
+      setReactQueryCacheEnabled(!enabled);
+      toast({
+        title: t("pages.settings.account.preferenceUpdateError"),
+        description: t("pages.settings.account.preferenceUpdateErrorDesc"),
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleClearCache = async () => {
     try {
@@ -143,33 +236,77 @@ export function AccountSettingsPage() {
         <CardContent
           className={cn(density.paddingContainer, density.spacingFormSection)}
         >
-          <div className={cn("space-y-3", density.spacingFormSection)}>
-            <Button
-              variant="outline"
-              onClick={handleClearCache}
-              className={cn(
-                density.buttonHeightSmall,
-                density.paddingCell,
-                density.textSizeSmall,
-                "flex items-center gap-1.5 w-full justify-start"
-              )}
-            >
-              <Database className={density.iconSizeSmall} />
-              <span>{t("pages.settings.account.clearCache")}</span>
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleInvalidateAllQueries}
-              className={cn(
-                density.buttonHeightSmall,
-                density.paddingCell,
-                density.textSizeSmall,
-                "flex items-center gap-1.5 w-full justify-start"
-              )}
-            >
-              <RefreshCw className={density.iconSizeSmall} />
-              <span>{t("pages.settings.account.invalidateAllQueries")}</span>
-            </Button>
+          <div className={cn("space-y-6", density.spacingFormSection)}>
+            <div className="flex items-center justify-between">
+              <div className={density.spacingFormItem}>
+                <Label
+                  htmlFor="query-cache-enabled"
+                  className={density.textSizeLabel}
+                >
+                  {t("pages.settings.account.enableQueryCache")}
+                </Label>
+                <p
+                  className={cn("text-muted-foreground", density.textSizeSmall)}
+                >
+                  {t("pages.settings.account.enableQueryCacheDesc")}
+                </p>
+              </div>
+              <Switch
+                id="query-cache-enabled"
+                checked={queryCacheEnabled}
+                onCheckedChange={handleQueryCacheToggle}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className={density.spacingFormItem}>
+                <Label
+                  htmlFor="react-query-cache-enabled"
+                  className={density.textSizeLabel}
+                >
+                  {t("pages.settings.account.enableReactQueryCache")}
+                </Label>
+                <p
+                  className={cn("text-muted-foreground", density.textSizeSmall)}
+                >
+                  {t("pages.settings.account.enableReactQueryCacheDesc")}
+                </p>
+              </div>
+              <Switch
+                id="react-query-cache-enabled"
+                checked={reactQueryCacheEnabled}
+                onCheckedChange={handleReactQueryCacheToggle}
+              />
+            </div>
+
+            <div className={cn("space-y-3", density.spacingFormSection)}>
+              <Button
+                variant="outline"
+                onClick={handleClearCache}
+                className={cn(
+                  density.buttonHeightSmall,
+                  density.paddingCell,
+                  density.textSizeSmall,
+                  "flex items-center gap-1.5 w-full justify-start"
+                )}
+              >
+                <Database className={density.iconSizeSmall} />
+                <span>{t("pages.settings.account.clearCache")}</span>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleInvalidateAllQueries}
+                className={cn(
+                  density.buttonHeightSmall,
+                  density.paddingCell,
+                  density.textSizeSmall,
+                  "flex items-center gap-1.5 w-full justify-start"
+                )}
+              >
+                <RefreshCw className={density.iconSizeSmall} />
+                <span>{t("pages.settings.account.invalidateAllQueries")}</span>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

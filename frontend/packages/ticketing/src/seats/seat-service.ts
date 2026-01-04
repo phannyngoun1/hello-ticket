@@ -5,6 +5,7 @@
  */
 import { api } from "@truths/api";
 import type { Seat, CreateSeatInput, UpdateSeatInput, SeatListResponse } from "./types";
+import type { PlacementShape } from "./seat-designer/types";
 
 const BASE_ENDPOINT = "/api/v1/ticketing/seats";
 
@@ -51,12 +52,16 @@ export const seatService = {
     },
 
     /**
-     * Update seat coordinates
+     * Update seat coordinates and shape
      */
-    async updateCoordinates(seatId: string, x: number, y: number): Promise<Seat> {
+    async updateCoordinates(seatId: string, x: number, y: number, shape?: PlacementShape): Promise<Seat> {
         return api.patch<Seat>(
             `${BASE_ENDPOINT}/${seatId}/coordinates`,
-            { x_coordinate: x, y_coordinate: y },
+            { 
+                x_coordinate: x, 
+                y_coordinate: y,
+                shape: shape ? JSON.stringify(shape) : undefined,
+            },
             { requiresAuth: true }
         );
     },

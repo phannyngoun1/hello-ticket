@@ -57,7 +57,28 @@ function ShapeRenderer({
     opacity,
   };
 
-  switch (shape.type) {
+  // Normalize shape type to ensure it matches enum values
+  // When parsed from JSON, type is a string, so we need to ensure it matches the enum
+  const shapeType = shape.type;
+
+  // Debug logging to help identify issues
+  if (
+    !shapeType ||
+    !Object.values(PlacementShapeType).includes(shapeType as PlacementShapeType)
+  ) {
+    console.warn(
+      "Invalid shape type:",
+      shapeType,
+      "Shape:",
+      shape,
+      "Valid types:",
+      Object.values(PlacementShapeType)
+    );
+    // Fallback to circle if type is invalid
+    return <Circle {...baseProps} radius={12} />;
+  }
+
+  switch (shapeType) {
     case PlacementShapeType.CIRCLE: {
       const radius = shape.radius
         ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
@@ -146,8 +167,12 @@ interface LayoutCanvasProps {
   zoomLevel: number;
   panOffset: { x: number; y: number };
   onSeatClick?: (seat: SeatMarker) => void;
-  onSectionClick?: (section: SectionMarker) => void;
+  onSectionClick?: (
+    section: SectionMarker,
+    event?: { shiftKey?: boolean }
+  ) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
+  onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   onSectionShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
@@ -420,8 +445,12 @@ interface SectionMarkerComponentProps {
   isPanning: boolean;
   isSpacePressed: boolean;
   isPlacingSeats: boolean;
-  onSectionClick?: (section: SectionMarker) => void;
+  onSectionClick?: (
+    section: SectionMarker,
+    event?: { shiftKey?: boolean }
+  ) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
+  onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   imageWidth: number;
   imageHeight: number;
@@ -438,23 +467,15 @@ function SectionMarkerComponent({
   isPlacingSeats,
   onSectionClick,
   onSectionDoubleClick,
+  onSectionDragEnd,
   onShapeTransform,
   imageWidth,
   imageHeight,
 }: SectionMarkerComponentProps) {
-  const textRef = useRef<Konva.Text>(null);
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
-  const rectRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const textPadding = 8;
-
-  // Estimate text width based on text length and font size
-  // Approximate: 14px font size = ~8.5px per character average
-  const estimatedTextWidth = section.name.length * 8.5;
-  const boxWidth = estimatedTextWidth + textPadding * 2 + 16; // Add extra padding for text box
-  const boxHeight = 14 + textPadding * 2; // fontSize + padding
 
   // Default shape if none specified (rectangle for sections)
   const defaultShape: PlacementShape = {
@@ -530,23 +551,6 @@ function SectionMarkerComponent({
     section.shape,
   ]);
 
-  // Animate border color on hover state change for text
-  useEffect(() => {
-    const text = textRef.current;
-    if (!text || isSelected) return;
-
-    // Change border color on hover - use a brighter blue
-    const hoverStrokeColor = isHovered ? "#1e3a8a" : "#3b82f6";
-    const hoverStrokeWidth = isHovered ? 3 : 2;
-
-    text.to({
-      backgroundStroke: hoverStrokeColor,
-      backgroundStrokeWidth: hoverStrokeWidth,
-      duration: 0.2,
-      easing: Konva.Easings.EaseInOut,
-    });
-  }, [isHovered, isSelected]);
-
   // Animate shape border on hover state change (when placing sections)
   useEffect(() => {
     const shapeNode = shapeRef.current;
@@ -564,23 +568,6 @@ function SectionMarkerComponent({
     });
   }, [isHovered, isSelected, isPlacingSections]);
 
-  // Animate rectangle border on hover state change (for text box wrapper)
-  useEffect(() => {
-    const rect = rectRef.current;
-    if (!rect || !isPlacingSections || isSelected) return;
-
-    // Change border color and width on hover
-    const hoverStrokeColor = isHovered ? "#1e3a8a" : "#3b82f6";
-    const hoverStrokeWidth = isHovered ? 3 : 2;
-
-    rect.to({
-      stroke: hoverStrokeColor,
-      strokeWidth: hoverStrokeWidth,
-      duration: 0.2,
-      easing: Konva.Easings.EaseInOut,
-    });
-  }, [isHovered, isSelected, isPlacingSections]);
-
   return (
     <>
       <Group
@@ -589,8 +576,11 @@ function SectionMarkerComponent({
         y={y}
         rotation={shape.rotation || 0}
         draggable={isPlacingSections || isSelected}
-        onDragEnd={() => {
-          // Handle section drag end if needed
+        onDragEnd={(e) => {
+          if (!onSectionDragEnd) return;
+          const node = e.target;
+          // node.x() and node.y() are already in stage coordinates
+          onSectionDragEnd(section.id, node.x(), node.y());
         }}
         onTransformEnd={section.shape ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
@@ -598,7 +588,8 @@ function SectionMarkerComponent({
         }}
         onClick={(e) => {
           e.cancelBubble = true;
-          onSectionClick?.(section);
+          const shiftKey = e.evt.shiftKey || false;
+          onSectionClick?.(section, { shiftKey });
         }}
         onDblClick={(e) => {
           e.cancelBubble = true;
@@ -606,7 +597,8 @@ function SectionMarkerComponent({
         }}
         onTap={(e: any) => {
           e.cancelBubble = true;
-          onSectionClick?.(section);
+          const shiftKey = e.evt?.shiftKey || false;
+          onSectionClick?.(section, { shiftKey });
         }}
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
@@ -643,45 +635,13 @@ function SectionMarkerComponent({
             />
           </Group>
         )}
-        {/* Rectangle box wrapper when placing sections (for text label) */}
-        {isPlacingSections && !section.shape && (
-          <Rect
-            ref={rectRef}
-            x={-30 - textPadding - 4}
-            y={-10 - textPadding - 4}
-            width={boxWidth + 8}
-            height={boxHeight + 8}
-            fill="rgba(96, 165, 250, 0.35)"
-            stroke="#2563eb"
-            strokeWidth={2}
-            dash={[5, 5]}
-            cornerRadius={4}
-          />
-        )}
-        <Text
-          ref={textRef}
-          text={section.name}
-          fontSize={14}
-          fontFamily="Arial"
-          fill={isSelected ? "#ffffff" : "#1e40af"}
-          padding={8}
-          align="center"
-          verticalAlign="middle"
-          backgroundFill={isSelected ? "#3b82f6" : "#ffffff"}
-          backgroundStroke={isSelected ? "#1e40af" : "#3b82f6"}
-          backgroundStrokeWidth={2}
-          cornerRadius={4}
-          x={-30}
-          y={-10}
-          shadowBlur={0}
-          shadowColor="rgba(0,0,0,0.3)"
-        />
-        {isSelected && !section.shape && (
+        {/* Default circle marker when no shape is defined */}
+        {!section.shape && (
           <Circle
-            radius={18}
-            fill="transparent"
-            stroke="#93c5fd"
-            strokeWidth={2}
+            radius={isSelected ? 12 : 10}
+            fill="rgba(96, 165, 250, 0.35)"
+            stroke={isSelected ? "#1e40af" : "#2563eb"}
+            strokeWidth={isSelected ? 2.5 : 2}
             x={0}
             y={0}
           />
@@ -731,6 +691,7 @@ export function LayoutCanvas({
   onSeatClick,
   onSectionClick,
   onSectionDoubleClick,
+  onSectionDragEnd,
   onSeatDragEnd,
   onSeatShapeTransform,
   onSectionShapeTransform,
@@ -1500,6 +1461,14 @@ export function LayoutCanvas({
                 isPlacingSeats={isPlacingSeats}
                 onSectionClick={onSectionClick}
                 onSectionDoubleClick={onSectionDoubleClick}
+                onSectionDragEnd={
+                  onSectionDragEnd
+                    ? (sectionId: string, stageX: number, stageY: number) => {
+                        const { x, y } = stageToPercentage(stageX, stageY);
+                        onSectionDragEnd(sectionId, x, y);
+                      }
+                    : undefined
+                }
                 onShapeTransform={onSectionShapeTransform}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
