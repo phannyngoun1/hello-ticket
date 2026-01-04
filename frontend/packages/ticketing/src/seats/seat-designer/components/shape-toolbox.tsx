@@ -100,15 +100,16 @@ export function ShapeToolbox({
               type="button"
               onClick={() => onShapeTypeSelect(null)}
               className={cn(
-                "flex items-center justify-center p-1.5 rounded border transition-all",
-                "hover:bg-accent hover:border-accent-foreground",
+                "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110",
+                "active:scale-95",
                 !selectedShapeType
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background border-border"
+                  : "bg-background border-border hover:shadow-lg"
               )}
               title="Pointer (Select)"
             >
-              <MousePointer2 className="h-3.5 w-3.5" />
+              <MousePointer2 className="h-3.5 w-3.5 transition-transform duration-200" />
             </button>
             
             {/* Shape tools */}
@@ -123,15 +124,16 @@ export function ShapeToolbox({
                     onShapeTypeSelect(shape.type);
                   }}
                   className={cn(
-                    "flex items-center justify-center p-1.5 rounded border transition-all",
-                    "hover:bg-accent hover:border-accent-foreground hover:shadow-sm",
+                    "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                    "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110",
+                    "active:scale-95",
                     isSelected
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background border-border"
+                      : "bg-background border-border hover:shadow-lg"
                   )}
                   title={shape.label}
                 >
-                  <Icon className="h-3.5 w-3.5" />
+                  <Icon className="h-3.5 w-3.5 transition-transform duration-200" />
                 </button>
               );
             })}
