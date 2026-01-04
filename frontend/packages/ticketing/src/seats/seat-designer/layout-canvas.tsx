@@ -4,7 +4,7 @@
  * Provides better performance and smoother interactions compared to DOM-based rendering
  */
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import {
   Stage,
   Layer,
@@ -260,13 +260,32 @@ function SeatMarkerComponent({
   };
   const shape = seat.shape || defaultShape;
 
-  // Attach transformer when selected
+  // Create a key that changes when shape dimensions change
+  const shapeKey = useMemo(() => {
+    return JSON.stringify({
+      type: shape.type,
+      width: shape.width,
+      height: shape.height,
+      radius: shape.radius,
+      points: shape.points,
+      rotation: shape.rotation,
+    });
+  }, [
+    shape.type,
+    shape.width,
+    shape.height,
+    shape.radius,
+    shape.points,
+    shape.rotation,
+  ]);
+
+  // Attach transformer when selected and update when shape changes
   useEffect(() => {
     if (isSelected && groupRef.current && transformerRef.current) {
       transformerRef.current.nodes([groupRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected]);
+  }, [isSelected, shapeKey]);
 
   // Calculate bounding box for transformer (if needed in the future)
   // const getBoundingBox = () => {
@@ -350,6 +369,15 @@ function SeatMarkerComponent({
 
     updatedShape.rotation = rotation;
     onShapeTransform(seat.id, updatedShape);
+
+    // Force transformer to update after shape change
+    // Use setTimeout to ensure the update happens after React re-renders with new shape
+    setTimeout(() => {
+      if (transformerRef.current && groupRef.current) {
+        transformerRef.current.nodes([groupRef.current]);
+        transformerRef.current.getLayer()?.batchDraw();
+      }
+    }, 0);
   }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id]);
 
   return (
@@ -501,7 +529,28 @@ function SectionMarkerComponent({
   };
   const shape = section.shape || defaultShape;
 
-  // Attach transformer when selected and shape exists
+  // Create a key that changes when shape dimensions change
+  const shapeKey = useMemo(() => {
+    if (!section.shape) return null;
+    return JSON.stringify({
+      type: shape.type,
+      width: shape.width,
+      height: shape.height,
+      radius: shape.radius,
+      points: shape.points,
+      rotation: shape.rotation,
+    });
+  }, [
+    section.shape,
+    shape.type,
+    shape.width,
+    shape.height,
+    shape.radius,
+    shape.points,
+    shape.rotation,
+  ]);
+
+  // Attach transformer when selected and shape exists, update when shape changes
   useEffect(() => {
     if (
       isSelected &&
@@ -512,7 +561,7 @@ function SectionMarkerComponent({
       transformerRef.current.nodes([groupRef.current]);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, section.shape]);
+  }, [isSelected, shapeKey]);
 
   // Handle transform end - convert back to percentage coordinates
   const handleTransformEnd = useCallback(() => {
@@ -558,6 +607,15 @@ function SectionMarkerComponent({
 
     updatedShape.rotation = rotation;
     onShapeTransform(section.id, updatedShape);
+
+    // Force transformer to update after shape change
+    // Use setTimeout to ensure the update happens after React re-renders with new shape
+    setTimeout(() => {
+      if (transformerRef.current && groupRef.current) {
+        transformerRef.current.nodes([groupRef.current]);
+        transformerRef.current.getLayer()?.batchDraw();
+      }
+    }, 0);
   }, [
     shape,
     imageWidth,
