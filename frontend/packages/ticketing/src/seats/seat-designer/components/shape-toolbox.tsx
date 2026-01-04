@@ -1,12 +1,25 @@
 /**
  * Shape Toolbox Component
- * 
+ *
  * Toolbox for selecting shape tools to draw on the canvas
  */
 
 import { Card } from "@truths/ui";
-import { Circle, Square, Hexagon, MousePointer2, Edit, PenTool, Trash2, Eye } from "lucide-react";
-import { PlacementShapeType, type SeatMarker, type SectionMarker } from "../types";
+import {
+  Circle,
+  Square,
+  Hexagon,
+  MousePointer2,
+  Edit,
+  PenTool,
+  Trash2,
+  Eye,
+} from "lucide-react";
+import {
+  PlacementShapeType,
+  type SeatMarker,
+  type SectionMarker,
+} from "../types";
 import { cn } from "@truths/ui/lib/utils";
 
 export interface ShapeToolboxProps {
@@ -71,30 +84,33 @@ export function ShapeToolbox({
     : selectedSection
       ? selectedSection.name
       : null;
-  const handleEdit = selectedSeat && onSeatEdit
-    ? () => onSeatEdit(selectedSeat)
-    : selectedSection && onSectionEdit
-      ? () => onSectionEdit(selectedSection)
-      : undefined;
-  const handleView = selectedSeat && onSeatView
-    ? () => onSeatView(selectedSeat)
-    : selectedSection && onSectionView
-      ? () => onSectionView(selectedSection)
-      : undefined;
-  const handleDelete = selectedSeat && onSeatDelete
-    ? () => onSeatDelete(selectedSeat)
-    : selectedSection && onSectionDelete
-      ? () => onSectionDelete(selectedSection)
-      : undefined;
+  const handleEdit =
+    selectedSeat && onSeatEdit
+      ? () => onSeatEdit(selectedSeat)
+      : selectedSection && onSectionEdit
+        ? () => onSectionEdit(selectedSection)
+        : undefined;
+  const handleView =
+    selectedSeat && onSeatView
+      ? () => onSeatView(selectedSeat)
+      : selectedSection && onSectionView
+        ? () => onSectionView(selectedSection)
+        : undefined;
+  const handleDelete =
+    selectedSeat && onSeatDelete
+      ? () => onSeatDelete(selectedSeat)
+      : selectedSection && onSectionDelete
+        ? () => onSectionDelete(selectedSection)
+        : undefined;
 
   return (
-    <Card className={cn("p-2", className)}>
-      <div className="flex items-center gap-2 justify-between w-full">
+    <Card className={cn("px-3 py-2.5", className)}>
+      <div className="flex items-center gap-3 justify-between w-full">
         <div className="flex items-center gap-2">
           <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             Shapes:
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {/* Pointer tool (deselect) */}
             <button
               type="button"
@@ -111,7 +127,7 @@ export function ShapeToolbox({
             >
               <MousePointer2 className="h-3.5 w-3.5 transition-transform duration-200" />
             </button>
-            
+
             {/* Shape tools */}
             {shapes.map((shape) => {
               const Icon = shape.icon;
@@ -139,10 +155,10 @@ export function ShapeToolbox({
             })}
           </div>
         </div>
-        
+
         {/* Selected marker name with view, edit and delete actions - shown on the right */}
         {selectedMarker && markerName && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
               {markerName}
             </span>
@@ -197,4 +213,3 @@ export function ShapeToolbox({
     </Card>
   );
 }
-

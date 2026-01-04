@@ -1,13 +1,37 @@
 /**
  * Section Detail View Component
- * 
+ *
  * View for editing seats within a specific section in section-level design mode
  */
 
-import { Button, Card, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input, Label } from "@truths/ui";
-import { Save, Trash2, X, MoreVertical, Image as ImageIcon, List } from "lucide-react";
+import {
+  Button,
+  Card,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Input,
+  Label,
+} from "@truths/ui";
+import {
+  Save,
+  Trash2,
+  MoreVertical,
+  Image as ImageIcon,
+  List,
+  ArrowLeft,
+} from "lucide-react";
 import { LayoutCanvas } from "../layout-canvas";
-import { ImageUploadCard, SeatPlacementControls, ZoomControls, DatasheetView, ShapeSelector, ShapeToolbox } from "./index";
+import {
+  ImageUploadCard,
+  SeatPlacementControls,
+  ZoomControls,
+  DatasheetView,
+  ShapeSelector,
+  ShapeToolbox,
+} from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
@@ -33,7 +57,10 @@ export interface SectionDetailViewProps {
   onBack: () => void;
   onSave: () => void;
   onClearSectionSeats: () => void;
-  onSectionImageSelect: (sectionId: string, e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSectionImageSelect: (
+    sectionId: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void;
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
@@ -116,15 +143,15 @@ export function SectionDetailView({
     <Card className={className}>
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBack}
-              className="mb-2"
+              className="h-8 w-8 p-0"
+              title="Back to Main Floor Plan"
             >
-              <X className="h-4 w-4 mr-2" />
-              Back to Main Floor Plan
+              <ArrowLeft className="h-4 w-4" />
             </Button>
             <h3 className="text-lg font-semibold">
               Section: {viewingSection.name}
@@ -220,10 +247,20 @@ export function SectionDetailView({
                 selectedShapeType={selectedShapeTool || null}
                 onShapeTypeSelect={onShapeToolSelect}
                 selectedSeat={selectedSeat}
-                onSeatEdit={(seat) => {
+                onSeatView={(seat) => {
                   onSetViewingSeat(seat);
                   onSetIsEditingViewingSeat(false);
-                  seatEditFormReset({});
+                }}
+                onSeatEdit={(seat) => {
+                  onSetViewingSeat(seat);
+                  onSetIsEditingViewingSeat(true);
+                  seatEditFormReset({
+                    section: seat.seat.section,
+                    sectionId: seat.seat.sectionId,
+                    row: seat.seat.row,
+                    seatNumber: seat.seat.seatNumber,
+                    seatType: seat.seat.seatType,
+                  });
                 }}
                 onSeatDelete={onDeleteSeat}
               />
@@ -283,7 +320,7 @@ export function SectionDetailView({
           </div>
         )}
       </div>
-      
+
       {/* Seat List Datasheet */}
       <DatasheetView
         isOpen={isDatasheetOpen}
@@ -319,4 +356,3 @@ export function SectionDetailView({
     </Card>
   );
 }
-
