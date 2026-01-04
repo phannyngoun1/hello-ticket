@@ -55,11 +55,8 @@ export function SeatEditSheet({
   sectionMarkers,
   designMode,
   isUpdating,
-  isDeleting,
-  onEdit,
   onSave,
   onCancel,
-  onDelete,
 }: SeatEditSheetProps) {
   if (!viewingSeat) return null;
 
