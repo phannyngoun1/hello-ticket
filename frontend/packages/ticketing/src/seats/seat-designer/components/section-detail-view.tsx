@@ -29,7 +29,6 @@ import {
   SeatPlacementControls,
   ZoomControls,
   DatasheetView,
-  ShapeSelector,
   ShapeToolbox,
 } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -129,8 +128,6 @@ export function SectionDetailView({
   onSetIsEditingViewingSeat,
   onSetSelectedSeat,
   seatEditFormReset,
-  placementShape,
-  onPlacementShapeChange,
   selectedShapeTool,
   onShapeToolSelect,
   onShapeDraw,
