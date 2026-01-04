@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon, Layers, Grid3x3, Users } from "lucide-react";
+import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
 import { Venue } from "./types";
 import { LayoutList, useLayoutService, useCreateLayout, useLayoutsByVenue } from "../layouts";
 
@@ -179,48 +179,18 @@ export function VenueDetail({
             </div>
           </div>
 
-          {/* Statistics - middle */}
-          <div className="flex items-center gap-4 flex-1 justify-center">
-            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                <LayoutGrid className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground uppercase tracking-wide">Layouts</span>
-                <span className="text-lg font-bold">{layouts?.length ?? 0}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                <Layers className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground uppercase tracking-wide">Sections</span>
-                <span className="text-lg font-bold">-</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-2 bg-muted/50 rounded-lg border">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-muted-foreground uppercase tracking-wide">Seats</span>
-                <span className="text-lg font-bold">-</span>
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               {customActions?.(data)}
               {editable && onEdit && (
                 <Button
                   onClick={() => onEdit(data)}
                   size="sm"
                   variant="outline"
+                  className={cn("h-8 px-2 text-xs")}
                 >
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-3 w-3 mr-1" />
                   Edit
                 </Button>
               )}
@@ -228,16 +198,17 @@ export function VenueDetail({
                 onClick={() => setIsCreateDialogOpen(true)}
                 size="sm"
                 variant="outline"
+                className={cn("h-8 px-2 text-xs")}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-3 w-3 mr-1" />
                 Add Layout
               </Button>
             </div>
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Actions">
-                    <MoreVertical className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
+                    <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
