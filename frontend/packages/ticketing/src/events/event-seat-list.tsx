@@ -22,7 +22,17 @@ import {
   CommandGroup,
   CommandItem,
 } from "@truths/ui";
-import { RefreshCw, Search, Trash2, X, Filter, Ticket, Check, Plus, ShoppingCart } from "lucide-react";
+import {
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+  Filter,
+  Ticket,
+  Check,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import {
@@ -73,23 +83,25 @@ export function EventSeatList({
   const [sectionFilter, setSectionFilter] = useState<Set<string>>(new Set());
   const [sectionSearchQuery, setSectionSearchQuery] = useState("");
   const [statusSearchQuery, setStatusSearchQuery] = useState("");
-  const [internalSelectedSeatIds, setInternalSelectedSeatIds] = useState<Set<string>>(
-    new Set()
-  );
-  
+  const [internalSelectedSeatIds, setInternalSelectedSeatIds] = useState<
+    Set<string>
+  >(new Set());
+
   // When showAddToBooking is true, always use internal selection state
   // Otherwise, use external if provided, or internal state
   const selectedSeatIds = showAddToBooking
     ? internalSelectedSeatIds
-    : externalSelectedSeatIds !== undefined 
-      ? externalSelectedSeatIds 
+    : externalSelectedSeatIds !== undefined
+      ? externalSelectedSeatIds
       : internalSelectedSeatIds;
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreatingTickets, setIsCreatingTickets] = useState(false);
   const [ticketPriceDialogOpen, setTicketPriceDialogOpen] = useState(false);
   const [ticketPrice, setTicketPrice] = useState<string>("0");
-  const [seatsForTicketCreation, setSeatsForTicketCreation] = useState<string[]>([]);
+  const [seatsForTicketCreation, setSeatsForTicketCreation] = useState<
+    string[]
+  >([]);
 
   // Get unique sections from event seats
   const sections = useMemo(() => {
@@ -103,13 +115,25 @@ export function EventSeatList({
   }, [eventSeats]);
 
   // Status options for multi-select (constant, defined outside useMemo)
-  const statusOptions: { label: string; value: EventSeatStatus }[] = useMemo(() => [
-    { label: EventSeatStatusEnum.AVAILABLE, value: EventSeatStatusEnum.AVAILABLE },
-    { label: EventSeatStatusEnum.RESERVED, value: EventSeatStatusEnum.RESERVED },
-    { label: EventSeatStatusEnum.SOLD, value: EventSeatStatusEnum.SOLD },
-    { label: EventSeatStatusEnum.HELD, value: EventSeatStatusEnum.HELD },
-    { label: EventSeatStatusEnum.BLOCKED, value: EventSeatStatusEnum.BLOCKED },
-  ], []);
+  const statusOptions: { label: string; value: EventSeatStatus }[] = useMemo(
+    () => [
+      {
+        label: EventSeatStatusEnum.AVAILABLE,
+        value: EventSeatStatusEnum.AVAILABLE,
+      },
+      {
+        label: EventSeatStatusEnum.RESERVED,
+        value: EventSeatStatusEnum.RESERVED,
+      },
+      { label: EventSeatStatusEnum.SOLD, value: EventSeatStatusEnum.SOLD },
+      { label: EventSeatStatusEnum.HELD, value: EventSeatStatusEnum.HELD },
+      {
+        label: EventSeatStatusEnum.BLOCKED,
+        value: EventSeatStatusEnum.BLOCKED,
+      },
+    ],
+    []
+  );
 
   // Filter sections by search query
   const filteredSections = useMemo(() => {
@@ -117,9 +141,7 @@ export function EventSeatList({
       return sections;
     }
     const query = sectionSearchQuery.toLowerCase();
-    return sections.filter((section) =>
-      section.toLowerCase().includes(query)
-    );
+    return sections.filter((section) => section.toLowerCase().includes(query));
   }, [sections, sectionSearchQuery]);
 
   // Filter status options by search query
@@ -142,7 +164,11 @@ export function EventSeatList({
       }
 
       // Filter by section (if any sections are selected)
-      if (sectionFilter.size > 0 && seat.section_name && !sectionFilter.has(seat.section_name)) {
+      if (
+        sectionFilter.size > 0 &&
+        seat.section_name &&
+        !sectionFilter.has(seat.section_name)
+      ) {
         return false;
       }
 
@@ -198,7 +224,7 @@ export function EventSeatList({
       grouped.get(section)!.push(seat);
     });
     // Sort sections alphabetically
-    const sortedSections = Array.from(grouped.entries()).sort((a, b) => 
+    const sortedSections = Array.from(grouped.entries()).sort((a, b) =>
       a[0].localeCompare(b[0])
     );
     return sortedSections;
@@ -226,7 +252,7 @@ export function EventSeatList({
           break;
       }
     }
-    
+
     // Fall back to event-seat status
     const statusUpper = String(seat.status).toUpperCase().trim();
     switch (statusUpper) {
@@ -252,7 +278,7 @@ export function EventSeatList({
       const statusUpper = String(seat.ticket_status).toUpperCase().trim();
       return statusUpper === "AVAILABLE";
     }
-    
+
     // Fall back to event-seat status
     const statusUpper = String(seat.status).toUpperCase().trim();
     return statusUpper === "AVAILABLE";
@@ -262,7 +288,7 @@ export function EventSeatList({
     // Use ticket status if available, otherwise use event-seat status
     const displayStatus = ticketStatus || status;
     const statusUpper = String(displayStatus).toUpperCase().trim();
-    
+
     const variants: Record<
       string,
       "default" | "secondary" | "destructive" | "outline"
@@ -291,15 +317,16 @@ export function EventSeatList({
     };
 
     return (
-      <Badge 
-        variant={variants[statusUpper] || "outline"} 
-        className={colors[statusUpper] || "bg-gray-50 text-gray-700 border-gray-200"}
+      <Badge
+        variant={variants[statusUpper] || "outline"}
+        className={
+          colors[statusUpper] || "bg-gray-50 text-gray-700 border-gray-200"
+        }
       >
         {displayStatus}
       </Badge>
     );
   };
-
 
   const handleSelectAll = (checked: boolean) => {
     if (showAddToBooking) {
@@ -379,7 +406,17 @@ export function EventSeatList({
       } else if (onDeleteSeat && selectedSeatIds.size === 1) {
         await onDeleteSeat(Array.from(selectedSeatIds)[0]);
       }
-      setSelectedSeatIds(new Set());
+      // Clear selection after deletion
+      if (externalSelectedSeatIds === undefined) {
+        setInternalSelectedSeatIds(new Set());
+      } else if (onSeatSelect) {
+        // Clear all selections by unchecking all
+        eventSeats.forEach((seat) => {
+          if (selectedSeatIds.has(seat.id)) {
+            onSeatSelect(seat, false);
+          }
+        });
+      }
       setDeleteConfirmOpen(false);
     } catch (error) {
       console.error("Failed to delete seats:", error);
@@ -390,19 +427,17 @@ export function EventSeatList({
 
   const handleCreateTicketsClick = () => {
     if (selectedSeatIds.size === 0 || !onCreateTickets) return;
-    
+
     // Only create tickets for seats without tickets
-    const seatsWithoutTickets = Array.from(selectedSeatIds).filter(
-      (seatId) => {
-        const seat = eventSeats.find((s) => s.id === seatId);
-        return seat && !seat.ticket_number;
-      }
-    );
-    
+    const seatsWithoutTickets = Array.from(selectedSeatIds).filter((seatId) => {
+      const seat = eventSeats.find((s) => s.id === seatId);
+      return seat && !seat.ticket_number;
+    });
+
     if (seatsWithoutTickets.length === 0) {
       return; // No seats without tickets
     }
-    
+
     // Store the seats without tickets for the dialog
     setSeatsForTicketCreation(seatsWithoutTickets);
     setTicketPriceDialogOpen(true);
@@ -417,9 +452,19 @@ export function EventSeatList({
     try {
       await onCreateTickets(seatsForTicketCreation, price);
       // Remove the seats that got tickets from selection
-      const newSelection = new Set(selectedSeatIds);
-      seatsForTicketCreation.forEach((id) => newSelection.delete(id));
-      setSelectedSeatIds(newSelection);
+      if (externalSelectedSeatIds === undefined) {
+        const newSelection = new Set(internalSelectedSeatIds);
+        seatsForTicketCreation.forEach((id) => newSelection.delete(id));
+        setInternalSelectedSeatIds(newSelection);
+      } else if (onSeatSelect) {
+        // Remove seats from external selection
+        seatsForTicketCreation.forEach((id) => {
+          const seat = eventSeats.find((s) => s.id === id);
+          if (seat) {
+            onSeatSelect(seat, false);
+          }
+        });
+      }
       setSeatsForTicketCreation([]);
       setTicketPrice("0");
     } catch (error) {
@@ -447,7 +492,8 @@ export function EventSeatList({
   }, [filteredSeats, bookedSeatIds]);
 
   const allSelected =
-    selectableSeats.length > 0 && selectedSeatIds.size === selectableSeats.length;
+    selectableSeats.length > 0 &&
+    selectedSeatIds.size === selectableSeats.length;
 
   if (isLoading) {
     return (
@@ -503,22 +549,22 @@ export function EventSeatList({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-[150px] flex-shrink-0 justify-start"
+                className="h-8 px-2.5 flex-shrink-0 justify-start gap-1.5"
               >
-                <Filter className="h-4 w-4 mr-2" />
-                <span className="flex-1 text-left">
+                <Filter className="h-3.5 w-3.5" />
+                <span className="text-xs whitespace-nowrap">
                   {sectionFilter.size === 0
                     ? "All Sections"
                     : sectionFilter.size === 1
-                    ? Array.from(sectionFilter)[0]
-                    : `${sectionFilter.size} selected`}
+                      ? Array.from(sectionFilter)[0]
+                      : `${sectionFilter.size} selected`}
                 </span>
                 {sectionFilter.size > 0 && (
                   <>
-                    <Separator orientation="vertical" className="mx-2 h-4" />
+                    <Separator orientation="vertical" className="mx-1 h-3" />
                     <Badge
                       variant="secondary"
-                      className="rounded-sm px-1 font-normal"
+                      className="rounded-sm px-1 py-0 text-[10px] font-normal h-4"
                     >
                       {sectionFilter.size}
                     </Badge>
@@ -580,22 +626,22 @@ export function EventSeatList({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-[150px] flex-shrink-0 justify-start"
+                className="h-8 px-2.5 flex-shrink-0 justify-start gap-1.5"
               >
-                <Filter className="h-4 w-4 mr-2" />
-                <span className="flex-1 text-left">
+                <Filter className="h-3.5 w-3.5" />
+                <span className="text-xs whitespace-nowrap">
                   {statusFilter.size === 0
                     ? "All Status"
                     : statusFilter.size === 1
-                    ? Array.from(statusFilter)[0]
-                    : `${statusFilter.size} selected`}
+                      ? Array.from(statusFilter)[0]
+                      : `${statusFilter.size} selected`}
                 </span>
                 {statusFilter.size > 0 && (
                   <>
-                    <Separator orientation="vertical" className="mx-2 h-4" />
+                    <Separator orientation="vertical" className="mx-1 h-3" />
                     <Badge
                       variant="secondary"
-                      className="rounded-sm px-1 font-normal"
+                      className="rounded-sm px-1 py-0 text-[10px] font-normal h-4"
                     >
                       {statusFilter.size}
                     </Badge>
@@ -656,137 +702,145 @@ export function EventSeatList({
       </div>
 
       {/* Selection Bars */}
-      {selectedSeatIds.size > 0 && (() => {
-        // Find selected seats without tickets
-        const selectedSeatsWithoutTickets = Array.from(selectedSeatIds).filter(
-          (seatId) => {
+      {selectedSeatIds.size > 0 &&
+        (() => {
+          // Find selected seats without tickets
+          const selectedSeatsWithoutTickets = Array.from(
+            selectedSeatIds
+          ).filter((seatId) => {
             const seat = eventSeats.find((s) => s.id === seatId);
             return seat && !seat.ticket_number;
-          }
-        );
-        const seatsWithoutTicketsCount = selectedSeatsWithoutTickets.length;
-        const hasSeatsWithoutTickets = seatsWithoutTicketsCount > 0;
+          });
+          const seatsWithoutTicketsCount = selectedSeatsWithoutTickets.length;
+          const hasSeatsWithoutTickets = seatsWithoutTicketsCount > 0;
 
-        return (
-          <div className="space-y-2">
-            {/* Add to Booking Bar - Show when showAddToBooking is true */}
-            {showAddToBooking && onAddToBooking && (
-              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
-                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                  {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""} selected
-                </span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setInternalSelectedSeatIds(new Set());
-                    }}
-                    className="h-7 px-2 text-xs"
-                    title="Clear selection"
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => {
-                      if (onAddToBooking && selectedSeatIds.size > 0) {
-                        // Filter out seats already in booking
-                        const seatsToAdd = Array.from(selectedSeatIds).filter(
-                          (seatId) => !bookedSeatIds.has(seatId)
-                        );
-                        if (seatsToAdd.length > 0) {
-                          onAddToBooking(seatsToAdd);
-                          // Clear selection after adding
-                          setInternalSelectedSeatIds(new Set());
-                        }
-                      }
-                    }}
-                    className="h-7 px-3 gap-1.5"
-                    title="Add selected seats to booking"
-                    disabled={
-                      selectedSeatIds.size === 0 ||
-                      Array.from(selectedSeatIds).every((seatId) =>
-                        bookedSeatIds.has(seatId)
-                      )
-                    }
-                  >
-                    <ShoppingCart className="h-3.5 w-3.5" />
-                    <span className="text-xs">Add to Booking</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Create Tickets Bar - Only for seats without tickets */}
-            {hasSeatsWithoutTickets && onCreateTickets && (
-              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
-                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                  {seatsWithoutTicketsCount} seat{seatsWithoutTicketsCount !== 1 ? "s" : ""} without ticket
-                  {seatsWithoutTicketsCount !== 1 ? "s" : ""} selected
-                </span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleCreateTicketsClick}
-                    disabled={isCreatingTickets}
-                    className="h-7 px-3 gap-1.5"
-                    title="Create tickets for selected seats without tickets"
-                  >
-                    <Ticket className={cn("h-3.5 w-3.5", isCreatingTickets && "animate-spin")} />
-                    <span className="text-xs">Create Tickets</span>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Delete Action Bar - For all selected seats */}
-            {!showAddToBooking && (
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
-                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                  {selectedSeatIds.size} seat{selectedSeatIds.size !== 1 ? "s" : ""}{" "}
-                  selected
-                </span>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (externalSelectedSeatIds === undefined) {
-                        setInternalSelectedSeatIds(new Set());
-                      } else if (onSeatSelect) {
-                        // Clear all selections by unchecking all
-                        eventSeats.forEach((seat) => {
-                          if (selectedSeatIds.has(seat.id)) {
-                            onSeatSelect(seat, false);
-                          }
-                        });
-                      }
-                    }}
-                    className="h-7 w-7 p-0 rounded-r-none border-r-0"
-                    title="Clear all selection"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  {(onDelete || onDeleteSeat) && (
+          return (
+            <div className="space-y-2">
+              {/* Add to Booking Bar - Show when showAddToBooking is true */}
+              {showAddToBooking && onAddToBooking && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
+                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                    {selectedSeatIds.size} seat
+                    {selectedSeatIds.size !== 1 ? "s" : ""} selected
+                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Button
-                      variant="destructive"
+                      variant="ghost"
                       size="sm"
-                      onClick={handleDeleteSelected}
-                      className="h-7 w-7 p-0 rounded-l-none"
-                      title="Delete selected"
+                      onClick={() => {
+                        setInternalSelectedSeatIds(new Set());
+                      }}
+                      className="h-7 px-2 text-xs"
+                      title="Clear selection"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Clear
                     </Button>
-                  )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => {
+                        if (onAddToBooking && selectedSeatIds.size > 0) {
+                          // Filter out seats already in booking
+                          const seatsToAdd = Array.from(selectedSeatIds).filter(
+                            (seatId) => !bookedSeatIds.has(seatId)
+                          );
+                          if (seatsToAdd.length > 0) {
+                            onAddToBooking(seatsToAdd);
+                            // Clear selection after adding
+                            setInternalSelectedSeatIds(new Set());
+                          }
+                        }
+                      }}
+                      className="h-7 px-3 gap-1.5"
+                      title="Add selected seats to booking"
+                      disabled={
+                        selectedSeatIds.size === 0 ||
+                        Array.from(selectedSeatIds).every((seatId) =>
+                          bookedSeatIds.has(seatId)
+                        )
+                      }
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                      <span className="text-xs">Add to Booking</span>
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
+              )}
+
+              {/* Create Tickets Bar - Only for seats without tickets */}
+              {hasSeatsWithoutTickets && onCreateTickets && (
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
+                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                    {seatsWithoutTicketsCount} seat
+                    {seatsWithoutTicketsCount !== 1 ? "s" : ""} without ticket
+                    {seatsWithoutTicketsCount !== 1 ? "s" : ""} selected
+                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleCreateTicketsClick}
+                      disabled={isCreatingTickets}
+                      className="h-7 px-3 gap-1.5"
+                      title="Create tickets for selected seats without tickets"
+                    >
+                      <Ticket
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          isCreatingTickets && "animate-spin"
+                        )}
+                      />
+                      <span className="text-xs">Create Tickets</span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Delete Action Bar - For all selected seats */}
+              {!showAddToBooking && (
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
+                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                    {selectedSeatIds.size} seat
+                    {selectedSeatIds.size !== 1 ? "s" : ""} selected
+                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (externalSelectedSeatIds === undefined) {
+                          setInternalSelectedSeatIds(new Set());
+                        } else if (onSeatSelect) {
+                          // Clear all selections by unchecking all
+                          eventSeats.forEach((seat) => {
+                            if (selectedSeatIds.has(seat.id)) {
+                              onSeatSelect(seat, false);
+                            }
+                          });
+                        }
+                      }}
+                      className="h-7 w-7 p-0 rounded-r-none border-r-0"
+                      title="Clear all selection"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                    {(onDelete || onDeleteSeat) && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleDeleteSelected}
+                        className="h-7 w-7 p-0 rounded-l-none"
+                        title="Delete selected"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       {/* Results Count and Select All */}
       <div className="flex items-center justify-between">
@@ -840,9 +894,10 @@ export function EventSeatList({
                       : "N/A";
 
                 // Format price display
-                const priceDisplay = seat.ticket_price !== undefined && seat.ticket_price !== null
-                  ? `Price: $${seat.ticket_price.toFixed(2)}`
-                  : null;
+                const priceDisplay =
+                  seat.ticket_price !== undefined && seat.ticket_price !== null
+                    ? `Price: $${seat.ticket_price.toFixed(2)}`
+                    : null;
 
                 const details = [
                   seat.broker_id && `Broker: ${seat.broker_id}`,
@@ -891,7 +946,9 @@ export function EventSeatList({
                       <div className="flex items-start justify-between gap-4 min-w-0">
                         <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex items-center gap-2 mb-1">
-                            <ItemTitle className="truncate">{location}</ItemTitle>
+                            <ItemTitle className="truncate">
+                              {location}
+                            </ItemTitle>
                             {getStatusBadge(seat.status, seat.ticket_status)}
                           </div>
                           {details && (
@@ -900,31 +957,33 @@ export function EventSeatList({
                             </ItemDescription>
                           )}
                         </div>
-                        <ItemActions className="flex-shrink-0">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Add this individual seat to booking
-                              if (showAddToBooking && onAddToBooking && !isDisabled) {
-                                onAddToBooking([seat.id]);
+                        {showAddToBooking && (
+                          <ItemActions className="flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Add this individual seat to booking
+                                if (onAddToBooking && !isDisabled) {
+                                  onAddToBooking([seat.id]);
+                                }
+                              }}
+                              className="h-7 w-7 p-0"
+                              aria-label="Add to booking"
+                              title={
+                                isBooked
+                                  ? "Already in booking"
+                                  : !isAvailable
+                                    ? "Seat not available"
+                                    : "Add to booking"
                               }
-                            }}
-                            className="h-7 w-7 p-0"
-                            aria-label="Add to booking"
-                            title={
-                              isBooked
-                                ? "Already in booking"
-                                : !isAvailable
-                                  ? "Seat not available"
-                                  : "Add to booking"
-                            }
-                            disabled={isDisabled}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </ItemActions>
+                              disabled={isDisabled}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </ItemActions>
+                        )}
                       </div>
                     </ItemContent>
                   </Item>
@@ -999,10 +1058,13 @@ export function EventSeatList({
         description={
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Create tickets for {seatsForTicketCreation.length} selected seat{seatsForTicketCreation.length !== 1 ? "s" : ""} without tickets.
+              Create tickets for {seatsForTicketCreation.length} selected seat
+              {seatsForTicketCreation.length !== 1 ? "s" : ""} without tickets.
             </p>
             <div className="space-y-2">
-              <Label htmlFor="ticket-price-input">Ticket Price (per ticket)</Label>
+              <Label htmlFor="ticket-price-input">
+                Ticket Price (per ticket)
+              </Label>
               <Input
                 id="ticket-price-input"
                 type="number"
@@ -1014,7 +1076,8 @@ export function EventSeatList({
                 disabled={isCreatingTickets}
               />
               <p className="text-xs text-muted-foreground">
-                This price will be applied to all tickets. You can change individual ticket prices later.
+                This price will be applied to all tickets. You can change
+                individual ticket prices later.
               </p>
             </div>
           </div>

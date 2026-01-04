@@ -8,7 +8,6 @@ import {
   cn,
 } from "@truths/ui";
 import { Settings2 } from "lucide-react";
-import { useDensityStyles } from "@truths/utils";
 
 interface ColumnVisibilityMenuProps<TData> {
   table: Table<TData>;
@@ -17,7 +16,6 @@ interface ColumnVisibilityMenuProps<TData> {
 export function ColumnVisibilityMenu<TData>({
   table,
 }: ColumnVisibilityMenuProps<TData>) {
-  const density = useDensityStyles();
   
   return (
     <DropdownMenu>
@@ -25,9 +23,9 @@ export function ColumnVisibilityMenu<TData>({
         <Button 
           variant="outline" 
           size="sm" 
-          className={cn(density.buttonHeightSmall, density.textSizeSmall)}
+          className={cn("h-8 px-2 text-xs")}
         >
-          <Settings2 className={cn(density.iconSize, "mr-1")} />
+          <Settings2 className={cn("h-3 w-3", "mr-1")} />
           Columns
         </Button>
       </DropdownMenuTrigger>

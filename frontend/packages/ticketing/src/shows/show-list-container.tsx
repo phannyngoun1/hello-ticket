@@ -18,6 +18,8 @@ import {
   useDeleteShow,
 } from "./use-shows";
 import { useShowService } from "./show-provider";
+import { useOrganizerService } from "../organizers/organizer-provider";
+import { useOrganizers } from "../organizers/use-organizers";
 
 export interface ShowListContainerProps {
   onNavigateToShow?: (id: string) => void;
@@ -33,6 +35,7 @@ export function ShowListContainer({
   onCreateDialogClose,
 }: ShowListContainerProps) {
   const showService = useShowService();
+  const organizerService = useOrganizerService();
 
   const [filter, setFilter] = useState<ShowFilter>({});
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
@@ -54,12 +57,34 @@ export function ShowListContainer({
     pagination,
   });
 
+  // Fetch all organizers to map organizer_id to organizer name
+  const { data: organizersData } = useOrganizers(organizerService, {
+    pagination: { page: 1, pageSize: 1000 },
+  });
+
   const createMutation = useCreateShow(showService);
   const updateMutation = useUpdateShow(showService);
   const deleteMutation = useDeleteShow(showService);
 
   const shows = data?.data ?? [];
   const paginationData = data?.pagination;
+
+  // Map organizer_id to organizer name
+  const organizerMap = useMemo(() => {
+    const map = new Map<string, string>();
+    organizersData?.data?.forEach((org) => {
+      map.set(org.id, org.name);
+    });
+    return map;
+  }, [organizersData]);
+
+  // Enrich shows with organizer names
+  const showsWithOrganizer = useMemo(() => {
+    return shows.map((show) => ({
+      ...show,
+      organizerName: show.organizer_id ? organizerMap.get(show.organizer_id) : undefined,
+    }));
+  }, [shows, organizerMap]);
 
   const handleCreate = useCallback(() => {
     if (onNavigateToCreate) {
@@ -160,11 +185,10 @@ export function ShowListContainer({
   return (
     <>
       <ShowList
-        shows={shows}
+        shows={showsWithOrganizer}
         loading={isLoading}
         error={error as Error | null}
         onShowClick={handleNavigateToShow}
-        onEdit={handleEdit}
         onDelete={handleDelete}
         onCreate={handleCreate}
         onSearch={handleSearch}

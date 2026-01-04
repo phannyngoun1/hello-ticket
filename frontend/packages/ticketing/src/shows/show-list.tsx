@@ -4,17 +4,14 @@
  * Table view for shows with configurable columns and actions.
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit, Trash2 } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
   ConfirmationDialog,
-  createActionsColumn,
   createIdentifiedColumn,
   createTextColumn,
-  createDateTimeColumn,
   DataTable,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
@@ -27,29 +24,24 @@ export interface ShowListProps {
   error?: Error | null;
   pagination?: Pagination;
   onShowClick?: (show: Show) => void;
-  onEdit?: (show: Show) => void;
   onDelete?: (show: Show) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
-  customActions?: (show: Show) => React.ReactNode;
 }
 
 export function ShowList({
   className,
   shows = [],
   loading = false,
-  error = null,
   pagination,
   onShowClick,
-  onEdit,
   onDelete,
   onCreate,
   onSearch,
   onPageChange,
   onPageSizeChange,
-  customActions,
 }: ShowListProps) {
   const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -57,7 +49,9 @@ export function ShowList({
 
   const getDisplayName = (show: Show) => {
     const value = show.code;
-    return typeof value === "string" && value.trim().length > 0 ? value : String(show.id);
+    return typeof value === "string" && value.trim().length > 0
+      ? value
+      : String(show.id);
   };
 
   const getInitials = (value: string | undefined) => {
@@ -80,8 +74,6 @@ export function ShowList({
       },
     }),
 
-
-    
     createTextColumn<Show>({
       accessorKey: "name",
       header: "Name",
@@ -94,38 +86,81 @@ export function ShowList({
         );
       },
     }),
-    
 
+    createTextColumn<Show>({
+      accessorKey: "organizer_id",
+      header: "Organizer",
+      cell: (info) => {
+        const show = info.row.original;
+        // This will be populated by the container if organizer data is available
+        const organizerName = (show as any).organizerName;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {organizerName ?? "-"}
+          </span>
+        );
+      },
+      additionalOptions: {
+        id: "organizer",
+      },
+    }),
 
-    createActionsColumn<Show>({
-      customActions,
-      actions: [
-        ...(onEdit
-          ? [
-              {
-                icon: Edit,
-                onClick: (show: Show) => onEdit(show),
-                title: "Edit",
-                className:
-                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
-              },
-            ]
-          : []),
-        ...(onDelete
-          ? [
-              {
-                icon: Trash2,
-                onClick: (show: Show) => {
-                  setSelectedShow(show);
-                  setDeleteConfirmOpen(true);
-                },
-                title: "Delete",
-                className:
-                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
-              },
-            ]
-          : []),
-      ],
+    createTextColumn<Show>({
+      accessorKey: "started_date",
+      header: "Show Date From",
+      cell: (info) => {
+        const show = info.row.original;
+        const date = show.started_date;
+        if (!date)
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              -
+            </span>
+          );
+        try {
+          const dateObj = new Date(date);
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              {dateObj.toLocaleDateString()}
+            </span>
+          );
+        } catch {
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              -
+            </span>
+          );
+        }
+      },
+    }),
+
+    createTextColumn<Show>({
+      accessorKey: "ended_date",
+      header: "Show Date To",
+      cell: (info) => {
+        const show = info.row.original;
+        const date = show.ended_date;
+        if (!date)
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              -
+            </span>
+          );
+        try {
+          const dateObj = new Date(date);
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              {dateObj.toLocaleDateString()}
+            </span>
+          );
+        } catch {
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              -
+            </span>
+          );
+        }
+      },
     }),
   ];
 
@@ -205,4 +240,3 @@ export function ShowList({
     </div>
   );
 }
-

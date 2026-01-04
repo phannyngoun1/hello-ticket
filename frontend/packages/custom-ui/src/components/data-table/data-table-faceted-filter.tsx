@@ -18,7 +18,6 @@ import {
   PopoverTrigger,
   Separator,
 } from "@truths/ui";
-import { useDensityStyles } from "@truths/utils";
 
 interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
@@ -37,7 +36,6 @@ export function DataTableFacetedFilter<TData, TValue>({
   options,
   onFilterChange,
 }: DataTableFacetedFilterProps<TData, TValue>) {
-  const density = useDensityStyles();
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(column?.getFilterValue() as string[]);
 
@@ -48,12 +46,11 @@ export function DataTableFacetedFilter<TData, TValue>({
           variant="outline" 
           size="sm" 
           className={cn(
-            density.buttonHeightSmall, 
-            density.textSizeSmall, 
+            "h-8 px-2 text-xs",
             "whitespace-nowrap border-dashed"
           )}
         >
-          <PlusCircle className={cn(density.iconSize, "mr-1")} />
+          <PlusCircle className={cn("h-3 w-3", "mr-1")} />
           {title}
           {selectedValues?.size > 0 && (
             <>

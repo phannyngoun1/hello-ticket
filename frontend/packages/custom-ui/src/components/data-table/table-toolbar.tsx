@@ -5,7 +5,6 @@ import { ColumnVisibilityMenu } from "./column-visibility-menu";
 import { exportToCSV } from "./utils";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 import React, { useRef, forwardRef, useImperativeHandle } from "react";
-import { useDensityStyles } from "@truths/utils";
 
 interface TableToolbarProps<TData> {
   table: Table<TData>;
@@ -44,7 +43,6 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
     },
     ref
   ) {
-    const density = useDensityStyles();
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Expose focus method via ref
@@ -110,15 +108,15 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
     };
 
     return (
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex flex-1 items-center gap-2 overflow-hidden min-w-0">
-          <div className="relative flex-shrink-0" style={{ width: "280px" }}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-1 items-center gap-1.5 overflow-hidden min-w-0">
+          <div className="relative flex-shrink-0" style={{ width: "240px" }}>
             {loading ? (
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10">
-                <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+              <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
+                <Loader2 className="h-3 w-3 text-muted-foreground animate-spin" />
               </div>
             ) : (
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             )}
             <Input
               ref={searchInputRef}
@@ -127,28 +125,22 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
               value={globalFilter ?? ""}
               onChange={(e) => onGlobalFilterChange(e.target.value)}
               className={cn(
-                density.searchInputHeight,
-                "pl-10",
-                density.textSize,
+                "h-8 pl-8 pr-2 text-xs",
                 "w-full focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
               )}
             />
           </div>
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="flex items-center gap-1 min-w-0">
             {onFilterClick && (
               <Button
                 variant="outline"
                 size="sm"
-                className={cn(
-                  density.buttonHeightSmall,
-                  density.textSizeSmall,
-                  "whitespace-nowrap"
-                )}
+                className={cn("h-8 px-2 text-xs", "whitespace-nowrap")}
                 onClick={onFilterClick}
               >
                 <Filter
                   className={cn(
-                    density.iconSize,
+                    "h-3 w-3",
                     "mr-1",
                     hasActiveFilters && "fill-current"
                   )}
@@ -196,15 +188,11 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
                   <Button
                     variant="outline"
                     size="sm"
-                    className={cn(
-                      density.buttonHeightSmall,
-                      density.textSizeSmall,
-                      "whitespace-nowrap"
-                    )}
+                    className={cn("h-8 px-2 text-xs", "whitespace-nowrap")}
                     onClick={handleReset}
                     title="Reset all filters"
                   >
-                    <X className={cn(density.iconSize, "mr-1")} />
+                    <X className={cn("h-3 w-3", "mr-1")} />
                     Reset
                   </Button>
                 )}
@@ -212,21 +200,16 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
             )}
           </div>
         </div>
-        <div
-          className={cn(
-            "flex items-center gap-2 flex-shrink-0",
-            density.gapButtonGroup
-          )}
-        >
+        <div className={cn("flex items-center gap-1.5 flex-shrink-0")}>
           {customActions}
           {onCreate && (
             <Button
               variant="default"
               size="sm"
-              className={cn(density.buttonHeightSmall, density.textSizeSmall)}
+              className={cn("h-8 px-2 text-xs")}
               onClick={onCreate}
             >
-              <Plus className={cn(density.iconSize, "mr-1")} />
+              <Plus className={cn("h-3 w-3", "mr-1")} />
               New
             </Button>
           )}
@@ -234,9 +217,9 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
             variant="outline"
             size="sm"
             onClick={handleExport}
-            className={cn(density.buttonHeightSmall, density.textSizeSmall)}
+            className={cn("h-8 px-2 text-xs")}
           >
-            <Download className={cn(density.iconSize, "mr-1")} />
+            <Download className={cn("h-3 w-3", "mr-1")} />
             Export
           </Button>
           <ColumnVisibilityMenu table={table} />

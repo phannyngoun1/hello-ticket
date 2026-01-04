@@ -13,11 +13,6 @@ import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import {
   Button,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -46,6 +41,8 @@ import { api } from "@truths/api";
 import { EventInventoryViewer } from "@truths/ticketing/events/event-inventory-viewer";
 import { EventSeatList } from "@truths/ticketing/events/event-seat-list";
 import type { EventSeat } from "@truths/ticketing/events/types";
+import { CustomerService } from "../customers/customer-service";
+import { useCustomers, useCustomer } from "../customers/use-customers";
 import type { Customer } from "../types";
 import type { CreateBookingInput } from "./types";
 
@@ -95,6 +92,9 @@ export function CreateBookingDialog({
   // Popover open states
   const [showPopoverOpen, setShowPopoverOpen] = useState(false);
   const [eventPopoverOpen, setEventPopoverOpen] = useState(false);
+  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [debouncedCustomerSearchQuery, setDebouncedCustomerSearchQuery] = useState("");
 
   // Seat view mode: 'visualization' | 'list'
   const [seatViewMode, setSeatViewMode] = useState<"visualization" | "list">(
@@ -155,6 +155,17 @@ export function CreateBookingDialog({
     []
   );
 
+  const customerService = useMemo(
+    () =>
+      new CustomerService({
+        apiClient: api,
+        endpoints: {
+          customers: "/api/v1/sales/customers",
+        },
+      }),
+    []
+  );
+
   // Fetch shows
   const { data: showsData } = useShows(showService, {
     pagination: { page: 1, pageSize: 100 },
@@ -194,6 +205,33 @@ export function CreateBookingDialog({
     { skip: 0, limit: 1000 }
   );
   const eventSeats = eventSeatsData?.data || [];
+
+  // Debounce customer search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearchQuery(customerSearchQuery);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [customerSearchQuery]);
+
+  // Fetch customers with dynamic search
+  const { data: customersData } = useCustomers(customerService, {
+    filter: {
+      search: debouncedCustomerSearchQuery || undefined,
+    },
+    pagination: {
+      page: 1,
+      pageSize: 50,
+    },
+  });
+  const customers = customersData?.data || [];
+
+  // Fetch selected customer details to display name when popover is closed
+  const { data: selectedCustomer } = useCustomer(
+    customerService,
+    selectedCustomerId
+  );
 
   // Create maps for seat status lookup
   const seatStatusMap = useMemo(() => {
@@ -241,6 +279,8 @@ export function CreateBookingDialog({
       setSelectedSectionId(null);
       setPendingData(null);
       setShowConfirmDialog(false);
+      setCustomerSearchQuery("");
+      setCustomerPopoverOpen(false);
     }
   }, [open]);
 
@@ -744,20 +784,105 @@ export function CreateBookingDialog({
                   <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
                     Customer
                   </label>
-                  <Select
-                    value={selectedCustomerId || ""}
-                    onValueChange={(value) =>
-                      setSelectedCustomerId(value || null)
-                    }
+                  <Popover
+                    open={customerPopoverOpen}
+                    onOpenChange={(open) => {
+                      setCustomerPopoverOpen(open);
+                      if (!open) {
+                        // Clear search query when popover closes
+                        setCustomerSearchQuery("");
+                      }
+                    }}
                   >
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select customer (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {/* TODO: Add customer list */}
-                      <SelectItem value="none">No customer selected</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between h-9"
+                      >
+                        {selectedCustomerId
+                          ? selectedCustomer?.name ||
+                            selectedCustomer?.code ||
+                            customers.find((c) => c.id === selectedCustomerId)
+                              ?.name ||
+                            customers.find((c) => c.id === selectedCustomerId)
+                              ?.code ||
+                            "Select a customer"
+                          : "Select customer (optional)"}
+                        <svg
+                          className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder="Search customers..."
+                          className="h-9"
+                          value={customerSearchQuery}
+                          onValueChange={setCustomerSearchQuery}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {customerSearchQuery
+                              ? `No customers found matching "${customerSearchQuery}"`
+                              : "Start typing to search customers..."}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="none"
+                              onSelect={() => {
+                                setSelectedCustomerId(null);
+                                setCustomerPopoverOpen(false);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-muted-foreground">
+                                  No customer selected
+                                </span>
+                              </div>
+                            </CommandItem>
+                            {customers.map((customer) => (
+                              <CommandItem
+                                key={customer.id}
+                                value={`${customer.name || customer.code} ${customer.code || ""} ${customer.email || ""}`}
+                                onSelect={() => {
+                                  setSelectedCustomerId(customer.id);
+                                  setCustomerPopoverOpen(false);
+                                  setCustomerSearchQuery("");
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {customer.name || customer.code}
+                                  </span>
+                                  {customer.code && customer.name && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {customer.code}
+                                    </span>
+                                  )}
+                                  {customer.email && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {customer.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
