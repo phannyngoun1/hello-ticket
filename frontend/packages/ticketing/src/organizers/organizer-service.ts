@@ -10,15 +10,8 @@ import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 interface OrganizerDTO {
   id: string;
   tenant_id: string;
-  
-  
   code: string;
-  
-  
-  
   name: string;
-  
-  
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -29,15 +22,8 @@ interface OrganizerDTO {
 function transformOrganizer(dto: OrganizerDTO): Organizer {
   return {
     id: dto.id,
-    
-    
     code: dto.code,
-    
-    
-    
     name: dto.name,
-    
-    
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };

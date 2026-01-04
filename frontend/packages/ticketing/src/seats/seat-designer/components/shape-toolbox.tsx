@@ -5,7 +5,7 @@
  */
 
 import { Card } from "@truths/ui";
-import { Circle, Square, Hexagon, MousePointer2, Edit, PenTool, Trash2 } from "lucide-react";
+import { Circle, Square, Hexagon, MousePointer2, Edit, PenTool, Trash2, Eye } from "lucide-react";
 import { PlacementShapeType, type SeatMarker, type SectionMarker } from "../types";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -15,7 +15,9 @@ export interface ShapeToolboxProps {
   selectedSeat?: SeatMarker | null;
   selectedSection?: SectionMarker | null;
   onSeatEdit?: (seat: SeatMarker) => void;
+  onSeatView?: (seat: SeatMarker) => void;
   onSectionEdit?: (section: SectionMarker) => void;
+  onSectionView?: (section: SectionMarker) => void;
   onSeatDelete?: (seat: SeatMarker) => void;
   onSectionDelete?: (section: SectionMarker) => void;
   className?: string;
@@ -27,7 +29,9 @@ export function ShapeToolbox({
   selectedSeat,
   selectedSection,
   onSeatEdit,
+  onSeatView,
   onSectionEdit,
+  onSectionView,
   onSeatDelete,
   onSectionDelete,
   className,
@@ -71,6 +75,11 @@ export function ShapeToolbox({
     ? () => onSeatEdit(selectedSeat)
     : selectedSection && onSectionEdit
       ? () => onSectionEdit(selectedSection)
+      : undefined;
+  const handleView = selectedSeat && onSeatView
+    ? () => onSeatView(selectedSeat)
+    : selectedSection && onSectionView
+      ? () => onSectionView(selectedSection)
       : undefined;
   const handleDelete = selectedSeat && onSeatDelete
     ? () => onSeatDelete(selectedSeat)
@@ -129,12 +138,26 @@ export function ShapeToolbox({
           </div>
         </div>
         
-        {/* Selected marker name with edit and delete actions - shown on the right */}
+        {/* Selected marker name with view, edit and delete actions - shown on the right */}
         {selectedMarker && markerName && (
           <div className="flex items-center gap-1">
             <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
               {markerName}
             </span>
+            {handleView && (
+              <button
+                type="button"
+                onClick={handleView}
+                className={cn(
+                  "flex items-center justify-center p-1 rounded border transition-all",
+                  "hover:bg-accent hover:border-accent-foreground",
+                  "bg-background border-border"
+                )}
+                title="View details"
+              >
+                <Eye className="h-3 w-3 text-muted-foreground" />
+              </button>
+            )}
             {handleEdit && (
               <button
                 type="button"

@@ -1,6 +1,6 @@
 """Ticketing seat commands for CQRS pattern"""
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Dict, Any
 from app.domain.ticketing.seat import SeatType
 
 
@@ -16,6 +16,7 @@ class CreateSeatCommand:
     seat_type: SeatType = SeatType.STANDARD
     x_coordinate: Optional[float] = None
     y_coordinate: Optional[float] = None
+    shape: Optional[Dict[str, Any]] = None  # PlacementShape data
 
 
 @dataclass
@@ -29,6 +30,7 @@ class UpdateSeatCommand:
     seat_type: Optional[SeatType] = None
     x_coordinate: Optional[float] = None
     y_coordinate: Optional[float] = None
+    shape: Optional[Dict[str, Any]] = None  # PlacementShape data
 
 
 @dataclass
@@ -38,6 +40,7 @@ class UpdateSeatCoordinatesCommand:
     seat_id: str
     x_coordinate: float
     y_coordinate: float
+    shape: Optional[Dict[str, Any]] = None  # PlacementShape data
 
 
 @dataclass

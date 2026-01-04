@@ -53,6 +53,14 @@ export interface SectionDetailViewProps {
   onSetIsEditingViewingSeat: (editing: boolean) => void;
   onSetSelectedSeat: (seat: SeatMarker | null) => void;
   seatEditFormReset: (data: any) => void;
+  placementShape: PlacementShape;
+  onPlacementShapeChange: (shape: PlacementShape) => void;
+  selectedShapeTool?: PlacementShapeType | null;
+  onShapeToolSelect: (tool: PlacementShapeType | null) => void;
+  onShapeDraw?: (shape: PlacementShape, x: number, y: number) => void;
+  shapeOverlays?: any[];
+  selectedOverlayId?: string | null;
+  onShapeOverlayClick: (overlayId: string) => void;
 }
 
 export function SectionDetailView({

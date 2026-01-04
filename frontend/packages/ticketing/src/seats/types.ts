@@ -23,6 +23,7 @@ export interface Seat {
     seat_type: SeatType;
     x_coordinate?: number;
     y_coordinate?: number;
+    shape?: string; // JSON string storing PlacementShape data
     is_active: boolean;
     created_at: Date;
     updated_at: Date;
@@ -37,6 +38,7 @@ export interface CreateSeatInput {
     seat_type?: SeatType;
     x_coordinate?: number;
     y_coordinate?: number;
+    shape?: string; // JSON string storing PlacementShape data
 }
 
 export interface UpdateSeatInput {
@@ -46,6 +48,7 @@ export interface UpdateSeatInput {
     seat_type?: SeatType;
     x_coordinate?: number;
     y_coordinate?: number;
+    shape?: string; // JSON string storing PlacementShape data
 }
 
 export interface SeatListResponse {

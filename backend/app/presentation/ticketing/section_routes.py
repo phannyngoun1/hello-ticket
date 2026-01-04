@@ -1,6 +1,7 @@
 """FastAPI routes for Ticketing sections"""
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List
+from typing import List, Dict, Any
+import json
 
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
@@ -30,6 +31,17 @@ router = APIRouter(prefix="/ticketing/sections", tags=["ticketing"])
 
 def section_model_to_response(section: SectionModel, image_url: str | None = None) -> SectionResponse:
     """Convert SectionModel to SectionResponse"""
+    # Convert shape dict (from JSONB) to JSON string for API response
+    shape_str = None
+    if section.shape:
+        if isinstance(section.shape, dict):
+            shape_str = json.dumps(section.shape)
+        elif isinstance(section.shape, str):
+            # Already a string, use as-is
+            shape_str = section.shape
+        else:
+            shape_str = json.dumps(section.shape)
+    
     return SectionResponse(
         id=section.id,
         tenant_id=section.tenant_id,
@@ -39,6 +51,7 @@ def section_model_to_response(section: SectionModel, image_url: str | None = Non
         y_coordinate=section.y_coordinate,
         file_id=section.file_id,
         image_url=image_url,
+        shape=shape_str,  # Return as JSON string for API compatibility
         is_active=section.is_active,
         created_at=section.created_at,
         updated_at=section.updated_at,
@@ -56,15 +69,34 @@ async def create_section(
         set_tenant_context(current_user.tenant_id)
         
         with get_session_sync() as session:
-            # Check if section with same name already exists for this layout
+            # Check if section with same name already exists for this layout (including soft-deleted)
+            # The unique constraint applies to all rows, so we need to check all
             statement = select(SectionModel).where(
                 SectionModel.layout_id == request.layout_id,
                 SectionModel.name == request.name,
-                SectionModel.is_deleted == False
+                SectionModel.tenant_id == current_user.tenant_id
             )
             existing = session.exec(statement).first()
             if existing:
-                raise BusinessRuleError(f"Section with name '{request.name}' already exists for this layout")
+                if existing.is_deleted:
+                    # Hard delete the soft-deleted section to allow reuse of the name
+                    session.delete(existing)
+                    session.flush()  # Flush to remove it before creating new one
+                else:
+                    raise BusinessRuleError(f"Section with name '{request.name}' already exists for this layout")
+            
+            # Parse shape if provided (convert JSON string to dict for JSONB storage)
+            shape_data = None
+            if request.shape:
+                if isinstance(request.shape, str):
+                    try:
+                        shape_data = json.loads(request.shape)
+                    except json.JSONDecodeError:
+                        raise ValidationError(f"Invalid JSON in shape field: {request.shape}")
+                elif isinstance(request.shape, dict):
+                    shape_data = request.shape
+                else:
+                    shape_data = request.shape
             
             # Create new section
             section = SectionModel(
@@ -75,6 +107,7 @@ async def create_section(
                 x_coordinate=request.x_coordinate,
                 y_coordinate=request.y_coordinate,
                 file_id=request.file_id,
+                shape=shape_data,  # Store as dict - JSONB column will handle serialization
                 is_active=True,
                 is_deleted=False,
                 version=0,
@@ -206,6 +239,20 @@ async def update_section(
                 section.y_coordinate = request.y_coordinate
             if request.file_id is not None:
                 section.file_id = request.file_id
+            if request.shape is not None:
+                # Parse shape if provided (convert JSON string to dict for JSONB storage)
+                shape_data = None
+                if isinstance(request.shape, str):
+                    try:
+                        shape_data = json.loads(request.shape)
+                    except json.JSONDecodeError:
+                        raise ValidationError(f"Invalid JSON in shape field: {request.shape}")
+                elif isinstance(request.shape, dict):
+                    shape_data = request.shape
+                else:
+                    shape_data = request.shape
+                
+                section.shape = shape_data  # Store as dict - JSONB column will handle serialization
             
             section.updated_at = datetime.now(timezone.utc)
             section.version += 1
@@ -233,7 +280,7 @@ async def delete_section(
     section_id: str,
     current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
 ):
-    """Delete a section (soft delete)"""
+    """Delete a section (soft delete) and all its related seats"""
     try:
         set_tenant_context(current_user.tenant_id)
         
@@ -247,20 +294,27 @@ async def delete_section(
             if not section:
                 raise NotFoundError(f"Section {section_id} not found")
             
-            # Check if section has seats (soft check via SeatModel)
+            # Soft delete all seats associated with this section
             from app.infrastructure.shared.database.models import SeatModel
             seat_statement = select(SeatModel).where(
                 SeatModel.section_id == section_id,
+                SeatModel.tenant_id == current_user.tenant_id,
                 SeatModel.is_deleted == False
-            ).limit(1)
-            has_seats = session.exec(seat_statement).first() is not None
+            )
+            seats = session.exec(seat_statement).all()
             
-            if has_seats:
-                raise BusinessRuleError("Cannot delete section that has seats. Delete seats first.")
+            deleted_at = datetime.now(timezone.utc)
             
-            # Soft delete
+            # Soft delete all related seats
+            for seat in seats:
+                seat.is_deleted = True
+                seat.deleted_at = deleted_at
+                seat.updated_at = deleted_at
+                session.add(seat)
+            
+            # Soft delete the section
             section.is_deleted = True
-            section.deleted_at = datetime.now(timezone.utc)
+            section.deleted_at = deleted_at
             section.version += 1
             
             session.add(section)

@@ -50,6 +50,13 @@ export interface UserPreferences {
         [key: string]: boolean | unknown;
     };
 
+    // Cache Preferences
+    cache?: {
+        queryCacheEnabled?: boolean; // Backend query cache
+        reactQueryCacheEnabled?: boolean; // Frontend React Query cache
+        [key: string]: unknown;
+    };
+
     // Application-specific preferences
     [category: string]: Record<string, unknown> | undefined;
 }

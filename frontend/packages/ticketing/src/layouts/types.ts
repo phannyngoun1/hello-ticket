@@ -42,6 +42,7 @@ export interface Section {
   y_coordinate?: number | null;
   file_id?: string | null;
   image_url?: string | null;
+  shape?: string | null; // JSON string storing PlacementShape data
   is_active: boolean;
   created_at: Date;
   updated_at: Date;

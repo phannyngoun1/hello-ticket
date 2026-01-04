@@ -1022,6 +1022,7 @@ class SectionModel(SQLModel, table=True):
     x_coordinate: Optional[float] = None  # Position on main floor plan (percentage)
     y_coordinate: Optional[float] = None  # Position on main floor plan (percentage)
     file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Section floor plan image
+    shape: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # JSONB storing PlacementShape data as dict
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)
     version: int = Field(default=0)
@@ -1062,6 +1063,7 @@ class SeatModel(SQLModel, table=True):
     seat_type: str = Field(index=True)  # STANDARD, VIP, WHEELCHAIR, COMPANION
     x_coordinate: Optional[float] = None
     y_coordinate: Optional[float] = None
+    shape: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # JSONB storing PlacementShape data as dict
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
