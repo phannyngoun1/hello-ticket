@@ -60,7 +60,7 @@ export function ShapeToolbox({
     {
       type: PlacementShapeType.FREEFORM,
       icon: PenTool,
-      label: "Freeform",
+      label: "Polygon",
     },
   ];
 
