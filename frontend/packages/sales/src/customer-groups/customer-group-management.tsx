@@ -17,6 +17,7 @@ import {
 import { Plus, Search, Filter } from "lucide-react";
 import { toast } from "@truths/ui";
 import { ConfirmationDialog } from "@truths/custom-ui";
+import { cn } from "@truths/ui/lib/utils";
 import { CustomerGroupTree as CustomerGroupTreeView } from "./customer-group-tree";
 import { CreateCustomerGroupDialog } from "./create-customer-group-dialog";
 import { EditCustomerGroupDialog } from "./edit-customer-group-dialog";
@@ -195,10 +196,14 @@ export function CustomerGroupManagement({
               Manage customerGroups hierarchically
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleAddRoot}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add CustomerGroup
+          <div className="flex items-center gap-1.5">
+            <Button
+              onClick={handleAddRoot}
+              size="sm"
+              className={cn("h-8 px-2 text-xs")}
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              Add Customer Group
             </Button>
           </div>
         </div>

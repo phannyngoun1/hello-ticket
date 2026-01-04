@@ -97,12 +97,12 @@ export function RoleDetail({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {customActions?.(role)}
             {editable && onEdit && !role.isSystem && (
-              <Button onClick={() => onEdit(role)} className={cn("flex items-center gap-1.5", density.textSizeSmall)}>
-                <Edit className={density.iconSizeSmall} />
-                <span>Edit Role</span>
+              <Button onClick={() => onEdit(role)} size="sm" variant="outline" className={cn("h-8 px-2 text-xs")}>
+                <Edit className="h-3 w-3 mr-1" />
+                Edit Role
               </Button>
             )}
           </div>
