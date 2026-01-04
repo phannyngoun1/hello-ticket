@@ -83,20 +83,33 @@ function ShapeRenderer({
       const radius = shape.radius
         ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
         : 12; // Default radius
-      return <Circle {...baseProps} radius={radius} />;
+      // Ensure radius is positive and non-zero
+      const validRadius = Math.max(1, Math.abs(radius));
+      return <Circle {...baseProps} radius={validRadius} />;
     }
 
     case PlacementShapeType.RECTANGLE: {
       const width = shape.width ? (shape.width / 100) * imageWidth : 24; // Default width
       const height = shape.height ? (shape.height / 100) * imageHeight : 24; // Default height
+      // Ensure width and height are positive and non-zero
+      const validWidth = Math.max(1, Math.abs(width));
+      const validHeight = Math.max(1, Math.abs(height));
+      // Ensure cornerRadius doesn't exceed half the smallest dimension
+      // This prevents negative radius in arc calculations
+      const rawCornerRadius = shape.cornerRadius || 0;
+      const maxCornerRadius = Math.min(validWidth, validHeight) / 2;
+      const validCornerRadius = Math.max(
+        0,
+        Math.min(Math.abs(rawCornerRadius), maxCornerRadius)
+      );
       return (
         <Rect
           {...baseProps}
-          x={-width / 2}
-          y={-height / 2}
-          width={width}
-          height={height}
-          cornerRadius={shape.cornerRadius || 0}
+          x={-validWidth / 2}
+          y={-validHeight / 2}
+          width={validWidth}
+          height={validHeight}
+          cornerRadius={validCornerRadius}
         />
       );
     }
@@ -106,7 +119,12 @@ function ShapeRenderer({
       const radiusY = shape.height
         ? ((shape.height / 100) * imageHeight) / 2
         : 12; // Default radiusY
-      return <Ellipse {...baseProps} radiusX={radiusX} radiusY={radiusY} />;
+      // Ensure radiusX and radiusY are positive and non-zero
+      const validRadiusX = Math.max(1, Math.abs(radiusX));
+      const validRadiusY = Math.max(1, Math.abs(radiusY));
+      return (
+        <Ellipse {...baseProps} radiusX={validRadiusX} radiusY={validRadiusY} />
+      );
     }
 
     case PlacementShapeType.POLYGON: {
@@ -344,9 +362,14 @@ function SeatMarkerComponent({
       const currentRadius = shape.radius
         ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
         : 12;
-      const newRadius = currentRadius * Math.max(scaleX, scaleY);
-      updatedShape.radius =
-        (newRadius / Math.min(imageWidth, imageHeight)) * 100;
+      const newRadius =
+        currentRadius * Math.max(Math.abs(scaleX), Math.abs(scaleY));
+      // Ensure minimum radius (0.1% of image)
+      const minRadiusPercent = 0.1;
+      updatedShape.radius = Math.max(
+        minRadiusPercent,
+        (newRadius / Math.min(imageWidth, imageHeight)) * 100
+      );
     } else if (
       shape.type === PlacementShapeType.RECTANGLE ||
       shape.type === PlacementShapeType.ELLIPSE
@@ -355,15 +378,39 @@ function SeatMarkerComponent({
       const currentHeight = shape.height
         ? (shape.height / 100) * imageHeight
         : 20;
-      updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
-      updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+      // Ensure minimum dimensions (0.1% of image)
+      const minWidthPercent = 0.1;
+      const minHeightPercent = 0.1;
+      updatedShape.width = Math.max(
+        minWidthPercent,
+        (Math.abs(currentWidth * scaleX) / imageWidth) * 100
+      );
+      updatedShape.height = Math.max(
+        minHeightPercent,
+        (Math.abs(currentHeight * scaleY) / imageHeight) * 100
+      );
+      // For rectangles, ensure cornerRadius doesn't exceed dimensions
+      if (
+        shape.type === PlacementShapeType.RECTANGLE &&
+        updatedShape.cornerRadius
+      ) {
+        const maxCornerRadius =
+          Math.min(
+            (updatedShape.width / 100) * imageWidth,
+            (updatedShape.height / 100) * imageHeight
+          ) / 2;
+        updatedShape.cornerRadius = Math.min(
+          updatedShape.cornerRadius,
+          (maxCornerRadius / imageWidth) * 100
+        );
+      }
     } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
       // Scale all points proportionally
-      const avgScale = (scaleX + scaleY) / 2;
+      const avgScale = Math.abs((scaleX + scaleY) / 2);
       updatedShape.points = shape.points.map((p) => p * avgScale);
     } else if (shape.type === PlacementShapeType.POLYGON && shape.points) {
       // Scale polygon points proportionally
-      const avgScale = (scaleX + scaleY) / 2;
+      const avgScale = Math.abs((scaleX + scaleY) / 2);
       updatedShape.points = shape.points.map((p) => p * avgScale);
     }
 
@@ -582,9 +629,14 @@ function SectionMarkerComponent({
       const currentRadius = shape.radius
         ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
         : 12;
-      const newRadius = currentRadius * Math.max(scaleX, scaleY);
-      updatedShape.radius =
-        (newRadius / Math.min(imageWidth, imageHeight)) * 100;
+      const newRadius =
+        currentRadius * Math.max(Math.abs(scaleX), Math.abs(scaleY));
+      // Ensure minimum radius (0.1% of image)
+      const minRadiusPercent = 0.1;
+      updatedShape.radius = Math.max(
+        minRadiusPercent,
+        (newRadius / Math.min(imageWidth, imageHeight)) * 100
+      );
     } else if (
       shape.type === PlacementShapeType.RECTANGLE ||
       shape.type === PlacementShapeType.ELLIPSE
@@ -593,15 +645,39 @@ function SectionMarkerComponent({
       const currentHeight = shape.height
         ? (shape.height / 100) * imageHeight
         : 20;
-      updatedShape.width = ((currentWidth * scaleX) / imageWidth) * 100;
-      updatedShape.height = ((currentHeight * scaleY) / imageHeight) * 100;
+      // Ensure minimum dimensions (0.1% of image)
+      const minWidthPercent = 0.1;
+      const minHeightPercent = 0.1;
+      updatedShape.width = Math.max(
+        minWidthPercent,
+        (Math.abs(currentWidth * scaleX) / imageWidth) * 100
+      );
+      updatedShape.height = Math.max(
+        minHeightPercent,
+        (Math.abs(currentHeight * scaleY) / imageHeight) * 100
+      );
+      // For rectangles, ensure cornerRadius doesn't exceed dimensions
+      if (
+        shape.type === PlacementShapeType.RECTANGLE &&
+        updatedShape.cornerRadius
+      ) {
+        const maxCornerRadius =
+          Math.min(
+            (updatedShape.width / 100) * imageWidth,
+            (updatedShape.height / 100) * imageHeight
+          ) / 2;
+        updatedShape.cornerRadius = Math.min(
+          updatedShape.cornerRadius,
+          (maxCornerRadius / imageWidth) * 100
+        );
+      }
     } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
       // Scale all points proportionally
-      const avgScale = (scaleX + scaleY) / 2;
+      const avgScale = Math.abs((scaleX + scaleY) / 2);
       updatedShape.points = shape.points.map((p) => p * avgScale);
     } else if (shape.type === PlacementShapeType.POLYGON && shape.points) {
       // Scale polygon points proportionally
-      const avgScale = (scaleX + scaleY) / 2;
+      const avgScale = Math.abs((scaleX + scaleY) / 2);
       updatedShape.points = shape.points.map((p) => p * avgScale);
     }
 
