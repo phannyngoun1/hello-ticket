@@ -1,11 +1,20 @@
 /**
  * Section Form Sheet Component
- * 
+ *
  * Sheet for creating and editing sections
  */
 
 import React from "react";
-import { Button, Input, Label, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@truths/ui";
+import {
+  Button,
+  Input,
+  Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@truths/ui";
 import { Controller, UseFormReturn } from "react-hook-form";
 import type { SectionFormData } from "../form-schemas";
 
@@ -34,20 +43,20 @@ export function SectionFormSheet({
   // Check if name is valid - handle both string and undefined cases
   const trimmedName = nameValue?.trim() || "";
   const isNameValid = trimmedName.length > 0;
-  
+
   // Trigger validation when form opens or name changes
   React.useEffect(() => {
     if (open && nameValue !== undefined) {
       form.trigger("name");
     }
   }, [open, nameValue, form]);
-  
+
   // Button should be enabled if name is valid
   const canSubmit = isNameValid;
-  
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
+      <SheetContent side="right" className="flex flex-col h-full">
         <SheetHeader>
           <SheetTitle>
             {editingSectionId ? "Edit Section" : "New Section"}
@@ -58,47 +67,44 @@ export function SectionFormSheet({
               : "Create a new section for your layout"}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
-          <div>
-            <Label htmlFor="section-name">Section Name</Label>
-            <Controller
-              name="name"
-              control={form.control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  id="section-name"
-                  className="mt-1.5"
-                  placeholder="e.g., Section A, VIP Area, General Admission"
-                  autoFocus
-                />
+        <div className="mt-6 flex-1  min-h-0">
+          <div className="px-6 space-y-4">
+            <div>
+              <Label htmlFor="section-name">Section Name</Label>
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    id="section-name"
+                    className="mt-2"
+                    placeholder="e.g., Section A, VIP Area, General Admission"
+                    autoFocus
+                  />
+                )}
+              />
+              {form.formState.errors.name && (
+                <p className="text-sm text-destructive mt-1">
+                  {form.formState.errors.name.message}
+                </p>
               )}
-            />
-            {form.formState.errors.name && (
-              <p className="text-sm text-destructive mt-1">
-                {form.formState.errors.name.message}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2 pt-4">
-            <Button
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={onSave}
-              disabled={isCreating || isUpdating || !canSubmit}
-              className="flex-1"
-            >
-              {editingSectionId ? "Update" : "Create"}
-            </Button>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={onCancel} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={onSave}
+                disabled={isCreating || isUpdating || !canSubmit}
+                className="flex-1"
+              >
+                {editingSectionId ? "Update" : "Create"}
+              </Button>
+            </div>
           </div>
         </div>
       </SheetContent>
     </Sheet>
   );
 }
-

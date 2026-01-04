@@ -1,6 +1,6 @@
 /**
  * Seat Edit Sheet Component
- * 
+ *
  * Sheet for viewing and editing seat information
  */
 
@@ -65,18 +65,21 @@ export function SeatEditSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
+      <SheetContent
+        side="right"
+        className="w-[400px] sm:w-[540px] flex flex-col"
+      >
         <SheetHeader>
           <SheetTitle>Seat Information</SheetTitle>
           <SheetDescription>
             {isPlacingSeats
               ? isEditing
                 ? "Edit seat details"
-                : "View or edit this seat"
+                : "View seat details"
               : "View seat details (read-only)"}
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
+        <div className="mt-6 flex-1 min-h-0 space-y-4">
           {isEditing ? (
             // Edit mode
             <>
@@ -98,7 +101,10 @@ export function SeatEditSheet({
                               (s) => s.name === value
                             );
                             sectionId = section?.id;
-                          } else if (designMode === "section-level" && sectionMarkers) {
+                          } else if (
+                            designMode === "section-level" &&
+                            sectionMarkers
+                          ) {
                             const section = sectionMarkers.find(
                               (s) => s.name === value
                             );
@@ -167,6 +173,9 @@ export function SeatEditSheet({
                 </div>
               </div>
               <div className="flex gap-2 pt-4 border-t">
+                <Button variant="outline" className="flex-1" onClick={onCancel}>
+                  Cancel
+                </Button>
                 <Button
                   variant="default"
                   className="flex-1"
@@ -174,13 +183,6 @@ export function SeatEditSheet({
                   disabled={isUpdating}
                 >
                   {isUpdating ? "Saving..." : "Save"}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={onCancel}
-                >
-                  Cancel
                 </Button>
               </div>
             </>
@@ -220,21 +222,6 @@ export function SeatEditSheet({
                   </div>
                 </div>
               </div>
-              {isPlacingSeats && (
-                <div className="pt-4 border-t space-y-2">
-                  <Button variant="outline" className="w-full" onClick={onEdit}>
-                    Edit Seat
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    onClick={onDelete}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? "Deleting..." : "Delete Seat"}
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -242,4 +229,3 @@ export function SeatEditSheet({
     </Sheet>
   );
 }
-

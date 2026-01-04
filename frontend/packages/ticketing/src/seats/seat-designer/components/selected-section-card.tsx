@@ -1,10 +1,18 @@
 /**
  * Selected Section Sheet Component
- * 
+ *
  * Sheet displaying information about the currently selected section
  */
 
-import { Button, Label, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@truths/ui";
+import {
+  Button,
+  Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@truths/ui";
 import { Trash2 } from "lucide-react";
 import type { SectionMarker, SeatMarker } from "../types";
 
@@ -31,14 +39,17 @@ export function SelectedSectionSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] flex flex-col">
+      <SheetContent
+        side="right"
+        className="w-[400px] sm:w-[540px] flex flex-col"
+      >
         <SheetHeader>
           <SheetTitle>Selected Section</SheetTitle>
           <SheetDescription>
             View and manage the selected section
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
+        <div className="mt-6 px-6 flex-1  min-h-0 space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
               <Label className="text-muted-foreground">Name</Label>
@@ -63,7 +74,8 @@ export function SelectedSectionSheet({
                 seat(s)
               </div>
             </div>
-            {(selectedSectionMarker.x !== undefined || selectedSectionMarker.y !== undefined) && (
+            {(selectedSectionMarker.x !== undefined ||
+              selectedSectionMarker.y !== undefined) && (
               <div>
                 <Label className="text-muted-foreground">Position</Label>
                 <div className="mt-1 text-sm font-medium">
@@ -113,4 +125,3 @@ export function SelectedSectionSheet({
     </Sheet>
   );
 }
-

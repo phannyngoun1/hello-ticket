@@ -47,7 +47,7 @@ export function ManageSectionsSheet({
             Edit or delete sections for this layout
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 flex-1 overflow-y-auto min-h-0 space-y-4">
+        <div className="mt-6 px-6 flex-1 overflow-y-auto min-h-0 space-y-4">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
               {sections?.length || 0} section(s)

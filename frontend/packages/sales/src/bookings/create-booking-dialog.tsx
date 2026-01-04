@@ -101,6 +101,11 @@ export function CreateBookingDialog({
     "visualization"
   );
 
+  // Selected section ID for layout drill-down (preserved across view mode switches)
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null
+  );
+
   // Selected tickets
   const [selectedTickets, setSelectedTickets] = useState<BookingTicket[]>([]);
 
@@ -219,8 +224,9 @@ export function CreateBookingDialog({
   // Handle event selection change
   useEffect(() => {
     if (selectedEventId) {
-      // Clear selected tickets when event changes
+      // Clear selected tickets and section when event changes
       setSelectedTickets([]);
+      setSelectedSectionId(null);
     }
   }, [selectedEventId]);
 
@@ -232,6 +238,7 @@ export function CreateBookingDialog({
       setSelectedTickets([]);
       setSelectedCustomerId(null);
       setSeatViewMode("visualization");
+      setSelectedSectionId(null);
       setPendingData(null);
       setShowConfirmDialog(false);
     }
@@ -701,6 +708,8 @@ export function CreateBookingDialog({
                             .filter(Boolean) as string[]
                         )
                       }
+                      selectedSectionId={selectedSectionId}
+                      onSelectedSectionIdChange={setSelectedSectionId}
                     />
                   </div>
                 ) : (
