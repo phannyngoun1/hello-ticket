@@ -301,6 +301,8 @@ function SeatMarkerComponent({
   useEffect(() => {
     if (isSelected && groupRef.current && transformerRef.current) {
       transformerRef.current.nodes([groupRef.current]);
+      // Force all anchors to be visible
+      transformerRef.current.forceUpdate();
       transformerRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected, shapeKey]);
@@ -508,16 +510,103 @@ function SeatMarkerComponent({
             return newBox;
           }}
           rotateEnabled={true}
+          resizeEnabled={true}
+          borderEnabled={true}
+          borderStroke="#3b82f6"
+          borderStrokeWidth={2}
+          anchorFill="#ffffff"
+          anchorStroke="#3b82f6"
+          anchorStrokeWidth={2}
+          anchorSize={10}
+          anchorCornerRadius={2}
+          ignoreStroke={false}
+          keepRatio={false}
+          flipEnabled={false}
           enabledAnchors={[
             "top-left",
-            "top-right",
-            "bottom-left",
-            "bottom-right",
             "top-center",
+            "top-right",
+            "middle-left",
+            "middle-right",
+            "bottom-left",
             "bottom-center",
-            "left-center",
-            "right-center",
+            "bottom-right",
           ]}
+          onMouseDown={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+          }}
+          onMouseMove={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+
+            // Handle cursor change for rotation handle
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (!transformerRef.current || !stage || !container) return;
+
+            const stagePos = stage.getPointerPosition();
+            if (!stagePos) return;
+
+            const transformer = transformerRef.current;
+            const layer = transformer.getLayer();
+            if (!layer || !groupRef.current) return;
+
+            const layerScale = layer.scaleX();
+            // Get the attached node's position and size
+            const node = groupRef.current;
+            const nodeX = node.x();
+            const nodeY = node.y();
+            const nodeHeight = node.height();
+
+            // The rotation handle is positioned above the top-center anchor
+            // Typically 20-30px above the top edge, centered horizontally
+            const rotationHandleOffset = 25 / layerScale; // 25px above top, adjusted for zoom
+            const rotationHandleY =
+              nodeY - nodeHeight / 2 - rotationHandleOffset;
+            const rotationHandleX = nodeX; // Center horizontally
+            const handleSize = 12 / layerScale; // Approximate size, adjusted for zoom
+
+            // Check if mouse is near the rotation handle
+            const distanceX = Math.abs(stagePos.x - rotationHandleX);
+            const distanceY = Math.abs(stagePos.y - rotationHandleY);
+            const isNearRotationHandle =
+              distanceX < handleSize &&
+              distanceY < handleSize + 15 / layerScale;
+
+            if (isNearRotationHandle) {
+              container.style.cursor = "grab";
+            } else {
+              // Let transformer handle its own cursors for resize handles
+              container.style.cursor = "";
+            }
+          }}
+          onMouseEnter={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+          }}
+          onMouseLeave={(e) => {
+            // Reset cursor when leaving transformer
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (container) {
+              container.style.cursor = "";
+            }
+          }}
+          onMouseUp={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+
+            // Reset cursor after mouse up
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (container) {
+              container.style.cursor = "";
+            }
+          }}
         />
       )}
     </>
@@ -606,6 +695,8 @@ function SectionMarkerComponent({
       transformerRef.current
     ) {
       transformerRef.current.nodes([groupRef.current]);
+      // Force all anchors to be visible
+      transformerRef.current.forceUpdate();
       transformerRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected, shapeKey]);
@@ -828,16 +919,139 @@ function SectionMarkerComponent({
             return newBox;
           }}
           rotateEnabled={true}
+          resizeEnabled={true}
+          borderEnabled={true}
+          borderStroke="#3b82f6"
+          borderStrokeWidth={2}
+          anchorFill="#ffffff"
+          anchorStroke="#3b82f6"
+          anchorStrokeWidth={2}
+          anchorSize={10}
+          anchorCornerRadius={2}
+          ignoreStroke={false}
+          keepRatio={false}
+          flipEnabled={false}
           enabledAnchors={[
             "top-left",
-            "top-right",
-            "bottom-left",
-            "bottom-right",
             "top-center",
+            "top-right",
+            "middle-left",
+            "middle-right",
+            "bottom-left",
             "bottom-center",
-            "left-center",
-            "right-center",
+            "bottom-right",
           ]}
+          onMouseDown={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+
+            // Set grabbing cursor when clicking on rotation handle
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (!transformerRef.current || !stage || !container) return;
+
+            const stagePos = stage.getPointerPosition();
+            if (!stagePos) return;
+
+            const transformer = transformerRef.current;
+            const layer = transformer.getLayer();
+            if (!layer || !groupRef.current) return;
+
+            const layerScale = layer.scaleX();
+            // Get the attached node's position and size
+            const node = groupRef.current;
+            const nodeX = node.x();
+            const nodeY = node.y();
+            const nodeHeight = node.height();
+
+            const rotationHandleOffset = 25 / layerScale;
+            const rotationHandleY =
+              nodeY - nodeHeight / 2 - rotationHandleOffset;
+            const rotationHandleX = nodeX;
+            const handleSize = 12 / layerScale;
+
+            const distanceX = Math.abs(stagePos.x - rotationHandleX);
+            const distanceY = Math.abs(stagePos.y - rotationHandleY);
+            const isNearRotationHandle =
+              distanceX < handleSize &&
+              distanceY < handleSize + 15 / layerScale;
+
+            if (isNearRotationHandle) {
+              container.style.cursor = "grabbing";
+            }
+          }}
+          onMouseMove={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+
+            // Handle cursor change for rotation handle
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (!transformerRef.current || !stage || !container) return;
+
+            const stagePos = stage.getPointerPosition();
+            if (!stagePos) return;
+
+            const transformer = transformerRef.current;
+            const layer = transformer.getLayer();
+            if (!layer || !groupRef.current) return;
+
+            const layerScale = layer.scaleX();
+            // Get the attached node's position and size
+            const node = groupRef.current;
+            const nodeX = node.x();
+            const nodeY = node.y();
+            const nodeHeight = node.height();
+
+            // The rotation handle is positioned above the top-center anchor
+            // Typically 20-30px above the top edge, centered horizontally
+            const rotationHandleOffset = 25 / layerScale; // 25px above top, adjusted for zoom
+            const rotationHandleY =
+              nodeY - nodeHeight / 2 - rotationHandleOffset;
+            const rotationHandleX = nodeX; // Center horizontally
+            const handleSize = 12 / layerScale; // Approximate size, adjusted for zoom
+
+            // Check if mouse is near the rotation handle
+            const distanceX = Math.abs(stagePos.x - rotationHandleX);
+            const distanceY = Math.abs(stagePos.y - rotationHandleY);
+            const isNearRotationHandle =
+              distanceX < handleSize &&
+              distanceY < handleSize + 15 / layerScale;
+
+            if (isNearRotationHandle) {
+              container.style.cursor = "grab";
+            } else {
+              // Let transformer handle its own cursors for resize handles
+              container.style.cursor = "";
+            }
+          }}
+          onMouseEnter={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+          }}
+          onMouseLeave={(e) => {
+            // Reset cursor when leaving transformer
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (container) {
+              container.style.cursor = "";
+            }
+          }}
+          onMouseUp={(e) => {
+            // Prevent shape drawing when interacting with transformer
+            e.cancelBubble = true;
+
+            // Reset cursor after mouse up
+            const target = e.target;
+            const stage = target.getStage();
+            const container = stage?.container();
+            if (container) {
+              container.style.cursor = "";
+            }
+          }}
         />
       )}
     </>
@@ -1236,6 +1450,59 @@ export function LayoutCanvas({
           return;
         }
 
+        // Check if clicking on a selected marker or its transformer
+        // If so, don't start shape drawing - let the marker handle the interaction
+        const target = e.target;
+        const targetType = target.getType();
+        const isTransformer = targetType === "Transformer";
+
+        // Check if target or any ancestor is a transformer
+        let current: Konva.Node | null = target;
+        let isTransformerRelated = false;
+        while (current) {
+          if (current.getType() === "Transformer") {
+            isTransformerRelated = true;
+            break;
+          }
+          current = current.getParent();
+        }
+
+        const isMarkerGroup =
+          target.name() === "seat-marker" || target.name() === "section-marker";
+        const isMarkerChild =
+          target.getParent()?.name() === "seat-marker" ||
+          target.getParent()?.name() === "section-marker";
+        // Check if any ancestor is a marker group
+        let ancestor = target.getParent();
+        let isMarkerAncestor = false;
+        while (ancestor) {
+          if (
+            ancestor.name() === "seat-marker" ||
+            ancestor.name() === "section-marker"
+          ) {
+            isMarkerAncestor = true;
+            break;
+          }
+          ancestor = ancestor.getParent();
+        }
+        const hasSelectedMarker = selectedSeatId || selectedSectionId;
+
+        // If clicking on a selected marker or transformer, don't start shape drawing
+        if (
+          hasSelectedMarker &&
+          (isTransformer ||
+            isTransformerRelated ||
+            isMarkerGroup ||
+            isMarkerChild ||
+            isMarkerAncestor)
+        ) {
+          // Also cancel any ongoing shape drawing
+          setIsDrawingShape(false);
+          setDrawStartPos(null);
+          setDrawCurrentPos(null);
+          return;
+        }
+
         // If shape tool is selected, start drawing (drag to draw)
         // For freeform, we use click-to-add-points instead of drag
         if (
@@ -1265,6 +1532,49 @@ export function LayoutCanvas({
         const pointerPos = stage.getPointerPosition();
         if (!pointerPos) return;
 
+        // Check if interacting with transformer or selected marker
+        const target = e.target;
+        const targetType = target.getType();
+        const isTransformer = targetType === "Transformer";
+
+        // Check if target or any ancestor is a transformer
+        let current: Konva.Node | null = target;
+        let isTransformerRelated = false;
+        while (current) {
+          if (current.getType() === "Transformer") {
+            isTransformerRelated = true;
+            break;
+          }
+          current = current.getParent();
+        }
+
+        const isMarkerGroup =
+          target.name() === "seat-marker" || target.name() === "section-marker";
+        const isMarkerChild =
+          target.getParent()?.name() === "seat-marker" ||
+          target.getParent()?.name() === "section-marker";
+        // Check if any ancestor is a marker group
+        let ancestor: Konva.Node | null = target.getParent();
+        let isMarkerAncestor = false;
+        while (ancestor) {
+          if (
+            ancestor.name() === "seat-marker" ||
+            ancestor.name() === "section-marker"
+          ) {
+            isMarkerAncestor = true;
+            break;
+          }
+          ancestor = ancestor.getParent();
+        }
+        const hasSelectedMarker = selectedSeatId || selectedSectionId;
+        const isInteractingWithMarker =
+          hasSelectedMarker &&
+          (isTransformer ||
+            isTransformerRelated ||
+            isMarkerGroup ||
+            isMarkerChild ||
+            isMarkerAncestor);
+
         if (isPanning && isSpacePressed) {
           const delta = {
             x: pointerPos.x - panStartPos.x,
@@ -1274,6 +1584,7 @@ export function LayoutCanvas({
           setPanStartPos(pointerPos);
           onPan?.(delta);
         } else if (
+          !isInteractingWithMarker &&
           isDrawingShape &&
           drawStartPos &&
           selectedShapeTool &&
@@ -1286,6 +1597,7 @@ export function LayoutCanvas({
           );
           setDrawCurrentPos(percentageCoords);
         } else if (
+          !isInteractingWithMarker &&
           selectedShapeTool === PlacementShapeType.FREEFORM &&
           freeformPath.length > 0
         ) {
@@ -1301,7 +1613,61 @@ export function LayoutCanvas({
         if (isPanning) {
           setIsPanning(false);
           onPanEnd?.();
-        } else if (
+          return;
+        }
+
+        // Check if interacting with transformer or selected marker
+        const target = e.target;
+        const targetType = target.getType();
+        const isTransformer = targetType === "Transformer";
+
+        // Check if target or any ancestor is a transformer
+        let current: Konva.Node | null = target;
+        let isTransformerRelated = false;
+        while (current) {
+          if (current.getType() === "Transformer") {
+            isTransformerRelated = true;
+            break;
+          }
+          current = current.getParent();
+        }
+
+        const isMarkerGroup =
+          target.name() === "seat-marker" || target.name() === "section-marker";
+        const isMarkerChild =
+          target.getParent()?.name() === "seat-marker" ||
+          target.getParent()?.name() === "section-marker";
+        // Check if any ancestor is a marker group
+        let ancestor: Konva.Node | null = target.getParent();
+        let isMarkerAncestor = false;
+        while (ancestor) {
+          if (
+            ancestor.name() === "seat-marker" ||
+            ancestor.name() === "section-marker"
+          ) {
+            isMarkerAncestor = true;
+            break;
+          }
+          ancestor = ancestor.getParent();
+        }
+        const hasSelectedMarker = selectedSeatId || selectedSectionId;
+        const isInteractingWithMarker =
+          hasSelectedMarker &&
+          (isTransformer ||
+            isTransformerRelated ||
+            isMarkerGroup ||
+            isMarkerChild ||
+            isMarkerAncestor);
+
+        // If interacting with marker/transformer, cancel any shape drawing
+        if (isInteractingWithMarker) {
+          setIsDrawingShape(false);
+          setDrawStartPos(null);
+          setDrawCurrentPos(null);
+          return;
+        }
+
+        if (
           isDrawingShape &&
           drawStartPos &&
           selectedShapeTool &&
