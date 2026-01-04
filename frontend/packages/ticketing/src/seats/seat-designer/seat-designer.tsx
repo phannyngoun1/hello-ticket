@@ -1344,6 +1344,122 @@ export function SeatDesigner({
     },
   });
 
+  // Handle arrow key movement for selected markers - defined after updateSectionMutation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle arrow keys
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+        return;
+      }
+
+      // Don't handle if user is typing in an input/textarea
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      // Determine movement step: precise (0.1%) with Shift, normal (1%) without
+      const step = event.shiftKey ? 0.1 : 1;
+
+      // Handle seat movement
+      if (selectedSeat) {
+        event.preventDefault();
+        const currentSeat = seats.find((s) => s.id === selectedSeat.id);
+        if (!currentSeat) return;
+
+        let newX = currentSeat.x;
+        let newY = currentSeat.y;
+
+        switch (event.key) {
+          case "ArrowUp":
+            newY = Math.max(0, currentSeat.y - step);
+            break;
+          case "ArrowDown":
+            newY = Math.min(100, currentSeat.y + step);
+            break;
+          case "ArrowLeft":
+            newX = Math.max(0, currentSeat.x - step);
+            break;
+          case "ArrowRight":
+            newX = Math.min(100, currentSeat.x + step);
+            break;
+        }
+
+        // Update seat position
+        handleKonvaSeatDragEnd(selectedSeat.id, newX, newY);
+
+        // Save to backend if seat is not new
+        if (!currentSeat.isNew) {
+          seatService
+            .updateCoordinates(selectedSeat.id, newX, newY, currentSeat.shape)
+            .catch((error) => {
+              console.error("Failed to save seat position:", error);
+            });
+        }
+        return;
+      }
+
+      // Handle section movement
+      if (selectedSectionMarker) {
+        event.preventDefault();
+        const currentSection = sectionMarkers.find(
+          (s) => s.id === selectedSectionMarker.id
+        );
+        if (!currentSection) return;
+
+        let newX = currentSection.x;
+        let newY = currentSection.y;
+
+        switch (event.key) {
+          case "ArrowUp":
+            newY = Math.max(0, currentSection.y - step);
+            break;
+          case "ArrowDown":
+            newY = Math.min(100, currentSection.y + step);
+            break;
+          case "ArrowLeft":
+            newX = Math.max(0, currentSection.x - step);
+            break;
+          case "ArrowRight":
+            newX = Math.min(100, currentSection.x + step);
+            break;
+        }
+
+        // Update section position
+        handleKonvaSectionDragEnd(selectedSectionMarker.id, newX, newY);
+
+        // Save to backend if section is not new
+        if (!currentSection.isNew) {
+          updateSectionMutation.mutate({
+            sectionId: selectedSectionMarker.id,
+            name: currentSection.name,
+            x: newX,
+            y: newY,
+            shape: currentSection.shape,
+          });
+        }
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    selectedSeat,
+    selectedSectionMarker,
+    seats,
+    sectionMarkers,
+    handleKonvaSeatDragEnd,
+    handleKonvaSectionDragEnd,
+    updateSectionMutation,
+  ]);
+
   // Handle section shape transform (resize/rotate) - defined after mutations
   const handleSectionShapeTransform = useCallback(
     (sectionId: string, shape: PlacementShape) => {
