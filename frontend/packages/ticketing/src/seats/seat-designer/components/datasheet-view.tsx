@@ -184,7 +184,7 @@ export function DatasheetView({
             // Large venue main view - show sections
             <div className="space-y-2">
               {isSectionFormOpen && (
-                <Card className="p-3 space-y-2">
+                <Card className="p-3 space-y-2 overflow-hidden">
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
                       {editingSectionId ? "Update section" : "New section"}
@@ -212,7 +212,7 @@ export function DatasheetView({
                       </Button>
                     </div>
                   </div>
-                  <div>
+                  <div className="mt-20">
                     <Label className="text-xs">Section Name</Label>
                     <Controller
                       name="name"
@@ -220,7 +220,7 @@ export function DatasheetView({
                       render={({ field }) => (
                         <Input
                           {...field}
-                          className="mt-1 h-8 text-sm"
+                          className="mt-1 h-8 text-sm w-full"
                           placeholder="e.g., Section A"
                           autoFocus
                         />
@@ -233,7 +233,7 @@ export function DatasheetView({
               {sectionMarkers.map((section) => (
                 <div
                   key={section.id}
-                  className={`p-2 rounded-lg border cursor-pointer transition-colors ${
+                  className={`p-2 rounded-lg border cursor-pointer transition-colors overflow-hidden ${
                     selectedSectionMarker?.id === section.id
                       ? "bg-blue-50 border-blue-500"
                       : "bg-background border-border hover:bg-muted"
@@ -246,23 +246,25 @@ export function DatasheetView({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0 pr-2">
-                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-medium text-sm truncate">{section.name}</span>
-                         {section.imageUrl && (
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-medium text-sm truncate">
+                          {section.name}
+                        </span>
+                        {section.imageUrl && (
                           <div className="flex items-center text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                             Image
                           </div>
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1.5">
-                         <span>
+                        <span>
                           {
                             seats.filter((s) => s.seat.section === section.name)
                               .length
                           }{" "}
                           seats
                         </span>
-                         {!section.imageUrl && (
+                        {!section.imageUrl && (
                           <>
                             <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/40" />
                             <span className="italic">No image</span>

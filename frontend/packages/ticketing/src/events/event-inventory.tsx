@@ -58,6 +58,9 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const [initializeSeatsDialogOpen, setInitializeSeatsDialogOpen] =
     useState(false);
   const [createSeatDialogOpen, setCreateSeatDialogOpen] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    null
+  );
 
   // Fetch event data
   const {
@@ -472,6 +475,8 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               locationStatusMap={locationStatusMap}
               imageUrl={layoutWithSeats.layout.image_url}
               isLoading={seatsLoading}
+              selectedSectionId={selectedSectionId}
+              onSelectedSectionIdChange={setSelectedSectionId}
             />
           )}
         </Card>
@@ -523,6 +528,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           existingEventSeats={eventSeats}
           loading={initializeSeatsMutation.isPending}
           designMode={layoutWithSeats.layout.design_mode}
+          selectedSectionId={selectedSectionId}
         />
       )}
 

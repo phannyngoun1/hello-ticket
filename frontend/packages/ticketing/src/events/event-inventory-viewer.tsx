@@ -31,6 +31,8 @@ export interface EventInventoryViewerProps {
   className?: string;
   onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
   selectedSeatIds?: Set<string>;
+  selectedSectionId?: string | null;
+  onSelectedSectionIdChange?: (sectionId: string | null) => void;
 }
 
 // Get color for ticket status (takes priority over event-seat status)
@@ -648,6 +650,8 @@ export function EventInventoryViewer({
   className,
   onSeatClick,
   selectedSeatIds = new Set(),
+  selectedSectionId: controlledSelectedSectionId,
+  onSelectedSectionIdChange,
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -679,9 +683,16 @@ export function EventInventoryViewer({
     eventSeatCount: number;
     statusSummary: Record<string, number>;
   } | null>(null);
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+  // Use controlled state if provided, otherwise use internal state
+  const [internalSelectedSectionId, setInternalSelectedSectionId] = useState<string | null>(
     null
   );
+  const selectedSectionId = controlledSelectedSectionId !== undefined 
+    ? controlledSelectedSectionId 
+    : internalSelectedSectionId;
+  const setSelectedSectionId = onSelectedSectionIdChange 
+    ? onSelectedSectionIdChange 
+    : setInternalSelectedSectionId;
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -875,10 +886,14 @@ export function EventInventoryViewer({
   }, []);
 
   const handleBackToSections = useCallback(() => {
-    setSelectedSectionId(null);
+    if (onSelectedSectionIdChange) {
+      onSelectedSectionIdChange(null);
+    } else {
+      setInternalSelectedSectionId(null);
+    }
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
-  }, []);
+  }, [onSelectedSectionIdChange]);
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>, isSpacePressed: boolean) => {

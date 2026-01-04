@@ -5,7 +5,7 @@
  * Supports section-based pricing and section inclusion/exclusion
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Input, Label, Card, Badge, Button } from "@truths/ui";
 import { FullScreenDialog } from "@truths/custom-ui";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -22,6 +22,9 @@ import {
   ChevronDown,
   ChevronRight,
   Settings2,
+  Search,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from "lucide-react";
 
 export interface InitializeSeatsDialogProps {
@@ -33,6 +36,7 @@ export interface InitializeSeatsDialogProps {
   existingEventSeats?: EventSeat[];
   loading?: boolean;
   designMode?: "seat-level" | "section-level";
+  selectedSectionId?: string | null;
 }
 
 export interface InitializeSeatsData {
@@ -64,6 +68,7 @@ export function InitializeSeatsDialog({
   existingEventSeats = [],
   loading = false,
   designMode = "seat-level",
+  selectedSectionId,
 }: InitializeSeatsDialogProps) {
   const [sectionSelectionMode, setSectionSelectionMode] = useState<
     "all" | "include" | "exclude"
@@ -74,6 +79,13 @@ export function InitializeSeatsDialog({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
+  // Search and pagination for seat list
+  const [seatSearchQuery, setSeatSearchQuery] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(
+    new Set()
+  );
+  const seatsPerPage = 50; // Show 50 seats per page
 
   // Default to per_section pricing for section-level layouts
   const defaultPricingMode =
@@ -124,14 +136,27 @@ export function InitializeSeatsDialog({
   const generateTicketCodes = watch("generateTicketCodes");
   const pricingMode = watch("pricingMode");
 
+  // Filter sections to only selected section when in drill-down mode (section-level with selectedSectionId)
+  const filteredSections = useMemo(() => {
+    if (
+      designMode === "section-level" &&
+      selectedSectionId &&
+      sections.some((s) => s.id === selectedSectionId)
+    ) {
+      // Only show the selected section when drilling down
+      return sections.filter((s) => s.id === selectedSectionId);
+    }
+    return sections;
+  }, [sections, designMode, selectedSectionId]);
+
   // Create section name map for display
   const sectionNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    sections.forEach((section) => {
+    filteredSections.forEach((section) => {
       map.set(section.id, section.name);
     });
     return map;
-  }, [sections]);
+  }, [filteredSections]);
 
   // Create maps for existing event seats for quick lookup
   const existingSeatIds = useMemo(() => {
@@ -155,10 +180,23 @@ export function InitializeSeatsDialog({
     return { seatIdSet, locationSet };
   }, [existingEventSeats]);
 
+  // Filter layout seats to selected section when in drill-down mode
+  const filteredLayoutSeats = useMemo(() => {
+    if (
+      designMode === "section-level" &&
+      selectedSectionId &&
+      layoutSeats.some((seat) => seat.section_id === selectedSectionId)
+    ) {
+      // Only show seats from the selected section when drilling down
+      return layoutSeats.filter((seat) => seat.section_id === selectedSectionId);
+    }
+    return layoutSeats;
+  }, [layoutSeats, designMode, selectedSectionId]);
+
   // Get all available seats (seats that can be added) WITHOUT section selection filters
   // This is used for the stable section selection UI
   const availableSeats = useMemo(() => {
-    return layoutSeats.filter((layoutSeat) => {
+    return filteredLayoutSeats.filter((layoutSeat) => {
       // Check if seat already exists
       if (layoutSeat.id && existingSeatIds.seatIdSet.has(layoutSeat.id)) {
         return false;
@@ -172,7 +210,7 @@ export function InitializeSeatsDialog({
       }
       return true;
     });
-  }, [layoutSeats, existingSeatIds, sectionNameMap]);
+  }, [filteredLayoutSeats, existingSeatIds, sectionNameMap]);
 
   // Filter out seats that already have event seats assigned AND apply section selection filters
   const missingSeats = useMemo(() => {
@@ -203,8 +241,8 @@ export function InitializeSeatsDialog({
     layoutSeats.forEach((seat) => {
       sectionIds.add(seat.section_id);
     });
-    return sections.filter((s) => sectionIds.has(s.id));
-  }, [layoutSeats, sections]);
+    return filteredSections.filter((s) => sectionIds.has(s.id));
+  }, [layoutSeats, filteredSections]);
 
   // Get sections with available seats to add (stable list for section selection UI)
   // This list doesn't change when checkboxes are toggled
@@ -247,10 +285,37 @@ export function InitializeSeatsDialog({
       .sort((a, b) => a.sectionName.localeCompare(b.sectionName));
   }, [missingSeats, sectionNameMap]);
 
-  const totalSeats = layoutSeats.length;
+  const totalSeats = filteredLayoutSeats.length;
   const missingSeatsCount = missingSeats.length;
   const existingSeatsCount = totalSeats - missingSeatsCount;
   const hasMissingSeats = missingSeatsCount > 0;
+
+  // Filter seats by search query
+  const filterSeatsBySearch = useCallback(
+    (seats: Seat[]) => {
+      if (!seatSearchQuery.trim()) return seats;
+      const query = seatSearchQuery.toLowerCase().trim();
+      return seats.filter((seat) => {
+        const row = seat.row?.toLowerCase() || "";
+        const seatNumber = seat.seat_number?.toLowerCase() || "";
+        const sectionName =
+          sectionNameMap.get(seat.section_id)?.toLowerCase() || "";
+        const searchText = `${row} ${seatNumber} ${sectionName}`;
+        return searchText.includes(query);
+      });
+    },
+    [seatSearchQuery, sectionNameMap]
+  );
+
+  // Paginate seats
+  const paginateSeats = useCallback(
+    (seats: Seat[]) => {
+      const startIndex = (currentPage - 1) * seatsPerPage;
+      const endIndex = startIndex + seatsPerPage;
+      return seats.slice(startIndex, endIndex);
+    },
+    [currentPage, seatsPerPage]
+  );
 
   // Get seats grouped by section for display (only non-excluded sections)
   const seatsBySection = useMemo(() => {
@@ -268,21 +333,36 @@ export function InitializeSeatsDialog({
     if (open) {
       const defaultPricingMode =
         designMode === "section-level" ? "per_section" : "same";
+      
+      // If in drill-down mode with selectedSectionId, auto-select that section
+      const isDrillDownMode =
+        designMode === "section-level" && selectedSectionId;
+      const initialSectionSelection = isDrillDownMode ? "include" : "all";
+      const initialSelectedSections = isDrillDownMode && selectedSectionId
+        ? new Set([selectedSectionId])
+        : new Set();
+
       reset({
         defaultPrice: "0",
         generateTicketCodes: false,
         pricingMode: defaultPricingMode,
         sectionPricing: [],
         seatPricing: [],
-        sectionSelection: "all",
-        selectedSectionIds: [],
+        sectionSelection: initialSectionSelection,
+        selectedSectionIds: isDrillDownMode && selectedSectionId
+          ? [selectedSectionId]
+          : [],
       });
-      setSectionSelectionMode("all");
-      setSelectedSections(new Set());
+      setSectionSelectionMode(initialSectionSelection);
+      setSelectedSections(initialSelectedSections);
       setExpandedSections(new Set());
+      // Reset search and pagination
+      setSeatSearchQuery("");
+      setCurrentPage(1);
+      setSelectedSeatIds(new Set());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, designMode]);
+  }, [open, designMode, selectedSectionId]);
 
   // Initialize section pricing for section-level layouts when pricing mode is per_section
   useEffect(() => {
@@ -578,8 +658,10 @@ export function InitializeSeatsDialog({
 
         {/* Form Fields */}
         <div className="space-y-4">
-          <Card className="p-4">
-            <h3 className="font-medium mb-4">Section Selection</h3>
+          {/* Only show section selection if not in drill-down mode */}
+          {!(designMode === "section-level" && selectedSectionId) && (
+            <Card className="p-4">
+              <h3 className="font-medium mb-4">Section Selection</h3>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Select Sections</Label>
@@ -727,6 +809,25 @@ export function InitializeSeatsDialog({
               )}
             </div>
           </Card>
+          )}
+
+          {/* Show info message when in drill-down mode */}
+          {designMode === "section-level" && selectedSectionId && (
+            <Card className="p-4 bg-blue-50 border-blue-200">
+              <div className="flex items-start gap-3">
+                <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-medium text-blue-900 mb-1">
+                    Initializing Seats for Selected Section
+                  </h3>
+                  <p className="text-sm text-blue-800">
+                    You are initializing seats for the selected section only. Only
+                    seats from this section will be added to the event.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
 
           <Card className="p-4">
             <h3 className="font-medium mb-4">Pricing Configuration</h3>
@@ -804,7 +905,7 @@ export function InitializeSeatsDialog({
                       seat prices.
                     </p>
                   </div>
-                  <div className="space-y-2 border rounded-lg p-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-2 border rounded-lg p-3">
                     {missingSeatsBySection.map((section) => {
                       const sectionFieldIndex = sectionPricingFields.findIndex(
                         (f) => f.section_id === section.sectionId
@@ -896,38 +997,123 @@ export function InitializeSeatsDialog({
                               <div className="flex items-center justify-between mb-2">
                                 <Label className="text-xs text-muted-foreground">
                                   Individual Seat Prices (optional overrides)
+                                  {sectionSeats.length > 50 && (
+                                    <span className="ml-2 text-muted-foreground">
+                                      ({sectionSeats.length} seats)
+                                    </span>
+                                  )}
                                 </Label>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 text-xs"
-                                  onClick={() => {
-                                    // Get current section price from form values
-                                    let sectionPrice = defaultPrice || "0";
-                                    if (sectionFieldIndex >= 0) {
-                                      const currentSectionPrice = getValues(
-                                        `sectionPricing.${sectionFieldIndex}.price`
-                                      );
-                                      sectionPrice =
-                                        currentSectionPrice ||
-                                        sectionPricingFields[sectionFieldIndex]
-                                          ?.price ||
-                                        defaultPrice ||
-                                        "0";
-                                    }
+                                <div className="flex items-center gap-2">
+                                  {sectionSeats.length > 50 && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 text-xs"
+                                      onClick={() => {
+                                        const selectedSeats = sectionSeats.filter(
+                                          (s) => selectedSeatIds.has(s.id)
+                                        );
+                                        if (selectedSeats.length === 0) {
+                                          // If no seats selected, select all visible
+                                          const filtered = filterSeatsBySearch(
+                                            sectionSeats
+                                          );
+                                          setSelectedSeatIds(
+                                            new Set(filtered.map((s) => s.id))
+                                          );
+                                        } else {
+                                          // Apply price to selected seats
+                                          let sectionPrice = defaultPrice || "0";
+                                          if (sectionFieldIndex >= 0) {
+                                            const currentSectionPrice = getValues(
+                                              `sectionPricing.${sectionFieldIndex}.price`
+                                            );
+                                            sectionPrice =
+                                              currentSectionPrice ||
+                                              sectionPricingFields[
+                                                sectionFieldIndex
+                                              ]?.price ||
+                                              defaultPrice ||
+                                              "0";
+                                          }
+                                          selectedSeats.forEach((seat) => {
+                                            setSeatPrice(seat.id, sectionPrice);
+                                          });
+                                          setSelectedSeatIds(new Set());
+                                        }
+                                      }}
+                                    >
+                                      {selectedSeatIds.size > 0
+                                        ? `Apply to ${selectedSeatIds.size} Selected`
+                                        : "Select All Visible"}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-xs"
+                                    onClick={() => {
+                                      // Get current section price from form values
+                                      let sectionPrice = defaultPrice || "0";
+                                      if (sectionFieldIndex >= 0) {
+                                        const currentSectionPrice = getValues(
+                                          `sectionPricing.${sectionFieldIndex}.price`
+                                        );
+                                        sectionPrice =
+                                          currentSectionPrice ||
+                                          sectionPricingFields[sectionFieldIndex]
+                                            ?.price ||
+                                          defaultPrice ||
+                                          "0";
+                                      }
 
-                                    // Apply section price to all seats in section
-                                    sectionSeats.forEach((seat) => {
-                                      setSeatPrice(seat.id, sectionPrice);
-                                    });
-                                  }}
-                                >
-                                  Apply Section Price to All
-                                </Button>
+                                      // Apply section price to all seats in section
+                                      sectionSeats.forEach((seat) => {
+                                        setSeatPrice(seat.id, sectionPrice);
+                                      });
+                                    }}
+                                  >
+                                    Apply Section Price to All
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                                {sectionSeats.map((seat) => {
+
+                              {/* Search for large seat lists */}
+                              {sectionSeats.length > 50 && (
+                                <div className="relative mb-2">
+                                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                  <Input
+                                    type="text"
+                                    placeholder="Search by row, seat number, or section..."
+                                    value={seatSearchQuery}
+                                    onChange={(e) => {
+                                      setSeatSearchQuery(e.target.value);
+                                      setCurrentPage(1); // Reset to first page on search
+                                    }}
+                                    className="pl-8 h-8 text-xs"
+                                  />
+                                </div>
+                              )}
+
+                              {/* Filtered and paginated seats */}
+                              {(() => {
+                                const filteredSeats = filterSeatsBySearch(
+                                  sectionSeats
+                                );
+                                const paginatedSeats =
+                                  sectionSeats.length > 50
+                                    ? paginateSeats(filteredSeats)
+                                    : filteredSeats;
+                                const totalPages = Math.ceil(
+                                  filteredSeats.length / seatsPerPage
+                                );
+
+                                return (
+                                  <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+                                      {paginatedSeats.map((seat) => {
                                   const seatPriceIndex =
                                     seatPricingFields.findIndex(
                                       (sp) => sp.seat_id === seat.id
@@ -935,25 +1121,52 @@ export function InitializeSeatsDialog({
                                   const currentPrice = getSeatPrice(seat);
                                   const hasOverride = seatPriceIndex >= 0;
 
-                                  return (
-                                    <div
-                                      key={seat.id}
-                                      className={`flex items-center gap-2 p-2 rounded border ${
-                                        hasOverride
-                                          ? "bg-blue-50 border-blue-200"
-                                          : ""
-                                      }`}
-                                    >
-                                      <div className="flex-1 min-w-0">
-                                        <Label className="text-xs text-muted-foreground truncate">
-                                          {seat.row}-{seat.seat_number}
-                                        </Label>
+                                        const isSelected = selectedSeatIds.has(
+                                          seat.id
+                                        );
+
+                                        return (
+                                          <div
+                                            key={seat.id}
+                                            className={`flex items-center gap-1.5 p-1.5 rounded border ${
+                                              hasOverride
+                                                ? "bg-blue-50 border-blue-200"
+                                                : ""
+                                            } ${
+                                              isSelected
+                                                ? "ring-2 ring-blue-500 border-blue-500"
+                                                : ""
+                                            }`}
+                                          >
+                                            {sectionSeats.length > 50 && (
+                                              <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={(e) => {
+                                                  const newSelected = new Set(
+                                                    selectedSeatIds
+                                                  );
+                                                  if (e.target.checked) {
+                                                    newSelected.add(seat.id);
+                                                  } else {
+                                                    newSelected.delete(seat.id);
+                                                  }
+                                                  setSelectedSeatIds(newSelected);
+                                                }}
+                                                className="h-3 w-3 flex-shrink-0"
+                                                onClick={(e) => e.stopPropagation()}
+                                              />
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                              <Label className="text-xs text-muted-foreground truncate mb-0.5 block">
+                                                {seat.row}-{seat.seat_number}
+                                              </Label>
                                         <Input
                                           type="number"
                                           step="0.01"
                                           min="0"
                                           placeholder={currentPrice}
-                                          className="h-8 text-sm"
+                                          className="h-7 text-xs py-1 px-2"
                                           value={
                                             seatPriceIndex >= 0
                                               ? (watch(
@@ -986,26 +1199,93 @@ export function InitializeSeatsDialog({
                                               removeSeatPrice(seat.id);
                                             }
                                           }}
-                                        />
-                                      </div>
-                                      {hasOverride && (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 w-6 p-0"
-                                          onClick={() =>
-                                            removeSeatPrice(seat.id)
-                                          }
-                                          title="Remove override (use section price)"
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </Button>
-                                      )}
+                                              />
+                                            </div>
+                                            {hasOverride && (
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 w-5 p-0 flex-shrink-0"
+                                                onClick={() =>
+                                                  removeSeatPrice(seat.id)
+                                                }
+                                                title="Remove override (use section price)"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
-                                  );
-                                })}
-                              </div>
+
+                                    {/* Pagination for large lists */}
+                                    {sectionSeats.length > 50 &&
+                                      filteredSeats.length > seatsPerPage && (
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                          <div className="text-xs text-muted-foreground">
+                                            Showing{" "}
+                                            {(currentPage - 1) * seatsPerPage +
+                                              1}
+                                            -
+                                            {Math.min(
+                                              currentPage * seatsPerPage,
+                                              filteredSeats.length
+                                            )}{" "}
+                                            of {filteredSeats.length} seats
+                                            {seatSearchQuery && (
+                                              <span className="ml-1">
+                                                (filtered from {sectionSeats.length})
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 px-2 text-xs"
+                                              onClick={() =>
+                                                setCurrentPage((p) =>
+                                                  Math.max(1, p - 1)
+                                                )
+                                              }
+                                              disabled={currentPage === 1}
+                                            >
+                                              <ChevronLeft className="h-3 w-3" />
+                                            </Button>
+                                            <span className="text-xs text-muted-foreground px-2">
+                                              Page {currentPage} of {totalPages}
+                                            </span>
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 px-2 text-xs"
+                                              onClick={() =>
+                                                setCurrentPage((p) =>
+                                                  Math.min(totalPages, p + 1)
+                                                )
+                                              }
+                                              disabled={currentPage === totalPages}
+                                            >
+                                              <ChevronRightIcon className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                    {/* Empty search results */}
+                                    {seatSearchQuery &&
+                                      filteredSeats.length === 0 && (
+                                        <div className="text-center py-4 text-sm text-muted-foreground">
+                                          No seats found matching "{seatSearchQuery}"
+                                        </div>
+                                      )}
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
