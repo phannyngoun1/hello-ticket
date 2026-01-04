@@ -20,7 +20,7 @@ export function TableContent<TData>({
   const [resizingColumn, setResizingColumn] = useState<string | null>(null);
   const density = useDensityStyles();
 
-  const rowPadding = compact ? "py-0" : "py-1";
+  const rowPadding = compact ? "py-1" : "py-2";
   const cellPadding = compact ? "px-2.5" : "px-3.5";
   const textSize = density.textSize;
 
@@ -248,7 +248,7 @@ export function TableContent<TData>({
                           rowPadding,
                           textSize,
                           "text-foreground",
-                          "leading-tight",
+                          "leading-normal",
                           "font-normal",
                           "antialiased",
                           isLastColumn &&
@@ -275,7 +275,7 @@ export function TableContent<TData>({
                               aria-label={`Select row ${index + 1}`}
                               onClick={(e) => e.stopPropagation()}
                             />
-                            <span className="flex-1 min-w-0 leading-tight">
+                            <span className="flex-1 min-w-0 leading-normal">
                               {flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext()
@@ -283,7 +283,7 @@ export function TableContent<TData>({
                             </span>
                           </div>
                         ) : (
-                          <div className="truncate leading-tight">
+                          <div className="truncate leading-normal">
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext()

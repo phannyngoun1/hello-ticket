@@ -18,13 +18,13 @@ function BookingDetailContent({ id }: { id: string | undefined }) {
 
   useEffect(() => {
     if (!data) return;
-    const title = data.code || data.id;
+    const title = data.booking_number || data.id;
     window.dispatchEvent(
       new CustomEvent("update-tab-title", {
         detail: {
           path: `/sales/bookings/${id}`,
           title,
-          iconName: "Users",
+          iconName: "ShoppingCart",
         },
       })
     );
