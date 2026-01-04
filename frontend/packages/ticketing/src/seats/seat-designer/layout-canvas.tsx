@@ -145,9 +145,8 @@ function ShapeRenderer({
           return (p / 100) * imageHeight;
         }
       });
-      return (
-        <Line {...baseProps} points={points} closed={true} tension={0.5} />
-      );
+      // Use straight lines (no tension) for polygon drawing
+      return <Line {...baseProps} points={points} closed={true} tension={0} />;
     }
 
     default:
@@ -223,6 +222,7 @@ interface SeatMarkerComponentProps {
   isPanning: boolean;
   isSpacePressed: boolean;
   isPlacingSections: boolean;
+  selectedShapeTool?: PlacementShapeType | null;
   onSeatClick?: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
   onShapeTransform?: (seatId: string, shape: PlacementShape) => void;
@@ -240,6 +240,7 @@ function SeatMarkerComponent({
   isPanning,
   isSpacePressed,
   isPlacingSections,
+  selectedShapeTool,
   onSeatClick,
   onSeatDragEnd,
   onShapeTransform,
@@ -355,6 +356,7 @@ function SeatMarkerComponent({
     <>
       <Group
         ref={groupRef}
+        name="seat-marker"
         x={x}
         y={y}
         rotation={shape.rotation || 0}
@@ -362,13 +364,25 @@ function SeatMarkerComponent({
         onDragEnd={(e) => onSeatDragEnd(seat.id, e)}
         onTransformEnd={handleTransformEnd}
         onMouseDown={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
         }}
         onClick={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
           onSeatClick?.(seat);
         }}
         onTap={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
           onSeatClick?.(seat);
         }}
@@ -445,6 +459,7 @@ interface SectionMarkerComponentProps {
   isPanning: boolean;
   isSpacePressed: boolean;
   isPlacingSeats: boolean;
+  selectedShapeTool?: PlacementShapeType | null;
   onSectionClick?: (
     section: SectionMarker,
     event?: { shiftKey?: boolean }
@@ -465,6 +480,7 @@ function SectionMarkerComponent({
   isPanning,
   isSpacePressed,
   isPlacingSeats,
+  selectedShapeTool,
   onSectionClick,
   onSectionDoubleClick,
   onSectionDragEnd,
@@ -584,18 +600,34 @@ function SectionMarkerComponent({
         }}
         onTransformEnd={section.shape ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
         }}
         onClick={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
           const shiftKey = e.evt.shiftKey || false;
           onSectionClick?.(section, { shiftKey });
         }}
         onDblClick={(e) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
           onSectionDoubleClick?.(section);
         }}
         onTap={(e: any) => {
+          // Allow clicks to pass through to Layer when polygon tool is selected
+          if (selectedShapeTool === PlacementShapeType.FREEFORM) {
+            return; // Don't cancel bubble, let it pass through
+          }
           e.cancelBubble = true;
           const shiftKey = e.evt?.shiftKey || false;
           onSectionClick?.(section, { shiftKey });
@@ -746,6 +778,25 @@ export function LayoutCanvas({
         target.isContentEditable ||
         target.closest("input, textarea, [contenteditable]");
 
+      // Handle ESC key to delete last polygon point
+      if (e.key === "Escape" && !isInputField) {
+        if (
+          selectedShapeTool === PlacementShapeType.FREEFORM &&
+          freeformPath.length > 0
+        ) {
+          e.preventDefault();
+          setFreeformPath((prev) => {
+            const newPath = prev.slice(0, -1); // Remove last point
+            // If no points remain after deletion, clear hover position
+            if (newPath.length === 0) {
+              setFreeformHoverPos(null);
+            }
+            return newPath;
+          });
+        }
+        return;
+      }
+
       if (e.code === "Space" && !e.repeat && !isInputField) {
         e.preventDefault();
         setIsSpacePressed(true);
@@ -778,7 +829,7 @@ export function LayoutCanvas({
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isPanning, onPanEnd]);
+  }, [isPanning, onPanEnd, selectedShapeTool, freeformPath]);
 
   // Load image
   useEffect(() => {
@@ -1236,6 +1287,92 @@ export function LayoutCanvas({
         scaleY={zoomLevel}
         offsetX={centerX}
         offsetY={centerY}
+        onClick={(e) => {
+          // Handle polygon/freeform click-to-add-points at Layer level
+          // This ensures clicks work even when seats/sections are on top
+          if (
+            selectedShapeTool === PlacementShapeType.FREEFORM &&
+            onShapeDraw
+          ) {
+            // Only handle if clicking on the layer itself (not on a marker)
+            const target = e.target;
+            // If clicking on a marker, let it handle the click
+            if (
+              target &&
+              (target.name() === "seat-marker" ||
+                target.name() === "section-marker")
+            ) {
+              return;
+            }
+
+            e.cancelBubble = true;
+            const pointerPos = e.target.getStage()?.getPointerPosition();
+            if (pointerPos) {
+              const percentageCoords = pointerToPercentage(
+                pointerPos.x,
+                pointerPos.y
+              );
+
+              // Check if clicking near the first point to close the shape (need at least 2 points)
+              if (freeformPath.length >= 2) {
+                const firstPoint = freeformPath[0];
+                const distanceToStart = Math.sqrt(
+                  Math.pow(percentageCoords.x - firstPoint.x, 2) +
+                    Math.pow(percentageCoords.y - firstPoint.y, 2)
+                );
+
+                // If clicking within 1.5% of the start point, close the shape
+                if (distanceToStart < 1.5) {
+                  // Complete the shape by closing to the first point
+                  const finalPath = [...freeformPath, firstPoint]; // Add first point at end to close
+                  const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                  const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                  const centerX = sumX / finalPath.length;
+                  const centerY = sumY / finalPath.length;
+
+                  const points: number[] = [];
+                  finalPath.forEach((point) => {
+                    points.push(point.x - centerX, point.y - centerY);
+                  });
+
+                  const shape: PlacementShape = {
+                    type: PlacementShapeType.FREEFORM,
+                    points,
+                  };
+                  onShapeDraw(shape, centerX, centerY);
+
+                  // Reset freeform path and hover position
+                  setFreeformPath([]);
+                  setFreeformHoverPos(null);
+                  return;
+                }
+              }
+
+              // Add new point to the path
+              setFreeformPath((prev) => {
+                if (prev.length === 0) {
+                  return [percentageCoords];
+                }
+                const lastPoint = prev[prev.length - 1];
+
+                // Calculate distance in percentage for threshold checking
+                // This works consistently regardless of zoom level or image size
+                const distanceInPercent = Math.sqrt(
+                  Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                    Math.pow(percentageCoords.y - lastPoint.y, 2)
+                );
+
+                // Use a percentage-based threshold (0.1%) to prevent exact duplicate clicks
+                // This allows adding points very close together for tight shapes like rectangles/polygons
+                // and works consistently in all directions and at all zoom levels
+                if (distanceInPercent >= 0.1) {
+                  return [...prev, percentageCoords];
+                }
+                return prev;
+              });
+            }
+          }
+        }}
       >
         {/* Background Image */}
         <Image
@@ -1318,24 +1455,17 @@ export function LayoutCanvas({
                   }
                   const lastPoint = prev[prev.length - 1];
 
-                  // Calculate distance in pixels for more reliable threshold checking
-                  // Convert percentage coordinates to pixel coordinates for distance calculation
-                  const lastPixelX = (lastPoint.x / 100) * displayedWidth;
-                  const lastPixelY = (lastPoint.y / 100) * displayedHeight;
-                  const currentPixelX =
-                    (percentageCoords.x / 100) * displayedWidth;
-                  const currentPixelY =
-                    (percentageCoords.y / 100) * displayedHeight;
-
-                  const distanceInPixels = Math.sqrt(
-                    Math.pow(currentPixelX - lastPixelX, 2) +
-                      Math.pow(currentPixelY - lastPixelY, 2)
+                  // Calculate distance in percentage for threshold checking
+                  // This works consistently regardless of zoom level or image size
+                  const distanceInPercent = Math.sqrt(
+                    Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                      Math.pow(percentageCoords.y - lastPoint.y, 2)
                   );
 
-                  // Use a pixel-based threshold (2 pixels) to prevent exact duplicate clicks
+                  // Use a percentage-based threshold (0.1%) to prevent exact duplicate clicks
                   // This allows adding points very close together for tight shapes like rectangles/polygons
-                  // and works consistently in all directions
-                  if (distanceInPixels >= 2) {
+                  // and works consistently in all directions and at all zoom levels
+                  if (distanceInPercent >= 0.1) {
                     return [...prev, percentageCoords];
                   }
                   return prev;
@@ -1432,6 +1562,7 @@ export function LayoutCanvas({
               isPanning={isPanning}
               isSpacePressed={isSpacePressed}
               isPlacingSections={isPlacingSections}
+              selectedShapeTool={selectedShapeTool}
               onSeatClick={onSeatClick}
               onSeatDragEnd={handleSeatDragEnd}
               onShapeTransform={onSeatShapeTransform}
@@ -1469,6 +1600,7 @@ export function LayoutCanvas({
                       }
                     : undefined
                 }
+                selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
