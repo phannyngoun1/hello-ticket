@@ -304,12 +304,12 @@ export function UserDetail({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">{customActions?.(user)}</div>
+          <div className="flex items-center gap-1.5">{customActions?.(user)}</div>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Actions">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
+                  <MoreVertical className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
