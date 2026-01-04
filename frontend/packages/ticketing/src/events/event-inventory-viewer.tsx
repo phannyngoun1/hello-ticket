@@ -5,10 +5,11 @@
  */
 
 import { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { Stage, Layer, Image, Circle, Group, Text } from "react-konva";
+import { Stage, Layer, Image, Circle, Group, Text, Rect, Ellipse, Line } from "react-konva";
 import Konva from "konva";
 import { createPortal } from "react-dom";
 import { cn } from "@truths/ui/lib/utils";
+import { toast } from "@truths/ui";
 import { ArrowLeft } from "lucide-react";
 import { ZoomControls } from "../seats/seat-designer/components/zoom-controls";
 import type { Layout } from "../layouts/types";
@@ -16,6 +17,7 @@ import type { Section } from "../layouts/types";
 import type { Seat } from "../seats/types";
 import type { EventSeat, EventSeatStatus } from "./types";
 import { EventSeatStatus as EventSeatStatusEnum } from "./types";
+import { PlacementShapeType, type PlacementShape } from "../seats/seat-designer/types";
 
 export interface EventInventoryViewerProps {
   layout: Layout;
@@ -106,10 +108,173 @@ interface SectionMarkerProps {
   totalSeats: number;
   eventSeatCount: number;
   statusCounts: Record<string, number>;
+  imageWidth: number;
+  imageHeight: number;
   onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: () => void;
   onClick: () => void;
+}
+
+// Helper function to parse shape from JSON string
+function parseShape(shapeString?: string | null): PlacementShape | undefined {
+  if (!shapeString) return undefined;
+  try {
+    const parsed = JSON.parse(shapeString);
+    if (parsed && typeof parsed === 'object' && parsed.type) {
+      const shape = {
+        ...parsed,
+        type: parsed.type as PlacementShapeType,
+      };
+      // Validate that the type is a valid PlacementShapeType
+      if (Object.values(PlacementShapeType).includes(shape.type)) {
+        return shape;
+      } else {
+        console.warn("Invalid shape type:", shape.type);
+        return undefined;
+      }
+    }
+  } catch (e) {
+    console.error("Failed to parse shape:", e, "Shape string:", shapeString);
+  }
+  return undefined;
+}
+
+// Helper function to render shape based on PlacementShape
+function renderShape(
+  shape: PlacementShape | undefined,
+  colors: { fill: string; stroke: string },
+  imageWidth: number,
+  imageHeight: number,
+  strokeWidth: number = 2.5,
+  opacity: number = 1
+) {
+  // Make fill completely transparent by default - convert hex to rgba with 0 opacity
+  // Fill will only be visible when the Group opacity is > 0 (on hover/selection)
+  const getTransparentFill = (color: string): string => {
+    if (color.startsWith('rgba')) return color;
+    if (color.startsWith('#')) {
+      // Convert hex to rgba with 0 opacity - completely transparent
+      // The Group opacity will control visibility
+      const hex = color.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, 0)`;
+    }
+    return color;
+  };
+
+  const baseProps = {
+    fill: getTransparentFill(colors.fill),
+    stroke: colors.stroke,
+    strokeWidth,
+    opacity,
+  };
+
+  // Default to circle if no shape - match designer default
+  if (!shape) {
+    const defaultRadius = 12; // Match designer default
+    return <Circle {...baseProps} radius={defaultRadius} />;
+  }
+
+  switch (shape.type) {
+    case PlacementShapeType.CIRCLE: {
+      // Match designer: use Math.min(imageWidth, imageHeight) for circle radius
+      const radius = shape.radius
+        ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
+        : 12; // Match designer default
+      const validRadius = Math.max(1, Math.abs(radius));
+      return <Circle {...baseProps} radius={validRadius} rotation={shape.rotation || 0} />;
+    }
+
+    case PlacementShapeType.RECTANGLE: {
+      // Match designer: use imageWidth and imageHeight directly
+      const width = shape.width ? (shape.width / 100) * imageWidth : 24; // Match designer default
+      const height = shape.height ? (shape.height / 100) * imageHeight : 24; // Match designer default
+      const validWidth = Math.max(1, Math.abs(width));
+      const validHeight = Math.max(1, Math.abs(height));
+      const rawCornerRadius = shape.cornerRadius || 0;
+      const maxCornerRadius = Math.min(validWidth, validHeight) / 2;
+      const validCornerRadius = Math.max(
+        0,
+        Math.min(Math.abs(rawCornerRadius), maxCornerRadius)
+      );
+      return (
+        <Rect
+          {...baseProps}
+          x={-validWidth / 2}
+          y={-validHeight / 2}
+          width={validWidth}
+          height={validHeight}
+          cornerRadius={validCornerRadius}
+          rotation={shape.rotation || 0}
+        />
+      );
+    }
+
+    case PlacementShapeType.ELLIPSE: {
+      // Match designer: divide by 2 for radiusX and radiusY
+      const radiusX = shape.width ? ((shape.width / 100) * imageWidth) / 2 : 12; // Match designer default
+      const radiusY = shape.height
+        ? ((shape.height / 100) * imageHeight) / 2
+        : 12; // Match designer default
+      const validRadiusX = Math.max(1, Math.abs(radiusX));
+      const validRadiusY = Math.max(1, Math.abs(radiusY));
+      return (
+        <Ellipse
+          {...baseProps}
+          radiusX={validRadiusX}
+          radiusY={validRadiusY}
+          rotation={shape.rotation || 0}
+        />
+      );
+    }
+
+    case PlacementShapeType.POLYGON: {
+      // Match designer: need at least 6 points (3 vertices) for polygon
+      if (!shape.points || shape.points.length < 6) {
+        const radius = 12; // Match designer default
+        return <Circle {...baseProps} radius={radius} />;
+      }
+      // Convert percentage points to absolute coordinates
+      const points = shape.points.map((p, index) => {
+        if (index % 2 === 0) {
+          // x coordinate
+          return (p / 100) * imageWidth;
+        } else {
+          // y coordinate
+          return (p / 100) * imageHeight;
+        }
+      });
+      return <Line {...baseProps} points={points} closed={true} />;
+    }
+
+    case PlacementShapeType.FREEFORM: {
+      // Match designer: need at least 4 points (2 vertices) for freeform
+      if (!shape.points || shape.points.length < 4) {
+        const radius = 12; // Match designer default
+        return <Circle {...baseProps} radius={radius} />;
+      }
+      // Convert percentage points to absolute coordinates
+      // Freeform points are relative to center (0, 0)
+      const points = shape.points.map((p, index) => {
+        if (index % 2 === 0) {
+          // x coordinate
+          return (p / 100) * imageWidth;
+        } else {
+          // y coordinate
+          return (p / 100) * imageHeight;
+        }
+      });
+      // Use straight lines (no tension) for polygon drawing - match designer
+      return <Line {...baseProps} points={points} closed={true} tension={0} />;
+    }
+
+    default:
+      // Match designer default
+      return <Circle {...baseProps} radius={12} />;
+  }
 }
 
 function SeatMarker({
@@ -124,7 +289,13 @@ function SeatMarker({
   onMouseMove,
   onMouseLeave,
   onClick,
-}: SeatMarkerProps) {
+  imageWidth,
+  imageHeight,
+}: SeatMarkerProps & { imageWidth: number; imageHeight: number }) {
+  const shapeGroupRef = useRef<Konva.Group>(null);
+  const [isHoveredState, setIsHoveredState] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
+
   // Get colors based on ticket status first (takes priority), then event-seat status
   let statusColors: { fill: string; stroke: string };
 
@@ -151,110 +322,75 @@ function SeatMarker({
   const fillColor = isSelected ? "#06b6d4" : statusColors.fill;
   const borderColor = isSelected ? "#0891b2" : statusColors.stroke;
 
-  const radius = isHovered || isSelected ? 12 : 10;
+  // Calculate opacity and stroke based on state
+  // Completely transparent by default, only visible on hover/selection to show interactivity
+  const baseOpacity = 0; // Completely transparent - invisible until hovered
+  const hoverOpacity = 0.8; // Visible on hover to show it's interactive
+  const selectedOpacity = 0.95; // Fully visible when selected
+  
+  const currentOpacity = isSelected 
+    ? selectedOpacity 
+    : (isHovered || isHoveredState)
+      ? hoverOpacity 
+      : baseOpacity;
+  
+  const strokeWidth = isSelected 
+    ? 3 
+    : (isHovered || isHoveredState)
+      ? 2.5 
+      : 0; // No stroke by default when invisible
 
-  return (
-    <Group
-      x={x}
-      y={y}
-      onMouseEnter={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor = "pointer";
-        }
-        onMouseEnter(e);
-      }}
-      onMouseMove={(e) => {
-        if (onMouseMove) {
-          onMouseMove(e);
-        }
-      }}
-      onMouseLeave={(e) => {
-        const container = e.target.getStage()?.container();
-        if (container) {
-          container.style.cursor = isSpacePressed ? "grabbing" : "default";
-        }
-        onMouseLeave();
-      }}
-      onClick={(e) => {
-        e.cancelBubble = true;
-        onClick();
-      }}
-      onTap={(e) => {
-        e.cancelBubble = true;
-        onClick();
-      }}
-      onMouseDown={(e) => {
-        e.cancelBubble = true;
-      }}
-    >
-      <Circle
-        radius={radius}
-        fill={fillColor}
-        stroke={borderColor}
-        strokeWidth={isHovered ? 3 : 2.5}
-        opacity={1}
-        listening={true}
-      />
-      {/* Removed inline tooltip - using Popover instead */}
-    </Group>
-  );
-}
+  // Parse shape from seat
+  const parsedShape = parseShape(seat.shape);
 
-function SectionMarker({
-  section,
-  x,
-  y,
-  isHovered,
-  isSpacePressed,
-  eventSeatCount,
-  statusCounts,
-  onMouseEnter,
-  onMouseMove,
-  onMouseLeave,
-  onClick,
-}: SectionMarkerProps) {
-  const textRef = useRef<Konva.Text>(null);
-  const groupRef = useRef<Konva.Group>(null);
-  const [isHoveredState, setIsHoveredState] = useState(false);
-
-  // Determine section status color based on event seats
-  // Priority: SOLD > RESERVED > HELD > BLOCKED > AVAILABLE
-  let statusColor = { fill: "#9ca3af", stroke: "#6b7280" }; // gray (no event seats)
-  if (eventSeatCount > 0) {
-    if (statusCounts["SOLD"] > 0) {
-      statusColor = { fill: "#3b82f6", stroke: "#2563eb" }; // blue
-    } else if (statusCounts["RESERVED"] > 0) {
-      statusColor = { fill: "#f59e0b", stroke: "#d97706" }; // yellow
-    } else if (statusCounts["HELD"] > 0) {
-      statusColor = { fill: "#a855f7", stroke: "#9333ea" }; // purple
-    } else if (statusCounts["BLOCKED"] > 0) {
-      statusColor = { fill: "#ef4444", stroke: "#dc2626" }; // red
-    } else if (statusCounts["AVAILABLE"] > 0) {
-      statusColor = { fill: "#10b981", stroke: "#059669" }; // green
-    }
-  }
-
-  // Animate border on hover
+  // Animate opacity and stroke on hover/selection change
   useEffect(() => {
-    const text = textRef.current;
-    if (!text) return;
+    const shapeGroup = shapeGroupRef.current;
+    if (!shapeGroup) return;
 
-    const hoverStrokeColor =
-      isHovered || isHoveredState ? statusColor.stroke : statusColor.stroke;
-    const hoverStrokeWidth = isHovered || isHoveredState ? 3 : 2;
-
-    text.to({
-      backgroundStroke: hoverStrokeColor,
-      backgroundStrokeWidth: hoverStrokeWidth,
+    shapeGroup.to({
+      opacity: currentOpacity,
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isHoveredState, statusColor]);
+
+    // Animate stroke width on children shapes
+    const children = shapeGroup.getChildren();
+    children.forEach((child) => {
+      if (child instanceof Konva.Shape) {
+        child.to({
+          strokeWidth: strokeWidth,
+          duration: 0.2,
+          easing: Konva.Easings.EaseInOut,
+        });
+      }
+    });
+  }, [currentOpacity, strokeWidth]);
+
+  // Click feedback animation
+  useEffect(() => {
+    if (!isClicked) return;
+    
+    const shapeGroup = shapeGroupRef.current;
+    if (!shapeGroup) return;
+
+    // Scale down and back up for click feedback
+    shapeGroup.scaleX(0.9);
+    shapeGroup.scaleY(0.9);
+    
+    shapeGroup.to({
+      scaleX: 1,
+      scaleY: 1,
+      duration: 0.15,
+      easing: Konva.Easings.EaseOut,
+      onFinish: () => {
+        setIsClicked(false);
+      },
+    });
+  }, [isClicked]);
 
   return (
     <Group
-      ref={groupRef}
       x={x}
       y={y}
       onMouseEnter={(e) => {
@@ -280,43 +416,220 @@ function SectionMarker({
       }}
       onClick={(e) => {
         e.cancelBubble = true;
+        setIsClicked(true);
         onClick();
       }}
       onTap={(e) => {
         e.cancelBubble = true;
+        setIsClicked(true);
         onClick();
       }}
       onMouseDown={(e) => {
         e.cancelBubble = true;
       }}
     >
-      <Text
-        ref={textRef}
-        text={section.name}
-        fontSize={14}
-        fontFamily="Arial"
-        fill="#1e40af"
-        padding={8}
-        align="center"
-        verticalAlign="middle"
-        backgroundFill={statusColor.fill}
-        backgroundStroke={statusColor.stroke}
-        backgroundStrokeWidth={isHovered || isHoveredState ? 3 : 2}
-        cornerRadius={4}
-        x={-30}
-        y={-10}
-        shadowBlur={2}
-        shadowColor="rgba(0,0,0,0.2)"
-      />
-      {(isHovered || isHoveredState) && (
-        <Circle
-          radius={18}
-          fill="transparent"
-          stroke={statusColor.stroke}
-          strokeWidth={2}
-          opacity={0.5}
-          x={0}
-          y={0}
+      <Group ref={shapeGroupRef} opacity={currentOpacity}>
+        {renderShape(
+          parsedShape,
+          { fill: fillColor, stroke: borderColor },
+          imageWidth,
+          imageHeight,
+          strokeWidth,
+          1 // Group opacity handles overall transparency
+        )}
+      </Group>
+      {/* Removed inline tooltip - using Popover instead */}
+    </Group>
+  );
+}
+
+function SectionMarker({
+  section,
+  x,
+  y,
+  isHovered,
+  isSpacePressed,
+  eventSeatCount,
+  statusCounts,
+  imageWidth,
+  imageHeight,
+  onMouseEnter,
+  onMouseMove,
+  onMouseLeave,
+  onClick,
+}: SectionMarkerProps) {
+  const groupRef = useRef<Konva.Group>(null);
+  const shapeGroupRef = useRef<Konva.Group>(null);
+  const textRef = useRef<Konva.Text>(null);
+  const [isHoveredState, setIsHoveredState] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
+
+  // Determine section status color based on event seats
+  // Priority: SOLD > RESERVED > HELD > BLOCKED > AVAILABLE
+  let statusColor = { fill: "#9ca3af", stroke: "#6b7280" }; // gray (no event seats)
+  if (eventSeatCount > 0) {
+    if (statusCounts["SOLD"] > 0) {
+      statusColor = { fill: "#3b82f6", stroke: "#2563eb" }; // blue
+    } else if (statusCounts["RESERVED"] > 0) {
+      statusColor = { fill: "#f59e0b", stroke: "#d97706" }; // yellow
+    } else if (statusCounts["HELD"] > 0) {
+      statusColor = { fill: "#a855f7", stroke: "#9333ea" }; // purple
+    } else if (statusCounts["BLOCKED"] > 0) {
+      statusColor = { fill: "#ef4444", stroke: "#dc2626" }; // red
+    } else if (statusCounts["AVAILABLE"] > 0) {
+      statusColor = { fill: "#10b981", stroke: "#059669" }; // green
+    }
+  }
+
+  // Parse shape from section
+  const parsedShape = parseShape(section.shape);
+  const hasShape = !!parsedShape;
+
+  // Calculate opacity and stroke based on state
+  // Completely transparent by default, only visible on hover to show interactivity
+  const baseOpacity = 0; // Completely transparent - invisible until hovered
+  const hoverOpacity = 0.65; // Visible on hover to show it's interactive
+  const selectedOpacity = 0.75; // Most visible when selected
+  
+  const currentOpacity = (isHovered || isHoveredState)
+    ? hoverOpacity 
+    : baseOpacity;
+  
+  const strokeWidth = (isHovered || isHoveredState) ? 2.5 : 0; // No stroke by default when invisible
+
+  // Animate opacity and stroke on hover change
+  useEffect(() => {
+    const shapeGroup = shapeGroupRef.current;
+    if (!shapeGroup || !hasShape) return;
+
+    shapeGroup.to({
+      opacity: currentOpacity,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+
+    // Animate stroke width on children shapes
+    const children = shapeGroup.getChildren();
+    children.forEach((child) => {
+      if (child instanceof Konva.Shape) {
+        child.to({
+          strokeWidth: strokeWidth,
+          duration: 0.2,
+          easing: Konva.Easings.EaseInOut,
+        });
+      }
+    });
+  }, [currentOpacity, strokeWidth, hasShape]);
+
+  // Animate text label on hover
+  useEffect(() => {
+    const text = textRef.current;
+    if (!text || hasShape) return;
+
+    text.to({
+      fontSize: (isHovered || isHoveredState) ? 15 : 14,
+      shadowBlur: (isHovered || isHoveredState) ? 4 : 2,
+      backgroundStrokeWidth: strokeWidth,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+  }, [isHovered, isHoveredState, strokeWidth, hasShape]);
+
+  // Click feedback animation
+  useEffect(() => {
+    if (!isClicked) return;
+    
+    const group = groupRef.current;
+    if (!group) return;
+
+    // Scale down and back up for click feedback
+    group.scaleX(0.9);
+    group.scaleY(0.9);
+    
+    group.to({
+      scaleX: 1,
+      scaleY: 1,
+      duration: 0.15,
+      easing: Konva.Easings.EaseOut,
+      onFinish: () => {
+        setIsClicked(false);
+      },
+    });
+  }, [isClicked]);
+
+  return (
+    <Group
+      ref={groupRef}
+      x={x}
+      y={y}
+      rotation={parsedShape?.rotation || 0}
+      onMouseEnter={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor = "pointer";
+        }
+        setIsHoveredState(true);
+        onMouseEnter(e);
+      }}
+      onMouseMove={(e) => {
+        if (onMouseMove) {
+          onMouseMove(e);
+        }
+      }}
+      onMouseLeave={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor = isSpacePressed ? "grabbing" : "default";
+        }
+        setIsHoveredState(false);
+        onMouseLeave();
+      }}
+      onClick={(e) => {
+        e.cancelBubble = true;
+        setIsClicked(true);
+        onClick();
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        setIsClicked(true);
+        onClick();
+      }}
+      onMouseDown={(e) => {
+        e.cancelBubble = true;
+      }}
+    >
+      {/* Render shape if available */}
+      {hasShape ? (
+        <Group ref={shapeGroupRef} opacity={currentOpacity}>
+          {renderShape(
+            parsedShape,
+            { fill: statusColor.fill, stroke: statusColor.stroke },
+            imageWidth,
+            imageHeight,
+            strokeWidth,
+            1 // Group opacity handles overall transparency
+          )}
+        </Group>
+      ) : (
+        // Fallback to text label if no shape - also transparent by default
+        <Text
+          ref={textRef}
+          text={section.name}
+          fontSize={14}
+          fontFamily="Arial"
+          fill={isHovered || isHoveredState ? "#1e3a8a" : "#1e40af"}
+          padding={8}
+          align="center"
+          verticalAlign="middle"
+          backgroundFill={statusColor.fill}
+          backgroundStroke={statusColor.stroke}
+          backgroundStrokeWidth={strokeWidth}
+          cornerRadius={4}
+          x={-30}
+          y={-10}
+          shadowBlur={2}
+          shadowColor="rgba(0,0,0,0.2)"
+          opacity={currentOpacity}
         />
       )}
     </Group>
@@ -936,6 +1249,8 @@ export function EventInventoryViewer({
                       totalSeats={stats.totalSeats}
                       eventSeatCount={stats.eventSeatCount}
                       statusCounts={stats.statusCounts}
+                      imageWidth={displayedWidth}
+                      imageHeight={displayedHeight}
                       onMouseEnter={(e) => {
                         setHoveredSectionId(section.id);
                         setHoveredSectionData({
@@ -953,6 +1268,15 @@ export function EventInventoryViewer({
                         setHoveredSectionData(null);
                       }}
                       onClick={() => {
+                        // Check if section has seats before drilling down
+                        if (stats.totalSeats === 0) {
+                          toast({
+                            title: "No Seats Available",
+                            description: `Section "${section.name}" does not have any seats. Please add seats to this section first.`,
+                            variant: "destructive",
+                          });
+                          return;
+                        }
                         // Drill down to show seats in this section
                         setSelectedSectionId(section.id);
                         setZoomLevel(1);
@@ -1004,6 +1328,8 @@ export function EventInventoryViewer({
                       isHovered={hoveredSeatId === seat.id}
                       isSpacePressed={isSpacePressed}
                       isSelected={isSelected}
+                      imageWidth={displayedWidth}
+                      imageHeight={displayedHeight}
                       onMouseEnter={(e) => {
                         setHoveredSeatId(seat.id);
                         setHoveredSeatData({ seat, eventSeat });

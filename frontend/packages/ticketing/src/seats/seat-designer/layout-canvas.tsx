@@ -230,6 +230,185 @@ interface LayoutCanvasProps {
   selectedOverlayId?: string | null;
 }
 
+// Shape Overlay Component with hover effects
+interface ShapeOverlayComponentProps {
+  overlay: {
+    id: string;
+    x: number;
+    y: number;
+    shape: PlacementShape;
+    onClick?: () => void;
+    onHover?: () => void;
+    label?: string;
+    isSelected?: boolean;
+  };
+  isSelected: boolean;
+  onShapeOverlayClick?: (overlayId: string) => void;
+  imageWidth: number;
+  imageHeight: number;
+  isPanning: boolean;
+  isSpacePressed: boolean;
+  selectedShapeTool?: PlacementShapeType | null;
+  isPlacingSeats: boolean;
+  isPlacingSections: boolean;
+  percentageToStage: (x: number, y: number) => { x: number; y: number };
+}
+
+function ShapeOverlayComponent({
+  overlay,
+  isSelected,
+  onShapeOverlayClick,
+  imageWidth,
+  imageHeight,
+  isPanning,
+  isSpacePressed,
+  selectedShapeTool,
+  isPlacingSeats,
+  isPlacingSections,
+  percentageToStage,
+}: ShapeOverlayComponentProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const shapeGroupRef = useRef<Konva.Group>(null);
+  const labelRef = useRef<Konva.Text>(null);
+  const { x, y } = percentageToStage(overlay.x, overlay.y);
+
+  // Calculate opacity and stroke based on state
+  // More transparent by default, brighter on hover/selection
+  const baseOpacity = 0.25; // More transparent default
+  const hoverOpacity = 0.45; // Slightly more visible on hover
+  const selectedOpacity = 0.55; // Most visible when selected
+
+  const currentOpacity = isSelected
+    ? selectedOpacity
+    : isHovered
+      ? hoverOpacity
+      : baseOpacity;
+
+  const fillOpacity = isSelected ? 0.15 : isHovered ? 0.12 : 0.08; // Very transparent fill
+
+  const strokeColor = isSelected
+    ? "#1e40af"
+    : isHovered
+      ? "#2563eb"
+      : "#3b82f6";
+
+  const strokeWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
+
+  // Animate opacity on hover/selection change
+  useEffect(() => {
+    const shapeGroup = shapeGroupRef.current;
+    if (!shapeGroup) return;
+
+    const targetOpacity = currentOpacity;
+    shapeGroup.to({
+      opacity: targetOpacity,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+
+    // Animate stroke width on children shapes
+    const children = shapeGroup.getChildren();
+    children.forEach((child) => {
+      if (child instanceof Konva.Shape) {
+        child.to({
+          strokeWidth: strokeWidth,
+          duration: 0.2,
+          easing: Konva.Easings.EaseInOut,
+        });
+      }
+    });
+  }, [currentOpacity, strokeWidth]);
+
+  // Animate label on hover/selection
+  useEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+
+    label.to({
+      fontSize: isHovered || isSelected ? 13 : 12,
+      shadowBlur: isHovered || isSelected ? 3 : 1,
+      duration: 0.2,
+      easing: Konva.Easings.EaseInOut,
+    });
+  }, [isHovered, isSelected]);
+
+  return (
+    <Group
+      x={x}
+      y={y}
+      rotation={overlay.shape.rotation || 0}
+      listening={true}
+      onClick={(e) => {
+        e.cancelBubble = true;
+        onShapeOverlayClick?.(overlay.id);
+        overlay.onClick?.();
+      }}
+      onTap={(e) => {
+        e.cancelBubble = true;
+        onShapeOverlayClick?.(overlay.id);
+        overlay.onClick?.();
+      }}
+      onMouseDown={(e) => {
+        e.cancelBubble = true;
+      }}
+      onMouseEnter={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor = "pointer";
+        }
+        setIsHovered(true);
+        overlay.onHover?.();
+      }}
+      onMouseLeave={(e) => {
+        const container = e.target.getStage()?.container();
+        if (container) {
+          container.style.cursor =
+            isPanning || isSpacePressed
+              ? "grab"
+              : selectedShapeTool
+                ? "crosshair"
+                : isPlacingSeats || isPlacingSections
+                  ? "crosshair"
+                  : "default";
+        }
+        setIsHovered(false);
+      }}
+    >
+      <Group ref={shapeGroupRef}>
+        <ShapeRenderer
+          shape={overlay.shape}
+          fill={`rgba(59, 130, 246, ${fillOpacity})`}
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+          imageWidth={imageWidth}
+          imageHeight={imageHeight}
+          opacity={1} // Let the Group handle opacity animation
+        />
+      </Group>
+      {overlay.label && (
+        <Text
+          ref={labelRef}
+          text={overlay.label}
+          fontSize={12}
+          fontFamily="Arial"
+          fill={isHovered || isSelected ? "#1e40af" : "#3b82f6"}
+          padding={4}
+          align="center"
+          verticalAlign="middle"
+          backgroundFill={`rgba(255, 255, 255, ${isHovered || isSelected ? 0.98 : 0.9})`}
+          backgroundStroke={strokeColor}
+          backgroundStrokeWidth={isHovered || isSelected ? 1.5 : 1}
+          cornerRadius={2}
+          x={-20}
+          y={-8}
+          shadowBlur={isHovered || isSelected ? 3 : 1}
+          shadowColor="rgba(0, 0, 0, 0.1)"
+        />
+      )}
+    </Group>
+  );
+}
+
 // Seat marker component with hover transitions
 interface SeatMarkerComponentProps {
   seat: SeatMarker;
@@ -2110,81 +2289,22 @@ export function LayoutCanvas({
 
         {/* Shape Overlays - clickable areas on the image */}
         {shapeOverlays.map((overlay) => {
-          const { x, y } = percentageToStage(overlay.x, overlay.y);
           const isSelected = selectedOverlayId === overlay.id;
-
           return (
-            <Group
+            <ShapeOverlayComponent
               key={overlay.id}
-              x={x}
-              y={y}
-              rotation={overlay.shape.rotation || 0}
-              listening={true}
-              onClick={(e) => {
-                e.cancelBubble = true;
-                onShapeOverlayClick?.(overlay.id);
-                overlay.onClick?.();
-              }}
-              onTap={(e) => {
-                e.cancelBubble = true;
-                onShapeOverlayClick?.(overlay.id);
-                overlay.onClick?.();
-              }}
-              onMouseDown={(e) => {
-                e.cancelBubble = true;
-              }}
-              onMouseEnter={(e) => {
-                const container = e.target.getStage()?.container();
-                if (container) {
-                  container.style.cursor = "pointer";
-                }
-                overlay.onHover?.();
-              }}
-              onMouseLeave={(e) => {
-                const container = e.target.getStage()?.container();
-                if (container) {
-                  container.style.cursor =
-                    isPanning || isSpacePressed
-                      ? "grab"
-                      : selectedShapeTool
-                        ? "crosshair"
-                        : isPlacingSeats || isPlacingSections
-                          ? "crosshair"
-                          : "pointer"; // Pointer tool shows pointer cursor
-                }
-              }}
-            >
-              <ShapeRenderer
-                shape={overlay.shape}
-                fill={
-                  isSelected
-                    ? "rgba(59, 130, 246, 0.25)"
-                    : "rgba(59, 130, 246, 0.1)"
-                }
-                stroke={isSelected ? "#1e40af" : "#3b82f6"}
-                strokeWidth={isSelected ? 3 : 2}
-                imageWidth={displayedWidth}
-                imageHeight={displayedHeight}
-                opacity={0.9}
-              />
-              {overlay.label && (
-                <Text
-                  text={overlay.label}
-                  fontSize={12}
-                  fontFamily="Arial"
-                  fill="#1e40af"
-                  padding={4}
-                  align="center"
-                  verticalAlign="middle"
-                  backgroundFill="rgba(255, 255, 255, 0.95)"
-                  backgroundStroke="#3b82f6"
-                  backgroundStrokeWidth={1}
-                  cornerRadius={2}
-                  x={-20}
-                  y={-8}
-                />
-              )}
-            </Group>
+              overlay={overlay}
+              isSelected={isSelected}
+              onShapeOverlayClick={onShapeOverlayClick}
+              imageWidth={displayedWidth}
+              imageHeight={displayedHeight}
+              isPanning={isPanning}
+              isSpacePressed={isSpacePressed}
+              selectedShapeTool={selectedShapeTool}
+              isPlacingSeats={isPlacingSeats}
+              isPlacingSections={isPlacingSections}
+              percentageToStage={percentageToStage}
+            />
           );
         })}
 

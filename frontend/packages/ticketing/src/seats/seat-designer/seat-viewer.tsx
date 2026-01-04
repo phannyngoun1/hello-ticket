@@ -5,7 +5,7 @@
  * If no floor plan exists, shows a button to create one.
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Button,
   Card,
@@ -20,6 +20,17 @@ import { seatService } from "../seat-service";
 import type { Seat } from "../types";
 import { SeatType } from "../types";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Stage,
+  Layer,
+  Image,
+  Circle,
+  Rect,
+  Ellipse,
+  Line,
+  Group,
+} from "react-konva";
+import { PlacementShapeType, type PlacementShape } from "./types";
 
 export interface SeatViewerProps {
   venueId: string;
@@ -195,6 +206,56 @@ interface FloorPlanViewProps {
 }
 
 function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [containerSize, setContainerSize] = useState({
+    width: 800,
+    height: 600,
+  });
+
+  // Load image
+  React.useEffect(() => {
+    if (imageUrl) {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        setImage(img);
+        // Set container size based on image
+        const aspectRatio = img.width / img.height;
+        const maxWidth = 1200;
+        const maxHeight = 800;
+        let width = maxWidth;
+        let height = maxWidth / aspectRatio;
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = maxHeight * aspectRatio;
+        }
+        setContainerSize({ width, height });
+      };
+      img.src = imageUrl;
+    }
+  }, [imageUrl]);
+
+  // Parse seat shapes
+  const seatsWithShapes = useMemo(() => {
+    return seats.map((seat) => {
+      let shape: PlacementShape | undefined;
+      if (seat.shape) {
+        try {
+          const parsed = JSON.parse(seat.shape);
+          if (parsed && typeof parsed === "object" && parsed.type) {
+            shape = {
+              ...parsed,
+              type: parsed.type as PlacementShapeType,
+            };
+          }
+        } catch (e) {
+          console.error("Failed to parse seat shape:", e);
+        }
+      }
+      return { ...seat, parsedShape: shape };
+    });
+  }, [seats]);
+
   if (!imageUrl) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -203,32 +264,164 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
     );
   }
 
-  return (
-    <div className="relative border rounded-lg overflow-hidden bg-gray-100">
-      <img
-        src={imageUrl}
-        alt="Venue layout"
-        className="w-full h-auto"
-        style={{ minHeight: "400px", objectFit: "contain" }}
-      />
-      {seats.map((seat) => (
-        <div
-          key={seat.id}
-          className={`absolute w-5 h-5 rounded-full border-2 ${
-            seat.seat_type === SeatType.VIP
-              ? "bg-yellow-400 border-yellow-600"
-              : seat.seat_type === SeatType.WHEELCHAIR
-                ? "bg-green-400 border-green-600"
-                : "bg-gray-300 border-gray-500"
-          }`}
-          style={{
-            left: `${seat.x_coordinate || 0}%`,
-            top: `${seat.y_coordinate || 0}%`,
-            transform: "translate(-50%, -50%)",
-          }}
-          title={`${seat.section} ${seat.row} ${seat.seat_number} (${seat.seat_type})`}
+  if (!image) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Loading floor plan...
+      </div>
+    );
+  }
+
+  const imageWidth = image.width;
+  const imageHeight = image.height;
+  const scale = containerSize.width / imageWidth;
+
+  const getSeatColor = (seatType: SeatType) => {
+    switch (seatType) {
+      case SeatType.VIP:
+        return { fill: "#fbbf24", stroke: "#d97706" };
+      case SeatType.WHEELCHAIR:
+        return { fill: "#34d399", stroke: "#059669" };
+      default:
+        return { fill: "#d1d5db", stroke: "#6b7280" };
+    }
+  };
+
+  const renderShape = (
+    shape: PlacementShape | undefined,
+    colors: { fill: string; stroke: string },
+    imgWidth: number,
+    imgHeight: number,
+    defaultRadius: number = 6
+  ) => {
+    if (!shape) {
+      return (
+        <Circle
+          radius={defaultRadius * scale}
+          fill={colors.fill}
+          stroke={colors.stroke}
+          strokeWidth={2}
         />
-      ))}
+      );
+    }
+
+    const baseProps = {
+      fill: colors.fill,
+      stroke: colors.stroke,
+      strokeWidth: 2,
+      opacity: 0.8,
+    };
+
+    switch (shape.type) {
+      case PlacementShapeType.CIRCLE: {
+        const radius = shape.radius
+          ? (shape.radius / 100) * Math.min(imgWidth, imgHeight) * scale
+          : defaultRadius * scale;
+        const validRadius = Math.max(1, Math.abs(radius));
+        return (
+          <Circle
+            {...baseProps}
+            radius={validRadius}
+            rotation={shape.rotation || 0}
+          />
+        );
+      }
+      case PlacementShapeType.RECTANGLE: {
+        const width = shape.width
+          ? (shape.width / 100) * imgWidth * scale
+          : 24 * scale;
+        const height = shape.height
+          ? (shape.height / 100) * imgHeight * scale
+          : 24 * scale;
+        const validWidth = Math.max(1, Math.abs(width));
+        const validHeight = Math.max(1, Math.abs(height));
+        const cornerRadius = shape.cornerRadius
+          ? Math.min(
+              (shape.cornerRadius / 100) * imgWidth * scale,
+              Math.min(validWidth, validHeight) / 2
+            )
+          : 0;
+        return (
+          <Rect
+            {...baseProps}
+            x={-validWidth / 2}
+            y={-validHeight / 2}
+            width={validWidth}
+            height={validHeight}
+            cornerRadius={cornerRadius}
+            rotation={shape.rotation || 0}
+          />
+        );
+      }
+      case PlacementShapeType.ELLIPSE: {
+        const radiusX = shape.width
+          ? ((shape.width / 100) * imgWidth * scale) / 2
+          : 12 * scale;
+        const radiusY = shape.height
+          ? ((shape.height / 100) * imgHeight * scale) / 2
+          : 12 * scale;
+        const validRadiusX = Math.max(1, Math.abs(radiusX));
+        const validRadiusY = Math.max(1, Math.abs(radiusY));
+        return (
+          <Ellipse
+            {...baseProps}
+            radiusX={validRadiusX}
+            radiusY={validRadiusY}
+            rotation={shape.rotation || 0}
+          />
+        );
+      }
+      case PlacementShapeType.POLYGON:
+      case PlacementShapeType.FREEFORM: {
+        if (!shape.points || shape.points.length < 4) {
+          return <Circle {...baseProps} radius={defaultRadius * scale} />;
+        }
+        const points = shape.points.map((p, index) => {
+          if (index % 2 === 0) {
+            return (p / 100) * imgWidth * scale;
+          } else {
+            return (p / 100) * imgHeight * scale;
+          }
+        });
+        return (
+          <Line
+            {...baseProps}
+            points={points}
+            closed={true}
+            tension={shape.type === PlacementShapeType.FREEFORM ? 0 : undefined}
+          />
+        );
+      }
+      default:
+        return <Circle {...baseProps} radius={defaultRadius * scale} />;
+    }
+  };
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-gray-100">
+      <Stage width={containerSize.width} height={containerSize.height}>
+        <Layer>
+          <Image
+            image={image}
+            width={containerSize.width}
+            height={containerSize.height}
+            x={0}
+            y={0}
+          />
+          {seatsWithShapes.map((seat) => {
+            if (!seat.x_coordinate || !seat.y_coordinate) return null;
+            const x = (seat.x_coordinate / 100) * containerSize.width;
+            const y = (seat.y_coordinate / 100) * containerSize.height;
+            const colors = getSeatColor(seat.seat_type);
+
+            return (
+              <Group key={seat.id} x={x} y={y}>
+                {renderShape(seat.parsedShape, colors, imageWidth, imageHeight)}
+              </Group>
+            );
+          })}
+        </Layer>
+      </Stage>
     </div>
   );
 }
@@ -270,7 +463,9 @@ function DataTableView({ seats }: DataTableViewProps) {
                 key={seat.id}
                 className="border-b hover:bg-muted/50 transition-colors"
               >
-                <td className="px-4 py-3 font-medium">{seat.section}</td>
+                <td className="px-4 py-3 font-medium">
+                  {seat.section_name || "N/A"}
+                </td>
                 <td className="px-4 py-3">{seat.row}</td>
                 <td className="px-4 py-3">{seat.seat_number}</td>
                 <td className="px-4 py-3">
@@ -300,7 +495,7 @@ function DataTableView({ seats }: DataTableViewProps) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">
-                  {seat.x_coordinate !== null && seat.y_coordinate !== null
+                  {seat.x_coordinate != null && seat.y_coordinate != null
                     ? `(${seat.x_coordinate.toFixed(1)}, ${seat.y_coordinate.toFixed(1)})`
                     : "N/A"}
                 </td>
