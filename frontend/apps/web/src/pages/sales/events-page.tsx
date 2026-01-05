@@ -6,7 +6,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Calendar, Clock, Search, Filter, X, Ticket, ChevronDown, ChevronUp, List, Grid3x3 } from "lucide-react";
+import { Calendar, Search, Filter, X, Ticket, ChevronDown, List, Grid3x3, ShoppingCart,  } from "lucide-react";
 import {
   Input,
   Button,
@@ -43,13 +43,14 @@ import {
   type ShowImage,
 } from "@truths/ticketing";
 import { api } from "@truths/api";
+import { ShowEventsSheet } from "./components/show-events-sheet";
 
 interface DateFilter {
   startDate: string | null;
   endDate: string | null;
 }
 
-interface ShowWithEvents extends Show {
+export interface ShowWithEvents extends Show {
   events: Event[];
   bannerImage?: ShowImage;
 }
@@ -65,7 +66,7 @@ function EventsPageContent() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showPastEvents, setShowPastEvents] = useState(false);
-  const [expandedShows, setExpandedShows] = useState<Set<string>>(new Set());
+
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
   const [layoutMode, setLayoutMode] = useState<"show" | "event">("show");
   const [selectedShowForSheet, setSelectedShowForSheet] = useState<ShowWithEvents | null>(null);
@@ -167,19 +168,6 @@ function EventsPageContent() {
         if (eventDate > endDate) return false;
       }
 
-      // Filter by selected date
-      if (selectedDate) {
-        const selected = new Date(selectedDate);
-        selected.setHours(0, 0, 0, 0);
-        if (eventDate.getTime() !== selected.getTime()) return false;
-      }
-
-      // Filter by search (show name or event title)
-      if (search) {
-        const searchLower = search.toLowerCase();
-        // Search will be handled at show level
-      }
-
       return true;
     });
 
@@ -192,39 +180,45 @@ function EventsPageContent() {
 
     // Create show with events array
     const result: ShowWithEvents[] = showsData.data
-      .map((show) => {
+      .reduce<ShowWithEvents[]>((acc, show) => {
         const events = eventsByShow.get(show.id) || [];
         
-        // Filter by search if provided
+        let shouldInclude = false;
+        
+        // Filter logic
         if (search) {
           const searchLower = search.toLowerCase();
           const showMatches = show.name.toLowerCase().includes(searchLower);
           const eventMatches = events.some((e) =>
             e.title.toLowerCase().includes(searchLower)
           );
-          if (!showMatches && !eventMatches) {
-            return null;
+          if (showMatches || eventMatches) {
+            shouldInclude = true;
+          }
+        } else {
+          // If no search, only include shows that have events
+          if (events.length > 0) {
+            shouldInclude = true;
           }
         }
 
-        // Get banner image
-        const images = showImages[show.id] || [];
-        const bannerImage = images.find((img) => img.is_banner) || images[0];
+        if (shouldInclude) {
+          // Get banner image
+          const images = showImages[show.id] || [];
+          const bannerImage: ShowImage | undefined = images.find((img) => img.is_banner) || images[0];
 
-        return {
-          ...show,
-          events: events.sort(
-            (a, b) =>
-              new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
-          ),
-          bannerImage,
-        };
-      })
-      .filter((show): show is ShowWithEvents => {
-        // Only include shows that have events or match search
-        if (search) return show !== null;
-        return show !== null && show.events.length > 0;
-      })
+          acc.push({
+            ...show,
+            events: events.sort(
+              (a, b) =>
+                new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
+            ),
+            bannerImage,
+          });
+        }
+        
+        return acc;
+      }, [])
       .sort((a, b) => {
         // Sort by earliest event date
         if (a.events.length === 0 && b.events.length === 0) return 0;
@@ -262,18 +256,6 @@ function EventsPageContent() {
     });
   }, [navigate]);
 
-  const toggleShowExpanded = useCallback((showId: string) => {
-    setExpandedShows((prev) => {
-      const next = new Set(prev);
-      if (next.has(showId)) {
-        next.delete(showId);
-      } else {
-        next.add(showId);
-      }
-      return next;
-    });
-  }, []);
-
   const clearFilters = useCallback(() => {
     setSearch("");
     setStatusFilter("all");
@@ -297,37 +279,20 @@ function EventsPageContent() {
     });
   };
 
-  const formatTime = (date: Date) => {
-    return new Date(date).toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+
 
   const formatStatus = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
   };
 
-  const getStatusVariant = (
-    status: string
-  ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status.toLowerCase()) {
-      case "on_sale":
-        return "default";
-      case "published":
-        return "secondary";
-      case "sold_out":
-        return "outline";
-      case "cancelled":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
+
 
   // Filter events for event-based view
   const filteredEvents = useMemo(() => {
     if (!eventsData?.data) return [];
+
+    // Create a lookup map for shows to efficiently attach show details
+    const showsMap = new Map(showsData?.data?.map(s => [s.id, s]));
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -372,11 +337,25 @@ function EventsPageContent() {
       }
 
       return true;
+    }).map(event => {
+      // Attach show information if available
+      const show = showsMap.get(event.show_id);
+      if (show) {
+        return {
+          ...event,
+          show: {
+            id: show.id,
+            name: show.name
+          }
+        };
+      }
+      return event;
     }).sort((a, b) => 
       new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
     );
   }, [
     eventsData?.data,
+    showsData?.data,
     search,
     statusFilter,
     dateFilter,
@@ -395,10 +374,6 @@ function EventsPageContent() {
     setShowEventsSheetOpen(true);
   }, []);
 
-  const handleCloseShowEventsSheet = useCallback(() => {
-    setShowEventsSheetOpen(false);
-    setSelectedShowForSheet(null);
-  }, []);
 
   return (
     <div className="space-y-6 p-6">
@@ -662,6 +637,7 @@ function EventsPageContent() {
           title=""
           description=""
           showViewToggle={false}
+          showShowNameInTitle={true}
           customActions={(event) => (
             <div className="flex gap-2">
               {event.status === EventStatusEnum.ON_SALE && (
@@ -673,13 +649,6 @@ function EventsPageContent() {
                   Book Now
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleEventClick(event)}
-              >
-                View Details
-              </Button>
             </div>
           )}
         />
@@ -719,7 +688,7 @@ function EventsPageContent() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {showsWithEvents.map((show) => {
-            const isExpanded = expandedShows.has(show.id);
+
             const hasEvents = show.events.length > 0;
 
             return (
@@ -798,99 +767,13 @@ function EventsPageContent() {
       )}
 
       {/* Show Events Sheet */}
-      <Sheet open={showEventsSheetOpen} onOpenChange={setShowEventsSheetOpen}>
-        <SheetContent side="right" className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0">
-          {selectedShowForSheet && (
-            <>
-              {/* Sheet Header */}
-              <div className="p-6 border-b">
-                <SheetHeader>
-                  <SheetTitle className="text-2xl">{selectedShowForSheet.name}</SheetTitle>
-                  {selectedShowForSheet.code && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Code: {selectedShowForSheet.code}
-                    </p>
-                  )}
-                  {selectedShowForSheet.started_date && selectedShowForSheet.ended_date && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {formatDate(new Date(selectedShowForSheet.started_date))} -{" "}
-                      {formatDate(new Date(selectedShowForSheet.ended_date))}
-                    </p>
-                  )}
-                </SheetHeader>
-              </div>
-
-              {/* Events List */}
-              <div className="flex-1 overflow-y-auto p-6">
-                {selectedShowForSheet.events.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No events found</h3>
-                    <p className="text-muted-foreground">
-                      No events available for this show.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedShowForSheet.events.map((event) => (
-                      <div
-                        key={event.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold">{event.title}</h4>
-                            <Badge variant={getStatusVariant(event.status)}>
-                              {formatStatus(event.status)}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(new Date(event.start_dt))}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{formatTime(new Date(event.start_dt))}</span>
-                              <span className="ml-1">
-                                • {event.duration_minutes} min
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          {event.status === EventStatusEnum.ON_SALE && (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleBookNow(event);
-                              }}
-                            >
-                              <Ticket className="h-4 w-4 mr-2" />
-                              Book Now
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEventClick(event);
-                            }}
-                          >
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      <ShowEventsSheet
+        open={showEventsSheetOpen}
+        onOpenChange={setShowEventsSheetOpen}
+        show={selectedShowForSheet}
+        onEventClick={handleEventClick}
+        onBookNow={handleBookNow}
+      />
     </div>
   );
 }

@@ -49,6 +49,7 @@ export interface EventListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (event: Event) => React.ReactNode;
+  showShowNameInTitle?: boolean;
   isDeleting?: boolean;
   searchable?: boolean;
   title?: string;
@@ -72,8 +73,9 @@ export function EventList({
   onStatusChange,
   onSearch,
   customActions,
+  showShowNameInTitle = false,    
   isDeleting = false,
-}: EventListProps) {
+}: EventListProps) {    
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -347,7 +349,9 @@ export function EventList({
               {/* Header: Title and Status */}
               <div className="flex items-start justify-between gap-2">
                 <h4 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">
-                  {item.name}
+                  {showShowNameInTitle && item.event.show
+                    ? `${item.event.show.name} - ${item.name}`
+                    : item.name}
                 </h4>
                 <div className="flex-shrink-0">
                   {renderStatusBadge(item.event, statusVariant)}
@@ -366,7 +370,9 @@ export function EventList({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <MapPin className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">Venue information</span>
+                    <span className="truncate">
+                      {item.event.venue?.name || "Venue TBD"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span>{formatDuration(item.event.duration_minutes)}</span>
@@ -457,7 +463,7 @@ export function EventList({
         renderItem={renderItem}
         showCreateButton={false}
         defaultViewMode="card"
-        viewMode="card"
+        viewMode="list"
         showViewToggle={false}
         gridCols={{ default: 1 }}
       />

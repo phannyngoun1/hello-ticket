@@ -42,73 +42,73 @@ export interface BadgeConfig<T = any> {
 export interface DataListProps<T extends DataListItem> {
   /** Additional CSS classes */
   className?: string;
-  
+
   /** Array of items to display */
   items?: T[];
-  
+
   /** Loading state */
   loading?: boolean;
-  
+
   /** Error state */
   error?: Error | null;
-  
+
   /** Enable search functionality */
   searchable?: boolean;
-  
+
   /** Placeholder text for search input */
   searchPlaceholder?: string;
-  
+
   /** Title shown in header */
   title?: string;
-  
+
   /** Description/subtitle shown in header */
   description?: string;
-  
+
   /** Stats configuration for displaying metadata */
   stats?: StatConfig<T>[];
-  
+
   /** Badges configuration for status indicators */
   badges?: BadgeConfig<T>[];
-  
+
   /** Show action buttons */
   showActions?: boolean;
-  
+
   /** Show create button */
   showCreateButton?: boolean;
-  
+
   /** Create button label (supports ReactNode for icons) */
   createButtonLabel?: string | React.ReactNode;
-  
+
   /** Called when create button is clicked */
   onCreate?: () => void;
-  
+
   /** Called when an item is clicked */
   onItemClick?: (item: T) => void;
-  
+
   /** Called when edit button is clicked */
   onEdit?: (item: T) => void;
-  
+
   /** Called when delete button is clicked */
   onDelete?: (item: T) => void;
-  
+
   /** Called when search input changes */
   onSearch?: (query: string) => void;
-  
+
   /** Custom action buttons renderer */
   customActions?: (item: T) => React.ReactNode;
-  
+
   /** Custom item renderer */
   renderItem?: (item: T) => React.ReactNode;
-  
+
   /** Loading message */
   loadingMessage?: string;
-  
+
   /** Empty state message */
   emptyMessage?: string;
-  
+
   /** Error message override */
   errorMessage?: string;
-  
+
   /** Grid columns configuration */
   gridCols?: {
     default?: number;
@@ -124,7 +124,7 @@ export interface DataListProps<T extends DataListItem> {
 
   /** Called when view mode changes */
   onViewModeChange?: (viewMode: "card" | "list" | "calendar") => void;
-  
+
   /** Custom calendar view renderer (used when viewMode is 'calendar') */
   renderCalendarView?: () => React.ReactNode;
 

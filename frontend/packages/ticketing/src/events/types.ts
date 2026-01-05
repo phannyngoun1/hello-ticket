@@ -71,6 +71,17 @@ export interface Event {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+  show?: {
+    id: string;
+    name: string;
+  };
+  venue?: {
+    id: string;
+    name: string;
+    city?: string;
+    state?: string;
+    show?: string;
+  };
 }
 
 export interface CreateEventInput {
