@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { RootLayout } from "../../components/layouts/root-layout";
 
-function EventsLayout() {
+function ExploreLayout() {
   return (
     <RootLayout>
       <Outlet />
@@ -9,7 +9,6 @@ function EventsLayout() {
   );
 }
 
-export const Route = createFileRoute("/sales/events")({
-  component: EventsLayout,
+export const Route = createFileRoute("/sales/explore")({
+  component: ExploreLayout,
 });
-

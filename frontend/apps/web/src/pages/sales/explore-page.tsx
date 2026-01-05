@@ -1,30 +1,22 @@
 /**
- * Sales Events Page
+ * Sales Explore Page
  * 
  * Browse and book available and upcoming shows with their events
  */
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Calendar, Search, Filter, X, Ticket, ChevronDown, List, Grid3x3, ShoppingCart,  } from "lucide-react";
+import { Search, List, Grid3x3, X, Ticket } from "lucide-react";
 import {
   Input,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
   Badge,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+
 } from "@truths/ui";
 import { 
   EventProvider, 
@@ -39,23 +31,17 @@ import {
   ShowProvider,
   useShowService,
   useShows,
-  type Show,
   type ShowImage,
 } from "@truths/ticketing";
+import { EventsFilterSheet, type DateFilter } from "./components/events-filter-sheet";
 import { api } from "@truths/api";
 import { ShowEventsSheet } from "./components/show-events-sheet";
+import { ShowList, type ShowWithEvents } from "./components/show-list";
 
-interface DateFilter {
-  startDate: string | null;
-  endDate: string | null;
-}
 
-export interface ShowWithEvents extends Show {
-  events: Event[];
-  bannerImage?: ShowImage;
-}
 
-function EventsPageContent() {
+
+function ExplorePageContent() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all");
@@ -380,7 +366,7 @@ function EventsPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Events</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Explore</h1>
           <p className="text-muted-foreground mt-1">
             Browse and book available and upcoming shows
           </p>
@@ -441,107 +427,18 @@ function EventsPageContent() {
         </Select>
 
         {/* Advanced Filters Button */}
-        <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="relative">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-              {hasActiveFilters && (
-                <span className="ml-2 h-2 w-2 rounded-full bg-primary" />
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[400px] sm:w-[540px]">
-            <SheetHeader>
-              <SheetTitle>Filter Events</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              {/* Date Range Filter */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Date Range</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Start Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={dateFilter.startDate || ""}
-                      onChange={(e) =>
-                        setDateFilter((prev) => ({
-                          ...prev,
-                          startDate: e.target.value || null,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      End Date
-                    </label>
-                    <Input
-                      type="date"
-                      value={dateFilter.endDate || ""}
-                      onChange={(e) =>
-                        setDateFilter((prev) => ({
-                          ...prev,
-                          endDate: e.target.value || null,
-                        }))
-                      }
-                      min={dateFilter.startDate || undefined}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Calendar Date Picker */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Select Specific Date</h3>
-                <Input
-                  type="date"
-                  value={selectedDate || ""}
-                  onChange={(e) => setSelectedDate(e.target.value || null)}
-                />
-                {selectedDate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedDate(null)}
-                    className="w-full"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Clear Date Selection
-                  </Button>
-                )}
-              </div>
-
-              {/* Show Past Events Toggle */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Options</h3>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="showPastEvents"
-                    checked={showPastEvents}
-                    onChange={(e) => setShowPastEvents(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <label htmlFor="showPastEvents" className="text-sm font-medium">
-                    Show past events
-                  </label>
-                </div>
-              </div>
-
-              {/* Clear All Filters */}
-              {hasActiveFilters && (
-                <Button variant="outline" onClick={clearFilters} className="w-full">
-                  <X className="h-4 w-4 mr-2" />
-                  Clear All Filters
-                </Button>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+        <EventsFilterSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          hasActiveFilters={!!hasActiveFilters}
+          dateFilter={dateFilter}
+          setDateFilter={setDateFilter}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          showPastEvents={showPastEvents}
+          setShowPastEvents={setShowPastEvents}
+          onClearFilters={clearFilters}
+        />
       </div>
 
       {/* Active Filters Display */}
@@ -654,115 +551,13 @@ function EventsPageContent() {
         />
       ) : (
         <>
-          {/* Shows List */}
-          {isLoading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-48 bg-muted rounded-t-lg" />
-              <CardHeader>
-                <div className="h-6 bg-muted rounded w-3/4" />
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      ) : showsWithEvents.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No shows found</h3>
-              <p className="text-muted-foreground">
-                {hasActiveFilters
-                  ? "Try adjusting your filters to see more shows."
-                  : "No shows with upcoming events available at the moment."}
-              </p>
-              {hasActiveFilters && (
-                <Button variant="outline" onClick={clearFilters} className="mt-4">
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {showsWithEvents.map((show) => {
-
-            const hasEvents = show.events.length > 0;
-
-            return (
-              <Card 
-                key={show.id} 
-                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => handleShowClick(show)}
-              >
-                {/* Banner Image */}
-                {show.bannerImage?.file_url ? (
-                  <div className="relative h-48 w-full overflow-hidden bg-muted">
-                    <img
-                      src={show.bannerImage.file_url}
-                      alt={show.bannerImage.name || show.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Hide image on error
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                ) : (
-                  // Placeholder when no banner image
-                  <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                    <Calendar className="h-16 w-16 text-muted-foreground/30" />
-                  </div>
-                )}
-
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-2xl mb-2">{show.name}</CardTitle>
-                      {show.code && (
-                        <p className="text-sm text-muted-foreground">
-                          Code: {show.code}
-                        </p>
-                      )}
-                      {show.started_date && show.ended_date && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {formatDate(new Date(show.started_date))} -{" "}
-                          {formatDate(new Date(show.ended_date))}
-                        </p>
-                      )}
-                    </div>
-                    {hasEvents && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShowClick(show);
-                        }}
-                        className="ml-4"
-                      >
-                        <ChevronDown className="h-4 w-4 mr-2" />
-                        View Events ({show.events.length})
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-
-
-                {!hasEvents && (
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      No events available for this show.
-                    </p>
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-          )}
+          <ShowList 
+            isLoading={isLoading}
+            shows={showsWithEvents}
+            hasActiveFilters={!!hasActiveFilters}
+            onClearFilters={clearFilters}
+            onShowClick={handleShowClick}
+          />
         </>
       )}
 
@@ -779,7 +574,7 @@ function EventsPageContent() {
 }
 
 // Wrapper component with providers
-export function EventsPageWithProvider() {
+export function ExplorePageWithProvider() {
   return (
     <ShowProvider
       config={{
@@ -797,7 +592,7 @@ export function EventsPageWithProvider() {
           },
         }}
       >
-        <EventsPageContent />
+        <ExplorePageContent />
       </EventProvider>
     </ShowProvider>
   );

@@ -10,7 +10,7 @@ import {
 } from "@truths/ui";
 import { DataList } from "@truths/custom-ui";
 import { type Event, EventStatus as EventStatusEnum } from "@truths/ticketing";
-import { type ShowWithEvents } from "../events-page";
+import { type ShowWithEvents } from "./show-list";
 
 interface ShowEventsSheetProps {
   open: boolean;
@@ -107,7 +107,7 @@ export function ShowEventsSheet({
                 showViewToggle={false}
                 gridCols={{ default: 1 }}
                 emptyMessage="No events available for this show."
-                renderItem={(event: any) => {
+                renderItem={(event: Event) => {
                   const statusVariant = getStatusVariant(event.status);
                   const dateInfo = formatDate(event.start_dt);
                   const timeInfo = formatTime(event.start_dt);
