@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@truths/ui";
 import { Button } from "@truths/ui";
-import { Edit, Trash2, Users, FileText, Database } from "lucide-react";
+import { Edit, Trash2} from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { DataListItem, BadgeConfig, StatConfig } from "./types";
 
@@ -28,21 +28,6 @@ export function ListView<T extends DataListItem>({
   badges = [],
   stats = [],
 }: ListViewProps<T>) {
-  // Helper function to get icon for stat based on key
-  // TODO: This is duplicated from CardView and index.tsx, should be extracted to utilities
-  const getStatIcon = (statKey: string) => {
-    const key = statKey.toLowerCase();
-    if (key.includes("user") || key.includes("member")) {
-      return <Users className="h-3 w-3 text-muted-foreground" />;
-    }
-    if (key.includes("permission") || key.includes("access")) {
-      return <FileText className="h-3 w-3 text-muted-foreground" />;
-    }
-    if (key.includes("role") || key.includes("group")) {
-      return <Database className="h-3 w-3 text-muted-foreground" />;
-    }
-    return null;
-  };
 
   return (
     <div className="space-y-3">
