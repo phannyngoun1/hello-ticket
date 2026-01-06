@@ -173,3 +173,11 @@ export type { ImageGalleryProps, GalleryImage } from './image-gallery';
 // Charts
 export { BarChart, LineChart, PieChart, ProgressRing } from './charts';
 export type { ChartDataPoint, LineChartDataPoint, ChartProps, LineChartProps, PieChartProps, ProgressRingProps } from './charts';
+
+// Shared
+export { EntityTagsDialog, EntityAttachmentsDialog } from './shared';
+export type { EntityTagsDialogProps, EntityAttachmentsDialogProps } from './shared';
+
+// Document List
+export { DocumentList } from './document-list';
+
