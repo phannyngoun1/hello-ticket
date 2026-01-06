@@ -80,6 +80,9 @@ export function OrganizerDetail({
 
   profilePhotoComponent,
 }: OrganizerDetailProps) {
+  // Debug: log what data the component receives
+  console.log("DEBUG: OrganizerDetail received data:", data);
+
   const [activeTab, setActiveTab] = useState<
     "profile" | "documents" | "metadata"
   >("profile");
@@ -128,6 +131,11 @@ export function OrganizerDetail({
   }, [activeTab, data?.id, attachmentServiceInstance, loadDocuments]);
 
   // All hooks must be called before any early returns
+
+  // Debug: log when tags change
+  React.useEffect(() => {
+    console.log("OrganizerDetail: data.tags changed", data?.tags);
+  }, [data?.tags]);
 
   const getOrganizerDisplayName = () => {
     return data?.name || data?.code || data?.id || "";
@@ -206,32 +214,6 @@ export function OrganizerDetail({
                 <p className="text-sm text-muted-foreground mt-1">
                   Code: {data.code}
                 </p>
-              )}
-              {data.tags && data.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {data.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="text-xs px-1.5 py-0 h-5 md:h-6"
-                    >
-                      <Tag className="h-3 w-3 mr-1 opacity-70" />
-                      {tag}
-                    </Badge>
-                  ))}
-                  {((onManageTags && editable) || data.tags.length === 0) && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 md:h-6 md:w-6 rounded-full"
-                      onClick={() => onManageTags?.(data)}
-                      disabled={!onManageTags || !editable}
-                      title="Manage tags"
-                    >
-                      <Edit className="h-3 w-3 text-muted-foreground" />
-                    </Button>
-                  )}
-                </div>
               )}
 
               {data.description && (
@@ -376,6 +358,39 @@ export function OrganizerDetail({
                         <dt className="text-sm font-medium">Description</dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
                           {data.description || "N/A"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium">Tags</dt>
+                        <dd className="mt-1">
+                          {(() => {
+                            console.log(
+                              "DEBUG: Profile tab tags check - data.tags:",
+                              data.tags,
+                              "length:",
+                              data.tags?.length,
+                              "condition:",
+                              data.tags && data.tags.length > 0
+                            );
+                            return data.tags && data.tags.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {data.tags.map((tag) => (
+                                  <Badge
+                                    key={tag}
+                                    variant="secondary"
+                                    className="text-xs px-1.5 py-0 h-5"
+                                  >
+                                    <Tag className="h-3 w-3 mr-1 opacity-70" />
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">
+                                No tags
+                              </span>
+                            );
+                          })()}
                         </dd>
                       </div>
                     </dl>

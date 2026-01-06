@@ -20,6 +20,7 @@ interface OrganizerDTO {
   city?: string | null;
   country?: string | null;
   logo?: string | null;
+  tags?: string[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -40,6 +41,7 @@ function transformOrganizer(dto: OrganizerDTO): Organizer {
     city: dto.city,
     country: dto.country,
     logo: dto.logo,
+    tags: dto.tags || [],
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };
