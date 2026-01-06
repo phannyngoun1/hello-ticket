@@ -53,6 +53,7 @@ import { Route as SettingsSalesTestBasicsRouteImport } from './routes/settings/s
 import { Route as SettingsSalesCustomerTypesRouteImport } from './routes/settings/sales/customer-types'
 import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settings/sales/customer-groups'
 import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
+import { Route as SalesPaymentsIdRouteImport } from './routes/sales/payments/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
 import { Route as SalesBookingsIdRouteImport } from './routes/sales/bookings/$id'
 import { Route as TicketingEventsEventIdInventoryRouteImport } from './routes/ticketing/events/$eventId/inventory'
@@ -284,6 +285,11 @@ const SalesTestsIdRoute = SalesTestsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SalesTestsRoute,
 } as any)
+const SalesPaymentsIdRoute = SalesPaymentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SalesPaymentsRoute,
+} as any)
 const SalesCustomersIdRoute = SalesCustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/users/': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
@@ -377,6 +384,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/users/': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
@@ -480,6 +489,7 @@ export interface FileRouteTypes {
     | '/users/'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
@@ -521,6 +531,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
@@ -571,6 +582,7 @@ export interface FileRouteTypes {
     | '/users/'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
@@ -937,6 +949,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesTestsIdRouteImport
       parentRoute: typeof SalesTestsRoute
     }
+    '/sales/payments/$id': {
+      id: '/sales/payments/$id'
+      path: '/$id'
+      fullPath: '/sales/payments/$id'
+      preLoaderRoute: typeof SalesPaymentsIdRouteImport
+      parentRoute: typeof SalesPaymentsRoute
+    }
     '/sales/customers/$id': {
       id: '/sales/customers/$id'
       path: '/$id'
@@ -1021,10 +1040,12 @@ const SalesExploreRouteWithChildren = SalesExploreRoute._addFileChildren(
 )
 
 interface SalesPaymentsRouteChildren {
+  SalesPaymentsIdRoute: typeof SalesPaymentsIdRoute
   SalesPaymentsIndexRoute: typeof SalesPaymentsIndexRoute
 }
 
 const SalesPaymentsRouteChildren: SalesPaymentsRouteChildren = {
+  SalesPaymentsIdRoute: SalesPaymentsIdRoute,
   SalesPaymentsIndexRoute: SalesPaymentsIndexRoute,
 }
 
