@@ -7,12 +7,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import {
-  Button,
-  Card,
-  Tabs,
-  Badge,
-} from "@truths/ui";
+import { Button, Card, Tabs, Badge } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -37,7 +32,14 @@ import {
   Share2,
   Tag,
 } from "lucide-react";
-import { ActionList, type ActionItem, DocumentList } from "@truths/custom-ui";
+import {
+  ActionList,
+  type ActionItem,
+  DocumentList,
+  DescriptionList,
+  DescriptionItem,
+  DescriptionSection,
+} from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 
@@ -123,30 +125,6 @@ export function CustomerDetail({
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   };
 
-  const formatFieldValue = (value: unknown) => {
-    if (value === null || value === undefined) return "N/A";
-    if (value instanceof Date) {
-      return value.toLocaleString();
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return "N/A";
-      const potentialDate = new Date(trimmed);
-      if (!Number.isNaN(potentialDate.getTime())) {
-        return potentialDate.toLocaleString();
-      }
-      return trimmed;
-    }
-    if (typeof value === "number" || typeof value === "boolean") {
-      return String(value);
-    }
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  };
-
   // Load documents when documents tab is active
   const loadDocuments = useCallback(async () => {
     if (!cus?.id || !attachmentServiceInstance) {
@@ -173,8 +151,6 @@ export function CustomerDetail({
       loadDocuments();
     }
   }, [activeTab, cus?.id, attachmentServiceInstance, loadDocuments]);
-
-
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
@@ -493,370 +469,190 @@ export function CustomerDetail({
             {activeTab === "overview" && (
               <div className="space-y-8">
                 {/* 1. Essential Information */}
-                <div>
-                  <h3 className="mb-4 text-sm font-semibold text-foreground">
-                    Contact Information
-                  </h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <div>
-                      <dt className="text-sm font-medium">Business Name</dt>
-                      <dd className="mt-1 text-sm text-muted-foreground">
-                        {formatFieldValue(cus.business_name)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium">Email</dt>
-                      <dd className="mt-1 text-sm text-muted-foreground">
-                        {cus.email ? (
-                          <a
-                            href={`mailto:${cus.email}`}
-                            className="text-primary hover:underline"
-                          >
-                            {cus.email}
-                          </a>
-                        ) : (
-                          "N/A"
-                        )}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium">Phone</dt>
-                      <dd className="mt-1 text-sm text-muted-foreground">
-                        {cus.phone ? (
-                          <a
-                            href={`tel:${cus.phone}`}
-                            className="text-primary hover:underline"
-                          >
-                            {cus.phone}
-                          </a>
-                        ) : (
-                          "N/A"
-                        )}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium">Website</dt>
-                      <dd className="mt-1 text-sm text-muted-foreground">
-                        {cus.website ? (
-                          <a
-                            href={cus.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            {cus.website}
-                          </a>
-                        ) : (
-                          "N/A"
-                        )}
-                      </dd>
-                    </div>
-                  </div>
-                </div>
+                <DescriptionList title="Contact Information" columns={3}>
+                  <DescriptionItem
+                    label="Business Name"
+                    value={cus.business_name}
+                  />
+                  <DescriptionItem
+                    label="Email"
+                    value={cus.email}
+                    linkType="email"
+                  />
+                  <DescriptionItem
+                    label="Phone"
+                    value={cus.phone}
+                    linkType="tel"
+                  />
+                  <DescriptionItem
+                    label="Website"
+                    value={cus.website}
+                    linkType="external"
+                  />
+                </DescriptionList>
 
                 {/* 2. Address Information */}
-                {(cus.street_address ||
-                  cus.city ||
-                  cus.state_province ||
-                  cus.postal_code ||
-                  cus.country) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Address Information
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {cus.street_address && (
-                        <div className="md:col-span-2 lg:col-span-3">
-                          <dt className="text-sm font-medium">
-                            Street Address
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.street_address)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.city && (
-                        <div>
-                          <dt className="text-sm font-medium">City</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.city)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.state_province && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            State/Province
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.state_province)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.postal_code && (
-                        <div>
-                          <dt className="text-sm font-medium">Postal Code</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.postal_code)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.country && (
-                        <div>
-                          <dt className="text-sm font-medium">Country</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.country)}
-                          </dd>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <DescriptionList
+                  title="Address Information"
+                  icon={MapPin}
+                  columns={3}
+                >
+                  <DescriptionItem
+                    label="Street Address"
+                    value={cus.street_address}
+                    span="md:col-span-2 lg:col-span-3"
+                  />
+                  <DescriptionItem label="City" value={cus.city} />
+                  <DescriptionItem
+                    label="State/Province"
+                    value={cus.state_province}
+                  />
+                  <DescriptionItem
+                    label="Postal Code"
+                    value={cus.postal_code}
+                  />
+                  <DescriptionItem label="Country" value={cus.country} />
+                </DescriptionList>
               </div>
             )}
 
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div className="space-y-8">
-                {/* Customer Profile */}
-                {(cus.date_of_birth ||
-                  cus.gender ||
-                  cus.nationality ||
-                  cus.id_number ||
-                  cus.id_type) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground">
-                      Personal Information
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {cus.date_of_birth && (
-                        <div>
-                          <dt className="text-sm font-medium">Date of Birth</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(cus.date_of_birth)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.gender && (
-                        <div>
-                          <dt className="text-sm font-medium">Gender</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground capitalize">
-                            {formatFieldValue(cus.gender)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.nationality && (
-                        <div>
-                          <dt className="text-sm font-medium">Nationality</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.nationality)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.id_type && (
-                        <div>
-                          <dt className="text-sm font-medium">ID Type</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.id_type)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.id_number && (
-                        <div>
-                          <dt className="text-sm font-medium">ID Number</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.id_number)}
-                          </dd>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* Personal Information */}
+                <DescriptionList title="Personal Information" columns={3}>
+                  <DescriptionItem
+                    label="Date of Birth"
+                    value={cus.date_of_birth}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="Gender"
+                    value={cus.gender}
+                    valueClassName="capitalize"
+                  />
+                  <DescriptionItem
+                    label="Nationality"
+                    value={cus.nationality}
+                  />
+                  <DescriptionItem label="ID Type" value={cus.id_type} />
+                  <DescriptionItem label="ID Number" value={cus.id_number} />
+                </DescriptionList>
 
                 {/* Preferences & Settings */}
-                {(cus.event_preferences ||
-                  cus.seating_preferences ||
-                  cus.accessibility_needs ||
-                  cus.dietary_restrictions ||
-                  cus.preferred_language ||
-                  cus.emergency_contact_name ||
-                  cus.marketing_opt_in !== undefined ||
-                  cus.email_marketing !== undefined ||
-                  cus.sms_marketing !== undefined) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground">
-                      Preferences & Settings
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {cus.event_preferences && (
-                          <div>
-                            <dt className="text-sm font-medium">
-                              Event Preferences
-                            </dt>
-                            <dd className="mt-1 text-sm text-muted-foreground">
-                              {formatFieldValue(cus.event_preferences)}
-                            </dd>
-                          </div>
-                        )}
-                        {cus.seating_preferences && (
-                          <div>
-                            <dt className="text-sm font-medium">
-                              Seating Preferences
-                            </dt>
-                            <dd className="mt-1 text-sm text-muted-foreground">
-                              {formatFieldValue(cus.seating_preferences)}
-                            </dd>
-                          </div>
-                        )}
-                        {cus.accessibility_needs && (
-                          <div>
-                            <dt className="text-sm font-medium">
-                              Accessibility Needs
-                            </dt>
-                            <dd className="mt-1 text-sm text-muted-foreground">
-                              {formatFieldValue(cus.accessibility_needs)}
-                            </dd>
-                          </div>
-                        )}
-                        {cus.dietary_restrictions && (
-                          <div>
-                            <dt className="text-sm font-medium">
-                              Dietary Restrictions
-                            </dt>
-                            <dd className="mt-1 text-sm text-muted-foreground">
-                              {formatFieldValue(cus.dietary_restrictions)}
-                            </dd>
-                          </div>
-                        )}
-                        {cus.preferred_language && (
-                          <div>
-                            <dt className="text-sm font-medium">
-                              Preferred Language
-                            </dt>
-                            <dd className="mt-1 text-sm text-muted-foreground">
-                              {formatFieldValue(cus.preferred_language)}
-                            </dd>
-                          </div>
-                        )}
-                      </div>
+                <DescriptionList title="Preferences & Settings" columns={2}>
+                  <DescriptionItem
+                    label="Event Preferences"
+                    value={cus.event_preferences}
+                  />
+                  <DescriptionItem
+                    label="Seating Preferences"
+                    value={cus.seating_preferences}
+                  />
+                  <DescriptionItem
+                    label="Accessibility Needs"
+                    value={cus.accessibility_needs}
+                  />
+                  <DescriptionItem
+                    label="Dietary Restrictions"
+                    value={cus.dietary_restrictions}
+                  />
+                  <DescriptionItem
+                    label="Preferred Language"
+                    value={cus.preferred_language}
+                  />
 
-                      {(cus.emergency_contact_name ||
-                        cus.emergency_contact_phone ||
-                        cus.emergency_contact_relationship) && (
-                        <div className="pt-2 border-t">
-                          <h4 className="text-sm font-medium mb-3">
-                            Emergency Contact
-                          </h4>
-                          <div className="grid gap-4 md:grid-cols-3">
-                            {cus.emergency_contact_name && (
-                              <div>
-                                <dt className="text-sm font-medium">
-                                  Contact Name
-                                </dt>
-                                <dd className="mt-1 text-sm text-muted-foreground">
-                                  {formatFieldValue(cus.emergency_contact_name)}
-                                </dd>
-                              </div>
-                            )}
-                            {cus.emergency_contact_phone && (
-                              <div>
-                                <dt className="text-sm font-medium">
-                                  Contact Phone
-                                </dt>
-                                <dd className="mt-1 text-sm text-muted-foreground">
-                                  {cus.emergency_contact_phone ? (
-                                    <a
-                                      href={`tel:${cus.emergency_contact_phone}`}
-                                      className="text-primary hover:underline"
-                                    >
-                                      {cus.emergency_contact_phone}
-                                    </a>
-                                  ) : (
-                                    "N/A"
-                                  )}
-                                </dd>
-                              </div>
-                            )}
-                            {cus.emergency_contact_relationship && (
-                              <div>
-                                <dt className="text-sm font-medium">
-                                  Relationship
-                                </dt>
-                                <dd className="mt-1 text-sm text-muted-foreground">
-                                  {formatFieldValue(
-                                    cus.emergency_contact_relationship
-                                  )}
-                                </dd>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                  <DescriptionSection title="Emergency Contact" showBorder>
+                    <DescriptionList columns={3} className="mt-0 mb-0">
+                      <DescriptionItem
+                        label="Contact Name"
+                        value={cus.emergency_contact_name}
+                      />
+                      <DescriptionItem
+                        label="Contact Phone"
+                        value={cus.emergency_contact_phone}
+                        linkType="tel"
+                      />
+                      <DescriptionItem
+                        label="Relationship"
+                        value={cus.emergency_contact_relationship}
+                      />
+                    </DescriptionList>
+                  </DescriptionSection>
+
+                  <DescriptionSection title="Marketing Preferences" showBorder>
+                    <div className="flex flex-wrap gap-4">
+                      {cus.marketing_opt_in !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.marketing_opt_in
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                Marketing Opt-in:{" "}
+                                {cus.marketing_opt_in ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
                       )}
-
-                      {(cus.marketing_opt_in !== undefined ||
-                        cus.email_marketing !== undefined ||
-                        cus.sms_marketing !== undefined) && (
-                        <div className="pt-2 border-t">
-                          <h4 className="text-sm font-medium mb-3">
-                            Marketing Preferences
-                          </h4>
-                          <div className="flex flex-wrap gap-4">
-                            {cus.marketing_opt_in !== undefined && (
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    cus.marketing_opt_in
-                                      ? "bg-green-500"
-                                      : "bg-gray-300"
-                                  )}
-                                />
-                                <span className="text-sm text-muted-foreground">
-                                  Marketing Opt-in:{" "}
-                                  {cus.marketing_opt_in ? "Yes" : "No"}
-                                </span>
-                              </div>
-                            )}
-                            {cus.email_marketing !== undefined && (
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    cus.email_marketing
-                                      ? "bg-green-500"
-                                      : "bg-gray-300"
-                                  )}
-                                />
-                                <span className="text-sm text-muted-foreground">
-                                  Email Marketing:{" "}
-                                  {cus.email_marketing ? "Yes" : "No"}
-                                </span>
-                              </div>
-                            )}
-                            {cus.sms_marketing !== undefined && (
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={cn(
-                                    "h-2 w-2 rounded-full",
-                                    cus.sms_marketing
-                                      ? "bg-green-500"
-                                      : "bg-gray-300"
-                                  )}
-                                />
-                                <span className="text-sm text-muted-foreground">
-                                  SMS Marketing:{" "}
-                                  {cus.sms_marketing ? "Yes" : "No"}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                      {cus.email_marketing !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.email_marketing
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                Email Marketing:{" "}
+                                {cus.email_marketing ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
+                      )}
+                      {cus.sms_marketing !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.sms_marketing
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                SMS Marketing:{" "}
+                                {cus.sms_marketing ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
                       )}
                     </div>
-                  </div>
-                )}
+                  </DescriptionSection>
+                </DescriptionList>
               </div>
             )}
 
@@ -864,127 +660,84 @@ export function CustomerDetail({
             {activeTab === "account" && (
               <div className="space-y-8">
                 {/* Account Management */}
-                {(cus.account_manager_id ||
-                  cus.sales_representative_id ||
-                  cus.customer_since ||
-                  cus.last_purchase_date ||
-                  cus.total_purchase_amount !== undefined ||
-                  cus.last_contact_date) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Account Management
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {cus.account_manager_id && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Account Manager
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.account_manager_id)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.sales_representative_id && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Sales Representative
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(cus.sales_representative_id)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.customer_since && (
-                        <div>
-                          <dt className="text-sm font-medium flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Customer Since
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(cus.customer_since)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.last_purchase_date && (
-                        <div>
-                          <dt className="text-sm font-medium flex items-center gap-1">
-                            <ShoppingCart className="h-3 w-3" />
-                            Last Purchase
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(cus.last_purchase_date)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.total_purchase_amount !== undefined && (
-                        <div>
-                          <dt className="text-sm font-medium flex items-center gap-1">
-                            <CreditCard className="h-3 w-3" />
-                            Total Purchase Amount
-                          </dt>
-                          <dd className="mt-1 text-sm font-semibold text-foreground">
-                            ${cus.total_purchase_amount?.toFixed(2) || "0.00"}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.last_contact_date && (
-                        <div>
-                          <dt className="text-sm font-medium flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            Last Contact
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(cus.last_contact_date)}
-                          </dd>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <DescriptionList
+                  title="Account Management"
+                  icon={Users}
+                  columns={3}
+                >
+                  <DescriptionItem
+                    label="Account Manager"
+                    value={cus.account_manager_id}
+                  />
+                  <DescriptionItem
+                    label="Sales Representative"
+                    value={cus.sales_representative_id}
+                  />
+                  <DescriptionItem
+                    label="Customer Since"
+                    value={cus.customer_since}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                    icon={Calendar}
+                  />
+                  <DescriptionItem
+                    label="Last Purchase"
+                    value={cus.last_purchase_date}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                    icon={ShoppingCart}
+                  />
+                  <DescriptionItem
+                    label="Total Purchase Amount"
+                    value={cus.total_purchase_amount}
+                    render={(value) =>
+                      `$${(value as number)?.toFixed(2) || "0.00"}` as React.ReactNode
+                    }
+                    valueClassName="font-semibold text-foreground"
+                    icon={CreditCard}
+                  />
+                  <DescriptionItem
+                    label="Last Contact"
+                    value={cus.last_contact_date}
+                    render={(value) => formatDate(value as Date | string)}
+                    icon={Phone}
+                  />
+                </DescriptionList>
 
                 {/* System Information */}
-                <div>
-                  <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    System Information
-                  </h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {cus.status_reason && (
-                      <div>
-                        <dt className="text-sm font-medium">Status Reason</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(cus.status_reason)}
-                        </dd>
-                      </div>
-                    )}
-                    {cus.createdAt && (
-                      <div>
-                        <dt className="text-sm font-medium">Created</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(cus.createdAt)}
-                        </dd>
-                      </div>
-                    )}
-                    {cus.updatedAt && (
-                      <div>
-                        <dt className="text-sm font-medium">Last Updated</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(cus.updatedAt)}
-                        </dd>
-                      </div>
-                    )}
-                    {cus.deactivatedAt && (
-                      <div>
-                        <dt className="text-sm font-medium">Deactivated At</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(cus.deactivatedAt)}
-                        </dd>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <DescriptionList
+                  title="System Information"
+                  icon={Database}
+                  columns={3}
+                >
+                  <DescriptionItem
+                    label="Status Reason"
+                    value={cus.status_reason}
+                  />
+                  <DescriptionItem
+                    label="Created"
+                    value={cus.createdAt}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="Last Updated"
+                    value={cus.updatedAt}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="Deactivated At"
+                    value={cus.deactivatedAt}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                </DescriptionList>
               </div>
             )}
 
@@ -992,163 +745,103 @@ export function CustomerDetail({
             {activeTab === "social" && (
               <div className="space-y-8">
                 {/* Social & Online */}
-                {(cus.facebook_url ||
-                  cus.twitter_handle ||
-                  cus.linkedin_url ||
-                  cus.instagram_handle) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground">
-                      Social & Online
-                    </h3>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {cus.facebook_url && (
-                        <div>
-                          <dt className="text-sm font-medium">Facebook</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <a
-                              href={cus.facebook_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              {cus.facebook_url}
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                      {cus.twitter_handle && (
-                        <div>
-                          <dt className="text-sm font-medium">Twitter/X</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {cus.twitter_handle.startsWith("@")
-                              ? cus.twitter_handle
-                              : `@${cus.twitter_handle}`}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.linkedin_url && (
-                        <div>
-                          <dt className="text-sm font-medium">LinkedIn</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            <a
-                              href={cus.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:underline"
-                            >
-                              {cus.linkedin_url}
-                            </a>
-                          </dd>
-                        </div>
-                      )}
-                      {cus.instagram_handle && (
-                        <div>
-                          <dt className="text-sm font-medium">Instagram</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {cus.instagram_handle.startsWith("@")
-                              ? cus.instagram_handle
-                              : `@${cus.instagram_handle}`}
-                          </dd>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                <DescriptionList title="Social & Online" columns={2}>
+                  <DescriptionItem
+                    label="Facebook"
+                    value={cus.facebook_url}
+                    linkType="external"
+                  />
+                  <DescriptionItem
+                    label="Twitter/X"
+                    value={cus.twitter_handle}
+                    render={(value) =>
+                      ((value as string).startsWith("@")
+                        ? value
+                        : `@${value}`) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="LinkedIn"
+                    value={cus.linkedin_url}
+                    linkType="external"
+                  />
+                  <DescriptionItem
+                    label="Instagram"
+                    value={cus.instagram_handle}
+                    render={(value) =>
+                      ((value as string).startsWith("@")
+                        ? value
+                        : `@${value}`) as React.ReactNode
+                    }
+                  />
+                </DescriptionList>
 
                 {/* Tags & Classification */}
-                {(cus.tags && cus.tags.length > 0) ||
-                cus.priority ||
-                cus.notes ||
-                cus.public_notes ||
-                editable ? (
-                  <div>
-                    <h3 className="mb-4 text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      Tags & Classification
-                    </h3>
-                    <div className="space-y-4">
-                      {/* Tags Section - Always show if tags exist or editable */}
-                      {(cus.tags && cus.tags.length > 0) || editable ? (
-                        <div>
-                          <dt className="text-sm font-medium mb-2 flex items-center gap-2">
-                            <Tag className="h-4 w-4" />
-                            Tags{" "}
-                            {cus.tags &&
-                              cus.tags.length > 0 &&
-                              `(${cus.tags.length})`}
-                          </dt>
-                          <dd className="mt-1">
-                            {cus.tags && cus.tags.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                {cus.tags.map((tag, index) => (
-                                  <Badge
-                                    key={`tag-${index}-${tag}`}
-                                    variant="secondary"
-                                    className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
-                                  >
-                                    <Tag className="h-3 w-3" />
-                                    <span>{tag}</span>
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Tag className="h-4 w-4 opacity-50" />
-                                <span>No tags assigned</span>
-                              </div>
-                            )}
-                          </dd>
-                        </div>
-                      ) : null}
-
-                      {/* Priority */}
-                      {cus.priority && (
-                        <div>
-                          <dt className="text-sm font-medium">Priority</dt>
-                          <dd className="mt-1">
-                            <span
-                              className={cn(
-                                "inline-flex items-center px-2 py-1 rounded text-xs font-medium capitalize",
-                                cus.priority.toLowerCase() === "high" &&
-                                  "bg-destructive/10 text-destructive",
-                                cus.priority.toLowerCase() === "medium" &&
-                                  "bg-yellow-500/10 text-yellow-600",
-                                cus.priority.toLowerCase() === "low" &&
-                                  "bg-muted text-muted-foreground"
-                              )}
+                <DescriptionList
+                  title="Tags & Classification"
+                  icon={Tag}
+                  columns={2}
+                >
+                  <DescriptionItem
+                    label={`Tags${cus.tags && cus.tags.length > 0 ? ` (${cus.tags.length})` : ""}`}
+                    value={
+                      cus.tags && cus.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {cus.tags.map((tag, index) => (
+                            <Badge
+                              key={`tag-${index}-${tag}`}
+                              variant="secondary"
+                              className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
                             >
-                              {cus.priority}
-                            </span>
-                          </dd>
+                              <Tag className="h-3 w-3" />
+                              <span>{tag}</span>
+                            </Badge>
+                          ))}
                         </div>
-                      )}
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Tag className="h-4 w-4 opacity-50" />
+                          <span>No tags assigned</span>
+                        </div>
+                      )
+                    }
+                    hideIfEmpty={false}
+                    icon={Tag}
+                  />
 
-                      {/* Notes */}
-                      {cus.notes && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Internal Notes
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {formatFieldValue(cus.notes)}
-                          </dd>
-                        </div>
-                      )}
-                      {cus.public_notes && (
-                        <div>
-                          <dt className="text-sm font-medium">Public Notes</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {formatFieldValue(cus.public_notes)}
-                          </dd>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No social links or tags available
-                  </div>
-                )}
+                  <DescriptionItem
+                    label="Priority"
+                    value={
+                      cus.priority ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center px-2 py-1 rounded text-xs font-medium capitalize",
+                            cus.priority.toLowerCase() === "high" &&
+                              "bg-destructive/10 text-destructive",
+                            cus.priority.toLowerCase() === "medium" &&
+                              "bg-yellow-500/10 text-yellow-600",
+                            cus.priority.toLowerCase() === "low" &&
+                              "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {cus.priority}
+                        </span>
+                      ) : undefined
+                    }
+                  />
+
+                  <DescriptionItem
+                    label="Internal Notes"
+                    value={cus.notes}
+                    valueClassName="whitespace-pre-wrap"
+                  />
+
+                  <DescriptionItem
+                    label="Public Notes"
+                    value={cus.public_notes}
+                    valueClassName="whitespace-pre-wrap"
+                  />
+                </DescriptionList>
               </div>
             )}
 
@@ -1171,7 +864,9 @@ export function CustomerDetail({
                 documents={documents}
                 isLoading={isLoadingDocuments}
                 onManageAttachments={
-                  onManageAttachments ? () => onManageAttachments(cus!) : undefined
+                  onManageAttachments
+                    ? () => onManageAttachments(cus!)
+                    : undefined
                 }
                 loading={loading}
               />
