@@ -28,7 +28,7 @@ import {
   Tag,
   File,
 } from "lucide-react";
-import { DocumentList } from "@truths/custom-ui";
+import { DocumentList, DescriptionList, DescriptionItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 import { Organizer } from "./types";
@@ -339,150 +339,84 @@ export function OrganizerDetail({
           <div className="mt-0">
             {/* Profile Tab */}
             {activeTab === "profile" && (
-              <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-3">
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Basic Information
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium">Description</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {data.description || "N/A"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium">Tags</dt>
-                        <dd className="mt-1">
-                          {(() => {
-                            console.log(
-                              "DEBUG: Profile tab tags check - data.tags:",
-                              data.tags,
-                              "length:",
-                              data.tags?.length,
-                              "condition:",
-                              data.tags && data.tags.length > 0
-                            );
-                            return data.tags && data.tags.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5">
-                                {data.tags.map((tag) => (
-                                  <Badge
-                                    key={tag}
-                                    variant="secondary"
-                                    className="text-xs px-1.5 py-0 h-5"
-                                  >
-                                    <Tag className="h-3 w-3 mr-1 opacity-70" />
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">
-                                No tags
-                              </span>
-                            );
-                          })()}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
+              <div className="space-y-8">
+                {/* Basic Information */}
+                <DescriptionList title="Basic Information" columns={3}>
+                  <DescriptionItem
+                    label="Description"
+                    value={data.description}
+                    span="md:col-span-3"
+                  />
+                  <DescriptionItem
+                    label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                    value={
+                      data.tags && data.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {data.tags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="text-xs px-1.5 py-0 h-5"
+                            >
+                              <Tag className="h-3 w-3 mr-1 opacity-70" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : null
+                    }
+                    span="md:col-span-3"
+                    hideIfEmpty={false}
+                  />
+                </DescriptionList>
 
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Contact & Location
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          Email
-                        </dt>
-                        <dd className="mt-1 text-sm text-muted-foreground pl-6">
-                          {data.email ? (
-                            <a
-                              href={`mailto:${data.email}`}
-                              className="hover:underline text-primary"
-                            >
-                              {data.email}
-                            </a>
-                          ) : (
-                            "N/A"
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          Phone
-                        </dt>
-                        <dd className="mt-1 text-sm text-muted-foreground pl-6">
-                          {data.phone ? (
-                            <a
-                              href={`tel:${data.phone}`}
-                              className="hover:underline text-primary"
-                            >
-                              {data.phone}
-                            </a>
-                          ) : (
-                            "N/A"
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          Address
-                        </dt>
-                        <dd className="mt-1 text-sm text-muted-foreground pl-6">
-                          {[data.address, data.city, data.country]
-                            .filter(Boolean)
-                            .join(", ") || "N/A"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-muted-foreground" />
-                          Website
-                        </dt>
-                        <dd className="mt-1 text-sm text-muted-foreground pl-6">
-                          {data.website ? (
-                            <a
-                              href={data.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline text-primary"
-                            >
-                              {data.website}
-                            </a>
-                          ) : (
-                            "N/A"
-                          )}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
+                {/* Contact & Location */}
+                <DescriptionList title="Contact & Location" columns={3}>
+                  <DescriptionItem
+                    label="Email"
+                    value={data.email}
+                    linkType="email"
+                    icon={Mail}
+                  />
+                  <DescriptionItem
+                    label="Phone"
+                    value={data.phone}
+                    linkType="tel"
+                    icon={Phone}
+                  />
+                  <DescriptionItem
+                    label="Website"
+                    value={data.website}
+                    linkType="external"
+                    icon={Globe}
+                  />
+                  <DescriptionItem
+                    label="Address"
+                    value={[data.address, data.city, data.country]
+                      .filter(Boolean)
+                      .join(", ")}
+                    icon={MapPin}
+                    span="md:col-span-3"
+                  />
+                </DescriptionList>
 
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Timeline
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium">Created</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(data.created_at)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium">Last Updated</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(data.updated_at)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
+                {/* Timeline */}
+                <DescriptionList title="Timeline" columns={3}>
+                  <DescriptionItem
+                    label="Created"
+                    value={data.created_at}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="Last Updated"
+                    value={data.updated_at}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                </DescriptionList>
               </div>
             )}
 
