@@ -30,6 +30,7 @@ import { Route as SettingsAccountRouteImport } from './routes/settings/account'
 import { Route as SalesTestsRouteImport } from './routes/sales/tests'
 import { Route as SalesPaymentsRouteImport } from './routes/sales/payments'
 import { Route as SalesExploreRouteImport } from './routes/sales/explore'
+import { Route as SalesEmployeesRouteImport } from './routes/sales/employees'
 import { Route as SalesCustomersRouteImport } from './routes/sales/customers'
 import { Route as SalesBookingsRouteImport } from './routes/sales/bookings'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
@@ -40,6 +41,7 @@ import { Route as TicketingOrganizersIndexRouteImport } from './routes/ticketing
 import { Route as SalesTestsIndexRouteImport } from './routes/sales/tests/index'
 import { Route as SalesPaymentsIndexRouteImport } from './routes/sales/payments/index'
 import { Route as SalesExploreIndexRouteImport } from './routes/sales/explore/index'
+import { Route as SalesEmployeesIndexRouteImport } from './routes/sales/employees/index'
 import { Route as SalesCustomersIndexRouteImport } from './routes/sales/customers/index'
 import { Route as SalesBookingsIndexRouteImport } from './routes/sales/bookings/index'
 import { Route as TicketingVenuesIdRouteImport } from './routes/ticketing/venues/$id'
@@ -53,6 +55,7 @@ import { Route as SettingsSalesCustomerTypesRouteImport } from './routes/setting
 import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settings/sales/customer-groups'
 import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
 import { Route as SalesPaymentsIdRouteImport } from './routes/sales/payments/$id'
+import { Route as SalesEmployeesIdRouteImport } from './routes/sales/employees/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
 import { Route as SalesBookingsIdRouteImport } from './routes/sales/bookings/$id'
 import { Route as TicketingEventsEventIdInventoryRouteImport } from './routes/ticketing/events/$eventId/inventory'
@@ -164,6 +167,11 @@ const SalesExploreRoute = SalesExploreRouteImport.update({
   path: '/sales/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SalesEmployeesRoute = SalesEmployeesRouteImport.update({
+  id: '/sales/employees',
+  path: '/sales/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SalesCustomersRoute = SalesCustomersRouteImport.update({
   id: '/sales/customers',
   path: '/sales/customers',
@@ -214,6 +222,11 @@ const SalesExploreIndexRoute = SalesExploreIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => SalesExploreRoute,
+} as any)
+const SalesEmployeesIndexRoute = SalesEmployeesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SalesEmployeesRoute,
 } as any)
 const SalesCustomersIndexRoute = SalesCustomersIndexRouteImport.update({
   id: '/',
@@ -284,6 +297,11 @@ const SalesPaymentsIdRoute = SalesPaymentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => SalesPaymentsRoute,
 } as any)
+const SalesEmployeesIdRoute = SalesEmployeesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => SalesEmployeesRoute,
+} as any)
 const SalesCustomersIdRoute = SalesCustomersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -317,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof authLoginRoute
   '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
+  '/sales/employees': typeof SalesEmployeesRouteWithChildren
   '/sales/explore': typeof SalesExploreRouteWithChildren
   '/sales/payments': typeof SalesPaymentsRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
@@ -335,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/users/': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -348,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/sales/employees/': typeof SalesEmployeesIndexRoute
   '/sales/explore/': typeof SalesExploreIndexRoute
   '/sales/payments/': typeof SalesPaymentsIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
@@ -376,6 +397,7 @@ export interface FileRoutesByTo {
   '/users': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -389,6 +411,7 @@ export interface FileRoutesByTo {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings': typeof SalesBookingsIndexRoute
   '/sales/customers': typeof SalesCustomersIndexRoute
+  '/sales/employees': typeof SalesEmployeesIndexRoute
   '/sales/explore': typeof SalesExploreIndexRoute
   '/sales/payments': typeof SalesPaymentsIndexRoute
   '/sales/tests': typeof SalesTestsIndexRoute
@@ -409,6 +432,7 @@ export interface FileRoutesById {
   '/(auth)/login': typeof authLoginRoute
   '/sales/bookings': typeof SalesBookingsRouteWithChildren
   '/sales/customers': typeof SalesCustomersRouteWithChildren
+  '/sales/employees': typeof SalesEmployeesRouteWithChildren
   '/sales/explore': typeof SalesExploreRouteWithChildren
   '/sales/payments': typeof SalesPaymentsRouteWithChildren
   '/sales/tests': typeof SalesTestsRouteWithChildren
@@ -427,6 +451,7 @@ export interface FileRoutesById {
   '/users/': typeof UsersIndexRoute
   '/sales/bookings/$id': typeof SalesBookingsIdRoute
   '/sales/customers/$id': typeof SalesCustomersIdRoute
+  '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
   '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
@@ -440,6 +465,7 @@ export interface FileRoutesById {
   '/ticketing/venues/$id': typeof TicketingVenuesIdRouteWithChildren
   '/sales/bookings/': typeof SalesBookingsIndexRoute
   '/sales/customers/': typeof SalesCustomersIndexRoute
+  '/sales/employees/': typeof SalesEmployeesIndexRoute
   '/sales/explore/': typeof SalesExploreIndexRoute
   '/sales/payments/': typeof SalesPaymentsIndexRoute
   '/sales/tests/': typeof SalesTestsIndexRoute
@@ -461,6 +487,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
     | '/sales/tests'
@@ -479,6 +506,7 @@ export interface FileRouteTypes {
     | '/users/'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/employees/$id'
     | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -492,6 +520,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings/'
     | '/sales/customers/'
+    | '/sales/employees/'
     | '/sales/explore/'
     | '/sales/payments/'
     | '/sales/tests/'
@@ -520,6 +549,7 @@ export interface FileRouteTypes {
     | '/users'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/employees/$id'
     | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -533,6 +563,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
     | '/sales/tests'
@@ -552,6 +583,7 @@ export interface FileRouteTypes {
     | '/(auth)/login'
     | '/sales/bookings'
     | '/sales/customers'
+    | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
     | '/sales/tests'
@@ -570,6 +602,7 @@ export interface FileRouteTypes {
     | '/users/'
     | '/sales/bookings/$id'
     | '/sales/customers/$id'
+    | '/sales/employees/$id'
     | '/sales/payments/$id'
     | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
@@ -583,6 +616,7 @@ export interface FileRouteTypes {
     | '/ticketing/venues/$id'
     | '/sales/bookings/'
     | '/sales/customers/'
+    | '/sales/employees/'
     | '/sales/explore/'
     | '/sales/payments/'
     | '/sales/tests/'
@@ -603,6 +637,7 @@ export interface RootRouteChildren {
   authLoginRoute: typeof authLoginRoute
   SalesBookingsRoute: typeof SalesBookingsRouteWithChildren
   SalesCustomersRoute: typeof SalesCustomersRouteWithChildren
+  SalesEmployeesRoute: typeof SalesEmployeesRouteWithChildren
   SalesExploreRoute: typeof SalesExploreRouteWithChildren
   SalesPaymentsRoute: typeof SalesPaymentsRouteWithChildren
   SalesTestsRoute: typeof SalesTestsRouteWithChildren
@@ -775,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sales/employees': {
+      id: '/sales/employees'
+      path: '/sales/employees'
+      fullPath: '/sales/employees'
+      preLoaderRoute: typeof SalesEmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sales/customers': {
       id: '/sales/customers'
       path: '/sales/customers'
@@ -844,6 +886,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sales/explore/'
       preLoaderRoute: typeof SalesExploreIndexRouteImport
       parentRoute: typeof SalesExploreRoute
+    }
+    '/sales/employees/': {
+      id: '/sales/employees/'
+      path: '/'
+      fullPath: '/sales/employees/'
+      preLoaderRoute: typeof SalesEmployeesIndexRouteImport
+      parentRoute: typeof SalesEmployeesRoute
     }
     '/sales/customers/': {
       id: '/sales/customers/'
@@ -936,6 +985,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SalesPaymentsIdRouteImport
       parentRoute: typeof SalesPaymentsRoute
     }
+    '/sales/employees/$id': {
+      id: '/sales/employees/$id'
+      path: '/$id'
+      fullPath: '/sales/employees/$id'
+      preLoaderRoute: typeof SalesEmployeesIdRouteImport
+      parentRoute: typeof SalesEmployeesRoute
+    }
     '/sales/customers/$id': {
       id: '/sales/customers/$id'
       path: '/$id'
@@ -1005,6 +1061,20 @@ const SalesCustomersRouteChildren: SalesCustomersRouteChildren = {
 
 const SalesCustomersRouteWithChildren = SalesCustomersRoute._addFileChildren(
   SalesCustomersRouteChildren,
+)
+
+interface SalesEmployeesRouteChildren {
+  SalesEmployeesIdRoute: typeof SalesEmployeesIdRoute
+  SalesEmployeesIndexRoute: typeof SalesEmployeesIndexRoute
+}
+
+const SalesEmployeesRouteChildren: SalesEmployeesRouteChildren = {
+  SalesEmployeesIdRoute: SalesEmployeesIdRoute,
+  SalesEmployeesIndexRoute: SalesEmployeesIndexRoute,
+}
+
+const SalesEmployeesRouteWithChildren = SalesEmployeesRoute._addFileChildren(
+  SalesEmployeesRouteChildren,
 )
 
 interface SalesExploreRouteChildren {
@@ -1109,6 +1179,7 @@ const rootRouteChildren: RootRouteChildren = {
   authLoginRoute: authLoginRoute,
   SalesBookingsRoute: SalesBookingsRouteWithChildren,
   SalesCustomersRoute: SalesCustomersRouteWithChildren,
+  SalesEmployeesRoute: SalesEmployeesRouteWithChildren,
   SalesExploreRoute: SalesExploreRouteWithChildren,
   SalesPaymentsRoute: SalesPaymentsRouteWithChildren,
   SalesTestsRoute: SalesTestsRouteWithChildren,

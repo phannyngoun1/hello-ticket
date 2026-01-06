@@ -24,3 +24,5 @@ export * from './bookings';
 export * from './payments';
 
 export * from './explore';
+
+export * from './employees';
