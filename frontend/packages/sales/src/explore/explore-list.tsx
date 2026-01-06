@@ -23,6 +23,12 @@ import { ShowFilters, type DateFilter } from "./show-filters";
 import { EventFilters } from "./event-filters";
 import { ExploreCalendar } from "./explore-calendar";
 import { DayEventsSheet } from "./day-events-sheet";
+import { api } from "@truths/api";
+import { toast } from "@truths/ui";
+import { CreateBookingDialog } from "../bookings/create-booking-dialog";
+import { BookingService } from "../bookings/booking-service";
+import { useCreateBooking } from "../bookings/use-bookings";
+import type { CreateBookingInput } from "../bookings/types";
 
 export function ExploreList() {
   const navigate = useNavigate();
@@ -57,6 +63,22 @@ export function ExploreList() {
   const [selectedDayEvents, setSelectedDayEvents] = useState<Event[]>([]);
   const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
   const [dayEventsSheetOpen, setDayEventsSheetOpen] = useState(false);
+
+  // Booking state
+  const [createBookingOpen, setCreateBookingOpen] = useState(false);
+  const [bookingInitialShowId, setBookingInitialShowId] = useState<string | null>(null);
+  const [bookingInitialEventId, setBookingInitialEventId] = useState<string | null>(null);
+
+  // Service for booking creation
+  const bookingService = useMemo(
+    () =>
+      new BookingService({
+        apiClient: api,
+        endpoints: { bookings: "/api/v1/sales/bookings" },
+      }),
+    []
+  );
+  const createBookingMutation = useCreateBooking(bookingService);
 
   const eventService = useEventService();
   const showService = useShowService();
@@ -234,12 +256,7 @@ export function ExploreList() {
     });
   }, [navigate]);
 
-  const handleBookNow = useCallback((event: Event) => {
-    navigate({
-      to: "/ticketing/events/$eventId/inventory",
-      params: { eventId: event.id },
-    });
-  }, [navigate]);
+
 
   const clearShowFilters = useCallback(() => {
     setShowSearch("");
@@ -349,6 +366,27 @@ export function ExploreList() {
     setSelectedDayEvents(events);
     setDayEventsSheetOpen(true);
   }, []);
+
+  const handleBookNow = useCallback((event: Event) => {
+    setBookingInitialShowId(event.show?.id || (event as any).show_id || null);
+    setBookingInitialEventId(event.id);
+    setCreateBookingOpen(true);
+  }, []);
+
+  const handleCreateBookingSubmit = useCallback(async (input: CreateBookingInput) => {
+    try {
+      await createBookingMutation.mutateAsync(input);
+      toast({ title: "Success", description: "Booking created successfully" });
+      setCreateBookingOpen(false);
+    } catch (err) {
+       toast({
+          title: "Error",
+          description: err instanceof Error ? err.message : "Failed to create booking",
+          variant: "destructive",
+        });
+        throw err;
+    }
+  }, [createBookingMutation]);
 
 
   return (
@@ -471,7 +509,7 @@ export function ExploreList() {
       ) : layoutMode === "calendar" ? (
         <ExploreCalendar
           events={filteredEvents}
-          onEventClick={handleEventClick}
+          onEventClick={handleBookNow}
           onDateClick={handleDateClick}
         />
       ) : (
@@ -503,6 +541,14 @@ export function ExploreList() {
         events={selectedDayEvents}
         onEventClick={handleEventClick}
         onBookNow={handleBookNow}
+      />
+
+      <CreateBookingDialog
+        open={createBookingOpen}
+        onOpenChange={setCreateBookingOpen}
+        onSubmit={handleCreateBookingSubmit}
+        initialShowId={bookingInitialShowId}
+        initialEventId={bookingInitialEventId}
       />
     </div>
   );

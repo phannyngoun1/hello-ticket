@@ -70,6 +70,8 @@ export interface CreateBookingDialogProps {
   onSubmit: (data: CreateBookingInput) => Promise<void>;
   title?: string;
   maxWidth?: string;
+  initialShowId?: string | null;
+  initialEventId?: string | null;
 }
 
 export function CreateBookingDialog({
@@ -78,6 +80,8 @@ export function CreateBookingDialog({
   onSubmit,
   title = "Create Booking",
   maxWidth = "95vw",
+  initialShowId,
+  initialEventId,
 }: CreateBookingDialogProps) {
   const density = useDensityStyles();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,8 +90,8 @@ export function CreateBookingDialog({
     useState<CreateBookingTransactionData | null>(null);
 
   // Show and Event selection
-  const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(initialShowId || null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEventId || null);
 
   // Popover open states
   const [showPopoverOpen, setShowPopoverOpen] = useState(false);
@@ -268,7 +272,7 @@ export function CreateBookingDialog({
     }
   }, [selectedEventId]);
 
-  // Reset form when dialog closes
+  // Reset or Initialize form when dialog open state changes
   useEffect(() => {
     if (!open) {
       setSelectedShowId(null);
@@ -281,8 +285,12 @@ export function CreateBookingDialog({
       setShowConfirmDialog(false);
       setCustomerSearchQuery("");
       setCustomerPopoverOpen(false);
+    } else {
+      // When opening, initialize with props if provided
+      if (initialShowId) setSelectedShowId(initialShowId);
+      if (initialEventId) setSelectedEventId(initialEventId);
     }
-  }, [open]);
+  }, [open, initialShowId, initialEventId]);
 
   // Handle seat selection from visualization
   const handleSeatClick = useCallback(
