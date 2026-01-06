@@ -12,18 +12,6 @@
     ],
     "children": [
       {
-        "label": "Dashboard",
-        "path": "/dashboard",
-        "icon": "LayoutDashboard",
-        "description": "View comprehensive analytics and insights.",
-        "keywords": [
-          "dashboard",
-          "analytics",
-          "stats",
-          "statistics"
-        ]
-      },
-      {
         "label": "Explore",
         "path": "/sales/explore",
         "icon": "Calendar",
@@ -73,12 +61,6 @@
           "cus",
           "customers"
         ]
-      },
-      {
-        "label": "Tests",
-        "path": "/sales/tests",
-        "icon": "Test",
-        "description": "Manage tests and related data."
       }
     ]
   },

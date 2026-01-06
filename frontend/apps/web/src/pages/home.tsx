@@ -267,11 +267,16 @@ export function HomePage() {
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t("pages.home.title")}</h1>
-          <p className="text-muted-foreground">{t("pages.home.subtitle")}</p>
+          <h3 className="text-2xl font-bold">{t("pages.home.title")}</h3>
         </div>
 
         <div className="flex items-center gap-2">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="operations">Operations</TabsTrigger>
+          </TabsList>
+
           <Select
             value={dateRange}
             onValueChange={setDateRange}
@@ -301,12 +306,6 @@ export function HomePage() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-8">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="operations">Operations</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="overview" className="space-y-8">
           {/* Key Metrics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
