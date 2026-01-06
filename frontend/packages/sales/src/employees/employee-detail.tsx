@@ -252,74 +252,215 @@ export function EmployeeDetail({
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
+                  {/* Basic Information */}
                   <div>
                     <h3 className="mb-4 text-sm font-medium text-muted-foreground">
                       Basic Information
                     </h3>
                     <dl className="space-y-3">
-                      
-                      
-                      
-                      
-                      
-                      <div>
-                        <dt className="text-sm font-medium">Code</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.code)}
-                        </dd>
-                      </div>
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
-                      
                       <div>
                         <dt className="text-sm font-medium">Name</dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
                           {formatFieldValue(data.name)}
                         </dd>
                       </div>
-                      
-                      
-                      
-                      
-                      
-                      
-                      
+                      <div>
+                        <dt className="text-sm font-medium">Code</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {formatFieldValue(data.code)}
+                        </dd>
+                      </div>
+                      {data.work_email && (
+                        <div>
+                          <dt className="text-sm font-medium">Work Email</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.work_email)}
+                          </dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
 
-                  
-
+                  {/* Organization */}
                   <div>
                     <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Timeline
+                      Organization
                     </h3>
                     <dl className="space-y-3">
-                      {data.created_at && (
+                      {data.job_title && (
                         <div>
-                          <dt className="text-sm font-medium">Created</dt>
+                          <dt className="text-sm font-medium">Job Title</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.created_at)}
+                            {formatFieldValue(data.job_title)}
                           </dd>
                         </div>
                       )}
-                      {data.updated_at && (
+                      {data.department && (
                         <div>
-                          <dt className="text-sm font-medium">Last Updated</dt>
+                          <dt className="text-sm font-medium">Department</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.updated_at)}
+                            {formatFieldValue(data.department)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.employment_type && (
+                        <div>
+                          <dt className="text-sm font-medium">Employment Type</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.employment_type)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.hire_date && (
+                        <div>
+                          <dt className="text-sm font-medium">Hire Date</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.hire_date)}
                           </dd>
                         </div>
                       )}
                     </dl>
                   </div>
+
+                  {/* Contact & Location */}
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                      Contact & Location
+                    </h3>
+                    <dl className="space-y-3">
+                      {data.work_phone && (
+                        <div>
+                          <dt className="text-sm font-medium">Work Phone</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.work_phone)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.mobile_phone && (
+                        <div>
+                          <dt className="text-sm font-medium">Mobile Phone</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.mobile_phone)}
+                          </dd>
+                        </div>
+                      )}
+                      {data.office_location && (
+                        <div>
+                          <dt className="text-sm font-medium">Office Location</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.office_location)}
+                          </dd>
+                        </div>
+                      )}
+                      <div>
+                        <dt className="text-sm font-medium">Timezone</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {data.timezone || 'UTC'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+
+                {/* Sales & Operations */}
+                {(data.skills || data.assigned_territories || data.commission_tier) && (
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                      Sales & Operations
+                    </h3>
+                    <dl className="grid gap-4 md:grid-cols-3">
+                      {data.skills && data.skills.length > 0 && (
+                        <div>
+                          <dt className="text-sm font-medium">Skills</dt>
+                          <dd className="mt-2 flex flex-wrap gap-1">
+                            {data.skills.map((skill, i) => (
+                              <span key={i} className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                                {skill}
+                              </span>
+                            ))}
+                          </dd>
+                        </div>
+                      )}
+                      {data.assigned_territories && data.assigned_territories.length > 0 && (
+                        <div>
+                          <dt className="text-sm font-medium">Territories</dt>
+                          <dd className="mt-2 flex flex-wrap gap-1">
+                            {data.assigned_territories.map((territory, i) => (
+                              <span key={i} className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground">
+                                {territory}
+                              </span>
+                            ))}
+                          </dd>
+                        </div>
+                      )}
+                      {data.commission_tier && (
+                        <div>
+                          <dt className="text-sm font-medium">Commission Tier</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.commission_tier)}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                )}
+
+                {/* Emergency Contact */}
+                {(data.emergency_contact_name || data.emergency_contact_phone || data.birthday) && (
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                     HR / Personal
+                    </h3>
+                    <dl className="grid gap-4 md:grid-cols-3">
+                      {data.emergency_contact_name && (
+                        <div>
+                          <dt className="text-sm font-medium">Emergency Contact</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.emergency_contact_name)}
+                            {data.emergency_contact_phone && (
+                              <> ({formatFieldValue(data.emergency_contact_phone)})</>
+                            )}
+                            {data.emergency_contact_relationship && (
+                              <div className="text-xs mt-1">{data.emergency_contact_relationship}</div>
+                            )}
+                          </dd>
+                        </div>
+                      )}
+                      {data.birthday && (
+                        <div>
+                          <dt className="text-sm font-medium">Birthday</dt>
+                          <dd className="mt-1 text-sm text-muted-foreground">
+                            {formatFieldValue(data.birthday)}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <div>
+                  <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                    Timeline
+                  </h3>
+                  <dl className="grid gap-4 md:grid-cols-3">
+                    {data.created_at && (
+                      <div>
+                        <dt className="text-sm font-medium">Created</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(data.created_at)}
+                        </dd>
+                      </div>
+                    )}
+                    {data.updated_at && (
+                      <div>
+                        <dt className="text-sm font-medium">Last Updated</dt>
+                        <dd className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(data.updated_at)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
                 </div>
               </div>
             )}

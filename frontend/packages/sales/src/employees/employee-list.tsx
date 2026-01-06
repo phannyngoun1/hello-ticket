@@ -94,7 +94,58 @@ export function EmployeeList({
         );
       },
     }),
-    
+
+    createTextColumn<Employee>({
+      accessorKey: "job_title",
+      header: "Job Title",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Employee>({
+      accessorKey: "department",
+      header: "Department",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Employee>({
+      accessorKey: "work_email",
+      header: "Email",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Employee>({
+      accessorKey: "employment_type",
+      header: "Type",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
 
 
     createActionsColumn<Employee>({

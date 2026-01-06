@@ -1,8 +1,8 @@
 """Pydantic schemas for Sales APIs"""
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 
 class EmployeeCreateRequest(BaseModel):
@@ -10,6 +10,35 @@ class EmployeeCreateRequest(BaseModel):
 
     code: Optional[str] = Field(None, description="Employee business code (auto-generated)")
     name: str = Field(..., description="Display name for the employee")
+    
+    # System Link
+    user_id: Optional[str] = Field(None, description="Link to Platform User ID")
+    work_email: Optional[EmailStr] = Field(None, description="Official business email")
+    
+    # Organizational Structure
+    job_title: Optional[str] = Field(None, description="Position title")
+    department: Optional[str] = Field(None, description="Department name")
+    manager_id: Optional[str] = Field(None, description="Manager employee ID")
+    employment_type: Optional[str] = Field(None, description="Full-time, Part-time, Contractor, etc.")
+    hire_date: Optional[date] = Field(None, description="Employment start date")
+    
+    # Contact & Location
+    work_phone: Optional[str] = Field(None, description="Office phone/extension")
+    mobile_phone: Optional[str] = Field(None, description="Mobile contact")
+    office_location: Optional[str] = Field(None, description="Physical office location")
+    timezone: Optional[str] = Field("UTC", description="Employee timezone")
+    
+    # Sales & Operational
+    skills: Optional[List[str]] = Field(None, description="Array of skill tags")
+    assigned_territories: Optional[List[str]] = Field(None, description="Array of territory codes")
+    quota_config: Optional[Dict[str, Any]] = Field(None, description="Quota configuration object")
+    commission_tier: Optional[str] = Field(None, description="Commission plan identifier")
+    
+    # Personal (HR)
+    birthday: Optional[date] = Field(None, description="Birthday for celebrations")
+    emergency_contact_name: Optional[str] = Field(None, description="Emergency contact name")
+    emergency_contact_phone: Optional[str] = Field(None, description="Emergency contact phone")
+    emergency_contact_relationship: Optional[str] = Field(None, description="Emergency contact relationship")
 
 
 class EmployeeUpdateRequest(BaseModel):
@@ -17,6 +46,35 @@ class EmployeeUpdateRequest(BaseModel):
 
     code: Optional[str] = Field(None, description="Employee business code")
     name: Optional[str] = Field(None, description="Display name for the employee")
+    
+    # System Link
+    user_id: Optional[str] = Field(None, description="Link to Platform User ID")
+    work_email: Optional[EmailStr] = Field(None, description="Official business email")
+    
+    # Organizational Structure
+    job_title: Optional[str] = Field(None, description="Position title")
+    department: Optional[str] = Field(None, description="Department name")
+    manager_id: Optional[str] = Field(None, description="Manager employee ID")
+    employment_type: Optional[str] = Field(None, description="Full-time, Part-time, Contractor, etc.")
+    hire_date: Optional[date] = Field(None, description="Employment start date")
+    
+    # Contact & Location
+    work_phone: Optional[str] = Field(None, description="Office phone/extension")
+    mobile_phone: Optional[str] = Field(None, description="Mobile contact")
+    office_location: Optional[str] = Field(None, description="Physical office location")
+    timezone: Optional[str] = Field(None, description="Employee timezone")
+    
+    # Sales & Operational
+    skills: Optional[List[str]] = Field(None, description="Array of skill tags")
+    assigned_territories: Optional[List[str]] = Field(None, description="Array of territory codes")
+    quota_config: Optional[Dict[str, Any]] = Field(None, description="Quota configuration object")
+    commission_tier: Optional[str] = Field(None, description="Commission plan identifier")
+    
+    # Personal (HR)
+    birthday: Optional[date] = Field(None, description="Birthday for celebrations")
+    emergency_contact_name: Optional[str] = Field(None, description="Emergency contact name")
+    emergency_contact_phone: Optional[str] = Field(None, description="Emergency contact phone")
+    emergency_contact_relationship: Optional[str] = Field(None, description="Emergency contact relationship")
 
 
 class EmployeeResponse(BaseModel):
@@ -26,6 +84,35 @@ class EmployeeResponse(BaseModel):
     tenant_id: str
     code: str
     name: str
+    
+    # System Link
+    user_id: Optional[str]
+    work_email: Optional[str]
+    
+    # Organizational Structure
+    job_title: Optional[str]
+    department: Optional[str]
+    manager_id: Optional[str]
+    employment_type: Optional[str]
+    hire_date: Optional[date]
+    
+    # Contact & Location
+    work_phone: Optional[str]
+    mobile_phone: Optional[str]
+    office_location: Optional[str]
+    timezone: str
+    
+    # Sales & Operational
+    skills: Optional[List[str]]
+    assigned_territories: Optional[List[str]]
+    quota_config: Optional[Dict[str, Any]]
+    commission_tier: Optional[str]
+    
+    # Personal (HR)
+    birthday: Optional[date]
+    emergency_contact_name: Optional[str]
+    emergency_contact_phone: Optional[str]
+    emergency_contact_relationship: Optional[str]
 
     is_active: bool
     created_at: datetime
@@ -41,4 +128,5 @@ class EmployeeListResponse(BaseModel):
     limit: int
     total: int
     has_next: bool
+
 

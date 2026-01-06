@@ -10,15 +10,38 @@ import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 interface EmployeeDTO {
   id: string;
   tenant_id: string;
-  
-  
   code: string;
-  
-  
-  
   name: string;
-  
-  
+
+  // System Link
+  user_id?: string | null;
+  work_email?: string | null;
+
+  // Organizational Structure
+  job_title?: string | null;
+  department?: string | null;
+  manager_id?: string | null;
+  employment_type?: string | null;
+  hire_date?: string | null;
+
+  // Contact & Location
+  work_phone?: string | null;
+  mobile_phone?: string | null;
+  office_location?: string | null;
+  timezone: string;
+
+  // Sales & Operational
+  skills?: string[] | null;
+  assigned_territories?: string[] | null;
+  quota_config?: Record<string, any> | null;
+  commission_tier?: string | null;
+
+  // Personal (HR)
+  birthday?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_relationship?: string | null;
+
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -29,17 +52,41 @@ interface EmployeeDTO {
 function transformEmployee(dto: EmployeeDTO): Employee {
   return {
     id: dto.id,
-    
-    
     code: dto.code,
-    
-    
-    
     name: dto.name,
-    
-    
+
+    // System Link
+    user_id: dto.user_id ?? undefined,
+    work_email: dto.work_email ?? undefined,
+
+    // Organizational Structure
+    job_title: dto.job_title ?? undefined,
+    department: dto.department ?? undefined,
+    manager_id: dto.manager_id ?? undefined,
+    employment_type: dto.employment_type ?? undefined,
+    hire_date: dto.hire_date ?? undefined,
+
+    // Contact & Location
+    work_phone: dto.work_phone ?? undefined,
+    mobile_phone: dto.mobile_phone ?? undefined,
+    office_location: dto.office_location ?? undefined,
+    timezone: dto.timezone || 'UTC',
+
+    // Sales & Operational
+    skills: dto.skills ?? undefined,
+    assigned_territories: dto.assigned_territories ?? undefined,
+    quota_config: dto.quota_config ?? undefined,
+    commission_tier: dto.commission_tier ?? undefined,
+
+    // Personal (HR)
+    birthday: dto.birthday ?? undefined,
+    emergency_contact_name: dto.emergency_contact_name ?? undefined,
+    emergency_contact_phone: dto.emergency_contact_phone ?? undefined,
+    emergency_contact_relationship: dto.emergency_contact_relationship ?? undefined,
+
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
+    deactivated_at: dto.deactivated_at ? new Date(dto.deactivated_at) : undefined,
   };
 }
 
