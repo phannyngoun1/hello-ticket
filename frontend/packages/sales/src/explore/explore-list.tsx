@@ -392,75 +392,72 @@ export function ExploreList() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Explore</h1>
-          <p className="text-muted-foreground mt-1">
-            Browse and book available and upcoming shows
-          </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 max-w-3xl">
+          {layoutMode === "show" ? (
+            <ShowFilters
+              search={showSearch}
+              onSearchChange={setShowSearch}
+              statusFilter={showStatusFilter}
+              onStatusFilterChange={setShowStatusFilter}
+              dateFilter={showDateFilter}
+              onDateFilterChange={setShowDateFilter}
+              showPastEvents={showPastEvents}
+              onShowPastEventsChange={setShowPastEvents}
+              onClearFilters={clearShowFilters}
+            />
+          ) : layoutMode === "event" ? (
+            <EventFilters
+              search={eventSearch}
+              onSearchChange={setEventSearch}
+              statusFilter={eventStatusFilter}
+              onStatusFilterChange={setEventStatusFilter}
+              dateFilter={eventDateFilter}
+              onDateFilterChange={setEventDateFilter}
+              showPastEvents={eventPastEvents}
+              onShowPastEventsChange={setEventPastEvents}
+              onClearFilters={clearEventFilters}
+            />
+          ) : (
+             <h1 className="text-2xl font-bold tracking-tight h-10 flex items-center">Explore Calendar</h1>
+          )}
         </div>
         {/* Layout Toggle */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Layout:</span>
+        <div className="flex items-center gap-2 pt-0.5">
           <div className="flex border rounded-md">
             <Button
               variant={layoutMode === "show" ? "default" : "ghost"}
-              size="sm"
+              size="icon"
               onClick={() => setLayoutMode("show")}
-              className="rounded-none rounded-l-md border-r"
+              className="rounded-none rounded-l-md border-r h-10 w-10 px-0"
+              title="Show Layout"
             >
-              <Grid3x3 className="h-4 w-4 mr-2" />
-              Show Based
+              <Grid3x3 className="h-4 w-4" />
             </Button>
             <Button
               variant={layoutMode === "event" ? "default" : "ghost"}
-              size="sm"
+              size="icon"
               onClick={() => setLayoutMode("event")}
-              className="rounded-none border-r"
+              className="rounded-none border-r h-10 w-10 px-0"
+              title="Event Layout"
             >
-              <List className="h-4 w-4 mr-2" />
-              Event Based
+              <List className="h-4 w-4" />
             </Button>
             <Button
               variant={layoutMode === "calendar" ? "default" : "ghost"}
-              size="sm"
+              size="icon"
               onClick={() => setLayoutMode("calendar")}
-              className="rounded-none rounded-r-md"
+              className="rounded-none rounded-r-md h-10 w-10 px-0"
+              title="Calendar Layout"
             >
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendar
+              <Calendar className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
 
 
-      {/* Mode-Specific Filters */}
-      {layoutMode === "show" ? (
-        <ShowFilters
-          search={showSearch}
-          onSearchChange={setShowSearch}
-          statusFilter={showStatusFilter}
-          onStatusFilterChange={setShowStatusFilter}
-          dateFilter={showDateFilter}
-          onDateFilterChange={setShowDateFilter}
-          showPastEvents={showPastEvents}
-          onShowPastEventsChange={setShowPastEvents}
-          onClearFilters={clearShowFilters}
-        />
-      ) : layoutMode === "event" ? (
-        <EventFilters
-          search={eventSearch}
-          onSearchChange={setEventSearch}
-          statusFilter={eventStatusFilter}
-          onStatusFilterChange={setEventStatusFilter}
-          dateFilter={eventDateFilter}
-          onDateFilterChange={setEventDateFilter}
-          showPastEvents={eventPastEvents}
-          onShowPastEventsChange={setEventPastEvents}
-          onClearFilters={clearEventFilters}
-        />
-      ) : null}
+
 
       {/* Results Count */}
       {layoutMode !== "calendar" && (
