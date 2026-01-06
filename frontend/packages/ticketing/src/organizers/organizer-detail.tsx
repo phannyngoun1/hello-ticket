@@ -14,12 +14,6 @@ import {
   DropdownMenuTrigger,
   Tabs,
   Badge,
-  Item,
-  ItemMedia,
-  ItemContent,
-  ItemTitle,
-  ItemDescription,
-  ItemActions,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -33,10 +27,8 @@ import {
   Globe,
   Tag,
   File,
-  Download,
-  Image as ImageIcon,
-  Eye,
 } from "lucide-react";
+import { DocumentList } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 import { Organizer } from "./types";
@@ -496,88 +488,15 @@ export function OrganizerDetail({
 
             {/* Documents Tab */}
             {activeTab === "documents" && (
-              <div className="space-y-6">
-                {loadingDocuments ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="text-muted-foreground">
-                      Loading documents...
-                    </div>
-                  </div>
-                ) : documents && documents.length > 0 ? (
-                  <div className="grid gap-2">
-                    {documents.map((doc) => {
-                      const getFileIcon = (mimeType: string) => {
-                        if (mimeType.startsWith("image/")) {
-                          return <ImageIcon className="h-5 w-5" />;
-                        }
-                        return <File className="h-5 w-5" />;
-                      };
-
-                      const formatFileSize = (bytes: number): string => {
-                        if (bytes < 1024) return `${bytes} B`;
-                        if (bytes < 1024 * 1024)
-                          return `${(bytes / 1024).toFixed(1)} KB`;
-                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-                      };
-
-                      return (
-                        <Item key={doc.id} className="p-3">
-                          <ItemMedia className="text-muted-foreground">
-                            {getFileIcon(doc.mime_type)}
-                          </ItemMedia>
-                          <ItemContent>
-                            <ItemTitle className="text-sm font-medium">
-                              {doc.original_name}
-                            </ItemTitle>
-                            <ItemDescription className="text-xs">
-                              {formatFileSize(doc.size)} • {doc.mime_type} •{" "}
-                              {new Date(doc.uploaded_at).toLocaleDateString()}
-                            </ItemDescription>
-                          </ItemContent>
-                          <ItemActions>
-                            {doc.mime_type.startsWith("image/") && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => window.open(doc.url, "_blank")}
-                                title="View image"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => window.open(doc.url, "_blank")}
-                              title="Download"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </ItemActions>
-                        </Item>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
-                    <File className="h-10 w-10 text-muted-foreground/50 mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground">
-                      No documents attached
-                    </p>
-                    {editable && onManageAttachments && (
-                      <Button
-                        variant="link"
-                        onClick={() => onManageAttachments(data)}
-                        className="mt-1"
-                      >
-                        Upload a document
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
+              <DocumentList
+                documents={documents}
+                isLoading={loadingDocuments}
+                onManageAttachments={
+                  editable && onManageAttachments
+                    ? () => onManageAttachments(data)
+                    : undefined
+                }
+              />
             )}
 
             {/* Metadata Tab */}
