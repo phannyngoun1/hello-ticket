@@ -27,7 +27,6 @@ import {
   ConfirmationDialog,
   DataList,
   type DataListItem,
-  type StatConfig,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
@@ -73,9 +72,9 @@ export function EventList({
   onStatusChange,
   onSearch,
   customActions,
-  showShowNameInTitle = false,    
+  showShowNameInTitle = false,
   isDeleting = false,
-}: EventListProps) {    
+}: EventListProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -114,10 +113,6 @@ export function EventList({
         hour12: true,
       }),
     };
-  };
-
-  const formatLocation = (city?: string, state?: string, country?: string) => {
-    return [city, state, country].filter(Boolean).join(", ") || "Location TBD";
   };
 
   const formatDuration = (minutes: number) => {
@@ -162,18 +157,6 @@ export function EventList({
       event,
     }));
   }, [events]);
-
-  // Stats configuration
-  const stats: StatConfig<EventListItem>[] = useMemo(
-    () => [
-      {
-        key: "duration",
-        label: "Duration",
-        value: (item) => formatDuration(item.event.duration_minutes),
-      },
-    ],
-    []
-  );
 
   const handleItemClick = (item: EventListItem) => {
     if (onEventClick) {
