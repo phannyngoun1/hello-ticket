@@ -16,7 +16,13 @@ import {
   TrendingUp,
   MapPin,
   Building2,
+  ShoppingCart,
+  Ticket,
+  Search,
+  Calendar,
+  Building,
   type LucideIcon,
+  DollarSign,
 } from "lucide-react";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -37,6 +43,13 @@ const ICONS: Record<string, LucideIcon> = {
   TrendingUp,
   MapPin,
   Building2,
+  ShoppingCart,
+  Ticket,
+  Search,
+  Calendar,
+  Building,
+  DollarSign
+
 };
 
 export function resolveIcon(name?: string): LucideIcon | undefined {

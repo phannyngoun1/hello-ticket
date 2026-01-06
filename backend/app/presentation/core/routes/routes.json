@@ -2,7 +2,7 @@
   {
     "label": "Sales",
     "path": "/sales",
-    "icon": "TrendingUp",
+    "icon": "ShoppingCart",
     "shortcut": "mod+S",
     "description": "Analyze sales trends, revenue, and customer behavior.",
     "keywords": [
@@ -14,7 +14,7 @@
       {
         "label": "Explore",
         "path": "/sales/explore",
-        "icon": "Calendar",
+        "icon": "Search",
         "description": "Browse and book available and upcoming shows.",
         "keywords": [
           "event",
@@ -29,7 +29,7 @@
       {
         "label": "Bookings",
         "path": "/sales/bookings",
-        "icon": "Calendar",
+        "icon": "Ticket",
         "description": "Manage bookings and related data.",
         "keywords": [
           "booking",

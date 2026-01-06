@@ -31,8 +31,25 @@ export interface ChartProps {
  * Simple Bar Chart Component
  */
 export function BarChart({ data, title, height = 200, className = '' }: ChartProps) {
-  const maxValue = Math.max(...data.map(d => d.value));
+  const maxValue = data.length > 0 ? Math.max(...data.map(d => d.value)) : 0;
   const chartHeight = height - 40; // Account for padding
+
+  if (data.length === 0) {
+    return (
+      <Card className={className}>
+        {title && (
+          <CardHeader>
+            <CardTitle className="text-lg">{title}</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent>
+          <div style={{ height }} className="w-full flex items-center justify-center text-muted-foreground">
+            No data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={className}>
@@ -45,7 +62,7 @@ export function BarChart({ data, title, height = 200, className = '' }: ChartPro
         <div style={{ height }} className="w-full">
           <svg width="100%" height={chartHeight} className="overflow-visible">
             {data.map((item, index) => {
-              const barHeight = (item.value / maxValue) * (chartHeight - 20);
+              const barHeight = maxValue > 0 ? (item.value / maxValue) * (chartHeight - 20) : 0;
               const barWidth = Math.max(20, (100 / data.length) - 2);
               const x = (index * 100) / data.length;
               const y = chartHeight - barHeight - 20;
@@ -109,17 +126,40 @@ export function LineChart({
   className = ''
 }: LineChartProps) {
   const values = data.map(d => d.value);
-  const maxValue = Math.max(...values);
-  const minValue = Math.min(...values);
+  const maxValue = values.length > 0 ? Math.max(...values) : 0;
+  const minValue = values.length > 0 ? Math.min(...values) : 0;
   const chartHeight = height - 40;
   const chartWidth = 100;
+  
+  if (data.length === 0) {
+    return (
+        <Card className={className}>
+            {title && (
+                <CardHeader>
+                    <CardTitle className="text-lg">{title}</CardTitle>
+                </CardHeader>
+            )}
+            <CardContent>
+                <div style={{ height }} className="w-full flex items-center justify-center text-muted-foreground">
+                    No data available
+                </div>
+            </CardContent>
+        </Card>
+    );
+  }
 
+  // Handle single data point or flat line
+  const valueRange = maxValue - minValue;
+  const effectiveRange = valueRange === 0 ? 1 : valueRange; // Prevent division by zero
+  
   // Create path for the line
-  const pathData = data.map((point, index) => {
+  const pathData = data.length > 1 ? data.map((point, index) => {
     const x = (index / (data.length - 1)) * chartWidth;
-    const y = chartHeight - ((point.value - minValue) / (maxValue - minValue)) * (chartHeight - 20) - 10;
+    // If range is 0 (all values same), center the line vertically
+    const normalizedValue = valueRange === 0 ? 0.5 : (point.value - minValue) / effectiveRange;
+    const y = chartHeight - (normalizedValue * (chartHeight - 20)) - 10;
     return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-  }).join(' ');
+  }).join(' ') : `M 0 ${chartHeight / 2} L 100 ${chartHeight / 2}`; // Default line if 1 point
 
   return (
     <Card className={className}>
@@ -151,25 +191,28 @@ export function LineChart({
                     textAnchor="end"
                     className="text-xs fill-muted-foreground"
                   >
-                    {Math.round(minValue + (maxValue - minValue) * ratio)}
+                    {Math.round(minValue + (effectiveRange * ratio))}
                   </text>
                 </g>
               );
             })}
 
             {/* Line */}
-            <path
-              d={pathData}
-              fill="none"
-              stroke={color}
-              strokeWidth="2"
-              className="transition-all"
-            />
+            {data.length > 0 && (
+                <path
+                d={pathData}
+                fill="none"
+                stroke={color}
+                strokeWidth="2"
+                className="transition-all"
+                />
+            )}
 
             {/* Data points */}
             {data.map((point, index) => {
-              const x = (index / (data.length - 1)) * chartWidth;
-              const y = chartHeight - ((point.value - minValue) / (maxValue - minValue)) * (chartHeight - 20) - 10;
+              const x = data.length > 1 ? (index / (data.length - 1)) * chartWidth : 50; // Center if single point
+              const normalizedValue = valueRange === 0 ? 0.5 : (point.value - minValue) / effectiveRange;
+              const y = chartHeight - (normalizedValue * (chartHeight - 20)) - 10;
 
               return (
                 <circle
@@ -179,13 +222,16 @@ export function LineChart({
                   r="4"
                   fill={color}
                   className="hover:r-6 transition-all cursor-pointer"
-                />
+                >
+                    <title>{point.label}: {point.value}</title>
+                </circle>
               );
             })}
 
             {/* X-axis labels */}
-            {data.filter((_, index) => index % Math.ceil(data.length / 5) === 0).map((point, index) => {
-              const x = (index * Math.ceil(data.length / 5) / (data.length - 1)) * chartWidth;
+            {data.filter((_, index) => index % Math.ceil(Math.max(1, data.length / 5)) === 0).map((point, index) => {
+              const realIndex = data.indexOf(point);
+              const x = data.length > 1 ? (realIndex / (data.length - 1)) * chartWidth : 50;
               return (
                 <text
                   key={index}
