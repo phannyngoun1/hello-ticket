@@ -11,8 +11,9 @@ import {
   FileText,
   Package,
   type LucideIcon,
-  Menu,
+  ChevronDown,
   GripVertical,
+  Menu
 } from "lucide-react";
 import {
   Button,
@@ -25,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@truths/ui";
+import { cn } from "@truths/ui/lib/utils";
 
 const TABS_STORAGE_KEY = "app_tabs";
 const ENABLE_TABS_STORAGE_KEY = "enable_tabs";
@@ -45,14 +47,15 @@ interface TabManagerProps {
 export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const activeTabRef = useRef<HTMLDivElement>(null);
+  
   const [tabs, setTabs] = useState<AppTab[]>(() => {
     // Load saved tabs from localStorage
     const saved = storage.get<AppTab[]>(TABS_STORAGE_KEY);
     return saved || [];
   });
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [maxVisibleTabs, setMaxVisibleTabs] = useState(10);
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const [hoveredGripTabId, setHoveredGripTabId] = useState<string | null>(null);
@@ -129,6 +132,21 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       }
     });
   }, [location.pathname, location.search, onTabChange]);
+
+  // Scroll active tab into view when it changes
+  useEffect(() => {
+    // Small timeout to ensure DOM is ready and layout is stable
+    const timer = setTimeout(() => {
+      if (activeTabRef.current) {
+        activeTabRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+      }
+    }, 10);
+    return () => clearTimeout(timer);
+  }, [activeTabId, tabs]);
 
   // Listen for dynamic tab title updates from pages (e.g., after data load)
   useEffect(() => {
@@ -360,50 +378,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     };
   }, []);
 
-  // Calculate how many tabs can fit dynamically
-  useEffect(() => {
-    if (!tabsContainerRef.current) return;
-
-    const calculateMaxTabs = () => {
-      if (!tabsContainerRef.current) return;
-
-      if (inline) {
-        // For inline mode, calculate based on actual container width
-        const containerWidth = tabsContainerRef.current.offsetWidth;
-        const menuButtonWidth = 50; // Menu button + gap
-        const avgTabWidth = 90; // Balanced tab width for inline
-
-        // Calculate how many tabs can fit, but be more generous
-        const availableWidth = containerWidth - menuButtonWidth;
-        const newMaxVisible = Math.max(
-          2, // Always show at least 2 tabs in inline mode
-          Math.floor(availableWidth / avgTabWidth)
-        );
-
-        // Don't hide tabs unless we really need to (more than 4 tabs)
-        const finalMaxVisible = tabs.length <= 4 ? tabs.length : newMaxVisible;
-        setMaxVisibleTabs(finalMaxVisible);
-        return;
-      }
-
-      // For separate mode, calculate dynamically
-      const containerWidth = tabsContainerRef.current.offsetWidth;
-      const menuButtonWidth = 50; // Menu button + gap
-      const avgTabWidth = 120; // Average tab width
-      const newMaxVisible = Math.max(
-        1,
-        Math.floor((containerWidth - menuButtonWidth) / avgTabWidth)
-      );
-
-      setMaxVisibleTabs(newMaxVisible);
-    };
-
-    calculateMaxTabs();
-    window.addEventListener("resize", calculateMaxTabs);
-
-    return () => window.removeEventListener("resize", calculateMaxTabs);
-  }, [tabs, inline]);
-
   // Hide tabs if disabled by user preference or if there's only one tab (but not in inline mode)
   // Also hide if inline mode is requested but tab position is separate
   if (
@@ -417,24 +391,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   // Filter out any undefined/null tabs (safety check for corrupted data)
   const validTabs = tabs.filter((tab): tab is AppTab => tab != null);
 
-  // Keep tabs in their original order but ensure active tab is visible
-  let visibleTabs = validTabs.slice(0, maxVisibleTabs);
-  let hiddenTabs = validTabs.slice(maxVisibleTabs);
-
-  // If active tab is hidden, swap it with the last visible tab
-  const activeTab = validTabs.find((tab) => tab.id === activeTabId);
-  if (activeTab && hiddenTabs.includes(activeTab) && hiddenTabs.length > 0) {
-    const activeIndex = validTabs.indexOf(activeTab);
-    const reorderedTabs = [...validTabs];
-    // Swap active tab with last visible tab
-    [reorderedTabs[activeIndex], reorderedTabs[maxVisibleTabs - 1]] = [
-      reorderedTabs[maxVisibleTabs - 1],
-      reorderedTabs[activeIndex],
-    ];
-    visibleTabs = reorderedTabs.slice(0, maxVisibleTabs);
-    hiddenTabs = reorderedTabs.slice(maxVisibleTabs);
-  }
-
   return (
     <div
       className={
@@ -444,134 +400,164 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       }
     >
       <div
-        ref={tabsContainerRef}
-        className={
+        className={cn(
+          "flex items-center",
           inline
-            ? "flex items-center gap-1.5 overflow-hidden"
-            : "flex items-center gap-0.5 overflow-hidden h-8 px-4 sm:px-6"
-        }
+            ? "gap-1.5"
+            : "gap-0.5 h-8 px-4 sm:px-6"
+        )}
       >
-        {visibleTabs
-          .filter((tab): tab is AppTab => tab != null)
-          .map((tab) => (
-            <ContextMenu key={tab.id}>
-              <ContextMenuTrigger asChild>
-                <div
-                  draggable={hoveredGripTabId === tab.id}
-                  onDragStart={(e) => handleDragStart(e, tab.id)}
-                  onDragOver={(e) => handleDragOver(e, tab.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, tab.id)}
-                  onDragEnd={handleDragEnd}
-                  onClick={() => handleTabClick(tab)}
-                  className={`
-                group relative flex items-center gap-1.5 px-2 py-1 rounded-md
-                transition-all duration-200 whitespace-nowrap text-xs border
-                flex-shrink-0 min-w-0
-                ${inline ? "max-w-[140px] text-[11px]" : ""}
-                ${
-                  hoveredGripTabId === tab.id ? "cursor-grab" : "cursor-pointer"
-                }
-                ${
-                  activeTabId === tab.id
-                    ? "bg-accent text-accent-foreground border-border shadow-sm"
-                    : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground"
-                }
-                ${draggedTabId === tab.id ? "opacity-50 scale-95" : ""}
-                ${
-                  dragOverTabId === tab.id && draggedTabId !== tab.id
-                    ? "ring-2 ring-primary/50 bg-primary/10"
-                    : ""
-                }
-              `}
-                >
-                  <GripVertical
-                    className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                    onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                    onMouseLeave={handleGripMouseLeave}
-                  />
-                  {(() => {
-                    const IconComponent = getIconComponent(tab.iconName);
-                    return IconComponent ? (
-                      <IconComponent className="h-3 w-3 flex-shrink-0" />
-                    ) : null;
-                  })()}
-                  <span className="font-medium truncate">{tab.title}</span>
-                  {tabs.length > 1 && (
-                    <button
-                      onClick={(e) => handleTabClose(e, tab.id)}
-                      className={`
-                    opacity-0 group-hover:opacity-100 transition-all duration-150
-                    hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5
-                    shrink-0
-                    ${activeTabId === tab.id ? "opacity-100" : ""}
-                  `}
-                      aria-label={`Close ${tab.title}`}
-                      title={`Close ${tab.title}`}
-                    >
-                      <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
-                    </button>
-                  )}
-                </div>
-              </ContextMenuTrigger>
-              <ContextMenuContent className="min-w-[120px]">
-                {tabs.length > 1 && (
-                  <>
-                    <ContextMenuItem
-                      onClick={handleCloseOthers}
-                      className="text-xs"
-                    >
-                      Close Others
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      onClick={handleCloseAll}
-                      className="text-xs"
-                    >
-                      Close All
-                    </ContextMenuItem>
-                  </>
+        <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">
+            <div 
+                className={cn(
+                    "flex items-center overflow-x-auto no-scrollbar scroll-smooth",
+                    inline ? "gap-1.5" : "gap-0.5"
                 )}
-              </ContextMenuContent>
-            </ContextMenu>
-          ))}
-        {hiddenTabs.length > 0 && (
-          <DropdownMenu>
+                ref={scrollViewportRef}
+            >
+                {validTabs.map((tab) => (
+                    <ContextMenu key={tab.id}>
+                    <ContextMenuTrigger asChild>
+                        <div
+                        ref={activeTabId === tab.id ? activeTabRef : null}
+                        draggable={hoveredGripTabId === tab.id}
+                        onDragStart={(e) => handleDragStart(e, tab.id)}
+                        onDragOver={(e) => handleDragOver(e, tab.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, tab.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => handleTabClick(tab)}
+                        className={cn(
+                            "group relative flex items-center gap-1.5 px-2 py-1 rounded-md",
+                            "transition-all duration-200 whitespace-nowrap text-xs border",
+                            "flex-shrink-0 min-w-0",
+                            inline ? "max-w-[140px] text-[11px]" : "max-w-[200px]",
+                            hoveredGripTabId === tab.id ? "cursor-grab" : "cursor-pointer",
+                            activeTabId === tab.id
+                                ? "bg-accent text-accent-foreground border-border shadow-sm"
+                                : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
+                            draggedTabId === tab.id ? "opacity-50 scale-95" : "",
+                            dragOverTabId === tab.id && draggedTabId !== tab.id
+                                ? "ring-2 ring-primary/50 bg-primary/10"
+                                : ""
+                        )}
+                        >
+                        <GripVertical
+                            className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                            onMouseEnter={() => handleGripMouseEnter(tab.id)}
+                            onMouseLeave={handleGripMouseLeave}
+                        />
+                        {(() => {
+                            const IconComponent = getIconComponent(tab.iconName);
+                            return IconComponent ? (
+                            <IconComponent className="h-3 w-3 flex-shrink-0" />
+                            ) : null;
+                        })()}
+                        <span className="font-medium truncate">{tab.title}</span>
+                        {tabs.length > 1 && (
+                            <button
+                            onClick={(e) => handleTabClose(e, tab.id)}
+                            className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-all duration-150",
+                                "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
+                                "shrink-0",
+                                activeTabId === tab.id ? "opacity-100" : ""
+                            )}
+                            aria-label={`Close ${tab.title}`}
+                            title={`Close ${tab.title}`}
+                            >
+                            <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
+                            </button>
+                        )}
+                        </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent className="min-w-[120px]">
+                        {tabs.length > 1 && (
+                        <>
+                            <ContextMenuItem
+                            onClick={handleCloseOthers}
+                            className="text-xs"
+                            >
+                            Close Others
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                            onClick={handleCloseAll}
+                            className="text-xs"
+                            >
+                            Close All
+                            </ContextMenuItem>
+                        </>
+                        )}
+                    </ContextMenuContent>
+                    </ContextMenu>
+                ))}
+            </div>
+        </div>
+
+        {/* Permanent List All Toggle */}
+        <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
+                <Button
                 variant="ghost"
                 size="sm"
-                className="h-[26px] px-2 text-xs border border-border rounded-md hover:bg-accent/50 shrink-0"
-                aria-label="Open menu"
-                title={`${hiddenTabs.length} more tabs`}
-              >
-                <Menu className="h-3 w-3 mr-1" />
-                <span className="text-[10px] font-medium">
-                  {hiddenTabs.length}
-                </span>
-              </Button>
+                className={cn(
+                    "h-[26px] w-[26px] p-0 border border-transparent rounded-md hover:bg-accent/50 shrink-0 ml-1",
+                    "text-muted-foreground hover:text-foreground",
+                    visibleTabsHasOverflow(scrollViewportRef.current) && "text-foreground bg-accent/20"
+                )}
+                aria-label="List all tabs"
+                title="List all tabs"
+                >
+                <ChevronDown className="h-4 w-4" />
+                </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[180px]">
-              {hiddenTabs
-                .filter((tab): tab is AppTab => tab != null)
-                .map((tab) => {
-                  const IconComponent = getIconComponent(tab.iconName);
-                  return (
-                    <DropdownMenuItem
-                      key={tab.id}
-                      onClick={() => navigateToTabPath(tab.path)}
-                      className="text-xs"
-                    >
-                      {IconComponent && (
-                        <IconComponent className="mr-2 h-3.5 w-3.5" />
-                      )}
-                      {tab.title}
-                    </DropdownMenuItem>
-                  );
+            <DropdownMenuContent align="end" className="max-h-[300px] overflow-y-auto min-w-[200px]">
+                {validTabs.map((tab) => {
+                    const IconComponent = getIconComponent(tab.iconName);
+                    return (
+                        <DropdownMenuItem
+                        key={tab.id}
+                        onClick={() => handleTabClick(tab)}
+                        className={cn(
+                            "text-xs flex items-center justify-between gap-2",
+                            activeTabId === tab.id && "bg-accent text-accent-foreground font-medium"
+                        )}
+                        >   
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            {IconComponent && (
+                                <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{tab.title}</span>
+                        </div>
+                        {tabs.length > 1 && (
+                            <div
+                                role="button"
+                                onClick={(e) => handleTabClose(e, tab.id)}
+                                className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
+                            >
+                                <X className="h-3 w-3" />
+                            </div>
+                        )}
+                        </DropdownMenuItem>
+                    );
                 })}
+                {tabs.length > 1 && (
+                    <>
+                        <div className="h-px bg-border my-1" />
+                        <DropdownMenuItem onClick={handleCloseAll} className="text-xs text-red-500 focus:text-red-600">
+                            Close All Tabs
+                        </DropdownMenuItem>
+                    </>
+                )}
             </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        </DropdownMenu>
       </div>
     </div>
   );
+}
+
+// Helper to check for overflow (simplified)
+function visibleTabsHasOverflow(element: HTMLDivElement | null) {
+    if (!element) return false;
+    return element.scrollWidth > element.clientWidth;
 }
