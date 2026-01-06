@@ -237,4 +237,23 @@
     top: 3rem; /* 48px - header height */
     z-index: 40;
   }
+
+  /* Hide scrollbars while maintaining scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
+
+  /* Better overflow handling for tab containers */
+  .tab-container {
+    overflow-x: var(--tab-overflow, auto);
+    scrollbar-width: var(--tab-scrollbar-width, auto);
+    -ms-overflow-style: var(--tab-overflow-style, auto);
+  }
+  .tab-container::-webkit-scrollbar {
+    display: var(--tab-scrollbar-display, auto);
+  }
 }
