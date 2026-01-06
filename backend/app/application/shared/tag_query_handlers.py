@@ -107,6 +107,10 @@ class TagQueryHandler:
             TagWithStatus(tag, tag.id in attached_tag_ids)
             for tag in all_tags
         ]
-        
+
+        print(f"DEBUG: Available tags for {query.entity_type}:{query.entity_id} - found {len(result)} tags")
+        attached_count = sum(1 for r in result if r.is_attached)
+        print(f"DEBUG: {attached_count} tags are attached")
+
         return result
 

@@ -93,7 +93,9 @@ class SQLOrganizerRepository(OrganizerRepository):
             if not model:
                 return None
             domain = self._mapper.to_domain(model)
-            domain.tags = self._get_tags(session, tenant_id, domain.id)
+            tags = self._get_tags(session, tenant_id, domain.id)
+            print(f"DEBUG: Organizer {domain.id} tags loaded: {tags}")
+            domain.tags = tags
             return domain
     
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[Organizer]:
@@ -209,6 +211,7 @@ class SQLOrganizerRepository(OrganizerRepository):
 
     def _get_tags(self, session: Session, tenant_id: str, organizer_id: str) -> List[str]:
         """Get tags for organizer"""
+        print(f"DEBUG: Getting tags for organizer {organizer_id}, tenant {tenant_id}")
         stmt = (
             select(TagModel.name)
             .join(TagLinkModel, TagLinkModel.tag_id == TagModel.id)
@@ -219,7 +222,9 @@ class SQLOrganizerRepository(OrganizerRepository):
                 TagModel.is_active == True
             )
         )
-        return session.exec(stmt).all()
+        result = session.exec(stmt).all()
+        print(f"DEBUG: Found tags: {result}")
+        return result
 
     def _update_tags(self, session: Session, tenant_id: str, organizer_id: str, tags: List[str]) -> None:
         """Update tags for organizer"""

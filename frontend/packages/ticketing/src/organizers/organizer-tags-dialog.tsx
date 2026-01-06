@@ -50,6 +50,7 @@ export function OrganizerTagsDialog({
   loading = false,
 }: OrganizerTagsDialogProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>(organizer.tags || []);
+  console.log("DEBUG: OrganizerTagsDialog initialized with organizer.tags:", organizer.tags, "selectedTags:", selectedTags);
   const [availableTags, setAvailableTags] = useState<TagWithAttachmentStatus[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [comboboxOpen, setComboboxOpen] = useState(false);
@@ -64,14 +65,14 @@ export function OrganizerTagsDialog({
     }
   }, [open, organizer.id]);
 
-  // Reset selected tags when dialog opens/closes
+  // Reset search and combobox when dialog opens/closes
   useEffect(() => {
     if (open) {
-      setSelectedTags(organizer.tags || []);
       setSearchQuery("");
       setComboboxOpen(false);
+      // Don't reset selectedTags here - let loadAvailableTags handle initialization
     }
-  }, [open, organizer.tags]);
+  }, [open]);
 
   // Update popover width when combobox opens
   useEffect(() => {
@@ -84,12 +85,22 @@ export function OrganizerTagsDialog({
     if (!organizer.id) return;
     setLoadingTags(true);
     try {
+      console.log("DEBUG: Loading available tags for organizer", organizer.id);
       const response = await tagService.getAvailableTagsForEntity(
         "organizer",
         organizer.id,
         searchQuery || undefined,
         200
       );
+      console.log("DEBUG: Available tags response:", response.items);
+
+      // Always initialize selectedTags from attached tags in API response
+      const attachedTagNames = response.items
+        .filter(tag => tag.is_attached)
+        .map(tag => tag.name);
+      console.log("DEBUG: Setting selectedTags from attached tags:", attachedTagNames);
+      setSelectedTags(attachedTagNames);
+
       setAvailableTags(response.items);
     } catch (error) {
       console.error("Failed to load available tags:", error);

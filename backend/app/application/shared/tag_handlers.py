@@ -239,12 +239,14 @@ class TagCommandHandler:
                         raise
         
         # Set tags for entity (replaces existing tags)
+        print(f"DEBUG: Setting tags for entity {command.entity_type}:{command.entity_id} - tag_ids: {tag_ids}")
         attached_tags = await self._tag_link_repository.set_tags_for_entity(
             tenant_id=tenant_id,
             entity_type=command.entity_type,
             entity_id=command.entity_id,
             tag_ids=tag_ids,
         )
+        print(f"DEBUG: Attached tags: {[tag.name for tag in attached_tags]}")
         
         logger.info(
             "Managed tags for entity %s:%s - attached %d tags (%d newly created) for tenant=%s",

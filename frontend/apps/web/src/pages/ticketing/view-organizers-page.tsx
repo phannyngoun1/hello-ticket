@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import { toast } from "@truths/ui";
 import {
@@ -24,6 +24,16 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
     error,
     refetch,
   } = useOrganizer(service, id ?? null);
+
+  // Debug: log the raw organizer data
+  React.useEffect(() => {
+    console.log("DEBUG: Raw organizer data from API:", data);
+    if (data?.tags) {
+      console.log("DEBUG: Organizer has tags:", data.tags);
+    } else {
+      console.log("DEBUG: Organizer has no tags or tags is undefined");
+    }
+  }, [data]);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [organizerToEdit, setOrganizerToEdit] = useState<any>(null);
@@ -103,14 +113,18 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
   const handleTagsSave = async (tags: string[]) => {
     if (!data) return;
     try {
+      console.log("Saving tags for organizer", data.id, ":", tags);
       await tagService.manageEntityTags("organizer", data.id, tags);
+      console.log("Tags saved, refetching...");
       await refetch();
+      console.log("Refetch complete, new data tags:", data?.tags);
       toast({
         title: "Success",
         description: "Tags updated successfully",
       });
       setTagsDialogOpen(false);
     } catch (err) {
+      console.error("Failed to save tags:", err);
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "Failed to update tags",
