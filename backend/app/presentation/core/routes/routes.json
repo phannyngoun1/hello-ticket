@@ -12,6 +12,18 @@
     ],
     "children": [
       {
+        "label": "Dashboard",
+        "path": "/dashboard",
+        "icon": "LayoutDashboard",
+        "description": "View comprehensive analytics and insights.",
+        "keywords": [
+          "dashboard",
+          "analytics",
+          "stats",
+          "statistics"
+        ]
+      },
+      {
         "label": "Explore",
         "path": "/sales/explore",
         "icon": "Calendar",
