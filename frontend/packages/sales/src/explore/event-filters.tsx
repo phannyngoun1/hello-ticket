@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { Search, X, ListFilter } from "lucide-react";
 import {
   Input,
   Button,
@@ -8,6 +8,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@truths/ui";
 import { type EventStatus, EventStatus as EventStatusEnum } from "@truths/ticketing";
 
@@ -60,92 +63,125 @@ export function EventFilters({
 
   return (
     <div className="space-y-3">
-      {/* Filter Controls */}
-      <div className="flex flex-wrap gap-3 items-center">
+      <div className="flex flex-col sm:flex-row gap-3">
         {/* Search */}
-        <div className="flex-1 min-w-[250px] relative">
+        <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search events..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10"
           />
         </div>
 
-        {/* Status Filter */}
-        <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as EventStatus | "all")}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value={EventStatusEnum.ON_SALE}>On Sale</SelectItem>
-            <SelectItem value={EventStatusEnum.PUBLISHED}>Published</SelectItem>
-            <SelectItem value={EventStatusEnum.SOLD_OUT}>Sold Out</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Filter Popover */}
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" className="h-10 gap-2 px-4 shadow-sm border-dashed">
+                    <ListFilter className="h-4 w-4" />
+                    Filters
+                    {hasActiveFilters && (
+                        <div className="bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 grid place-items-center ml-1 font-bold">
+                            {[
+                                statusFilter !== "all",
+                                dateFilter.startDate,
+                                dateFilter.endDate,
+                                showPastEvents
+                            ].filter(Boolean).length}
+                        </div>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-5" align="end">
+                <div className="space-y-5">
+                    <div className="space-y-2">
+                        <h4 className="font-medium text-sm leading-none">Status</h4>
+                        <Select value={statusFilter} onValueChange={(value) => onStatusFilterChange(value as EventStatus | "all")}>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value={EventStatusEnum.ON_SALE}>On Sale</SelectItem>
+                                <SelectItem value={EventStatusEnum.PUBLISHED}>Published</SelectItem>
+                                <SelectItem value={EventStatusEnum.SOLD_OUT}>Sold Out</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-        {/* Date Range */}
-        <div className="flex gap-2 items-center">
-          <Input
-            type="date"
-            value={dateFilter.startDate || ""}
-            onChange={(e) =>
-              onDateFilterChange({
-                ...dateFilter,
-                startDate: e.target.value || null,
-              })
-            }
-            className="w-[150px]"
-            placeholder="Start date"
-          />
-          <span className="text-muted-foreground text-sm">to</span>
-          <Input
-            type="date"
-            value={dateFilter.endDate || ""}
-            onChange={(e) =>
-              onDateFilterChange({
-                ...dateFilter,
-                endDate: e.target.value || null,
-              })
-            }
-            min={dateFilter.startDate || undefined}
-            className="w-[150px]"
-            placeholder="End date"
-          />
-        </div>
+                    <div className="space-y-2">
+                        <h4 className="font-medium text-sm leading-none">Date Range</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                                <span className="text-xs text-muted-foreground">From</span>
+                                <Input
+                                    type="date"
+                                    value={dateFilter.startDate || ""}
+                                    onChange={(e) =>
+                                        onDateFilterChange({
+                                            ...dateFilter,
+                                            startDate: e.target.value || null,
+                                        })
+                                    }
+                                    className="w-full"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs text-muted-foreground">To</span>
+                                <Input
+                                    type="date"
+                                    value={dateFilter.endDate || ""}
+                                    onChange={(e) =>
+                                        onDateFilterChange({
+                                            ...dateFilter,
+                                            endDate: e.target.value || null,
+                                        })
+                                    }
+                                    min={dateFilter.startDate || undefined}
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                    </div>
 
-        {/* Past Events Toggle */}
-        <div className="flex items-center gap-2 px-3 py-2 border rounded-md">
-          <input
-            type="checkbox"
-            id="eventShowPastEvents"
-            checked={showPastEvents}
-            onChange={(e) => onShowPastEventsChange(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300"
-          />
-          <label htmlFor="eventShowPastEvents" className="text-sm font-medium cursor-pointer">
-            Past events
-          </label>
-        </div>
+                    <div className="flex items-center gap-2 pt-2 border-t">
+                        <input
+                            type="checkbox"
+                            id="eventShowPastEvents"
+                            checked={showPastEvents}
+                            onChange={(e) => onShowPastEventsChange(e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 accent-primary"
+                        />
+                        <label htmlFor="eventShowPastEvents" className="text-sm font-medium cursor-pointer flex-1">
+                            Include past events
+                        </label>
+                    </div>
 
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={onClearFilters}>
-            <X className="h-4 w-4 mr-2" />
-            Clear
-          </Button>
-        )}
+                    {hasActiveFilters && (
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                                onClearFilters();
+                                // Close popover logic would need state or Ref, but generic clear works
+                            }}
+                            className="w-full h-8 mt-2"
+                        >
+                            Reset all filters
+                        </Button>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
       </div>
 
       {/* Active Filters Badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-muted-foreground">Active:</span>
           {search && (
-            <Badge variant="secondary" className="gap-1">
-              Search: {search}
+            <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
+              Search: <span className="font-medium">{search}</span>
               <button
                 onClick={() => onSearchChange("")}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
@@ -155,8 +191,8 @@ export function EventFilters({
             </Badge>
           )}
           {statusFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Status: {formatStatus(statusFilter)}
+            <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
+              {formatStatus(statusFilter)}
               <button
                 onClick={() => onStatusFilterChange("all")}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
@@ -166,7 +202,7 @@ export function EventFilters({
             </Badge>
           )}
           {dateFilter.startDate && (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               From: {formatDate(dateFilter.startDate)}
               <button
                 onClick={() => onDateFilterChange({ ...dateFilter, startDate: null })}
@@ -177,7 +213,7 @@ export function EventFilters({
             </Badge>
           )}
           {dateFilter.endDate && (
-            <Badge variant="secondary" className="gap-1">
+            <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               To: {formatDate(dateFilter.endDate)}
               <button
                 onClick={() => onDateFilterChange({ ...dateFilter, endDate: null })}
@@ -188,8 +224,8 @@ export function EventFilters({
             </Badge>
           )}
           {showPastEvents && (
-            <Badge variant="secondary" className="gap-1">
-              Including past events
+            <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
+              Past events
               <button
                 onClick={() => onShowPastEventsChange(false)}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
@@ -198,6 +234,9 @@ export function EventFilters({
               </button>
             </Badge>
           )}
+           <Button variant="ghost" size="sm" onClick={onClearFilters} className="h-6 px-2 text-xs">
+            Clear all
+          </Button>
         </div>
       )}
     </div>

@@ -274,7 +274,7 @@ export function HomePage() {
             <h3 className="text-2xl font-bold">{t("pages.home.title")}</h3>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
               <TabsTrigger
                 value="overview"
@@ -307,23 +307,24 @@ export function HomePage() {
               onValueChange={setDateRange}
               disabled={loading}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select period" />
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Period" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7">Last 7 Days</SelectItem>
-                <SelectItem value="30">Last 30 Days</SelectItem>
+                <SelectItem value="7">7 Days</SelectItem>
+                <SelectItem value="30">30 Days</SelectItem>
                 <SelectItem value="thisMonth">This Month</SelectItem>
                 <SelectItem value="lastMonth">Last Month</SelectItem>
-                <SelectItem value="year">Year to Date</SelectItem>
+                <SelectItem value="year">YTD</SelectItem>
               </SelectContent>
             </Select>
 
             <Button
               onClick={loadAnalytics}
               variant="outline"
-              size="icon"
+              size="sm"
               disabled={loading}
+              className="h-9 w-9 p-0"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
