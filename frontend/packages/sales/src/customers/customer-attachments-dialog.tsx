@@ -252,11 +252,6 @@ export function CustomerAttachmentsDialog({
 
           {/* Attachments List */}
           <div className="space-y-2 w-full flex flex-col pb-4">
-            <div className="flex items-center justify-between flex-shrink-0">
-              <label className="text-sm font-medium">
-                Attached Documents ({attachments.length})
-              </label>
-            </div>
             {attachments.length > 0 ? (
               <div
                 className="overflow-y-auto overflow-x-hidden w-full space-y-2 pr-2"

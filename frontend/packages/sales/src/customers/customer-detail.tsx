@@ -46,6 +46,7 @@ import {
   Image as ImageIcon,
   File,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { ActionList, type ActionItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
@@ -1216,11 +1217,6 @@ export function CustomerDetail({
                   </div>
                 ) : (
                   <div className="space-y-2 w-full">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">
-                        Attached Documents ({documents.length})
-                      </label>
-                    </div>
                     <PhotoProvider>
                       <div className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-hidden w-full">
                         {documents.map((attachment) => {
@@ -1271,7 +1267,7 @@ export function CustomerDetail({
                                   disabled={loading}
                                   className="h-8 px-2 text-xs"
                                 >
-                                  View
+                                  <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"

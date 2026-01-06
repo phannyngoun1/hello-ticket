@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
@@ -29,6 +29,7 @@ class Organizer(AggregateRoot):
 
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
+        tags: Optional[List[str]] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
         deactivated_at: Optional[datetime] = None,
@@ -48,6 +49,7 @@ class Organizer(AggregateRoot):
         self.city = city
         self.country = country
         self.logo = logo
+        self.tags = tags or []
 
         self.is_active = is_active
         self.attributes = attributes or {}
@@ -71,6 +73,7 @@ class Organizer(AggregateRoot):
         city: Optional[str] = None,
         country: Optional[str] = None,
         logo: Optional[str] = None,
+        tags: Optional[List[str]] = None,
 
     ) -> None:
         """Update organizer master data with validation."""
@@ -95,6 +98,8 @@ class Organizer(AggregateRoot):
             self.country = country
         if logo is not None:
             self.logo = logo
+        if tags is not None:
+            self.tags = tags
 
         self._validate()
         self._touch()

@@ -21,6 +21,7 @@ export interface Organizer {
     city?: string | null;
     country?: string | null;
     logo?: string | null;
+    tags?: string[];
     created_at: Date;
     updated_at?: Date;
 }
@@ -36,6 +37,7 @@ export interface CreateOrganizerInput {
     city?: string;
     country?: string;
     logo?: string;
+    tags?: string[];
 }
 
 export interface UpdateOrganizerInput {
@@ -49,6 +51,7 @@ export interface UpdateOrganizerInput {
     city?: string;
     country?: string;
     logo?: string;
+    tags?: string[];
 }
 
 export interface OrganizerFilter {
