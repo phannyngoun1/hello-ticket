@@ -33,6 +33,41 @@ class EmployeeModel(SQLModel, table=True):
     tenant_id: str = Field(index=True)
     code: str = Field(index=True)
     name: str
+    
+    # System Link
+    user_id: Optional[str] = Field(default=None, index=True, description="Link to Platform User")
+    work_email: Optional[str] = Field(default=None, index=True, description="Official business email")
+    
+    # Organizational Structure
+    job_title: Optional[str] = Field(default=None, description="Position title")
+    department: Optional[str] = Field(default=None, index=True, description="Department name")
+    manager_id: Optional[str] = Field(
+        default=None,
+        foreign_key="employees.id",
+        index=True,
+        description="Manager employee reference"
+    )
+    employment_type: Optional[str] = Field(default=None, description="Full-time, Part-time, Contractor, etc.")
+    hire_date: Optional[date] = Field(default=None, sa_column=Column(Date), description="Employment start date")
+    
+    # Contact & Location
+    work_phone: Optional[str] = Field(default=None, description="Office phone/extension")
+    mobile_phone: Optional[str] = Field(default=None, description="Mobile contact")
+    office_location: Optional[str] = Field(default=None, description="Physical office location")
+    timezone: str = Field(default="UTC", description="Employee timezone")
+    
+    # Sales & Operational
+    skills: Optional[list] = Field(default=None, sa_column=Column(JSON), description="Array of skill tags")
+    assigned_territories: Optional[list] = Field(default=None, sa_column=Column(JSON), description="Array of territory codes")
+    quota_config: Optional[dict] = Field(default=None, sa_column=Column(JSON), description="Quota configuration object")
+    commission_tier: Optional[str] = Field(default=None, description="Commission plan identifier")
+    
+    # Personal (HR)
+    birthday: Optional[date] = Field(default=None, sa_column=Column(Date), description="Birthday for celebrations")
+    emergency_contact_name: Optional[str] = Field(default=None, description="Emergency contact name")
+    emergency_contact_phone: Optional[str] = Field(default=None, description="Emergency contact phone")
+    emergency_contact_relationship: Optional[str] = Field(default=None, description="Emergency contact relationship")
+    
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
@@ -54,6 +89,9 @@ class EmployeeModel(SQLModel, table=True):
         Index('ix_employees_tenant_code', 'tenant_id', 'code', unique=True),
         Index('ix_employees_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_employees_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+        Index('ix_employees_tenant_department', 'tenant_id', 'department'),
+        Index('ix_employees_work_email', 'work_email'),
+        Index('ix_employees_manager', 'manager_id'),
     )
 
 
