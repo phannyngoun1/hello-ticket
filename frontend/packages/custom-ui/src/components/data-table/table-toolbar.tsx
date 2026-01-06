@@ -39,7 +39,6 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
       onFilterClick,
       hasActiveFilters = false,
       onResetFilters,
-      manualFiltering = false,
       loading = false,
       customActions,
       filterDefs = [],
