@@ -4,17 +4,13 @@
  * Table view for organizers with configurable columns and actions.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit, Trash2 } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
-  ConfirmationDialog,
-  createActionsColumn,
   createIdentifiedColumn,
   createTextColumn,
-  createDateTimeColumn,
   DataTable,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
@@ -52,8 +48,6 @@ export function OrganizerList({
   customActions,
 }: OrganizerListProps) {
   const density = useDensityStyles();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [selectedOrganizer, setSelectedOrganizer] = useState<Organizer | null>(null);
 
   const getDisplayName = (organizer: Organizer) => {
     const value = organizer.code;
@@ -97,36 +91,59 @@ export function OrganizerList({
     
 
 
-    createActionsColumn<Organizer>({
-      customActions,
-      actions: [
-        ...(onEdit
-          ? [
-              {
-                icon: Edit,
-                onClick: (organizer: Organizer) => onEdit(organizer),
-                title: "Edit",
-                className:
-                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
-              },
-            ]
-          : []),
-        ...(onDelete
-          ? [
-              {
-                icon: Trash2,
-                onClick: (organizer: Organizer) => {
-                  setSelectedOrganizer(organizer);
-                  setDeleteConfirmOpen(true);
-                },
-                title: "Delete",
-                className:
-                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
-              },
-            ]
-          : []),
-      ],
+    createTextColumn<Organizer>({
+      accessorKey: "description",
+      header: "Description",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
     }),
+
+    createTextColumn<Organizer>({
+      accessorKey: "email",
+      header: "Email",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+    createTextColumn<Organizer>({
+      accessorKey: "phone",
+      header: "Phone",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
+
+    createTextColumn<Organizer>({
+      accessorKey: "city",
+      header: "City",
+      cell: (info) => {
+        const value = info.getValue() as string | null | undefined;
+        return (
+          <span className={cn("text-muted-foreground", density.textSize)}>
+            {value ?? "-"}
+          </span>
+        );
+      },
+    }),
+
   ];
 
   const tableData = organizers;
@@ -138,37 +155,6 @@ export function OrganizerList({
         totalPages: pagination.totalPages,
       }
     : undefined;
-
-  const handleDeleteConfirmChange = (open: boolean) => {
-    setDeleteConfirmOpen(open);
-    if (!open) {
-      setSelectedOrganizer(null);
-    }
-  };
-
-  const handleDeleteConfirm = () => {
-    if (selectedOrganizer && onDelete) {
-      onDelete(selectedOrganizer);
-    }
-    setDeleteConfirmOpen(false);
-    setSelectedOrganizer(null);
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-    setSelectedOrganizer(null);
-  };
-
-  const deleteConfirmAction = {
-    label: "Delete",
-    onClick: handleDeleteConfirm,
-    variant: "destructive" as const,
-  };
-
-  const deleteCancelAction = {
-    label: "Cancel",
-    onClick: handleDeleteCancel,
-  };
 
   return (
     <div className={cn("w-full", className)}>
@@ -187,18 +173,6 @@ export function OrganizerList({
         loading={loading}
       />
 
-      <ConfirmationDialog
-        open={deleteConfirmOpen}
-        onOpenChange={handleDeleteConfirmChange}
-        title="Delete Organizer"
-        description={
-          selectedOrganizer
-            ? `Are you sure you want to delete "${getDisplayName(selectedOrganizer)}"? This action cannot be undone.`
-            : "Are you sure you want to delete this organizer?"
-        }
-        confirmAction={deleteConfirmAction}
-        cancelAction={deleteCancelAction}
-      />
     </div>
   );
 }

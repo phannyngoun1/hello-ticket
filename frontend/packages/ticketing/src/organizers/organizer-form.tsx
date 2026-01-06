@@ -13,6 +13,7 @@ import {
   Field,
   FieldLabel,
   FieldError,
+  Textarea,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -26,6 +27,14 @@ const organizerFormSchema = z
     
     
     name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    email: z.string().email("Invalid email").optional().or(z.literal("")),
+    phone: z.string().optional(),
+    website: z.string().url("Invalid URL").optional().or(z.literal("")),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+    logo: z.string().url("Invalid URL").optional().or(z.literal("")),
     
     
   })
@@ -64,6 +73,14 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         
         
         name: "",
+        description: "",
+        email: "",
+        phone: "",
+        website: "",
+        address: "",
+        city: "",
+        country: "",
+        logo: "",
         
         
         ...defaultValues,
@@ -194,6 +211,114 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
           </Field>
           
           
+        </div>
+        
+        <div className="space-y-4">
+             <Field data-invalid={!!errors.description}>
+                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <Textarea
+                    id="description"
+                    placeholder="Enter description"
+                    {...register("description")}
+                    disabled={isLoading}
+                    className={cn(errors.description && "border-destructive")}
+                />
+                <FieldError>{errors.description?.message}</FieldError>
+            </Field>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <Field data-invalid={!!errors.email}>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <Input
+                        id="email"
+                        type="email"
+                        placeholder="contact@example.com"
+                        {...register("email")}
+                        disabled={isLoading}
+                        className={cn(errors.email && "border-destructive")}
+                    />
+                    <FieldError>{errors.email?.message}</FieldError>
+                </Field>
+
+                <Field data-invalid={!!errors.phone}>
+                    <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                    <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+1 234 567 890"
+                        {...register("phone")}
+                        disabled={isLoading}
+                        className={cn(errors.phone && "border-destructive")}
+                    />
+                    <FieldError>{errors.phone?.message}</FieldError>
+                </Field>
+                
+                 <Field data-invalid={!!errors.website}>
+                    <FieldLabel htmlFor="website">Website</FieldLabel>
+                    <Input
+                        id="website"
+                        type="url"
+                        placeholder="https://example.com"
+                        {...register("website")}
+                        disabled={isLoading}
+                        className={cn(errors.website && "border-destructive")}
+                    />
+                    <FieldError>{errors.website?.message}</FieldError>
+                </Field>
+                 <Field data-invalid={!!errors.logo}>
+                    <FieldLabel htmlFor="logo">Logo URL</FieldLabel>
+                    <Input
+                        id="logo"
+                        type="url"
+                        placeholder="https://example.com/logo.png"
+                        {...register("logo")}
+                        disabled={isLoading}
+                        className={cn(errors.logo && "border-destructive")}
+                    />
+                    <FieldError>{errors.logo?.message}</FieldError>
+                </Field>
+            </div>
+            
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <Field className="md:col-span-3" data-invalid={!!errors.address}>
+                    <FieldLabel htmlFor="address">Address</FieldLabel>
+                     <Input
+                        id="address"
+                        type="text"
+                        placeholder="Street Address"
+                        {...register("address")}
+                        disabled={isLoading}
+                        className={cn(errors.address && "border-destructive")}
+                    />
+                    <FieldError>{errors.address?.message}</FieldError>
+                </Field>
+                
+                 <Field data-invalid={!!errors.city}>
+                    <FieldLabel htmlFor="city">City</FieldLabel>
+                     <Input
+                        id="city"
+                        type="text"
+                        placeholder="City"
+                        {...register("city")}
+                        disabled={isLoading}
+                        className={cn(errors.city && "border-destructive")}
+                    />
+                    <FieldError>{errors.city?.message}</FieldError>
+                </Field>
+                
+                 <Field data-invalid={!!errors.country}>
+                    <FieldLabel htmlFor="country">Country</FieldLabel>
+                     <Input
+                        id="country"
+                        type="text"
+                        placeholder="Country"
+                        {...register("country")}
+                        disabled={isLoading}
+                        className={cn(errors.country && "border-destructive")}
+                    />
+                    <FieldError>{errors.country?.message}</FieldError>
+                </Field>
+             </div>
         </div>
       </form>
     );

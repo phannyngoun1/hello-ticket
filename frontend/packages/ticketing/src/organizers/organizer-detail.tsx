@@ -22,7 +22,11 @@ import {
   MoreVertical,
   Info,
   Database,
-  
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  FileText,
 } from "lucide-react";
 import { Organizer } from "./types";
 
@@ -61,7 +65,7 @@ export function OrganizerDetail({
     
     
     
-    return data?.code || data?.id || "";
+    return data?.name || data?.code || data?.id || "";
     
     
     
@@ -165,6 +169,17 @@ export function OrganizerDetail({
                   Code: {data.code}
                 </p>
               )}
+              {data.description && (
+                  <p className="text-sm text-muted-foreground mt-2 max-w-lg">
+                      {data.description}
+                  </p>
+              )}
+               {data.website && (
+                 <a href={data.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">
+                   <Globe className="h-3 w-3" />
+                   {data.website}
+                 </a>
+               )}
               
               
               
@@ -184,6 +199,18 @@ export function OrganizerDetail({
             <div className="flex items-center gap-1.5">
               {customActions?.(data)}
             </div>
+            {editable && onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(data)}
+                className="h-8 px-3 text-xs"
+                aria-label="Edit organizer"
+              >
+                <Edit className="h-3.5 w-3.5 mr-1" />
+                Edit
+              </Button>
+            )}
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -198,7 +225,7 @@ export function OrganizerDetail({
                     </DropdownMenuItem>
                   )}
 
-                  
+
 
                   {customActions && customActions(data)}
                 </DropdownMenuContent>
@@ -285,13 +312,73 @@ export function OrganizerDetail({
                           {formatFieldValue(data.name)}
                         </dd>
                       </div>
-                      
-                      
-                      
-                      
-                      
-                      
-                      
+
+                       {data.description && (
+                         <div>
+                            <dt className="text-sm font-medium">Description</dt>
+                            <dd className="mt-1 text-sm text-muted-foreground">
+                                {data.description}
+                            </dd>
+                         </div>
+                       )}
+                    </dl>
+                  </div>
+                  
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                        Contact & Location
+                    </h3>
+                    <dl className="space-y-3">
+                        {data.email && (
+                            <div>
+                                <dt className="text-sm font-medium flex items-center gap-2">
+                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                    Email
+                                </dt>
+                                <dd className="mt-1 text-sm text-muted-foreground pl-6">
+                                    <a href={`mailto:${data.email}`} className="hover:underline text-primary">
+                                        {data.email}
+                                    </a>
+                                </dd>
+                            </div>
+                        )}
+                         {data.phone && (
+                            <div>
+                                <dt className="text-sm font-medium flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    Phone
+                                </dt>
+                                <dd className="mt-1 text-sm text-muted-foreground pl-6">
+                                     <a href={`tel:${data.phone}`} className="hover:underline text-primary">
+                                        {data.phone}
+                                    </a>
+                                </dd>
+                            </div>
+                        )}
+                        {(data.address || data.city || data.country) && (
+                            <div>
+                                <dt className="text-sm font-medium flex items-center gap-2">
+                                     <MapPin className="h-4 w-4 text-muted-foreground" />
+                                    Address
+                                </dt>
+                                <dd className="mt-1 text-sm text-muted-foreground pl-6">
+                                    {[data.address, data.city, data.country].filter(Boolean).join(", ")}
+                                </dd>
+                            </div>
+                        )}
+                        {data.website && (
+                             <div>
+                                <dt className="text-sm font-medium flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-muted-foreground" />
+                                    Website
+                                </dt>
+                                <dd className="mt-1 text-sm text-muted-foreground pl-6">
+                                    <a href={data.website} target="_blank" rel="noopener noreferrer" className="hover:underline text-primary">
+                                        {data.website}
+                                    </a>
+                                </dd>
+                            </div>
+                        )}
                     </dl>
                   </div>
 

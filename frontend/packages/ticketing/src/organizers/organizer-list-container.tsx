@@ -10,12 +10,9 @@ import type { Pagination } from "@truths/shared";
 import type { Organizer, CreateOrganizerInput, UpdateOrganizerInput, OrganizerFilter } from "./types";
 import { OrganizerList } from "./organizer-list";
 import { CreateOrganizerDialog } from "./create-organizer-dialog";
-import { EditOrganizerDialog } from "./edit-organizer-dialog";
 import {
   useOrganizers,
   useCreateOrganizer,
-  useUpdateOrganizer,
-  useDeleteOrganizer,
 } from "./use-organizers";
 import { useOrganizerService } from "./organizer-provider";
 
@@ -37,8 +34,6 @@ export function OrganizerListContainer({
   const [filter, setFilter] = useState<OrganizerFilter>({});
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [organizerToEdit, setOrganizerToEdit] = useState<Organizer | null>(null);
   const prevAutoOpenRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -55,8 +50,6 @@ export function OrganizerListContainer({
   });
 
   const createMutation = useCreateOrganizer(organizerService);
-  const updateMutation = useUpdateOrganizer(organizerService);
-  const deleteMutation = useDeleteOrganizer(organizerService);
 
   const organizers = data?.data ?? [];
   const paginationData = data?.pagination;
@@ -68,26 +61,6 @@ export function OrganizerListContainer({
     setCreateDialogOpen(true);
   }, [onNavigateToCreate]);
 
-  const handleEdit = useCallback((organizer: Organizer) => {
-    setOrganizerToEdit(organizer);
-    setEditDialogOpen(true);
-  }, []);
-
-  const handleDelete = useCallback(
-    async (organizer: Organizer) => {
-      try {
-        await deleteMutation.mutateAsync(organizer.id);
-        toast({ title: "Success", description: "Organizer deleted successfully" });
-      } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : "Failed to delete organizer",
-          variant: "destructive",
-        });
-      }
-    },
-    [deleteMutation]
-  );
 
   const handleSearch = useCallback((query: string) => {
     setFilter((prev) => ({ ...prev, search: query || undefined }));
@@ -121,24 +94,6 @@ export function OrganizerListContainer({
     [createMutation, onCreateDialogClose]
   );
 
-  const handleEditSubmit = useCallback(
-    async (id: string, input: UpdateOrganizerInput) => {
-      try {
-        await updateMutation.mutateAsync({ id, input });
-        toast({ title: "Success", description: "Organizer updated successfully" });
-        setEditDialogOpen(false);
-        setOrganizerToEdit(null);
-      } catch (err) {
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : "Failed to update organizer",
-          variant: "destructive",
-        });
-        throw err;
-      }
-    },
-    [updateMutation]
-  );
 
   const handleNavigateToOrganizer = useCallback(
     (organizer: Organizer) => {
@@ -164,8 +119,6 @@ export function OrganizerListContainer({
         loading={isLoading}
         error={error as Error | null}
         onOrganizerClick={handleNavigateToOrganizer}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
         onCreate={handleCreate}
         onSearch={handleSearch}
         pagination={serverPagination}
@@ -184,17 +137,6 @@ export function OrganizerListContainer({
         onSubmit={handleCreateSubmit}
       />
 
-      <EditOrganizerDialog
-        open={editDialogOpen && !!organizerToEdit}
-        onOpenChange={(open) => {
-          setEditDialogOpen(open);
-          if (!open) {
-            setOrganizerToEdit(null);
-          }
-        }}
-        onSubmit={handleEditSubmit}
-        organizer={organizerToEdit}
-      />
     </>
   );
 }

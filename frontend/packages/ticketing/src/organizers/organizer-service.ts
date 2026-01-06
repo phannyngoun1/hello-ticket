@@ -12,6 +12,14 @@ interface OrganizerDTO {
   tenant_id: string;
   code: string;
   name: string;
+  description?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  logo?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -24,6 +32,14 @@ function transformOrganizer(dto: OrganizerDTO): Organizer {
     id: dto.id,
     code: dto.code,
     name: dto.name,
+    description: dto.description,
+    email: dto.email,
+    phone: dto.phone,
+    website: dto.website,
+    address: dto.address,
+    city: dto.city,
+    country: dto.country,
+    logo: dto.logo,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };
