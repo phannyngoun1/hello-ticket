@@ -19,6 +19,7 @@ import {
 import { cn } from "@truths/ui/lib/utils";
 import { BookingTicket } from "../types";
 import type { Customer } from "../../types";
+import type { Employee } from "../../employees/types";
 
 interface BookingReceiptProps {
   // Customer Props
@@ -29,6 +30,15 @@ interface BookingReceiptProps {
   onCustomerPopoverOpenChange: (open: boolean) => void;
   customerSearchQuery: string;
   onCustomerSearchQueryChange: (query: string) => void;
+
+  // Salesperson Props
+  employees: Employee[];
+  selectedSalespersonId: string | null;
+  onSelectedSalespersonIdChange: (id: string | null) => void;
+  salespersonPopoverOpen: boolean;
+  onSalespersonPopoverOpenChange: (open: boolean) => void;
+  salespersonSearchQuery: string;
+  onSalespersonSearchQueryChange: (query: string) => void;
 
   // Discount Props
   discountType: "percentage" | "amount";
@@ -56,6 +66,15 @@ export function BookingReceipt({
   customerSearchQuery,
   onCustomerSearchQueryChange,
 
+  // Salesperson Props
+  employees,
+  selectedSalespersonId,
+  onSelectedSalespersonIdChange,
+  salespersonPopoverOpen,
+  onSalespersonPopoverOpenChange,
+  salespersonSearchQuery,
+  onSalespersonSearchQueryChange,
+
   // Discount Props
   discountType,
   onDiscountTypeChange,
@@ -72,6 +91,7 @@ export function BookingReceipt({
   totalAmount,
 }: BookingReceiptProps) {
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
+  const selectedSalesperson = employees.find((e) => e.id === selectedSalespersonId);
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -165,6 +185,102 @@ export function BookingReceipt({
                           {customer.email && (
                             <span className="text-xs text-muted-foreground">
                               {customer.email}
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Salesperson Selection */}
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
+            Salesperson
+          </label>
+          <Popover
+            open={salespersonPopoverOpen}
+            onOpenChange={(open) => {
+              onSalespersonPopoverOpenChange(open);
+              if (!open) {
+                onSalespersonSearchQueryChange("");
+              }
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between h-9"
+              >
+                {selectedSalespersonId
+                  ? selectedSalesperson?.name ||
+                    selectedSalesperson?.code ||
+                    "Select a salesperson"
+                  : "Select salesperson (optional)"}
+                <svg
+                  className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[400px] p-0" align="start">
+              <Command>
+                <CommandInput
+                  placeholder="Search salespeople..."
+                  className="h-9"
+                  value={salespersonSearchQuery}
+                  onValueChange={onSalespersonSearchQueryChange}
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    {salespersonSearchQuery
+                      ? `No salespeople found matching "${salespersonSearchQuery}"`
+                      : "Start typing to search salespeople..."}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="none"
+                      onSelect={() => {
+                        onSelectedSalespersonIdChange(null);
+                        onSalespersonPopoverOpenChange(false);
+                      }}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-muted-foreground">
+                          No salesperson selected
+                        </span>
+                      </div>
+                    </CommandItem>
+                    {employees.map((employee) => (
+                      <CommandItem
+                        key={employee.id}
+                        value={`${employee.name} ${employee.code || ""} ${employee.work_email || ""}`}
+                        onSelect={() => {
+                          onSelectedSalespersonIdChange(employee.id);
+                          onSalespersonPopoverOpenChange(false);
+                          onSalespersonSearchQueryChange("");
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {employee.name}
+                          </span>
+                          {employee.code && (
+                            <span className="text-xs text-muted-foreground">
+                              {employee.code}
                             </span>
                           )}
                         </div>

@@ -28,6 +28,7 @@ export interface Booking {
     tenant_id: string;
     booking_number: string;
     customer_id?: string;
+    salesperson_id?: string;
     event_id: string;
     status: string; // 'pending' | 'reserved' | 'confirmed' | 'paid' | 'cancelled' | 'refunded'
     subtotal_amount: number;
@@ -52,6 +53,7 @@ export interface Booking {
 export interface CreateBookingInput {
     event_id: string;
     customer_id?: string;
+    salesperson_id?: string;
     items: BookingItem[];
     discount_type?: 'percentage' | 'amount';
     discount_value?: number;
@@ -61,6 +63,7 @@ export interface CreateBookingInput {
 
 export interface UpdateBookingInput {
     customer_id?: string;
+    salesperson_id?: string;
     status?: string;
     discount_type?: 'percentage' | 'amount';
     discount_value?: number;

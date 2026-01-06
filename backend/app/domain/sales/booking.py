@@ -52,6 +52,7 @@ class Booking(AggregateRoot):
         booking_id: Optional[str] = None,
         booking_number: Optional[str] = None,
         customer_id: Optional[str] = None,
+        salesperson_id: Optional[str] = None,
         status: BookingStatusEnum = BookingStatusEnum.PENDING,
         subtotal_amount: Optional[float] = None,
         discount_amount: float = 0.0,
@@ -77,6 +78,7 @@ class Booking(AggregateRoot):
         self.event_id = event_id
         self.booking_number = booking_number or self._generate_booking_number()
         self.customer_id = customer_id
+        self.salesperson_id = salesperson_id
         self.status = status
         self.currency = currency
         
