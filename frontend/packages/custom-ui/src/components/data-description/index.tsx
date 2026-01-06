@@ -217,7 +217,7 @@ export function DataDescription({
  */
 export interface DescriptionSectionProps {
   /** Title of the subsection */
-  title: string;
+  title?: string;
   /** Custom className for the section container */
   className?: string;
   /** Children (DescriptionItem components) */
@@ -248,7 +248,7 @@ export function DescriptionSection({
 }: DescriptionSectionProps) {
   return (
     <div className={cn(showBorder && "pt-2 border-t", className)}>
-      <h4 className="text-sm font-medium mb-3">{title}</h4>
+      {title && <h4 className="text-sm font-medium mb-3">{title}</h4>}
       {children}
     </div>
   );

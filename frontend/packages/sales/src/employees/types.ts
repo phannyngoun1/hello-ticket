@@ -43,6 +43,9 @@ export interface Employee {
     emergency_contact_phone?: string;
     emergency_contact_relationship?: string;
 
+    // Tags
+    tags?: string[];
+
     created_at: Date;
     updated_at?: Date;
     deactivated_at?: Date;
@@ -79,6 +82,9 @@ export interface CreateEmployeeInput {
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
     emergency_contact_relationship?: string;
+
+    // Tags
+    tags?: string[];
 }
 
 export interface UpdateEmployeeInput {
@@ -112,6 +118,9 @@ export interface UpdateEmployeeInput {
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
     emergency_contact_relationship?: string;
+
+    // Tags
+    tags?: string[];
 }
 
 export interface EmployeeFilter {

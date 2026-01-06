@@ -4,7 +4,7 @@
  * Display detailed information about a employee with optional edit and activity views.
  */
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Button,
   Card,
@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Tabs,
+  Badge,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -33,9 +34,13 @@ import {
   AlertCircle,
   Cake,
   TrendingUp,
+  Tag,
+  FileText,
 } from "lucide-react";
-import { DescriptionList, DescriptionItem, DescriptionSection } from "@truths/custom-ui";
+import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList } from "@truths/custom-ui";
 import { Employee } from "./types";
+import { AttachmentService, FileUpload } from "@truths/shared";
+import { api } from "@truths/api";
 
 export interface EmployeeDetailProps {
   className?: string;
@@ -46,7 +51,12 @@ export interface EmployeeDetailProps {
   showActivity?: boolean;
   showMetadata?: boolean;
   editable?: boolean;
+  
+  attachmentService?: AttachmentService;
   onEdit?: (data: Employee) => void;
+  onManageTags?: (data: Employee) => void;
+  onManageAttachments?: (data: Employee) => void;
+  profilePhotoComponent?: React.ReactNode;
 
   customActions?: (data: Employee) => React.ReactNode;
 }
@@ -59,13 +69,33 @@ export function EmployeeDetail({
 
   showMetadata = false,
   editable = true,
+  
+  attachmentService,
   onEdit,
+  onManageTags,
+  onManageAttachments,
+  profilePhotoComponent,
 
   customActions,
 }: EmployeeDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "profile" | "contact" | "sales" | "timeline" | "metadata"
+    "profile" | "contact" | "sales" | "timeline" | "metadata" | "documents"
   >("profile");
+  const [documents, setDocuments] = useState<FileUpload[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+
+  // Auto-create AttachmentService if not provided
+  const attachmentServiceInstance = useMemo(() => {
+    if (attachmentService) return attachmentService;
+    return new AttachmentService({
+      apiClient: api,
+      endpoints: {
+        attachments: "/api/v1/shared/attachments",
+        entityAttachments: "/api/v1/shared/attachments/entity",
+        profilePhoto: "/api/v1/shared/attachments/entity",
+      },
+    });
+  }, [attachmentService]);
 
   // All hooks must be called before any early returns
 
@@ -86,7 +116,32 @@ export function EmployeeDetail({
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   };
 
+  // Load documents when documents tab is active
+  const loadDocuments = useCallback(async () => {
+    if (!data?.id || !attachmentServiceInstance) {
+      return;
+    }
+    setIsLoadingDocuments(true);
+    try {
+      const response = await attachmentServiceInstance.getAttachmentsForEntity(
+        "employee",
+        data.id,
+        "document"
+      );
+      setDocuments(response.items || []);
+    } catch (error) {
+      console.error("Failed to load documents:", error);
+      setDocuments([]);
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  }, [data?.id, attachmentServiceInstance]);
 
+  useEffect(() => {
+    if (activeTab === "documents" && data?.id && attachmentServiceInstance) {
+      loadDocuments();
+    }
+  }, [activeTab, data?.id, attachmentServiceInstance, loadDocuments]);
 
   if (loading) {
     return (
@@ -126,9 +181,13 @@ export function EmployeeDetail({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-              <Info className="h-10 w-10 text-primary" />
-            </div>
+            {profilePhotoComponent ? (
+              <div className="flex-shrink-0">{profilePhotoComponent}</div>
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
+                <Info className="h-10 w-10 text-primary" />
+              </div>
+            )}
             <div>
               <h2 className="text-xl font-semibold">{displayName}</h2>
               {data.code && (
@@ -139,32 +198,38 @@ export function EmployeeDetail({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               {customActions?.(data)}
+              {editable && onEdit && (
+                <Button
+                  onClick={() => onEdit(data)}
+                  size="sm"
+                  variant="outline"
+                  className={cn("h-8 px-2 text-xs")}
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+              )}
             </div>
-            {editable && onEdit && (
-              <Button
-                onClick={() => onEdit(data)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Edit
-              </Button>
-            )}
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Actions">
-                    <MoreVertical className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
+                    <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {editable && onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(data)}>
-                      <Edit className="mr-2 h-3.5 w-3.5" /> Edit employee
+                  {editable && onManageTags && (
+                    <DropdownMenuItem onClick={() => onManageTags(data)}>
+                      <Tag className="mr-2 h-3.5 w-3.5" /> Manage Tags
+                    </DropdownMenuItem>
+                  )}
+                  {editable && onManageAttachments && (
+                    <DropdownMenuItem onClick={() => onManageAttachments(data)}>
+                      <FileText className="mr-2 h-3.5 w-3.5" /> Manage Documents
                     </DropdownMenuItem>
                   )}
 
@@ -238,24 +303,38 @@ export function EmployeeDetail({
                   Timeline
                 </span>
               </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === "documents"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("documents")}
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Documents {documents.length > 0 && `(${documents.length})`}
+                </span>
+              </button>
               {hasMetadata && (
                 <button
                   className={cn(
                     "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                     activeTab === "metadata"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("metadata")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Metadata
-                  </span>
-                </button>
-              )}
-            </div>
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("metadata")}
+              >
+                <span className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Metadata
+                </span>
+              </button>
+            )}
           </div>
+        </div>
 
           <div className="mt-0">
             {/* Basic Information Tab */}
@@ -327,6 +406,34 @@ export function EmployeeDetail({
                     hideIfEmpty={false}
                   />
                 </DescriptionList>
+
+                {/* Tags */}
+                <DescriptionSection  showBorder>
+                  <DescriptionList gridClassName="!grid-cols-1" className="mt-0 mb-0">
+                    <DescriptionItem
+                      label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                      value={
+                        data.tags && data.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {data.tags.map((tag, index) => (
+                              <Badge
+                                key={`tag-${index}-${tag}`}
+                                variant="secondary"
+                                className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
+                              >
+                                <Tag className="h-3 w-3" />
+                                <span>{tag}</span>
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground italic">No tags</span>
+                        )
+                      }
+                      hideIfEmpty={false}
+                    />
+                  </DescriptionList>
+                </DescriptionSection>
               </div>
             )}
 
@@ -440,6 +547,17 @@ export function EmployeeDetail({
               </div>
             )}
 
+            {/* Documents Tab */}
+            {activeTab === "documents" && (
+               <div className="space-y-6">
+                 <DocumentList
+                   documents={documents}
+                   isLoading={isLoadingDocuments}
+                   onManageAttachments={editable && onManageAttachments ? () => onManageAttachments(data) : undefined}
+                 />
+               </div>
+            )}
+
             {/* Metadata Tab */}
             {activeTab === "metadata" && (
               <div className="space-y-6">
@@ -458,3 +576,4 @@ export function EmployeeDetail({
     </Card>
   );
 }
+

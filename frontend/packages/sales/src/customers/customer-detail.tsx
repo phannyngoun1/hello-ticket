@@ -7,7 +7,16 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { Button, Card, Tabs, Badge } from "@truths/ui";
+import {
+  Button,
+  Card,
+  Tabs,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -31,10 +40,9 @@ import {
   Building2,
   Share2,
   Tag,
+  MoreVertical,
 } from "lucide-react";
 import {
-  ActionList,
-  type ActionItem,
   DocumentList,
   DescriptionList,
   DescriptionItem,
@@ -163,89 +171,8 @@ export function CustomerDetail({
   };
 
   // Build action items
-  const actionItems: ActionItem[] = [];
-
-  if (editable && cus && onEdit) {
-    actionItems.push({
-      id: "edit",
-      label: "Edit",
-      icon: <Edit className="h-3.5 w-3.5" />,
-      onClick: () => onEdit(cus),
-      variant: "default",
-    });
-  }
-
-  if (cus && onCreateBooking) {
-    actionItems.push({
-      id: "create-booking",
-      label: "Create Booking",
-      icon: <ShoppingCart className="h-3.5 w-3.5" />,
-      onClick: () => onCreateBooking(cus),
-      variant: "default",
-    });
-  }
-
-  if (cus && onViewBookings) {
-    actionItems.push({
-      id: "view-bookings",
-      label: "View Bookings",
-      icon: <CreditCard className="h-3.5 w-3.5" />,
-      onClick: () => onViewBookings(cus),
-      variant: "outline",
-    });
-  }
-
   const isActive = cus?.status === "active";
-
-  if (cus && isActive && onDeactivate) {
-    actionItems.push({
-      id: "deactivate",
-      label: "Deactivate",
-      icon: <UserX className="h-3.5 w-3.5" />,
-      onClick: () => onDeactivate(cus),
-      variant: "outline",
-    });
-  }
-
-  if (cus && !isActive && onActivate) {
-    actionItems.push({
-      id: "activate",
-      label: "Activate",
-      icon: <UserCheck className="h-3.5 w-3.5" />,
-      onClick: () => onActivate(cus),
-      variant: "default",
-    });
-  }
-
-  if (cus && editable && onManageTags) {
-    actionItems.push({
-      id: "manage-tags",
-      label: "Manage Tags",
-      icon: <Tag className="h-3.5 w-3.5" />,
-      onClick: () => onManageTags(cus),
-      variant: "outline",
-    });
-  }
-
-  if (cus && editable && onManageAttachments) {
-    actionItems.push({
-      id: "manage-attachments",
-      label: "Manage Documents",
-      icon: <FileText className="h-3.5 w-3.5" />,
-      onClick: () => onManageAttachments(cus),
-      variant: "outline",
-    });
-  }
-
-  if (cus && onDelete) {
-    actionItems.push({
-      id: "delete",
-      label: "Delete",
-      icon: <Trash2 className="h-3.5 w-3.5" />,
-      onClick: () => onDelete(cus),
-      variant: "destructive",
-    });
-  }
+  const hasMetadata = showMetadata;
 
   if (loading) {
     return (
@@ -276,8 +203,6 @@ export function CustomerDetail({
       </Card>
     );
   }
-
-  const hasMetadata = showMetadata;
 
   return (
     <Card className={cn("p-6", className)}>
@@ -360,12 +285,81 @@ export function CustomerDetail({
             </div>
           </div>
 
-          <ActionList
-            actions={actionItems}
-            maxVisibleActions={3}
-            customActions={customActions?.(cus)}
-            size="sm"
-          />
+          {/* Action Buttons */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
+              {cus && onCreateBooking && (
+                <Button
+                  onClick={() => onCreateBooking(cus)}
+                  size="sm"
+                  className={cn("h-8 px-2 text-xs")}
+                >
+                  <ShoppingCart className="h-3 w-3 mr-1" />
+                  Book Now
+                </Button>
+              )}
+              {editable && cus && onEdit && (
+                <Button
+                  onClick={() => onEdit(cus)}
+                  size="sm"
+                  variant="outline"
+                  className={cn("h-8 px-2 text-xs")}
+                >
+                  <Edit className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+              )}
+               {cus && onViewBookings && (
+                <Button
+                  onClick={() => onViewBookings(cus)}
+                  size="sm"
+                  variant="outline"
+                  className={cn("h-8 px-2 text-xs")}
+                >
+                  <CreditCard className="h-3 w-3 mr-1" />
+                  View Bookings
+                </Button>
+              )}
+            </div>
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {cus && isActive && onDeactivate && (
+                    <DropdownMenuItem onClick={() => onDeactivate(cus)}>
+                        <UserX className="mr-2 h-3.5 w-3.5" /> Deactivate
+                    </DropdownMenuItem>
+                  )}
+                  {cus && !isActive && onActivate && (
+                    <DropdownMenuItem onClick={() => onActivate(cus)}>
+                        <UserCheck className="mr-2 h-3.5 w-3.5" /> Activate
+                    </DropdownMenuItem>
+                  )}
+                  {cus && editable && onManageTags && (
+                    <DropdownMenuItem onClick={() => onManageTags(cus)}>
+                      <Tag className="mr-2 h-3.5 w-3.5" /> Manage Tags
+                    </DropdownMenuItem>
+                  )}
+                  {cus && editable && onManageAttachments && (
+                    <DropdownMenuItem onClick={() => onManageAttachments(cus)}>
+                      <FileText className="mr-2 h-3.5 w-3.5" /> Manage Documents
+                    </DropdownMenuItem>
+                  )}
+                  {cus && onDelete && (
+                    <DropdownMenuItem onClick={() => onDelete(cus)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                    </DropdownMenuItem>
+                  )}
+
+                  {customActions && customActions(cus)}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}

@@ -63,13 +63,14 @@ export function EntityTagsDialog({
   }, [open, entityId]);
 
   // Reset selected tags when dialog opens/closes
+  const serializedInitialTags = JSON.stringify(initialTags || []);
   useEffect(() => {
     if (open) {
-      setSelectedTags(initialTags || []);
+      setSelectedTags(JSON.parse(serializedInitialTags));
       setSearchQuery("");
       setComboboxOpen(false);
     }
-  }, [open, initialTags]);
+  }, [open, serializedInitialTags]);
 
   // Update popover width when combobox opens
   useEffect(() => {

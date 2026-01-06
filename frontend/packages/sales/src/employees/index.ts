@@ -9,6 +9,9 @@ export * from './employee-form';
 
 export * from './create-employee-dialog';
 export * from './edit-employee-dialog';
+export * from './employee-tags-dialog';
+export * from './employee-attachments-dialog';
+export * from './employee-profile-photo-upload';
 
 export * from './employee-service';
 export * from './use-employees';
