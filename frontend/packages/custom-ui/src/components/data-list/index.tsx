@@ -13,7 +13,6 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Card } from "@truths/ui";
 import { Button } from "@truths/ui";
 import { Input } from "@truths/ui";
 import { LayoutGrid, Calendar } from "lucide-react";
@@ -285,6 +284,7 @@ export function DataList<T extends DataListItem>({
                 onItemClick={onItemClick}
                 badges={badges}
                 stats={stats}
+              
               />
             )}
           </>
