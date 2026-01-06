@@ -1,5 +1,5 @@
 
-import { Clock, MapPin, ShoppingCart, Ticket } from "lucide-react";
+import { Clock, MapPin, Ticket } from "lucide-react";
 import {
   Button,
   Badge,
