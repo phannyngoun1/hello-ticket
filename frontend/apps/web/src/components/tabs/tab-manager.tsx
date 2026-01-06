@@ -13,7 +13,9 @@ import {
   type LucideIcon,
   ChevronDown,
   GripVertical,
-  Menu
+  Layers, // For "Group Tabs" icon
+  Pin,
+  PinOff
 } from "lucide-react";
 import {
   Button,
@@ -21,10 +23,13 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
+  ContextMenuSeparator,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -37,6 +42,7 @@ export interface AppTab {
   title: string;
   iconName?: string;
   data?: unknown;
+  pinned?: boolean;
 }
 
 interface TabManagerProps {
@@ -229,9 +235,9 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     const [pathname, search] = path.split("?");
     const searchParams = search ? new URLSearchParams(search) : undefined;
     navigate({ 
-      to: pathname as any,
+      to: pathname,
       search: searchParams ? Object.fromEntries(searchParams) : undefined
-    });
+    } as any);
   }, [navigate]);
 
   const handleTabClick = useCallback(
@@ -378,6 +384,66 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     };
   }, []);
 
+  const getModuleInfo = (path: string) => {
+    if (path === "/" || path === "/dashboard") return "General";
+    if (path.startsWith("/users")) return "Users";
+    if (path.startsWith("/sales") || path.startsWith("/bookings") || path.startsWith("/explore")) return "Sales & Bookings";
+    if (path.startsWith("/settings")) return "Settings";
+    return "Other";
+  };
+
+  const sortTabsWithPins = (tabsList: AppTab[]) => {
+      return [...tabsList].sort((a, b) => {
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          return 0; // Stable sort for same pin status
+      });
+  };
+
+  const handleTogglePin = useCallback((tab: AppTab) => {
+      setTabs(prev => {
+          const updated = prev.map(t => 
+              t.id === tab.id ? { ...t, pinned: !t.pinned } : t
+          );
+          return sortTabsWithPins(updated);
+      });
+  }, []);
+
+  const handleGroupTabs = useCallback(() => {
+    setTabs((prevTabs) => {
+      const sorted = [...prevTabs].sort((a, b) => {
+        // Pinned tabs always first
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        if (a.pinned && b.pinned) return 0;
+
+        const moduleA = getModuleInfo(a.path);
+        const moduleB = getModuleInfo(b.path);
+        if (moduleA === moduleB) {
+          // Keep pinned tabs (Home/Dashboard) at top if same module, otherwise sort by title
+          if (a.path === "/" || a.path === "/dashboard") return -1;
+          if (b.path === "/" || b.path === "/dashboard") return 1;
+          return a.title.localeCompare(b.title);
+        }
+        
+        // Define module order
+        const order = ["General", "Sales & Bookings", "Users", "Settings", "Other"];
+        return order.indexOf(moduleA) - order.indexOf(moduleB);
+      });
+      return sorted;
+    });
+  }, []);
+
+  // Group tabs for the dropdown
+  const groupedTabs = tabs.reduce((acc, tab) => {
+    const module = tab.pinned ? "Pinned" : getModuleInfo(tab.path);
+    if (!acc[module]) acc[module] = [];
+    acc[module].push(tab);
+    return acc;
+  }, {} as Record<string, AppTab[]>);
+
+  const moduleOrder = ["Pinned", "General", "Sales & Bookings", "Users", "Settings", "Other"];
+
   // Hide tabs if disabled by user preference or if there's only one tab (but not in inline mode)
   // Also hide if inline mode is requested but tab position is separate
   if (
@@ -428,10 +494,12 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                         onDragEnd={handleDragEnd}
                         onClick={() => handleTabClick(tab)}
                         className={cn(
-                            "group relative flex items-center gap-1.5 px-2 py-1 rounded-md",
+                            "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
                             "transition-all duration-200 whitespace-nowrap text-xs border",
-                            "flex-shrink-0 min-w-0",
-                            inline ? "max-w-[140px] text-[11px]" : "max-w-[200px]",
+                            "flex-shrink-0 select-none",
+                            tab.pinned 
+                                ? "w-8 px-0 justify-center min-w-[32px]" 
+                                : cn("min-w-0", inline ? "max-w-[140px] text-[11px]" : "max-w-[200px]"),
                             hoveredGripTabId === tab.id ? "cursor-grab" : "cursor-pointer",
                             activeTabId === tab.id
                                 ? "bg-accent text-accent-foreground border-border shadow-sm"
@@ -441,20 +509,23 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                                 ? "ring-2 ring-primary/50 bg-primary/10"
                                 : ""
                         )}
+                        title={tab.pinned ? tab.title : undefined}
                         >
-                        <GripVertical
-                            className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                            onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                            onMouseLeave={handleGripMouseLeave}
-                        />
+                            {!tab.pinned && (
+                                <GripVertical
+                                    className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                                    onMouseEnter={() => handleGripMouseEnter(tab.id)}
+                                    onMouseLeave={handleGripMouseLeave}
+                                />
+                            )}
                         {(() => {
                             const IconComponent = getIconComponent(tab.iconName);
                             return IconComponent ? (
-                            <IconComponent className="h-3 w-3 flex-shrink-0" />
+                            <IconComponent className={cn("h-3.5 w-3.5 flex-shrink-0", tab.pinned ? "mx-auto" : "")} />
                             ) : null;
                         })()}
-                        <span className="font-medium truncate">{tab.title}</span>
-                        {tabs.length > 1 && (
+                        {!tab.pinned && <span className="font-medium truncate">{tab.title}</span>}
+                        {!tab.pinned && tabs.length > 1 && (
                             <button
                             onClick={(e) => handleTabClose(e, tab.id)}
                             className={cn(
@@ -474,6 +545,21 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                     <ContextMenuContent className="min-w-[120px]">
                         {tabs.length > 1 && (
                         <>
+                            <ContextMenuItem
+                                onClick={() => handleTogglePin(tab)}
+                                className="text-xs"
+                            >
+                                {tab.pinned ? <PinOff className="mr-2 h-3.5 w-3.5" /> : <Pin className="mr-2 h-3.5 w-3.5" />}
+                                {tab.pinned ? "Unpin Tab" : "Pin Tab"}
+                            </ContextMenuItem>
+                            <ContextMenuItem
+                                onClick={handleGroupTabs}
+                                className="text-xs"
+                            >
+                                <Layers className="mr-2 h-3.5 w-3.5" />
+                                Group Related Tabs
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
                             <ContextMenuItem
                             onClick={handleCloseOthers}
                             className="text-xs"
@@ -511,43 +597,54 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                 <ChevronDown className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-[300px] overflow-y-auto min-w-[200px]">
-                {validTabs.map((tab) => {
-                    const IconComponent = getIconComponent(tab.iconName);
+            <DropdownMenuContent align="end" className="max-h-[400px] overflow-y-auto min-w-[200px]">
+                {moduleOrder.map(module => {
+                    const moduleTabs = groupedTabs[module];
+                    if (!moduleTabs || moduleTabs.length === 0) return null;
                     return (
-                        <DropdownMenuItem
-                        key={tab.id}
-                        onClick={() => handleTabClick(tab)}
-                        className={cn(
-                            "text-xs flex items-center justify-between gap-2",
-                            activeTabId === tab.id && "bg-accent text-accent-foreground font-medium"
-                        )}
-                        >   
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            {IconComponent && (
-                                <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
-                            )}
-                            <span className="truncate">{tab.title}</span>
+                        <div key={module}>
+                            <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 font-bold tracking-wider opacity-70">
+                                {module}
+                            </DropdownMenuLabel>
+                            {moduleTabs.map(tab => {
+                                const IconComponent = getIconComponent(tab.iconName);
+                                return (
+                                    <DropdownMenuItem
+                                    key={tab.id}
+                                    onClick={() => handleTabClick(tab)}
+                                    className={cn(
+                                        "text-xs flex items-center justify-between gap-2 pl-4",
+                                        activeTabId === tab.id && "bg-accent text-accent-foreground font-medium"
+                                    )}
+                                    >   
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        {tab.pinned && <Pin className="h-3 w-3 text-muted-foreground shrink-0 rotate-45" />}
+                                        {IconComponent && (
+                                            <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
+                                        )}
+                                        <span className="truncate">{tab.title}</span>
+                                    </div>
+                                    {!tab.pinned && tabs.length > 1 && (
+                                        <div
+                                            role="button"
+                                            onClick={(e) => handleTabClose(e, tab.id)}
+                                            className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </div>
+                                    )}
+                                    </DropdownMenuItem>
+                                );
+                            })}
+                            <DropdownMenuSeparator className="my-1" />
                         </div>
-                        {tabs.length > 1 && (
-                            <div
-                                role="button"
-                                onClick={(e) => handleTabClose(e, tab.id)}
-                                className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
-                            >
-                                <X className="h-3 w-3" />
-                            </div>
-                        )}
-                        </DropdownMenuItem>
                     );
                 })}
+
                 {tabs.length > 1 && (
-                    <>
-                        <div className="h-px bg-border my-1" />
-                        <DropdownMenuItem onClick={handleCloseAll} className="text-xs text-red-500 focus:text-red-600">
-                            Close All Tabs
-                        </DropdownMenuItem>
-                    </>
+                    <DropdownMenuItem onClick={handleCloseAll} className="text-xs text-red-500 focus:text-red-600 mt-1">
+                        Close All Tabs
+                    </DropdownMenuItem>
                 )}
             </DropdownMenuContent>
         </DropdownMenu>
