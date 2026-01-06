@@ -1,16 +1,8 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Search, List, Grid3x3, X, Ticket } from "lucide-react";
+import { List, Grid3x3, Ticket, Calendar } from "lucide-react";
 import {
-  Input,
   Button,
-  Badge,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-
 } from "@truths/ui";
 import { 
   useEventService, 
@@ -25,24 +17,38 @@ import {
   useShows,
   type ShowImage,
 } from "@truths/ticketing";
-import { EventsFilterSheet, type DateFilter } from "./events-filter-sheet";
 import { ShowEventsSheet } from "./show-events-sheet";
 import { ShowList, type ShowWithEvents } from "./show-list";
+import { ShowFilters, type DateFilter } from "./show-filters";
+import { EventFilters } from "./event-filters";
+import { ExploreCalendar } from "./explore-calendar";
 
 export function ExploreList() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<EventStatus | "all">("all");
-  const [dateFilter, setDateFilter] = useState<DateFilter>({
+  
+  // Layout mode
+  const [layoutMode, setLayoutMode] = useState<"show" | "event" | "calendar">("show");
+  
+  // Show mode filter states
+  const [showSearch, setShowSearch] = useState("");
+  const [showStatusFilter, setShowStatusFilter] = useState<EventStatus | "all">("all");
+  const [showDateFilter, setShowDateFilter] = useState<DateFilter>({
     startDate: null,
     endDate: null,
   });
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showPastEvents, setShowPastEvents] = useState(false);
 
+  // Event mode filter states
+  const [eventSearch, setEventSearch] = useState("");
+  const [eventStatusFilter, setEventStatusFilter] = useState<EventStatus | "all">("all");
+  const [eventDateFilter, setEventDateFilter] = useState<DateFilter>({
+    startDate: null,
+    endDate: null,
+  });
+  const [eventPastEvents, setEventPastEvents] = useState(false);
+
+  // UI state
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
-  const [layoutMode, setLayoutMode] = useState<"show" | "event">("show");
   const [selectedShowForSheet, setSelectedShowForSheet] = useState<ShowWithEvents | null>(null);
   const [showEventsSheetOpen, setShowEventsSheetOpen] = useState(false);
 
@@ -62,7 +68,7 @@ export function ExploreList() {
   // Fetch all events (using max allowed limit of 200)
   const { data: eventsData, isLoading: eventsLoading } = useEvents(eventService, {
     filter: {
-      search: search || undefined,
+      search: eventSearch || undefined,
     },
     pagination: {
       page: 1,
@@ -127,17 +133,17 @@ export function ExploreList() {
       if (event.is_active === false) return false;
 
       // Filter by status
-      if (statusFilter !== "all" && event.status !== statusFilter) return false;
+      if (showStatusFilter !== "all" && event.status !== showStatusFilter) return false;
 
       // Filter by date range
-      if (dateFilter.startDate) {
-        const startDate = new Date(dateFilter.startDate);
+      if (showDateFilter.startDate) {
+        const startDate = new Date(showDateFilter.startDate);
         startDate.setHours(0, 0, 0, 0);
         if (eventDate < startDate) return false;
       }
 
-      if (dateFilter.endDate) {
-        const endDate = new Date(dateFilter.endDate);
+      if (showDateFilter.endDate) {
+        const endDate = new Date(showDateFilter.endDate);
         endDate.setHours(23, 59, 59, 999);
         if (eventDate > endDate) return false;
       }
@@ -160,8 +166,8 @@ export function ExploreList() {
         let shouldInclude = false;
         
         // Filter logic
-        if (search) {
-          const searchLower = search.toLowerCase();
+        if (showSearch) {
+          const searchLower = showSearch.toLowerCase();
           const showMatches = show.name.toLowerCase().includes(searchLower);
           const eventMatches = events.some((e) =>
             e.title.toLowerCase().includes(searchLower)
@@ -209,10 +215,9 @@ export function ExploreList() {
     showsData?.data,
     eventsData?.data,
     showImages,
-    search,
-    statusFilter,
-    dateFilter,
-    selectedDate,
+    showSearch,
+    showStatusFilter,
+    showDateFilter,
     showPastEvents,
   ]);
 
@@ -230,34 +235,27 @@ export function ExploreList() {
     });
   }, [navigate]);
 
-  const clearFilters = useCallback(() => {
-    setSearch("");
-    setStatusFilter("all");
-    setDateFilter({ startDate: null, endDate: null });
-    setSelectedDate(null);
+  const clearShowFilters = useCallback(() => {
+    setShowSearch("");
+    setShowStatusFilter("all");
+    setShowDateFilter({ startDate: null, endDate: null });
     setShowPastEvents(false);
   }, []);
 
-  const hasActiveFilters =
-    search ||
-    statusFilter !== "all" ||
-    dateFilter.startDate ||
-    dateFilter.endDate ||
-    selectedDate;
+  const clearEventFilters = useCallback(() => {
+    setEventSearch("");
+    setEventStatusFilter("all");
+    setEventDateFilter({ startDate: null, endDate: null });
+    setEventPastEvents(false);
+  }, []);
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  const hasShowFilters = !!(showSearch ||
+    showStatusFilter !== "all" ||
+    showDateFilter.startDate ||
+    showDateFilter.endDate ||
+    showPastEvents);
 
 
-
-  const formatStatus = (status: string) => {
-    return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
-  };
 
 
 
@@ -275,38 +273,31 @@ export function ExploreList() {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
-      // Filter out past events unless showPastEvents is true
-      if (!showPastEvents && eventDate < now) return false;
+      // Filter out past events unless eventPastEvents is true
+      if (!eventPastEvents && eventDate < now) return false;
 
       // Filter out inactive events
       if (event.is_active === false) return false;
 
       // Filter by status
-      if (statusFilter !== "all" && event.status !== statusFilter) return false;
+      if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
 
       // Filter by date range
-      if (dateFilter.startDate) {
-        const startDate = new Date(dateFilter.startDate);
+      if (eventDateFilter.startDate) {
+        const startDate = new Date(eventDateFilter.startDate);
         startDate.setHours(0, 0, 0, 0);
         if (eventDate < startDate) return false;
       }
 
-      if (dateFilter.endDate) {
-        const endDate = new Date(dateFilter.endDate);
+      if (eventDateFilter.endDate) {
+        const endDate = new Date(eventDateFilter.endDate);
         endDate.setHours(23, 59, 59, 999);
         if (eventDate > endDate) return false;
       }
 
-      // Filter by selected date
-      if (selectedDate) {
-        const selected = new Date(selectedDate);
-        selected.setHours(0, 0, 0, 0);
-        if (eventDate.getTime() !== selected.getTime()) return false;
-      }
-
       // Filter by search
-      if (search) {
-        const searchLower = search.toLowerCase();
+      if (eventSearch) {
+        const searchLower = eventSearch.toLowerCase();
         if (!event.title.toLowerCase().includes(searchLower)) return false;
       }
 
@@ -330,11 +321,10 @@ export function ExploreList() {
   }, [
     eventsData?.data,
     showsData?.data,
-    search,
-    statusFilter,
-    dateFilter,
-    selectedDate,
-    showPastEvents,
+    eventSearch,
+    eventStatusFilter,
+    eventDateFilter,
+    eventPastEvents,
   ]);
 
   const isLoading = showsLoading || eventsLoading;
@@ -367,7 +357,7 @@ export function ExploreList() {
               variant={layoutMode === "show" ? "default" : "ghost"}
               size="sm"
               onClick={() => setLayoutMode("show")}
-              className="rounded-r-none"
+              className="rounded-none rounded-l-md border-r"
             >
               <Grid3x3 className="h-4 w-4 mr-2" />
               Show Based
@@ -376,140 +366,69 @@ export function ExploreList() {
               variant={layoutMode === "event" ? "default" : "ghost"}
               size="sm"
               onClick={() => setLayoutMode("event")}
-              className="rounded-l-none"
+              className="rounded-none border-r"
             >
               <List className="h-4 w-4 mr-2" />
               Event Based
+            </Button>
+            <Button
+              variant={layoutMode === "calendar" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setLayoutMode("calendar")}
+              className="rounded-none rounded-r-md"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search shows or events..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
 
-        {/* Quick Status Filter */}
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as EventStatus | "all")}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value={EventStatusEnum.ON_SALE}>On Sale</SelectItem>
-            <SelectItem value={EventStatusEnum.PUBLISHED}>Published</SelectItem>
-            <SelectItem value={EventStatusEnum.SOLD_OUT}>Sold Out</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Advanced Filters Button */}
-        <EventsFilterSheet
-          open={filterSheetOpen}
-          onOpenChange={setFilterSheetOpen}
-          hasActiveFilters={!!hasActiveFilters}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
+      {/* Mode-Specific Filters */}
+      {layoutMode === "show" ? (
+        <ShowFilters
+          search={showSearch}
+          onSearchChange={setShowSearch}
+          statusFilter={showStatusFilter}
+          onStatusFilterChange={setShowStatusFilter}
+          dateFilter={showDateFilter}
+          onDateFilterChange={setShowDateFilter}
           showPastEvents={showPastEvents}
-          setShowPastEvents={setShowPastEvents}
-          onClearFilters={clearFilters}
+          onShowPastEventsChange={setShowPastEvents}
+          onClearFilters={clearShowFilters}
         />
-      </div>
+      ) : layoutMode === "event" ? (
+        <EventFilters
+          search={eventSearch}
+          onSearchChange={setEventSearch}
+          statusFilter={eventStatusFilter}
+          onStatusFilterChange={setEventStatusFilter}
+          dateFilter={eventDateFilter}
+          onDateFilterChange={setEventDateFilter}
+          showPastEvents={eventPastEvents}
+          onShowPastEventsChange={setEventPastEvents}
+          onClearFilters={clearEventFilters}
+        />
+      ) : null}
 
-      {/* Active Filters Display */}
-      {hasActiveFilters && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-sm text-muted-foreground">Active filters:</span>
-          {search && (
-            <Badge variant="secondary" className="gap-1">
-              Search: {search}
-              <button
-                onClick={() => setSearch("")}
-                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-          {statusFilter !== "all" && (
-            <Badge variant="secondary" className="gap-1">
-              Status: {formatStatus(statusFilter)}
-              <button
-                onClick={() => setStatusFilter("all")}
-                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-          {dateFilter.startDate && (
-            <Badge variant="secondary" className="gap-1">
-              From: {formatDate(new Date(dateFilter.startDate))}
-              <button
-                onClick={() =>
-                  setDateFilter((prev) => ({ ...prev, startDate: null }))
-                }
-                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-          {dateFilter.endDate && (
-            <Badge variant="secondary" className="gap-1">
-              To: {formatDate(new Date(dateFilter.endDate))}
-              <button
-                onClick={() =>
-                  setDateFilter((prev) => ({ ...prev, endDate: null }))
-                }
-                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          )}
-          {selectedDate && (
-            <Badge variant="secondary" className="gap-1">
-              Date: {formatDate(new Date(selectedDate))}
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
+      {/* Results Count */}
+      {layoutMode !== "calendar" && (
+        <div className="text-sm text-muted-foreground">
+          {isLoading ? (
+            "Loading events..."
+          ) : layoutMode === "show" ? (
+            <>
+              Showing {showsWithEvents.length} show{showsWithEvents.length !== 1 ? "s" : ""} with{" "}
+              {totalEvents} event{totalEvents !== 1 ? "s" : ""}
+            </>
+          ) : (
+            <>
+              Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+            </>
           )}
         </div>
       )}
-
-      {/* Results Count */}
-      <div className="text-sm text-muted-foreground">
-        {isLoading ? (
-          "Loading events..."
-        ) : layoutMode === "show" ? (
-          <>
-            Showing {showsWithEvents.length} show{showsWithEvents.length !== 1 ? "s" : ""} with{" "}
-            {totalEvents} event{totalEvents !== 1 ? "s" : ""}
-          </>
-        ) : (
-          <>
-            Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-          </>
-        )}
-      </div>
 
       {/* Event-Based View */}
       {layoutMode === "event" ? (
@@ -537,13 +456,18 @@ export function ExploreList() {
             </div>
           )}
         />
+      ) : layoutMode === "calendar" ? (
+        <ExploreCalendar
+          events={filteredEvents}
+          onEventClick={handleEventClick}
+        />
       ) : (
         <>
           <ShowList 
             isLoading={isLoading}
             shows={showsWithEvents}
-            hasActiveFilters={!!hasActiveFilters}
-            onClearFilters={clearFilters}
+            hasActiveFilters={hasShowFilters}
+            onClearFilters={clearShowFilters}
             onShowClick={handleShowClick}
           />
         </>
