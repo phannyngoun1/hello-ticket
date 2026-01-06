@@ -108,6 +108,7 @@ class BookingModel(SQLModel, table=True):
     # References
     customer_id: Optional[str] = Field(default=None, index=True)  # Optional customer
     event_id: str = Field(index=True, foreign_key="events.id")
+    salesperson_id: Optional[str] = Field(default=None, index=True, foreign_key="employees.id")
     
     # Status
     status: str = Field(

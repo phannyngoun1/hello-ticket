@@ -22,6 +22,7 @@ class BookingCreateRequest(BaseModel):
     """Payload for booking creation"""
     event_id: str = Field(..., description="Event ID for the booking")
     customer_id: Optional[str] = Field(None, description="Customer ID (optional)")
+    salesperson_id: Optional[str] = Field(None, description="Salesperson ID (optional)")
     items: List[BookingItemRequest] = Field(..., description="List of booking items (tickets)")
     discount_type: Optional[str] = Field(None, description="Discount type: 'percentage' or 'amount'")
     discount_value: Optional[float] = Field(0, description="Discount value")
@@ -59,6 +60,7 @@ class BookingResponse(BaseModel):
     tenant_id: str
     booking_number: str
     customer_id: Optional[str] = None
+    salesperson_id: Optional[str] = None
     event_id: str
     status: str
     subtotal_amount: float

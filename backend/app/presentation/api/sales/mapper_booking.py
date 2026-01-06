@@ -31,6 +31,7 @@ class SalesApiMapper:
             tenant_id=booking.tenant_id,
             booking_number=booking.booking_number,
             customer_id=booking.customer_id,
+            salesperson_id=booking.salesperson_id,
             event_id=booking.event_id,
             status=booking.status.value if hasattr(booking.status, 'value') else str(booking.status),
             subtotal_amount=booking.subtotal_amount,

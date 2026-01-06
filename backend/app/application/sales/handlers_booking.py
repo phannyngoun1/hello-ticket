@@ -96,6 +96,7 @@ class BookingCommandHandler:
             items=items,
             booking_number=booking_number,
             customer_id=command.customer_id,
+            salesperson_id=command.salesperson_id,
             discount_type=command.discount_type,
             discount_value=command.discount_value,
             tax_rate=command.tax_rate,
@@ -165,6 +166,10 @@ class BookingCommandHandler:
         # Update customer if provided
         if command.customer_id is not None:
             booking.customer_id = command.customer_id
+
+        # Update salesperson if provided
+        if command.salesperson_id is not None:
+            booking.salesperson_id = command.salesperson_id
 
         # Update status if provided
         if command.status is not None:

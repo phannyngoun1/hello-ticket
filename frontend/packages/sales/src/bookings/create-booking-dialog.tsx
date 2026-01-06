@@ -37,6 +37,8 @@ import { api } from "@truths/api";
 import type { EventSeat } from "@truths/ticketing/events/types";
 import { CustomerService } from "../customers/customer-service";
 import { useCustomers } from "../customers/use-customers";
+import { EmployeeService } from "../employees/employee-service";
+import { useEmployees } from "../employees/use-employees";
 import type { Customer } from "../types";
 import type { CreateBookingInput } from "./types";
 import { BookingReceipt } from "./components/booking-receipt";
@@ -47,6 +49,7 @@ import { BookingTicket } from "./types";
 
 export interface CreateBookingTransactionData {
   customerId?: string;
+  salespersonId?: string;
   customer?: Customer;
   eventId: string;
   tickets: BookingTicket[];
@@ -87,6 +90,12 @@ export function CreateBookingDialog({
   const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [debouncedCustomerSearchQuery, setDebouncedCustomerSearchQuery] = useState("");
+
+  // Salesperson selection
+  const [selectedSalespersonId, setSelectedSalespersonId] = useState<string | null>(null);
+  const [salespersonPopoverOpen, setSalespersonPopoverOpen] = useState(false);
+  const [salespersonSearchQuery, setSalespersonSearchQuery] = useState("");
+  const [debouncedSalespersonSearchQuery, setDebouncedSalespersonSearchQuery] = useState("");
 
   // Seat view mode: 'visualization' | 'list'
   const [seatViewMode, setSeatViewMode] = useState<"visualization" | "list">(
@@ -158,6 +167,17 @@ export function CreateBookingDialog({
     []
   );
 
+  const employeeService = useMemo(
+    () =>
+      new EmployeeService({
+        apiClient: api,
+        endpoints: {
+          employees: "/api/v1/sales/employees",
+        },
+      }),
+    []
+  );
+
   // Fetch shows
   const { data: showsData } = useShows(showService, {
     pagination: { page: 1, pageSize: 100 },
@@ -207,6 +227,15 @@ export function CreateBookingDialog({
     return () => clearTimeout(timer);
   }, [customerSearchQuery]);
 
+  // Debounce salesperson search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSalespersonSearchQuery(salespersonSearchQuery);
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [salespersonSearchQuery]);
+
   // Fetch customers with dynamic search
   const { data: customersData } = useCustomers(customerService, {
     filter: {
@@ -218,6 +247,18 @@ export function CreateBookingDialog({
     },
   });
   const customers = customersData?.data || [];
+
+  // Fetch employees
+  const { data: employeesData } = useEmployees(employeeService, {
+    filter: {
+        search: debouncedSalespersonSearchQuery || undefined,
+    },
+    pagination: {
+        page: 1,
+        pageSize: 50,
+    },
+  });
+  const employees = employeesData?.data || [];
 
 
   // Create maps for seat status lookup
@@ -262,12 +303,15 @@ export function CreateBookingDialog({
       setSelectedEventId(null);
       setSelectedTickets([]);
       setSelectedCustomerId(null);
+      setSelectedSalespersonId(null);
       setSeatViewMode("visualization");
       setSelectedSectionId(null);
       setPendingData(null);
       setShowConfirmDialog(false);
       setCustomerSearchQuery("");
       setCustomerPopoverOpen(false);
+      setSalespersonSearchQuery("");
+      setSalespersonPopoverOpen(false);
     } else {
       // When opening, initialize with props if provided
       if (initialShowId) setSelectedShowId(initialShowId);
@@ -433,6 +477,7 @@ export function CreateBookingDialog({
 
     const data: CreateBookingTransactionData = {
       customerId: selectedCustomerId || undefined,
+      salespersonId: selectedSalespersonId || undefined,
       eventId: selectedEventId,
       tickets: selectedTickets,
     };
@@ -451,6 +496,7 @@ export function CreateBookingDialog({
       const bookingInput: CreateBookingInput = {
         event_id: pendingData.eventId,
         customer_id: pendingData.customerId || undefined,
+        salesperson_id: pendingData.salespersonId || undefined,
         items: pendingData.tickets.map((ticket) => ({
           event_seat_id: ticket.eventSeatId,
           section_name: ticket.sectionName,
@@ -716,8 +762,8 @@ export function CreateBookingDialog({
           </div>
 
           {/* Right Section - Receipt-style Booking Details */}
-          <div className="w-96 flex flex-col min-w-0 border rounded-lg bg-background flex-shrink-0 shadow-sm">
-            <div className="h-[620px] overflow-y-auto flex flex-col">
+          <div className="w-96 flex flex-col min-w-0 border rounded-xl bg-card flex-shrink-0 shadow-lg ml-6">
+            <div className="h-full overflow-y-auto flex flex-col">
               {/* Customer Selection - Receipt Style */}
               <BookingReceipt
                 // Customer Props
@@ -728,6 +774,15 @@ export function CreateBookingDialog({
                 onCustomerPopoverOpenChange={setCustomerPopoverOpen}
                 customerSearchQuery={customerSearchQuery}
                 onCustomerSearchQueryChange={setCustomerSearchQuery}
+
+                // Salesperson Props
+                employees={employees}
+                selectedSalespersonId={selectedSalespersonId}
+                onSelectedSalespersonIdChange={setSelectedSalespersonId}
+                salespersonPopoverOpen={salespersonPopoverOpen}
+                onSalespersonPopoverOpenChange={setSalespersonPopoverOpen}
+                salespersonSearchQuery={salespersonSearchQuery}
+                onSalespersonSearchQueryChange={setSalespersonSearchQuery}
 
                 // Discount Props
                 discountType={discountType}

@@ -23,6 +23,7 @@ class CreateBookingCommand:
     event_id: str
     items: List[BookingItemCommand]
     customer_id: Optional[str] = None
+    salesperson_id: Optional[str] = None,
     discount_type: Optional[str] = None
     discount_value: Optional[float] = None
     tax_rate: float = 0.0
@@ -34,6 +35,7 @@ class UpdateBookingCommand:
     """Command to update booking details"""
     booking_id: str
     customer_id: Optional[str] = None
+    salesperson_id: Optional[str] = None
     status: Optional[str] = None
     discount_type: Optional[str] = None
     discount_value: Optional[float] = None
