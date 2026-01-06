@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { storage } from "@truths/utils";
 import {
@@ -65,6 +65,8 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
   const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const [hoveredGripTabId, setHoveredGripTabId] = useState<string | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const [userInitiatedTabChange, setUserInitiatedTabChange] = useState(false);
   const [tabPosition, setTabPosition] = useState<"separate" | "inline">(() => {
     const saved = storage.get<"separate" | "inline">("tab_position");
     return saved ?? "separate";
@@ -139,8 +141,29 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     });
   }, [location.pathname, location.search, onTabChange]);
 
+  // Check for overflow when tabs change or component mounts
+  useLayoutEffect(() => {
+    const checkOverflow = () => {
+      if (scrollViewportRef.current) {
+        const element = scrollViewportRef.current;
+        const hasOverflowNow = element.scrollWidth > element.clientWidth;
+        setHasOverflow(hasOverflowNow);
+      }
+    };
+
+    // Check immediately
+    checkOverflow();
+
+    // Also check after a short delay to ensure layout is stable
+    const timer = setTimeout(checkOverflow, 0);
+    return () => clearTimeout(timer);
+  }, [tabs, inline]);
+
   // Scroll active tab into view when it changes
   useEffect(() => {
+    // Don't scroll if this was a user-initiated click and tabs are overflowing
+    if (hasOverflow && userInitiatedTabChange) return;
+
     // Small timeout to ensure DOM is ready and layout is stable
     const timer = setTimeout(() => {
       if (activeTabRef.current) {
@@ -152,7 +175,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       }
     }, 10);
     return () => clearTimeout(timer);
-  }, [activeTabId, tabs]);
+  }, [activeTabId, tabs, hasOverflow, userInitiatedTabChange]);
 
   // Listen for dynamic tab title updates from pages (e.g., after data load)
   useEffect(() => {
@@ -241,11 +264,14 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
   const handleTabClick = useCallback(
     (tab: AppTab) => {
+      setUserInitiatedTabChange(true);
       setActiveTabId(tab.id);
       navigateToTabPath(tab.path);
       if (onTabChange) {
         onTabChange(tab);
       }
+      // Reset the flag after a short delay
+      setTimeout(() => setUserInitiatedTabChange(false), 100);
     },
     [navigateToTabPath, onTabChange]
   );
@@ -485,11 +511,17 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         )}
       >
         <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">
-            <div 
+            <div
                 className={cn(
-                    "flex items-center overflow-x-auto no-scrollbar scroll-smooth",
+                    "flex items-center scroll-smooth tab-container",
                     inline ? "gap-1.5" : "gap-0.5"
                 )}
+                style={{
+                    '--tab-overflow': hasOverflow ? 'hidden' : 'auto',
+                    '--tab-scrollbar-width': hasOverflow ? 'none' : 'auto',
+                    '--tab-overflow-style': hasOverflow ? 'none' : 'auto',
+                    '--tab-scrollbar-display': hasOverflow ? 'none' : 'auto'
+                } as React.CSSProperties}
                 ref={scrollViewportRef}
             >
                 {validTabs.map((tab) => (
@@ -600,7 +632,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                 className={cn(
                     "h-[26px] w-[26px] p-0 border border-transparent rounded-md hover:bg-accent/50 shrink-0 ml-1",
                     "text-muted-foreground hover:text-foreground",
-                    visibleTabsHasOverflow(scrollViewportRef.current) && "text-foreground bg-accent/20"
+                    hasOverflow && "text-foreground bg-accent/20"
                 )}
                 aria-label="List all tabs"
                 title="List all tabs"
@@ -664,8 +696,3 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   );
 }
 
-// Helper to check for overflow (simplified)
-function visibleTabsHasOverflow(element: HTMLDivElement | null) {
-    if (!element) return false;
-    return element.scrollWidth > element.clientWidth;
-}
