@@ -25,7 +25,6 @@ import { cn } from "@truths/ui/lib/utils";
 // Form schema with all new employee fields
 const employeeFormSchema = z
   .object({
-    code: z.string().optional(),
     name: z.string().min(1, "Name is required"),
     
     // System Link
@@ -84,7 +83,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
     } = useForm<EmployeeFormData>({
       resolver: zodResolver(employeeFormSchema),
       defaultValues: {
-        code: undefined,
         name: "",
         work_email: "",
         job_title: "",
@@ -144,24 +142,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
                 className={cn(errors.name && "border-destructive")}
               />
               <FieldError>{errors.name?.message}</FieldError>
-            </Field>
-
-            <Field data-invalid={!!errors.code}>
-              <FieldLabel htmlFor="code">Code</FieldLabel>
-              <Input
-                id="code"
-                type="text"
-                placeholder="Auto-generated"
-                {...register("code")}
-                disabled={isLoading || mode === "edit"}
-                readOnly={mode === "edit"}
-                title={mode === "edit" ? "Code cannot be modified" : "Auto-generated if left empty"}
-                className={cn(
-                  mode === "edit" && "cursor-not-allowed bg-muted text-muted-foreground",
-                  errors.code && "border-destructive"
-                )}
-              />
-              <FieldError>{errors.code?.message}</FieldError>
             </Field>
 
             <Field data-invalid={!!errors.work_email}>

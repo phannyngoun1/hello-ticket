@@ -4,13 +4,11 @@
  * Table view for employees with configurable columns and actions.
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Edit, Trash2 } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
 import {
-  ConfirmationDialog,
   createActionsColumn,
   createIdentifiedColumn,
   createTextColumn,
@@ -27,8 +25,6 @@ export interface EmployeeListProps {
   error?: Error | null;
   pagination?: Pagination;
   onEmployeeClick?: (employee: Employee) => void;
-  onEdit?: (employee: Employee) => void;
-  onDelete?: (employee: Employee) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
@@ -43,8 +39,6 @@ export function EmployeeList({
   error = null,
   pagination,
   onEmployeeClick,
-  onEdit,
-  onDelete,
   onCreate,
   onSearch,
   onPageChange,
@@ -52,12 +46,9 @@ export function EmployeeList({
   customActions,
 }: EmployeeListProps) {
   const density = useDensityStyles();
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
 
   const getDisplayName = (employee: Employee) => {
-    const value = employee.code;
-    return typeof value === "string" && value.trim().length > 0 ? value : String(employee.id);
+    return employee.code || employee.name || String(employee.id);
   };
 
   const getInitials = (value: string | undefined) => {
@@ -71,7 +62,7 @@ export function EmployeeList({
   const columns: ColumnDef<Employee>[] = [
     createIdentifiedColumn<Employee>({
       getDisplayName,
-      getInitials: (item) => getInitials(item.code as string | undefined),
+      getInitials: (item) => getInitials(item.code),
       header: "Code",
       showAvatar: false,
       onClick: onEmployeeClick,
@@ -148,36 +139,13 @@ export function EmployeeList({
     }),
 
 
-    createActionsColumn<Employee>({
-      customActions,
-      actions: [
-        ...(onEdit
-          ? [
-              {
-                icon: Edit,
-                onClick: (employee: Employee) => onEdit(employee),
-                title: "Edit",
-                className:
-                  "h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary transition-colors",
-              },
-            ]
-          : []),
-        ...(onDelete
-          ? [
-              {
-                icon: Trash2,
-                onClick: (employee: Employee) => {
-                  setSelectedEmployee(employee);
-                  setDeleteConfirmOpen(true);
-                },
-                title: "Delete",
-                className:
-                  "h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors",
-              },
-            ]
-          : []),
-      ],
-    }),
+    ...(customActions
+      ? [
+          createActionsColumn<Employee>({
+            customActions,
+          }),
+        ]
+      : []),
   ];
 
   const tableData = employees;
@@ -190,36 +158,6 @@ export function EmployeeList({
       }
     : undefined;
 
-  const handleDeleteConfirmChange = (open: boolean) => {
-    setDeleteConfirmOpen(open);
-    if (!open) {
-      setSelectedEmployee(null);
-    }
-  };
-
-  const handleDeleteConfirm = () => {
-    if (selectedEmployee && onDelete) {
-      onDelete(selectedEmployee);
-    }
-    setDeleteConfirmOpen(false);
-    setSelectedEmployee(null);
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-    setSelectedEmployee(null);
-  };
-
-  const deleteConfirmAction = {
-    label: "Delete",
-    onClick: handleDeleteConfirm,
-    variant: "destructive" as const,
-  };
-
-  const deleteCancelAction = {
-    label: "Cancel",
-    onClick: handleDeleteCancel,
-  };
 
   return (
     <div className={cn("w-full", className)}>
@@ -236,19 +174,6 @@ export function EmployeeList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
-      />
-
-      <ConfirmationDialog
-        open={deleteConfirmOpen}
-        onOpenChange={handleDeleteConfirmChange}
-        title="Delete Employee"
-        description={
-          selectedEmployee
-            ? `Are you sure you want to delete "${getDisplayName(selectedEmployee)}"? This action cannot be undone.`
-            : "Are you sure you want to delete this employee?"
-        }
-        confirmAction={deleteConfirmAction}
-        cancelAction={deleteCancelAction}
       />
     </div>
   );
