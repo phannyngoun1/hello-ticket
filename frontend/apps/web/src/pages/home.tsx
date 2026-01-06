@@ -25,8 +25,6 @@ import {
   Ticket,
   DollarSign,
   Activity,
-  Plus,
-  Eye,
   ArrowRight,
   RefreshCw,
   Users,
@@ -448,42 +446,52 @@ export function HomePage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5" />
-                  Quick Actions
+                  Action Center
                 </CardTitle>
-                <CardDescription>Common tasks and shortcuts</CardDescription>
+                <CardDescription>Items ensuring your attention</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <Link to="/ticketing/shows" className="block">
-                    <Button
-                      variant="outline"
-                      className="w-full h-24 flex flex-col items-center justify-center gap-2"
-                    >
-                      <Plus className="h-6 w-6" />
-                      Create New Show
-                    </Button>
-                  </Link>
-                  <Link to="/sales/bookings" className="block">
-                    <Button
-                      variant="outline"
-                      className="w-full h-24 flex flex-col items-center justify-center gap-2"
-                    >
-                      <Ticket className="h-6 w-6" />
-                      Bookings
-                    </Button>
-                  </Link>
-                  <Link to="/sales/customers" className="block">
-                    <Button variant="ghost" className="w-full justify-start">
-                      <Users className="h-4 w-4 mr-2" />
-                      View Customers
-                    </Button>
-                  </Link>
-                  <Link to="/ticketing/shows" className="block">
-                    <Button variant="ghost" className="w-full justify-start">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Browse Shows
-                    </Button>
-                  </Link>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Draft Events
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {analytics.event_status_breakdown.draft || 0} shows pending
+                      publication
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/ticketing/shows">Review</Link>
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Pending Bookings
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {analytics.booking_status_breakdown.pending || 0} orders
+                      awaiting confirmation
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/sales/bookings">Process</Link>
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      New Customers
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {analytics.new_customers_this_month || 0} joined this
+                      month
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link to="/sales/customers">View</Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
