@@ -57,7 +57,8 @@ function renderMenuPanel(item: NavigationItemDTO, locationPath: string) {
   const childLinks = children.map((child) => {
     const ChildIcon = resolveIcon(child.icon) || Icon;
     const isActiveChild = pathMatches(locationPath, child.path);
-    const hasSubItems = Array.isArray(child.children) && child.children.length > 0;
+    const hasSubItems =
+      Array.isArray(child.children) && child.children.length > 0;
 
     return (
       <li key={`${item.path}-${child.path}`}>
