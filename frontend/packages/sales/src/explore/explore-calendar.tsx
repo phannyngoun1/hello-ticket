@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MapPin, ChevronDown, Calendar as CalendarIcon, Eye } from "lucide-react";
+import { MapPin, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import type { Event } from "@truths/ticketing";
@@ -487,24 +487,7 @@ export function ExploreCalendar({
                     >
                       <div className="h-full flex flex-col p-3">
                         {/* View Action Button (Hover) */}
-                        {hasEvents && onDateClick && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDateClick(day.date, day.events);
-                            }}
-                            className={cn(
-                              "absolute top-2 right-2 z-10",
-                              "h-6 w-6 flex items-center justify-center",
-                              "bg-primary text-primary-foreground shadow-sm rounded-md",
-                              "opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0",
-                              "hover:bg-primary/90 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
-                            )}
-                            title="View events"
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+
                         {/* Day Header */}
                         <div className="flex items-start justify-between mb-2">
                           <button
@@ -567,7 +550,9 @@ export function ExploreCalendar({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (day.events.length === 1) {
+                                  if (onDateClick) {
+                                    onDateClick(day.date, day.events);
+                                  } else if (day.events.length === 1) {
                                     onEventClick(day.events[0]);
                                   } else {
                                     toggleDayExpansion(day.date);
