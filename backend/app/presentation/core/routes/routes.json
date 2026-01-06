@@ -1,18 +1,5 @@
 [
   {
-    "label": "Dashboard",
-    "path": "/dashboard",
-    "icon": "LayoutDashboard",
-    "shortcut": "mod+D",
-    "description": "Monitor company performance and operational insights in real time.",
-    "keywords": [
-      "dashboard",
-      "dash",
-      "home",
-      "overview"
-    ]
-  },
-  {
     "label": "Sales",
     "path": "/sales",
     "icon": "TrendingUp",
