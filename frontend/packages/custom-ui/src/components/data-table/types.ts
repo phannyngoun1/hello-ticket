@@ -43,4 +43,20 @@ export interface DataTableProps<TData = DataRow> {
     bulkActions?: React.ReactNode; // Custom bulk actions component
     emptyState?: React.ReactNode; // Custom empty state component
     customActions?: React.ReactNode; // Custom actions to render before the create button in toolbar
+    // Persistence
+    viewId?: string; // Unique ID for persisting view state (column visibility, density, sorting)
+    // Advanced Filtering
+    filterDefs?: FilterDef[]; // Definitions for faceted filters
+}
+
+export interface FilterOption {
+    label: string;
+    value: string;
+    icon?: React.ComponentType<{ className?: string }>;
+}
+
+export interface FilterDef {
+    columnId: string;
+    title: string;
+    options: FilterOption[];
 }
