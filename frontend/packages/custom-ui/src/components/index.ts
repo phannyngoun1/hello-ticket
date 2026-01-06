@@ -151,11 +151,14 @@ export type {
 } from './tabs';
 
 // Data Description
-export { DataDescription } from './data-description';
+export { DataDescription, DescriptionList, DescriptionItem, DescriptionSection } from './data-description';
 export type {
   DataDescriptionProps,
   DataDescriptionSection,
   DataDescriptionField,
+  DescriptionListProps,
+  DescriptionItemProps,
+  DescriptionSectionProps,
 } from './data-description';
 
 // Search Dialog
