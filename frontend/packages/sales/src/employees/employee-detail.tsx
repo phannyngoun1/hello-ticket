@@ -15,7 +15,26 @@ import {
   Tabs,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database } from "lucide-react";
+import {
+  Edit,
+  MoreVertical,
+  Info,
+  Database,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Briefcase,
+  Clock,
+  Smartphone,
+  Globe,
+  Award,
+  Map,
+  AlertCircle,
+  Cake,
+  TrendingUp,
+} from "lucide-react";
+import { DescriptionList, DescriptionItem, DescriptionSection } from "@truths/custom-ui";
 import { Employee } from "./types";
 
 export interface EmployeeDetailProps {
@@ -44,7 +63,9 @@ export function EmployeeDetail({
 
   customActions,
 }: EmployeeDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "metadata">("profile");
+  const [activeTab, setActiveTab] = useState<
+    "profile" | "contact" | "sales" | "timeline" | "metadata"
+  >("profile");
 
   // All hooks must be called before any early returns
 
@@ -65,29 +86,7 @@ export function EmployeeDetail({
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
   };
 
-  const formatFieldValue = (value: unknown) => {
-    if (value === null || value === undefined) return "N/A";
-    if (value instanceof Date) {
-      return value.toLocaleString();
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return "N/A";
-      const potentialDate = new Date(trimmed);
-      if (!Number.isNaN(potentialDate.getTime())) {
-        return potentialDate.toLocaleString();
-      }
-      return trimmed;
-    }
-    if (typeof value === "number" || typeof value === "boolean") {
-      return String(value);
-    }
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -182,10 +181,10 @@ export function EmployeeDetail({
           onValueChange={(value) => setActiveTab(value as any)}
         >
           <div className="border-b mb-4">
-            <div className="flex gap-4">
+            <div className="flex gap-4 overflow-x-auto">
               <button
                 className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                   activeTab === "profile"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
@@ -194,13 +193,55 @@ export function EmployeeDetail({
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
+                  Basic Information
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === "contact"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("contact")}
+              >
+                <span className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Contact
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === "sales"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("sales")}
+              >
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Sales
+                </span>
+              </button>
+              <button
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
+                  activeTab === "timeline"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setActiveTab("timeline")}
+              >
+                <span className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Timeline
                 </span>
               </button>
               {hasMetadata && (
                 <button
                   className={cn(
-                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                     activeTab === "metadata"
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground"
@@ -217,234 +258,185 @@ export function EmployeeDetail({
           </div>
 
           <div className="mt-0">
-            {/* Profile Tab */}
+            {/* Basic Information Tab */}
             {activeTab === "profile" && (
-              <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-3">
-                  {/* Basic Information */}
-                  {data.work_email && (
-                    <div>
-                      <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                        Basic Information
-                      </h3>
-                      <dl className="space-y-3">
-                        <div>
-                          <dt className="text-sm font-medium">Work Email</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.work_email)}
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  )}
+              <div className="space-y-8">
+                <DescriptionList columns={3}>
+                  <DescriptionItem
+                    label="Work Email"
+                    value={data.work_email}
+                    linkType="email"
+                    icon={Mail}
+                    hideIfEmpty={false}
+                  />
 
                   {/* Organization */}
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Organization
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.job_title && (
-                        <div>
-                          <dt className="text-sm font-medium">Job Title</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.job_title)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.department && (
-                        <div>
-                          <dt className="text-sm font-medium">Department</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.department)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.employment_type && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Employment Type
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.employment_type)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.hire_date && (
-                        <div>
-                          <dt className="text-sm font-medium">Hire Date</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.hire_date)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                  <DescriptionItem
+                    label="Job Title"
+                    value={data.job_title}
+                    icon={Briefcase}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Department"
+                    value={data.department}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Employment Type"
+                    value={data.employment_type}
+                    icon={Clock}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Hire Date"
+                    value={data.hire_date}
+                    icon={Calendar}
+                    render={(value) => formatDate(value as Date | string)}
+                    hideIfEmpty={false}
+                  />
 
-                  {/* Contact & Location */}
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Contact & Location
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.work_phone && (
-                        <div>
-                          <dt className="text-sm font-medium">Work Phone</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.work_phone)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.mobile_phone && (
-                        <div>
-                          <dt className="text-sm font-medium">Mobile Phone</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.mobile_phone)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.office_location && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Office Location
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.office_location)}
-                          </dd>
-                        </div>
-                      )}
-                      <div>
-                        <dt className="text-sm font-medium">Timezone</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {data.timezone || "UTC"}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                </div>
+                  {/* HR / Personal */}
+                  <DescriptionItem
+                    label="Emergency Contact"
+                    value={
+                      data.emergency_contact_name ? (
+                        <span>
+                          {data.emergency_contact_name}
+                          {data.emergency_contact_phone && (
+                            <span className="text-muted-foreground ml-1">
+                              ({data.emergency_contact_phone})
+                            </span>
+                          )}
+                          {data.emergency_contact_relationship && (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {data.emergency_contact_relationship}
+                            </div>
+                          )}
+                        </span>
+                      ) : null
+                    }
+                    icon={AlertCircle}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Birthday"
+                    value={data.birthday}
+                    icon={Cake}
+                    render={(value) => formatDate(value as Date | string)}
+                    hideIfEmpty={false}
+                  />
+                </DescriptionList>
+              </div>
+            )}
 
+            {/* Contact Tab */}
+            {activeTab === "contact" && (
+              <div className="space-y-8">
+                {/* Contact & Location */}
+                <DescriptionList columns={3}>
+                  <DescriptionItem
+                    label="Work Phone"
+                    value={data.work_phone}
+                    linkType="tel"
+                    icon={Phone}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Mobile Phone"
+                    value={data.mobile_phone}
+                    linkType="tel"
+                    icon={Smartphone}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Office Location"
+                    value={data.office_location}
+                    icon={MapPin}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Timezone"
+                    value={data.timezone || "UTC"}
+                    icon={Globe}
+                    hideIfEmpty={false}
+                  />
+                </DescriptionList>
+              </div>
+            )}
+
+            {/* Sales Tab */}
+            {activeTab === "sales" && (
+              <div className="space-y-8">
                 {/* Sales & Operations */}
-                {(data.skills ||
-                  data.assigned_territories ||
-                  data.commission_tier) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Sales & Operations
-                    </h3>
-                    <dl className="grid gap-4 md:grid-cols-3">
-                      {data.skills && data.skills.length > 0 && (
-                        <div>
-                          <dt className="text-sm font-medium">Skills</dt>
-                          <dd className="mt-2 flex flex-wrap gap-1">
-                            {data.skills.map((skill, i) => (
-                              <span
-                                key={i}
-                                className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </dd>
+                <DescriptionList columns={3}>
+                  <DescriptionItem
+                    label="Skills"
+                    value={
+                      data.skills && data.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {data.skills.map((skill, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                            >
+                              {skill}
+                            </span>
+                          ))}
                         </div>
-                      )}
-                      {data.assigned_territories &&
-                        data.assigned_territories.length > 0 && (
-                          <div>
-                            <dt className="text-sm font-medium">Territories</dt>
-                            <dd className="mt-2 flex flex-wrap gap-1">
-                              {data.assigned_territories.map((territory, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground"
-                                >
-                                  {territory}
-                                </span>
-                              ))}
-                            </dd>
-                          </div>
-                        )}
-                      {data.commission_tier && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Commission Tier
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.commission_tier)}
-                          </dd>
+                      ) : null
+                    }
+                    icon={Award}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Territories"
+                    value={
+                      data.assigned_territories &&
+                      data.assigned_territories.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {data.assigned_territories.map((territory, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground"
+                            >
+                              {territory}
+                            </span>
+                          ))}
                         </div>
-                      )}
-                    </dl>
-                  </div>
-                )}
+                      ) : null
+                    }
+                    icon={Map}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Commission Tier"
+                    value={data.commission_tier}
+                    icon={TrendingUp}
+                    hideIfEmpty={false}
+                  />
+                </DescriptionList>
+              </div>
+            )}
 
-                {/* Emergency Contact */}
-                {(data.emergency_contact_name ||
-                  data.emergency_contact_phone ||
-                  data.birthday) && (
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      HR / Personal
-                    </h3>
-                    <dl className="grid gap-4 md:grid-cols-3">
-                      {data.emergency_contact_name && (
-                        <div>
-                          <dt className="text-sm font-medium">
-                            Emergency Contact
-                          </dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.emergency_contact_name)}
-                            {data.emergency_contact_phone && (
-                              <>
-                                {" "}
-                                (
-                                {formatFieldValue(data.emergency_contact_phone)}
-                                )
-                              </>
-                            )}
-                            {data.emergency_contact_relationship && (
-                              <div className="text-xs mt-1">
-                                {data.emergency_contact_relationship}
-                              </div>
-                            )}
-                          </dd>
-                        </div>
-                      )}
-                      {data.birthday && (
-                        <div>
-                          <dt className="text-sm font-medium">Birthday</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatFieldValue(data.birthday)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-                )}
-
+            {/* Timeline Tab */}
+            {activeTab === "timeline" && (
+              <div className="space-y-8">
                 {/* Timeline */}
-                <div>
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                    Timeline
-                  </h3>
-                  <dl className="grid gap-4 md:grid-cols-3">
-                    {data.created_at && (
-                      <div>
-                        <dt className="text-sm font-medium">Created</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(data.created_at)}
-                        </dd>
-                      </div>
-                    )}
-                    {data.updated_at && (
-                      <div>
-                        <dt className="text-sm font-medium">Last Updated</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(data.updated_at)}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
+                <DescriptionList columns={3}>
+                  <DescriptionItem
+                    label="Created"
+                    value={data.created_at}
+                    render={(value) => formatDate(value as Date | string)}
+                    hideIfEmpty={false}
+                  />
+                  <DescriptionItem
+                    label="Last Updated"
+                    value={data.updated_at}
+                    render={(value) => formatDate(value as Date | string)}
+                    hideIfEmpty={false}
+                  />
+                </DescriptionList>
               </div>
             )}
 
