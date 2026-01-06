@@ -531,96 +531,97 @@ export function CreateBookingDialog({
       >
         <div
           className={cn(
-            "flex gap-6 h-[calc(100vh-200px)]",
+            "flex gap-6 h-full",
             density.paddingForm
           )}
         >
           {/* Left Section - Seat Selection */}
           <div className="flex-1 flex flex-col min-w-0 border rounded-lg bg-background">
             {/* Header with Show/Event Selectors and View Toggle */}
-            <div className="p-4 border-b space-y-4 flex-shrink-0">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Show</label>
-                  <Popover
-                    open={showPopoverOpen}
-                    onOpenChange={setShowPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between"
-                      >
+            <div className="p-3 border-b flex items-center gap-3 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <Popover
+                  open={showPopoverOpen}
+                  onOpenChange={setShowPopoverOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between h-9"
+                    >
+                      <span className="truncate">
                         {selectedShowId
                           ? shows.find((s) => s.id === selectedShowId)?.name ||
                             shows.find((s) => s.id === selectedShowId)?.code ||
                             "Select a show"
                           : "Select a show"}
-                        <svg
-                          className="ml-2 h-4 w-4 shrink-0 opacity-50"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
-                      <Command>
-                        <CommandInput
-                          placeholder="Search shows..."
-                          className="h-9"
-                        />
-                        <CommandList>
-                          <CommandEmpty>No shows found.</CommandEmpty>
-                          <CommandGroup>
-                            {shows.map((show) => (
-                              <CommandItem
-                                key={show.id}
-                                value={`${show.name || show.code} ${show.code || ""}`}
-                                onSelect={() => {
-                                  setSelectedShowId(show.id);
-                                  setSelectedEventId(null); // Reset event when show changes
-                                  setShowPopoverOpen(false); // Close popover after selection
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {show.name || show.code}
-                                  </span>
-                                  {show.code && show.name && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {show.code}
-                                    </span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Event</label>
-                  <Popover
-                    open={eventPopoverOpen}
-                    onOpenChange={setEventPopoverOpen}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between"
-                        disabled={!selectedShowId}
+                      </span>
+                      <svg
+                        className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search shows..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No shows found.</CommandEmpty>
+                        <CommandGroup>
+                          {shows.map((show) => (
+                            <CommandItem
+                              key={show.id}
+                              value={`${show.name || show.code} ${show.code || ""}`}
+                              onSelect={() => {
+                                setSelectedShowId(show.id);
+                                setSelectedEventId(null); // Reset event when show changes
+                                setShowPopoverOpen(false); // Close popover after selection
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {show.name || show.code}
+                                </span>
+                                {show.code && show.name && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {show.code}
+                                  </span>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <Popover
+                  open={eventPopoverOpen}
+                  onOpenChange={setEventPopoverOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between h-9"
+                      disabled={!selectedShowId}
+                    >
+                      <span className="truncate">
                         {selectedEventId
                           ? (() => {
                               const event = events.find(
@@ -633,90 +634,85 @@ export function CreateBookingDialog({
                                 : "Select an event";
                             })()
                           : "Select an event"}
-                        <svg
-                          className="ml-2 h-4 w-4 shrink-0 opacity-50"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
-                      <Command>
-                        <CommandInput
-                          placeholder="Search events..."
-                          className="h-9"
-                        />
-                        <CommandList>
-                          <CommandEmpty>No events found.</CommandEmpty>
-                          <CommandGroup>
-                            {events.map((event) => (
-                              <CommandItem
-                                key={event.id}
-                                value={`${event.title} ${new Date(
-                                  event.start_dt
-                                ).toLocaleDateString()}`}
-                                onSelect={() => {
-                                  setSelectedEventId(event.id);
-                                  setEventPopoverOpen(false); // Close popover after selection
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {event.title}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(
-                                      event.start_dt
-                                    ).toLocaleDateString(undefined, {
-                                      weekday: "short",
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                    })}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
+                      </span>
+                      <svg
+                        className="ml-2 h-4 w-4 shrink-0 opacity-50"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput
+                        placeholder="Search events..."
+                        className="h-9"
+                      />
+                      <CommandList>
+                        <CommandEmpty>No events found.</CommandEmpty>
+                        <CommandGroup>
+                          {events.map((event) => (
+                            <CommandItem
+                              key={event.id}
+                              value={`${event.title} ${new Date(
+                                event.start_dt
+                              ).toLocaleDateString()}`}
+                              onSelect={() => {
+                                setSelectedEventId(event.id);
+                                setEventPopoverOpen(false); // Close popover after selection
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {event.title}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(
+                                    event.start_dt
+                                  ).toLocaleDateString(undefined, {
+                                    weekday: "short",
+                                    year: "numeric",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* View Mode Toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
-                  Seat Selection View
-                </span>
-                <Tabs
-                  value={seatViewMode}
-                  onValueChange={(value) =>
-                    setSeatViewMode(value as "visualization" | "list")
-                  }
-                >
-                  <TabsList>
-                    <TabsTrigger value="visualization" className="gap-2">
-                      <LayoutGrid className="h-4 w-4" />
-                      Layout
-                    </TabsTrigger>
-                    <TabsTrigger value="list" className="gap-2">
-                      <List className="h-4 w-4" />
-                      List
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
+              <Tabs
+                value={seatViewMode}
+                onValueChange={(value) =>
+                  setSeatViewMode(value as "visualization" | "list")
+                }
+              >
+                <TabsList>
+                  <TabsTrigger value="visualization" className="h-9 w-9 p-0">
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="sr-only">Layout</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="list" className="h-9 w-9 p-0">
+                    <List className="h-4 w-4" />
+                    <span className="sr-only">List</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {/* Seat Content Area */}
