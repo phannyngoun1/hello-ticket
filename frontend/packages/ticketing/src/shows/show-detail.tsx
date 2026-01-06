@@ -4,7 +4,7 @@
  * Display detailed information about a show with optional edit and activity views.
  */
 
-import React, {  useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button, Card, Tabs, Input, Label } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -295,30 +295,6 @@ export function ShowDetail({
     if (!value) return "N/A";
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-  };
-
-  const formatFieldValue = (value: unknown) => {
-    if (value === null || value === undefined) return "N/A";
-    if (value instanceof Date) {
-      return value.toLocaleString();
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return "N/A";
-      const potentialDate = new Date(trimmed);
-      if (!Number.isNaN(potentialDate.getTime())) {
-        return potentialDate.toLocaleString();
-      }
-      return trimmed;
-    }
-    if (typeof value === "number" || typeof value === "boolean") {
-      return String(value);
-    }
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
   };
 
   if (loading) {
@@ -797,7 +773,7 @@ export function ShowDetail({
           title="Edit Show"
         />
       )}
-      
+
       {/* Create Event Dialog */}
       {data?.id && (
         <CreateEventDialog
@@ -805,8 +781,8 @@ export function ShowDetail({
           onOpenChange={setShowCreateEventDialog}
           showId={data.id}
           onSubmit={async (input) => {
-             await createEventMutation.mutateAsync(input);
-             setShowCreateEventDialog(false);
+            await createEventMutation.mutateAsync(input);
+            setShowCreateEventDialog(false);
           }}
         />
       )}
