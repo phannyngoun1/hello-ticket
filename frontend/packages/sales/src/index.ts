@@ -22,3 +22,5 @@ export * from './test-basics';
 
 export * from './bookings';
 export * from './payments';
+
+export * from './explore';
