@@ -5,4 +5,5 @@
 export * from './company-address-service';
 export * from './upload-service';
 export * from '../attachments/attachment-service';
+export * from './dashboard-service';
 

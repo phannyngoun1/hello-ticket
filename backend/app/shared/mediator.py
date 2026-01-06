@@ -20,6 +20,18 @@ class NoHandlerRegisteredException(Exception):
     pass
 
 
+from typing import Generic
+
+class Handler(Generic[TCommand, TResult]):
+    """
+    Base class for handlers.
+    
+    This is primarily a marker class for type hints, as the Mediator 
+    doesn't strictly enforce inheritance.
+    """
+    pass
+
+
 class Mediator:
     """
     Mediator for routing commands and queries to their handlers.

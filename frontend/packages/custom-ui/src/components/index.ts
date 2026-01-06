@@ -169,3 +169,7 @@ export type { NoteEditorProps } from './note-editor';
 // Image Gallery
 export { ImageGallery } from './image-gallery';
 export type { ImageGalleryProps, GalleryImage } from './image-gallery';
+
+// Charts
+export { BarChart, LineChart, PieChart, ProgressRing } from './charts';
+export type { ChartDataPoint, LineChartDataPoint, ChartProps, LineChartProps, PieChartProps, ProgressRingProps } from './charts';
