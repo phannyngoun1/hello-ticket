@@ -61,6 +61,16 @@
           "cus",
           "customers"
         ]
+      },
+      {
+        "label": "Employees",
+        "path": "/sales/employees",
+        "icon": "Users",
+        "description": "Manage employees and related data.",
+        "keywords": [
+          "employee",
+          "employees"
+        ]
       }
     ]
   },

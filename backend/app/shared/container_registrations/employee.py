@@ -6,20 +6,22 @@ for the Employee domain entity.
 """
 from punq import Container
 from app.shared.mediator import Mediator
-from app.domain.warehouse.employee_repositories import EmployeeRepository
-from app.application.warehouse.handlers_employee import EmployeeCommandHandler, EmployeeQueryHandler
-from app.infrastructure.warehouse.employee_repository import SQLEmployeeRepository
-from app.application.warehouse.commands_employee import (
+from app.domain.sales.employee_repositories import EmployeeRepository
+from app.application.sales.handlers_employee import EmployeeCommandHandler, EmployeeQueryHandler
+from app.infrastructure.sales.employee_repository import SQLEmployeeRepository
+from app.application.sales.commands_employee import (
     CreateEmployeeCommand,
     UpdateEmployeeCommand,
     DeleteEmployeeCommand,
+
 )
-from app.application.warehouse.queries_employee import (
+from app.application.sales.queries_employee import (
     GetEmployeeByIdQuery,
     GetEmployeeByCodeQuery,
     SearchEmployeesQuery,
 )
 
+from app.shared.services.code_generator import CodeGeneratorService
 
 
 def register_employee_container(container: Container) -> None:
@@ -38,9 +40,11 @@ def register_employee_container(container: Container) -> None:
     employee_repository = SQLEmployeeRepository()
     container.register(EmployeeRepository, instance=employee_repository)
     
+    code_generator = container.resolve(CodeGeneratorService)
     # Register Employee command handler
     employee_command_handler = EmployeeCommandHandler(
-        employee_repository=employee_repository
+        employee_repository=employee_repository,
+        code_generator=code_generator
     )
     container.register(EmployeeCommandHandler, instance=employee_command_handler)
     
@@ -62,6 +66,7 @@ def register_employee_mediator(mediator: Mediator) -> None:
     mediator.register_command_handler(CreateEmployeeCommand, EmployeeCommandHandler)
     mediator.register_command_handler(UpdateEmployeeCommand, EmployeeCommandHandler)
     mediator.register_command_handler(DeleteEmployeeCommand, EmployeeCommandHandler)
+
     
     # Register Employee query handlers
     mediator.register_query_handler(GetEmployeeByIdQuery, EmployeeQueryHandler)

@@ -130,7 +130,61 @@ class Permission(str, Enum):
     VIEW_TICKETING_VENUE_TYPE = "ticketing_venue_type:view"
     MANAGE_TICKETING_VENUE_TYPE = "ticketing_venue_type:manage"
 
+    # Sales - Employees permissions
+    CREATE_SALES_EMPLOYEE = "sales_employee:create"
+    VIEW_SALES_EMPLOYEE = "sales_employee:view"
+    MANAGE_SALES_EMPLOYEE = "sales_employee:manage"
 
+    # Sales - Payments permissions
+    CREATE_SALES_PAYMENT = "sales_payment:create"
+    VIEW_SALES_PAYMENT = "sales_payment:view"
+    MANAGE_SALES_PAYMENT = "sales_payment:manage"
+    
+    # Sales - Orders permissions
+    CREATE_SALES_ORDER = "sales_order:create"
+    VIEW_SALES_ORDER = "sales_order:view"
+    MANAGE_SALES_ORDER = "sales_order:manage"   
+
+    # Sales - Invoices permissions
+    CREATE_SALES_INVOICE = "sales_invoice:create"
+    VIEW_SALES_INVOICE = "sales_invoice:view"
+    MANAGE_SALES_INVOICE = "sales_invoice:manage"
+    
+    # Sales - Quotes permissions
+    CREATE_SALES_QUOTE = "sales_quote:create"
+    VIEW_SALES_QUOTE = "sales_quote:view"
+    MANAGE_SALES_QUOTE = "sales_quote:manage"
+    
+    # Sales - Credits permissions
+    CREATE_SALES_CREDIT = "sales_credit:create"
+    VIEW_SALES_CREDIT = "sales_credit:view"
+    MANAGE_SALES_CREDIT = "sales_credit:manage"
+    
+    # Sales - Returns permissions
+    CREATE_SALES_RETURN = "sales_return:create"
+    VIEW_SALES_RETURN = "sales_return:view"
+    MANAGE_SALES_RETURN = "sales_return:manage"
+    
+    # Sales - Refunds permissions
+    CREATE_SALES_REFUND = "sales_refund:create"
+    VIEW_SALES_REFUND = "sales_refund:view"
+    MANAGE_SALES_REFUND = "sales_refund:manage"
+    
+    # Sales - Discounts permissions
+    CREATE_SALES_DISCOUNT = "sales_discount:create"
+    VIEW_SALES_DISCOUNT = "sales_discount:view"
+    MANAGE_SALES_DISCOUNT = "sales_discount:manage"
+    
+    # Sales - Taxes permissions
+    CREATE_SALES_TAX = "sales_tax:create"
+    VIEW_SALES_TAX = "sales_tax:view"
+    MANAGE_SALES_TAX = "sales_tax:manage"
+    
+    # Sales - Shipments permissions
+    CREATE_SALES_SHIPMENT = "sales_shipment:create"
+    VIEW_SALES_SHIPMENT = "sales_shipment:view"
+    MANAGE_SALES_SHIPMENT = "sales_shipment:manage"
+    
 # Role to permissions mapping
 ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.ADMIN: {
@@ -191,6 +245,29 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         # Ticketing - Venue Types
         Permission.CREATE_TICKETING_VENUE_TYPE, Permission.VIEW_TICKETING_VENUE_TYPE, Permission.MANAGE_TICKETING_VENUE_TYPE,
 
+        #Sales - Employees
+        Permission.CREATE_SALES_EMPLOYEE, Permission.VIEW_SALES_EMPLOYEE, Permission.MANAGE_SALES_EMPLOYEE,
+        #Sales - Payments
+        Permission.CREATE_SALES_PAYMENT, Permission.VIEW_SALES_PAYMENT, Permission.MANAGE_SALES_PAYMENT,
+        #Sales - Orders
+        Permission.CREATE_SALES_ORDER, Permission.VIEW_SALES_ORDER, Permission.MANAGE_SALES_ORDER,
+        #Sales - Invoices
+        Permission.CREATE_SALES_INVOICE, Permission.VIEW_SALES_INVOICE, Permission.MANAGE_SALES_INVOICE,
+        #Sales - Quotes
+        Permission.CREATE_SALES_QUOTE, Permission.VIEW_SALES_QUOTE, Permission.MANAGE_SALES_QUOTE,
+        #Sales - Credits
+        Permission.CREATE_SALES_CREDIT, Permission.VIEW_SALES_CREDIT, Permission.MANAGE_SALES_CREDIT,
+        #Sales - Returns
+        Permission.CREATE_SALES_RETURN, Permission.VIEW_SALES_RETURN, Permission.MANAGE_SALES_RETURN,
+        #Sales - Refunds
+        Permission.CREATE_SALES_REFUND, Permission.VIEW_SALES_REFUND, Permission.MANAGE_SALES_REFUND,
+        #Sales - Discounts
+        Permission.CREATE_SALES_DISCOUNT, Permission.VIEW_SALES_DISCOUNT, Permission.MANAGE_SALES_DISCOUNT,
+        #Sales - Taxes
+        Permission.CREATE_SALES_TAX, Permission.VIEW_SALES_TAX, Permission.MANAGE_SALES_TAX,
+        #Sales - Shipments
+        
+        
     },
     UserRole.MANAGER: {
         # Manager can manage most resources
