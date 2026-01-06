@@ -1,14 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Link } from "@tanstack/react-router";
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@truths/ui";
-import { ArrowRight, Zap, Shield, Globe } from "lucide-react";
+import { Users, ShoppingCart, TrendingUp } from "lucide-react";
 import { useRequireAuth } from "../hooks/use-require-auth";
 
 export function HomePage() {
@@ -17,115 +15,111 @@ export function HomePage() {
   // Check authentication on mount
   useRequireAuth();
 
+  const stats = [
+    {
+      title: "Total Users",
+      value: "2,350",
+      change: "+12.5%",
+      icon: Users,
+    },
+    {
+      title: "Orders",
+      value: "1,234",
+      change: "+8.2%",
+      icon: ShoppingCart,
+    },
+    {
+      title: "Revenue",
+      value: "$45,231",
+      change: "+15.3%",
+      icon: TrendingUp,
+    },
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <section className="text-center space-y-6 py-12">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-          {t("pages.home.title")}
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          {t("pages.home.subtitle")}
-        </p>
-        <div className="flex gap-4 justify-center">
-          <Button asChild size="lg">
-            <Link to="/login">
-              {t("common.login")}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-          <Button variant="outline" size="lg" asChild>
-            <Link to="/dashboard">{t("pages.home.getStarted")}</Link>
-          </Button>
-        </div>
-      </section>
+      <div>
+        <h1 className="text-3xl font-bold">{t("pages.home.title")}</h1>
+        <p className="text-muted-foreground">{t("pages.home.subtitle")}</p>
+      </div>
 
-      {/* Features Section */}
-      <section className="py-12">
-        <h2 className="text-3xl font-bold text-center mb-8">Features</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <Zap className="h-10 w-10 mb-2 text-primary" />
-              <CardTitle>Fast & Modern</CardTitle>
-              <CardDescription>
-                Built with Vite, React 18, and TypeScript for blazing fast
-                performance
-              </CardDescription>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li>• Hot Module Replacement</li>
-                <li>• Optimized builds</li>
-                <li>• Type-safe development</li>
-              </ul>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground">
+                <span className="text-green-600">{stat.change}</span> from last
+                month
+              </p>
             </CardContent>
           </Card>
+        ))}
+      </div>
 
-          <Card>
-            <CardHeader>
-              <Shield className="h-10 w-10 mb-2 text-primary" />
-              <CardTitle>Best Practices</CardTitle>
-              <CardDescription>
-                Following industry standards and modern development patterns
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li>• Monorepo structure</li>
-                <li>• Component library</li>
-                <li>• Separation of concerns</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <Globe className="h-10 w-10 mb-2 text-primary" />
-              <CardTitle>Internationalization</CardTitle>
-              <CardDescription>
-                Multi-language support with i18next and dark mode ready
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li>• Multiple languages</li>
-                <li>• Dark/Light themes</li>
-                <li>• Accessible components</li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Tech Stack Section */}
-      <section className="py-12">
-        <h2 className="text-3xl font-bold text-center mb-8">Tech Stack</h2>
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <CardContent className="pt-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <h3 className="font-semibold mb-2">Core</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• React 18 with TypeScript</li>
-                  <li>• Vite for fast builds</li>
-                  <li>• TanStack Router for routing</li>
-                  <li>• TanStack Query for data fetching</li>
-                </ul>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              Your latest activities and updates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <div className="ml-4 space-y-1">
+                  <p className="text-sm font-medium">New user registered</p>
+                  <p className="text-sm text-muted-foreground">2 hours ago</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold mb-2">UI & Styling</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground">
-                  <li>• Tailwind CSS for styling</li>
-                  <li>• shadcn/ui components</li>
-                  <li>• Radix UI primitives</li>
-                  <li>• Lucide icons</li>
-                </ul>
+              <div className="flex items-center">
+                <div className="ml-4 space-y-1">
+                  <p className="text-sm font-medium">Order #1234 completed</p>
+                  <p className="text-sm text-muted-foreground">5 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <div className="ml-4 space-y-1">
+                  <p className="text-sm font-medium">
+                    Product inventory updated
+                  </p>
+                  <p className="text-sm text-muted-foreground">1 day ago</p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      </section>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <button className="w-full text-left px-4 py-2 rounded-md hover:bg-accent transition-colors">
+                Create new user
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-md hover:bg-accent transition-colors">
+                Add product
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-md hover:bg-accent transition-colors">
+                View orders
+              </button>
+              <button className="w-full text-left px-4 py-2 rounded-md hover:bg-accent transition-colors">
+                Generate report
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

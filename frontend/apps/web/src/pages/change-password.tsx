@@ -90,8 +90,8 @@ export function ChangePasswordPage() {
         description: "Your password has been successfully changed.",
       });
 
-      // Redirect to dashboard
-      navigate({ to: "/dashboard" });
+      // Redirect to home
+      navigate({ to: "/" });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to change password";

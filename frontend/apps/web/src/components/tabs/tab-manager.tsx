@@ -121,7 +121,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         }
 
         const combined = [...prevTabs, newTab];
-        const pinnedPaths = ["/", "/dashboard"];
+        const pinnedPaths = ["/"];
         const pinnedTabs = combined.filter((tab) => pinnedPaths.includes(tab.path));
         const otherTabs = combined.filter((tab) => !pinnedPaths.includes(tab.path));
         return [...pinnedTabs.sort((a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)), ...otherTabs];
@@ -131,7 +131,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         if (onTabChange) {
           onTabChange(currentTab);
         }
-        const pinnedPaths = ["/", "/dashboard"];
+        const pinnedPaths = ["/"];
         const pinnedTabs = prevTabs.filter((tab) => pinnedPaths.includes(tab.path));
         const otherTabs = prevTabs.filter((tab) => !pinnedTabs.includes(tab));
         return [...pinnedTabs.sort((a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)), ...otherTabs];
@@ -188,7 +188,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   ): { title: string; iconName: string } => {
     const routeMap: Record<string, { title: string; iconName: string }> = {
       "/": { title: "Home", iconName: "Home" },
-      "/dashboard": { title: "Dashboard", iconName: "LayoutDashboard" },
       "/users": { title: "Users", iconName: "Users" },
       "/profile": { title: "Profile", iconName: "User" },
       "/settings": { title: "Settings", iconName: "Settings" },
@@ -385,7 +384,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   }, []);
 
   const getModuleInfo = (path: string) => {
-    if (path === "/" || path === "/dashboard") return "General";
+    if (path === "/") return "General";
     if (path.startsWith("/users")) return "Users";
     if (path.startsWith("/sales") || path.startsWith("/bookings") || path.startsWith("/explore")) return "Sales & Bookings";
     if (path.startsWith("/settings")) return "Settings";
@@ -393,10 +392,22 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   };
 
   const sortTabsWithPins = (tabsList: AppTab[]) => {
+      const homePaths = ["/"];
       return [...tabsList].sort((a, b) => {
+          const aIsHome = homePaths.includes(a.path);
+          const bIsHome = homePaths.includes(b.path);
+
+          // 1. Home always first
+          if (aIsHome && !bIsHome) return -1;
+          if (!aIsHome && bIsHome) return 1;
+          if (aIsHome && bIsHome) return 0; // Maintain relative order of home paths
+
+          // 2. Then Pinned tabs
           if (a.pinned && !b.pinned) return -1;
           if (!a.pinned && b.pinned) return 1;
-          return 0; // Stable sort for same pin status
+          
+          // 3. Keep existing order
+          return 0; 
       });
   };
 
@@ -420,9 +431,9 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         const moduleA = getModuleInfo(a.path);
         const moduleB = getModuleInfo(b.path);
         if (moduleA === moduleB) {
-          // Keep pinned tabs (Home/Dashboard) at top if same module, otherwise sort by title
-          if (a.path === "/" || a.path === "/dashboard") return -1;
-          if (b.path === "/" || b.path === "/dashboard") return 1;
+          // Keep pinned tabs (Home) at top if same module, otherwise sort by title
+          if (a.path === "/") return -1;
+          if (b.path === "/") return 1;
           return a.title.localeCompare(b.title);
         }
         

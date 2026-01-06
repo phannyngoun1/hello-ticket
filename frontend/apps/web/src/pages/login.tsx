@@ -108,8 +108,8 @@ export function LoginPage() {
         return;
       }
 
-      // Redirect to dashboard
-      navigate({ to: "/dashboard" });
+      // Redirect to home
+      navigate({ to: "/" });
     } catch (error) {
       // Handle specific authentication error types
       if (error instanceof AuthenticationError) {
