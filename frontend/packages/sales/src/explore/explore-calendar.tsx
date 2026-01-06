@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MapPin, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import { MapPin, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import type { Event } from "@truths/ticketing";
@@ -195,6 +195,18 @@ export function ExploreCalendar({
       new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
     );
   };
+  
+  const goToPreviousYear = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear() - 1, currentMonth.getMonth(), 1)
+    );
+  };
+
+  const goToNextYear = () => {
+    setCurrentMonth(
+      new Date(currentMonth.getFullYear() + 1, currentMonth.getMonth(), 1)
+    );
+  };
 
   const goToMonth = (monthDate: Date) => {
     setCurrentMonth(monthDate);
@@ -248,97 +260,137 @@ export function ExploreCalendar({
       date.getDate() === today.getDate()
     );
   };
+  
+  // Get unique location for multiple events on same day
+  const getDayLocation = (events: Event[]): string => {
+    if (events.length === 0) return "";
+    if (events.length === 1) return getEventLocation(events[0]);
+    
+    const uniqueCities = new Set(events.map(e => e.venue?.city).filter(Boolean));
+    return uniqueCities.size === 1 ? getEventLocation(events[0]) : "Multiple Locations";
+  };
 
   return (
-    <div className={cn("space-y-4", className)} data-testid="calendar">
-      {/* Location Filter and Month Navigation */}
+    <div className={cn("space-y-6", className)} data-testid="calendar">
+      {/* Header Section */}
       <div className="space-y-4">
         {/* Location Filter */}
         {locations.length > 0 && (
-          <div className="flex items-center gap-3">
-            <div className="flex-1 max-w-xs">
-              <label htmlFor="location-filter" className="sr-only">
+          <div className="flex items-center">
+            <div className="w-full max-w-sm">
+              <label htmlFor="location-filter" className="block text-sm font-medium mb-2">
                 Location
               </label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyan-500 h-4 w-4 z-10" />
                 <select
                   id="location-filter"
                   value={locationFilter}
                   onChange={(e) => setLocationFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  aria-label="Location suggestions"
+                  aria-autocomplete="both"
+                  className={cn(
+                    "w-full h-11 pl-10 pr-4 py-2",
+                    "border border-input rounded-md",
+                    "bg-background text-sm",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                    "transition-colors cursor-pointer",
+                    "appearance-none"
+                  )}
                 >
-                  <option value="all">All Locations</option>
+                  <option value="all">City or Zip Code</option>
                   {locations.map((location) => (
                     <option key={location} value={location}>
                       {location}
                     </option>
                   ))}
                 </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
               </div>
             </div>
           </div>
         )}
 
         {/* Month Navigation */}
-        <div className="flex items-center gap-4">
-          {/* Navigation Buttons */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToPreviousMonth}
-              className="h-10 w-10 rounded-full"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              <span className="sr-only">Previous Month</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToNextMonth}
-              className="h-10 w-10 rounded-full"
-            >
-              <ChevronRight className="h-5 w-5" />
-              <span className="sr-only">Next Month</span>
-            </Button>
-          </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="sr-only">
+            <div aria-live="polite">
+              <span>
+                <span>{currentMonth.toLocaleString("default", { month: "long", year: "numeric" })} selected</span>
+              </span>
+              <span>{getEventCountForMonth(currentMonth.getFullYear(), currentMonth.getMonth())} Events</span>
+            </div>
+          </span>
+          
+          {/* Left Navigation - Year Back */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToPreviousYear}
+            className="h-10 w-10 rounded-full shrink-0"
+            aria-label="Previous Year"
+          >
+            <ChevronDown className="h-5 w-5 rotate-90" />
+          </Button>
+          
+          {/* Month Switcher - Previous Month */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToPreviousMonth}
+            className="h-10 w-10 rounded-full shrink-0"
+            aria-label="Previous Month"
+          >
+            <ChevronDown className="h-5 w-5 rotate-90" />
+          </Button>
 
           {/* Month Tabs */}
-          <ul className="flex items-center gap-2 flex-1 overflow-x-auto">
+          <ul className="flex items-center justify-center gap-2 flex-1 overflow-x-auto scrollbar-hide">
             {monthTabs.map((tab, index) => {
               const isActive =
                 tab.date.getFullYear() === currentMonth.getFullYear() &&
                 tab.date.getMonth() === currentMonth.getMonth();
-              const isCurrentYearMonth =
+              const isCurrentTabMonth =
                 tab.date.getFullYear() === currentMonth.getFullYear() &&
                 tab.date.getMonth() === currentMonth.getMonth();
 
               return (
-                <li key={`${tab.date.getTime()}-${index}`}>
+                <li key={`${tab.date.getTime()}-${index}`} className="shrink-0">
                   <button
                     onClick={() => !tab.isDisabled && goToMonth(tab.date)}
                     disabled={tab.isDisabled}
+                    aria-selected={isActive}
                     className={cn(
-                      "px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-md",
-                      isActive && "bg-primary text-primary-foreground shadow-sm",
-                      !isActive && !tab.isDisabled && "hover:bg-accent",
-                      tab.isDisabled && "opacity-50 cursor-not-allowed"
+                      "px-4 py-2.5 min-w-[100px]",
+                      "text-sm font-medium transition-all duration-200",
+                      "whitespace-nowrap rounded-lg",
+                      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                      isActive && "bg-primary text-primary-foreground shadow-md scale-105",
+                      !isActive && !tab.isDisabled && "hover:bg-accent hover:scale-102",
+                      tab.isDisabled && "opacity-40 cursor-not-allowed"
                     )}
                   >
                     <span className="flex flex-col items-center gap-1">
-                      <span>
-                        {isCurrentYearMonth ? (
+                      <span className={cn(
+                        isActive && "font-bold"
+                      )}>
+                        {isCurrentTabMonth ? (
                           <>
-                            <span className="font-semibold">{tab.shortName} {tab.year}</span>
+                            <span aria-hidden="true">
+                              <span>{tab.shortName} {tab.year}</span>
+                            </span>
+                            <span className="sr-only">
+                              <span>{tab.fullName} {tab.year}</span> selected
+                            </span>
                           </>
                         ) : (
-                          tab.shortName
+                          <span>{tab.shortName}</span>
                         )}
                       </span>
+                      <span className="sr-only">, </span>
                       <span className={cn(
-                        "text-xs",
-                        isActive ? "text-primary-foreground/90" : "text-muted-foreground"
+                        "text-xs font-normal",
+                        isActive ? "text-primary-foreground/80" : "text-muted-foreground"
                       )}>
                         {tab.eventCount > 0 ? `${tab.eventCount} Event${tab.eventCount !== 1 ? "s" : ""}` : "No Events"}
                       </span>
@@ -348,20 +400,42 @@ export function ExploreCalendar({
               );
             })}
           </ul>
+          
+          {/* Month Switcher - Next Month */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToNextMonth}
+            className="h-10 w-10 rounded-full shrink-0"
+            aria-label="Next Month"
+          >
+            <ChevronDown className="h-5 w-5 -rotate-90" />
+          </Button>
+
+          {/* Right Navigation - Year Forward */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={goToNextYear}
+            className="h-10 w-10 rounded-full shrink-0"
+            aria-label="Next Year"
+          >
+            <ChevronDown className="h-5 w-5 -rotate-90" />
+          </Button>
         </div>
       </div>
 
       {/* Calendar Grid */}
       <div
-        className="border rounded-lg overflow-hidden bg-background shadow-sm"
+        className="border rounded-lg overflow-hidden bg-card shadow-sm"
         data-testid="calendarGrid"
       >
         {/* Day Headers */}
-        <ul aria-hidden="true" className="grid grid-cols-7 border-b bg-muted/30">
+        <ul aria-hidden="true" className="grid grid-cols-7 border-b bg-muted/50">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <li
               key={day}
-              className="p-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide border-r last:border-r-0"
+              className="py-3 px-2 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider border-r last:border-r-0"
             >
               <span>{day}</span>
             </li>
@@ -371,60 +445,76 @@ export function ExploreCalendar({
         {/* Calendar Weeks */}
         <div aria-hidden="false">
           {weeks.map((week, weekIndex) => (
-            <section key={weekIndex} className="border-b last:border-b-0">
+            <section key={weekIndex}>
               <h3 className="sr-only">Week {weekIndex + 1}</h3>
-              <ul className="grid grid-cols-7">
+              <ul className="grid grid-cols-7 border-b last:border-b-0">
                 {week.map((day, dayIndex) => {
                   const hasEvents = day.events.length > 0;
-                  const isDisabled = !hasEvents || day.isPast;
+                  const isDisabled = !hasEvents;
                   const isTodayDate = isToday(day.date);
                   const expanded = isDayExpanded(day.date);
                   const dateKey = `${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}`;
+                  const dayLocation = getDayLocation(day.events);
 
                   return (
                     <li
                       key={`${dateKey}-${dayIndex}`}
                       className={cn(
-                        "relative min-h-[120px] border-r last:border-r-0",
-                        !day.isCurrentMonth && "bg-muted/20",
-                        day.isCurrentMonth && "bg-background",
-                        isTodayDate && "bg-primary/5"
+                        "relative min-h-[140px] border-r last:border-r-0",
+                        "transition-colors",
+                        !day.isCurrentMonth && "bg-muted/10",
+                        day.isCurrentMonth && "bg-card",
+                        isTodayDate && "bg-primary/5 ring-1 ring-primary/20 ring-inset",
+                        hasEvents && !expanded && "hover:bg-accent/50 cursor-pointer"
                       )}
+                      onClick={() => {
+                        if (hasEvents && !expanded && day.events.length > 1) {
+                          toggleDayExpansion(day.date);
+                        }
+                      }}
                     >
-                      {/* Compact View */}
-                      <div className="p-2">
-                        {/* Day Number and Event Indicator */}
+                      <div className="h-full flex flex-col p-3">
+                        {/* Day Header */}
                         <div className="flex items-start justify-between mb-2">
                           <button
                             disabled={isDisabled}
                             aria-expanded={expanded}
-                            onClick={() => hasEvents && toggleDayExpansion(day.date)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (hasEvents) toggleDayExpansion(day.date);
+                            }}
                             className={cn(
-                              "text-sm font-semibold",
+                              "text-sm font-semibold leading-none",
+                              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded",
+                              "transition-colors",
                               isTodayDate && "text-primary font-bold",
                               !isTodayDate && day.isCurrentMonth && "text-foreground",
-                              !day.isCurrentMonth && "text-muted-foreground opacity-50",
-                              isDisabled && "cursor-default"
+                              !day.isCurrentMonth && "text-muted-foreground/50",
+                              !isDisabled && "hover:text-primary"
                             )}
                           >
                             <span className="sr-only">
-                              {day.events.length} Event{day.events.length !== 1 ? "s" : ""},{" "}
+                              {hasEvents && (
+                                <>{day.events.length} Event{day.events.length !== 1 ? "s" : ""}, </>
+                              )}
+                              {!hasEvents && <>0 Events, </>}
                               <span>{day.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
                             </span>
                             <span aria-hidden="true">{String(day.dayNumber).padStart(2, "0")}</span>
                           </button>
                           
+                          {/* Event Count Indicator */}
                           {hasEvents && (
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 shrink-0 ml-2">
                               {day.events.length === 1 ? (
                                 <span data-testid="availability-pill">
-                                  <div className="h-2 w-2 rounded-full bg-primary" />
-                                  <span className="sr-only" />
+                                  <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-sm" />
+                                  <span className="sr-only"></span>
                                 </span>
                               ) : (
                                 <span
                                   aria-hidden="true"
-                                  className="text-xs font-semibold text-primary"
+                                  className="text-xs font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded"
                                 >
                                   +{day.events.length}
                                 </span>
@@ -433,71 +523,84 @@ export function ExploreCalendar({
                           )}
                         </div>
 
-                        {/* Event Preview (Collapsed) */}
+                        {/* Event Content */}
                         {hasEvents && !expanded && (
-                          <div className="space-y-1">
-                            <div className="text-xs text-muted-foreground truncate">
-                              {day.events.length > 1 ? (
-                                <span>Multiple Locations</span>
-                              ) : (
-                                <span>{getEventLocation(day.events[0])}</span>
-                              )}
+                          <div className="flex-1 flex flex-col gap-2">
+                            {/* Location */}
+                            <div className="text-xs font-medium text-muted-foreground truncate">
+                              {dayLocation}
                             </div>
-                            <div>
+                            
+                            {/* Action Button */}
+                            <div className="mt-auto">
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   if (day.events.length === 1) {
                                     onEventClick(day.events[0]);
                                   } else {
                                     toggleDayExpansion(day.date);
                                   }
                                 }}
-                                className="w-full text-left text-xs hover:underline flex items-center gap-1 group"
+                                className={cn(
+                                  "w-full text-left px-2 py-1.5 rounded-md",
+                                  "transition-all duration-150",
+                                  "group flex items-center justify-between",
+                                  "hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-ring"
+                                )}
                               >
                                 {day.events.length === 1 ? (
-                                  <span className="font-medium text-foreground">
+                                  <span className="text-xs font-semibold text-foreground">
                                     {formatTime(day.events[0].start_dt)}
                                   </span>
                                 ) : (
-                                  <span className="font-medium text-primary">
+                                  <span className="text-xs font-semibold text-primary">
                                     {day.events.length} Events
                                   </span>
                                 )}
-                                <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-all -rotate-90" />
                                 <span className="sr-only">
                                   , <span>{day.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</span>
                                   {day.events.length === 1 && <span>, {getEventLocation(day.events[0])}</span>}
-                                  {day.events.length > 1 && <span>, Multiple Locations</span>}
+                                  {day.events.length > 1 && <span>, {dayLocation}</span>}
                                 </span>
                               </button>
                             </div>
                           </div>
                         )}
 
-                        {/* Event Details (Expanded) */}
+                        {/* Expanded Event List */}
                         {hasEvents && expanded && (
-                          <div className="space-y-2">
-                            <div className="text-xs font-semibold text-foreground border-b pb-1">
-                              {day.date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                          <div className="flex-1 flex flex-col gap-2 -mx-1">
+                            <div className="text-xs font-bold text-foreground px-1 pb-1 border-b">
+                              {day.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}
                             </div>
-                            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                            <div className="flex-1 space-y-1.5 overflow-y-auto max-h-[180px] pr-1 custom-scrollbar">
                               {day.events.map((event) => (
                                 <button
                                   key={event.id}
-                                  onClick={() => onEventClick(event)}
-                                  className="w-full text-left p-2 rounded bg-accent/50 hover:bg-accent transition-colors group"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEventClick(event);
+                                  }}
+                                  className={cn(
+                                    "w-full text-left p-2 rounded-md",
+                                    "bg-accent/30 hover:bg-accent transition-all duration-150",
+                                    "group border border-transparent hover:border-border",
+                                    "focus:outline-none focus:ring-2 focus:ring-ring"
+                                  )}
                                 >
-                                  <div className="text-xs text-muted-foreground truncate mb-1">
-                                    {getEventLocation(event)}
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-xs font-medium text-foreground">
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <span className="text-xs font-semibold text-foreground">
                                       {formatTime(event.start_dt)}
                                     </span>
-                                    <ChevronRight className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                    <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 -rotate-90" />
+                                  </div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {getEventLocation(event)}
                                   </div>
                                   {event.show && (
-                                    <div className="text-xs text-muted-foreground truncate mt-1">
+                                    <div className="text-xs text-muted-foreground/80 truncate mt-0.5">
                                       {event.show.name}
                                     </div>
                                   )}
@@ -516,7 +619,7 @@ export function ExploreCalendar({
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Summary Footer */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <CalendarIcon className="h-4 w-4" />
         <span>
