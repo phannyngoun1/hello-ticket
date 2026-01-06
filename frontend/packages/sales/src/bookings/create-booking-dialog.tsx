@@ -16,10 +16,6 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-  Separator,
-  Input,
-  Label,
-  Switch,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -30,7 +26,7 @@ import {
   CommandGroup,
   CommandItem,
 } from "@truths/ui";
-import { LayoutGrid, List, Trash2 } from "lucide-react";
+import { LayoutGrid, List } from "lucide-react";
 import { ShowService } from "@truths/ticketing/shows";
 import { EventService } from "@truths/ticketing/events";
 import { useShows, useEvents } from "@truths/ticketing";
@@ -38,24 +34,16 @@ import { useEvent } from "@truths/ticketing/events";
 import { LayoutService, useLayoutWithSeats } from "@truths/ticketing/layouts";
 import { useEventSeats } from "@truths/ticketing/events";
 import { api } from "@truths/api";
-import { EventInventoryViewer } from "@truths/ticketing/events/event-inventory-viewer";
-import { EventSeatList } from "@truths/ticketing/events/event-seat-list";
 import type { EventSeat } from "@truths/ticketing/events/types";
 import { CustomerService } from "../customers/customer-service";
-import { useCustomers, useCustomer } from "../customers/use-customers";
+import { useCustomers } from "../customers/use-customers";
 import type { Customer } from "../types";
 import type { CreateBookingInput } from "./types";
+import { BookingReceipt } from "./components/booking-receipt";
+import { BookingSeatSelection } from "./components/booking-seat-selection";
+import { BookingTicket } from "./types";
 
-export interface BookingTicket {
-  eventSeatId: string;
-  seatId?: string;
-  sectionName?: string;
-  rowName?: string;
-  seatNumber?: string;
-  ticketPrice?: number;
-  ticketNumber?: string;
-  status: string;
-}
+
 
 export interface CreateBookingTransactionData {
   customerId?: string;
@@ -231,11 +219,6 @@ export function CreateBookingDialog({
   });
   const customers = customersData?.data || [];
 
-  // Fetch selected customer details to display name when popover is closed
-  const { data: selectedCustomer } = useCustomer(
-    customerService,
-    selectedCustomerId
-  );
 
   // Create maps for seat status lookup
   const seatStatusMap = useMemo(() => {
@@ -531,14 +514,14 @@ export function CreateBookingDialog({
       >
         <div
           className={cn(
-            "flex gap-6 h-full",
+            "flex h-full",
             density.paddingForm
           )}
         >
           {/* Left Section - Seat Selection */}
-          <div className="flex-1 flex flex-col min-w-0 border rounded-lg bg-background">
+          <div className="flex-1 flex flex-col min-w-0 ">
             {/* Header with Show/Event Selectors and View Toggle */}
-            <div className="p-3 border-b flex items-center gap-3 flex-shrink-0">
+            <div className="pr-1 border-b flex items-center gap-3 flex-shrink-0">
               <div className="flex-1 min-w-0">
                 <Popover
                   open={showPopoverOpen}
@@ -716,354 +699,55 @@ export function CreateBookingDialog({
             </div>
 
             {/* Seat Content Area */}
-            <div className="flex-1 overflow-hidden">
-              {!selectedEventId ? (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  Select a show and event to view seats
-                </div>
-              ) : seatViewMode === "visualization" ? (
-                layoutWithSeats ? (
-                  <div className="h-full overflow-hidden">
-                    <EventInventoryViewer
-                      layout={layoutWithSeats.layout}
-                      layoutSeats={layoutWithSeats.seats}
-                      sections={layoutWithSeats.sections}
-                      eventSeats={eventSeats}
-                      seatStatusMap={seatStatusMap}
-                      locationStatusMap={locationStatusMap}
-                      imageUrl={layoutWithSeats.layout.image_url}
-                      onSeatClick={handleSeatClick}
-                      selectedSeatIds={
-                        new Set(
-                          selectedTickets
-                            .map((t) => {
-                              // Find the seat ID from layout seats
-                              if (t.sectionName && t.rowName && t.seatNumber) {
-                                const seat = layoutWithSeats.seats.find(
-                                  (s) =>
-                                    s.section_name === t.sectionName &&
-                                    s.row === t.rowName &&
-                                    s.seat_number === t.seatNumber
-                                );
-                                return seat?.id;
-                              }
-                              return t.seatId;
-                            })
-                            .filter(Boolean) as string[]
-                        )
-                      }
-                      selectedSectionId={selectedSectionId}
-                      onSelectedSectionIdChange={setSelectedSectionId}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    No layout available for this event
-                  </div>
-                )
-              ) : (
-                <div className="h-full overflow-y-auto p-4">
-                  <EventSeatList
-                    eventSeats={eventSeats}
-                    onSeatSelect={handleListSeatSelect}
-                    selectedSeatIds={undefined}
-                    showSelection={true}
-                    onAddToBooking={handleAddSeatsToBooking}
-                    showAddToBooking={true}
-                    bookedSeatIds={
-                      new Set(selectedTickets.map((t) => t.eventSeatId))
-                    }
-                  />
-                </div>
-              )}
-            </div>
+            <BookingSeatSelection
+              selectedEventId={selectedEventId}
+              seatViewMode={seatViewMode}
+              layoutWithSeats={layoutWithSeats}
+              eventSeats={eventSeats}
+              seatStatusMap={seatStatusMap}
+              locationStatusMap={locationStatusMap}
+              onSeatClick={handleSeatClick}
+              selectedTickets={selectedTickets}
+              selectedSectionId={selectedSectionId}
+              onSelectedSectionIdChange={setSelectedSectionId}
+              onListSeatSelect={handleListSeatSelect}
+              onAddSeatsToBooking={handleAddSeatsToBooking}
+            />
           </div>
 
           {/* Right Section - Receipt-style Booking Details */}
           <div className="w-96 flex flex-col min-w-0 border rounded-lg bg-background flex-shrink-0 shadow-sm">
-            <div className="h-[600px] overflow-y-auto flex flex-col">
+            <div className="h-[620px] overflow-y-auto flex flex-col">
               {/* Customer Selection - Receipt Style */}
-              <div className="p-4 border-b bg-muted/20 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 block">
-                    Customer
-                  </label>
-                  <Popover
-                    open={customerPopoverOpen}
-                    onOpenChange={(open) => {
-                      setCustomerPopoverOpen(open);
-                      if (!open) {
-                        // Clear search query when popover closes
-                        setCustomerSearchQuery("");
-                      }
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between h-9"
-                      >
-                        {selectedCustomerId
-                          ? selectedCustomer?.name ||
-                            selectedCustomer?.code ||
-                            customers.find((c) => c.id === selectedCustomerId)
-                              ?.name ||
-                            customers.find((c) => c.id === selectedCustomerId)
-                              ?.code ||
-                            "Select a customer"
-                          : "Select customer (optional)"}
-                        <svg
-                          className="ml-2 h-4 w-4 shrink-0 opacity-50"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0" align="start">
-                      <Command>
-                        <CommandInput
-                          placeholder="Search customers..."
-                          className="h-9"
-                          value={customerSearchQuery}
-                          onValueChange={setCustomerSearchQuery}
-                        />
-                        <CommandList>
-                          <CommandEmpty>
-                            {customerSearchQuery
-                              ? `No customers found matching "${customerSearchQuery}"`
-                              : "Start typing to search customers..."}
-                          </CommandEmpty>
-                          <CommandGroup>
-                            <CommandItem
-                              value="none"
-                              onSelect={() => {
-                                setSelectedCustomerId(null);
-                                setCustomerPopoverOpen(false);
-                              }}
-                            >
-                              <div className="flex flex-col">
-                                <span className="text-muted-foreground">
-                                  No customer selected
-                                </span>
-                              </div>
-                            </CommandItem>
-                            {customers.map((customer) => (
-                              <CommandItem
-                                key={customer.id}
-                                value={`${customer.name || customer.code} ${customer.code || ""} ${customer.email || ""}`}
-                                onSelect={() => {
-                                  setSelectedCustomerId(customer.id);
-                                  setCustomerPopoverOpen(false);
-                                  setCustomerSearchQuery("");
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span className="font-medium">
-                                    {customer.name || customer.code}
-                                  </span>
-                                  {customer.code && customer.name && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {customer.code}
-                                    </span>
-                                  )}
-                                  {customer.email && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {customer.email}
-                                    </span>
-                                  )}
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Discount
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-xs",
-                          discountType === "percentage"
-                            ? "text-foreground font-medium"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        %
-                      </span>
-                      <Switch
-                        checked={discountType === "amount"}
-                        onCheckedChange={(checked) => {
-                          setDiscountType(checked ? "amount" : "percentage");
-                          // Reset value when switching
-                          setDiscountValue("0");
-                        }}
-                        className="scale-75"
-                      />
-                      <span
-                        className={cn(
-                          "text-xs",
-                          discountType === "amount"
-                            ? "text-foreground font-medium"
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        $
-                      </span>
-                    </div>
-                  </div>
-                  <Input
-                    type="number"
-                    min="0"
-                    max={discountType === "percentage" ? "100" : undefined}
-                    step={discountType === "percentage" ? "0.1" : "0.01"}
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
-                    placeholder={discountType === "percentage" ? "0" : "0.00"}
-                    className="h-9"
-                  />
-                </div>
-              </div>
+              <BookingReceipt
+                // Customer Props
+                customers={customers}
+                selectedCustomerId={selectedCustomerId}
+                onSelectedCustomerIdChange={setSelectedCustomerId}
+                customerPopoverOpen={customerPopoverOpen}
+                onCustomerPopoverOpenChange={setCustomerPopoverOpen}
+                customerSearchQuery={customerSearchQuery}
+                onCustomerSearchQueryChange={setCustomerSearchQuery}
 
-              {/* Receipt Items Section */}
-              <div className="flex-1 p-4 space-y-4">
-                {selectedTickets.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p className="font-medium">No tickets selected</p>
-                      <p className="text-xs">
-                        Select seats from the layout or list
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* Receipt Items */}
-                    <div className="space-y-0">
-                      {selectedTickets.map((ticket, index) => {
-                        const location =
-                          ticket.sectionName &&
-                          ticket.rowName &&
-                          ticket.seatNumber
-                            ? `${ticket.sectionName} ${ticket.rowName} ${ticket.seatNumber}`
-                            : ticket.seatId
-                              ? `Seat ${ticket.seatId.slice(0, 8)}`
-                              : "Unknown";
+                // Discount Props
+                discountType={discountType}
+                onDiscountTypeChange={setDiscountType}
+                discountValue={discountValue}
+                onDiscountValueChange={setDiscountValue}
 
-                        return (
-                          <div
-                            key={ticket.eventSeatId}
-                            className="group py-3 border-b last:border-b-0 hover:bg-muted/30 transition-colors relative"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-mono text-muted-foreground">
-                                    #{String(index + 1).padStart(3, "0")}
-                                  </span>
-                                  <span className="text-sm font-medium truncate">
-                                    {location}
-                                  </span>
-                                </div>
-                                {ticket.ticketNumber && (
-                                  <p className="text-xs text-muted-foreground">
-                                    Ticket: {ticket.ticketNumber}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <span className="text-sm font-semibold tabular-nums">
-                                  ${ticket.ticketPrice?.toFixed(2) || "0.00"}
-                                </span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedTickets((prev) =>
-                                      prev.filter(
-                                        (t) =>
-                                          t.eventSeatId !== ticket.eventSeatId
-                                      )
-                                    );
-                                  }}
-                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  aria-label="Remove ticket"
-                                  title="Remove ticket"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Receipt Footer - Totals */}
-                    <div className="pt-4 mt-auto border-t space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Subtotal:</span>
-                        <span className="font-semibold tabular-nums">
-                          ${subtotalAmount.toFixed(2)}
-                        </span>
-                      </div>
-                      {discountAmount > 0 && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Discount
-                            {discountType === "percentage"
-                              ? ` (${discountValue}%):`
-                              : " ($):"}
-                          </span>
-                          <span className="font-semibold tabular-nums text-green-600">
-                            -${discountAmount.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Tax (10%):
-                        </span>
-                        <span className="font-semibold tabular-nums">
-                          ${taxAmount.toFixed(2)}
-                        </span>
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between text-base font-bold">
-                        <span>TOTAL:</span>
-                        <span className="tabular-nums">
-                          ${totalAmount.toFixed(2)}
-                        </span>
-                      </div>
-                      {selectedTickets.length > 0 && (
-                        <div className="pt-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedTickets([])}
-                            className="w-full h-8 text-xs"
-                          >
-                            Clear All
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
+                // Existing Props
+                selectedTickets={selectedTickets}
+                onRemoveTicket={(id) => {
+                  setSelectedTickets((prev) =>
+                    prev.filter((t) => t.eventSeatId !== id)
+                  );
+                }}
+                onClearAll={() => setSelectedTickets([])}
+                subtotalAmount={subtotalAmount}
+                discountAmount={discountAmount}
+                taxAmount={taxAmount}
+                totalAmount={totalAmount}
+              />
             </div>
           </div>
         </div>

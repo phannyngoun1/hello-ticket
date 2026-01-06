@@ -72,3 +72,14 @@ export interface BookingFilter {
     createdAfter?: string;
     createdBefore?: string;
 }
+
+export interface BookingTicket {
+    eventSeatId: string;
+    seatId?: string;
+    sectionName?: string;
+    rowName?: string;
+    seatNumber?: string;
+    ticketPrice?: number;
+    ticketNumber?: string;
+    status: string;
+}
