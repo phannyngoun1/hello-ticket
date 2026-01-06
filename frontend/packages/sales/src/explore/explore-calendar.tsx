@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MapPin, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
+import { MapPin, ChevronDown, Calendar as CalendarIcon, Eye } from "lucide-react";
 import { Button } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import type { Event } from "@truths/ticketing";
@@ -7,6 +7,7 @@ import type { Event } from "@truths/ticketing";
 export interface ExploreCalendarProps {
   events: Event[];
   onEventClick: (event: Event) => void;
+  onDateClick?: (date: Date, events: Event[]) => void;
   className?: string;
 }
 
@@ -30,6 +31,7 @@ interface MonthTab {
 export function ExploreCalendar({
   events,
   onEventClick,
+  onDateClick,
   className,
 }: ExploreCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -427,15 +429,15 @@ export function ExploreCalendar({
 
       {/* Calendar Grid */}
       <div
-        className="border rounded-lg overflow-hidden bg-card shadow-sm"
+        className="border rounded-lg overflow-hidden bg-border shadow-sm"
         data-testid="calendarGrid"
       >
         {/* Day Headers */}
-        <ul aria-hidden="true" className="grid grid-cols-7 border-b bg-muted/50">
+        <ul aria-hidden="true" className="grid grid-cols-7 gap-px bg-border border-b">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <li
               key={day}
-              className="py-3 px-2 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider border-r last:border-r-0"
+              className="py-3 px-2 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider bg-muted/50"
             >
               <span>{day}</span>
             </li>
@@ -443,11 +445,11 @@ export function ExploreCalendar({
         </ul>
 
         {/* Calendar Weeks */}
-        <div aria-hidden="false">
+        <div aria-hidden="false" className="flex flex-col gap-px bg-border">
           {weeks.map((week, weekIndex) => (
             <section key={weekIndex}>
               <h3 className="sr-only">Week {weekIndex + 1}</h3>
-              <ul className="grid grid-cols-7 border-b last:border-b-0">
+              <ul className="grid grid-cols-7 gap-px bg-border">
                 {week.map((day, dayIndex) => {
                   const hasEvents = day.events.length > 0;
                   const isDisabled = !hasEvents;
@@ -460,12 +462,22 @@ export function ExploreCalendar({
                     <li
                       key={`${dateKey}-${dayIndex}`}
                       className={cn(
-                        "relative min-h-[140px] border-r last:border-r-0",
-                        "transition-colors",
-                        !day.isCurrentMonth && "bg-muted/10",
+                        "relative min-h-[140px] group",
+                        "transition-all duration-200 ease-in-out",
+                        // Base styles
+                        !day.isCurrentMonth && "bg-muted/20",
                         day.isCurrentMonth && "bg-card",
+                        
+                        // Event highlight (Active)
+                        hasEvents && day.isCurrentMonth && "bg-accent/5",
+                        hasEvents && !day.isCurrentMonth && "bg-accent/10",
+                        
+                        // Today styling
                         isTodayDate && "bg-primary/5 ring-1 ring-primary/20 ring-inset",
-                        hasEvents && !expanded && "hover:bg-accent/50 cursor-pointer"
+                        isTodayDate && hasEvents && "bg-primary/10 ring-1 ring-primary/30",
+                        
+                        // Hover interaction
+                        hasEvents && !expanded && "hover:bg-accent/20 hover:shadow-sm cursor-pointer"
                       )}
                       onClick={() => {
                         if (hasEvents && !expanded && day.events.length > 1) {
@@ -474,6 +486,25 @@ export function ExploreCalendar({
                       }}
                     >
                       <div className="h-full flex flex-col p-3">
+                        {/* View Action Button (Hover) */}
+                        {hasEvents && onDateClick && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDateClick(day.date, day.events);
+                            }}
+                            className={cn(
+                              "absolute top-2 right-2 z-10",
+                              "h-6 w-6 flex items-center justify-center",
+                              "bg-primary text-primary-foreground shadow-sm rounded-md",
+                              "opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0",
+                              "hover:bg-primary/90 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+                            )}
+                            title="View events"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                         {/* Day Header */}
                         <div className="flex items-start justify-between mb-2">
                           <button

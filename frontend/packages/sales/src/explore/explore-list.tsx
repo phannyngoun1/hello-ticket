@@ -22,6 +22,7 @@ import { ShowList, type ShowWithEvents } from "./show-list";
 import { ShowFilters, type DateFilter } from "./show-filters";
 import { EventFilters } from "./event-filters";
 import { ExploreCalendar } from "./explore-calendar";
+import { DayEventsSheet } from "./day-events-sheet";
 
 export function ExploreList() {
   const navigate = useNavigate();
@@ -51,6 +52,11 @@ export function ExploreList() {
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
   const [selectedShowForSheet, setSelectedShowForSheet] = useState<ShowWithEvents | null>(null);
   const [showEventsSheetOpen, setShowEventsSheetOpen] = useState(false);
+  
+  // Day events sheet state
+  const [selectedDayEvents, setSelectedDayEvents] = useState<Event[]>([]);
+  const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+  const [dayEventsSheetOpen, setDayEventsSheetOpen] = useState(false);
 
   const eventService = useEventService();
   const showService = useShowService();
@@ -338,6 +344,12 @@ export function ExploreList() {
     setShowEventsSheetOpen(true);
   }, []);
 
+  const handleDateClick = useCallback((date: Date, events: Event[]) => {
+    setSelectedDayDate(date);
+    setSelectedDayEvents(events);
+    setDayEventsSheetOpen(true);
+  }, []);
+
 
   return (
     <div className="space-y-6 p-6">
@@ -460,6 +472,7 @@ export function ExploreList() {
         <ExploreCalendar
           events={filteredEvents}
           onEventClick={handleEventClick}
+          onDateClick={handleDateClick}
         />
       ) : (
         <>
@@ -478,6 +491,16 @@ export function ExploreList() {
         open={showEventsSheetOpen}
         onOpenChange={setShowEventsSheetOpen}
         show={selectedShowForSheet}
+        onEventClick={handleEventClick}
+        onBookNow={handleBookNow}
+      />
+
+      {/* Day Events Sheet */}
+      <DayEventsSheet
+        open={dayEventsSheetOpen}
+        onOpenChange={setDayEventsSheetOpen}
+        date={selectedDayDate}
+        events={selectedDayEvents}
         onEventClick={handleEventClick}
         onBookNow={handleBookNow}
       />
