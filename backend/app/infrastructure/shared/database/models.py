@@ -968,6 +968,14 @@ class OrganizerModel(SQLModel, table=True):
     tenant_id: str = Field(index=True)
     code: str = Field(index=True)
     name: str
+    description: Optional[str] = Field(default=None, sa_column=Column(String(2000)))
+    email: Optional[str] = Field(default=None, index=True)
+    phone: Optional[str] = Field(default=None)
+    website: Optional[str] = Field(default=None)
+    address: Optional[str] = Field(default=None)
+    city: Optional[str] = Field(default=None, index=True)
+    country: Optional[str] = Field(default=None)
+    logo: Optional[str] = Field(default=None)
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)

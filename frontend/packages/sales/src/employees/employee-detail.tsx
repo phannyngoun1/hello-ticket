@@ -13,17 +13,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Tabs,
-  
-  
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import {
-  Edit,
-  MoreVertical,
-  Info,
-  Database,
-  
-} from "lucide-react";
+import { Edit, MoreVertical, Info, Database } from "lucide-react";
 import { Employee } from "./types";
 
 export interface EmployeeDetailProps {
@@ -31,12 +23,12 @@ export interface EmployeeDetailProps {
   data?: Employee;
   loading?: boolean;
   error?: Error | null;
-  
+
   showActivity?: boolean;
   showMetadata?: boolean;
   editable?: boolean;
   onEdit?: (data: Employee) => void;
-  
+
   customActions?: (data: Employee) => React.ReactNode;
 }
 
@@ -45,43 +37,27 @@ export function EmployeeDetail({
   data,
   loading = false,
   error = null,
-  
+
   showMetadata = false,
   editable = true,
   onEdit,
-  
+
   customActions,
 }: EmployeeDetailProps) {
   const [activeTab, setActiveTab] = useState<"profile" | "metadata">("profile");
-  
 
   // All hooks must be called before any early returns
-  
+
   const getEmployeeDisplayName = () => {
-    
-    
-    
-    return data?.code || data?.id || "";
-    
-    
-    
-    
-    
-    
-    
+    return data?.code || data?.name || data?.id || "";
+
     return data?.id || "";
   };
-  
 
   const displayName = useMemo(
-    () =>
-      data
-        ? getEmployeeDisplayName()
-        : "",
-    [data, data?.code]
+    () => (data ? getEmployeeDisplayName() : ""),
+    [data, data?.code, data?.name]
   );
-
-  
 
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
@@ -152,31 +128,15 @@ export function EmployeeDetail({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-              
               <Info className="h-10 w-10 text-primary" />
-              
             </div>
             <div>
               <h2 className="text-xl font-semibold">{displayName}</h2>
-              
-              
               {data.code && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Code: {data.code}
                 </p>
               )}
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
-              
             </div>
           </div>
 
@@ -184,6 +144,17 @@ export function EmployeeDetail({
             <div className="flex items-center gap-2">
               {customActions?.(data)}
             </div>
+            {editable && onEdit && (
+              <Button
+                onClick={() => onEdit(data)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -197,8 +168,6 @@ export function EmployeeDetail({
                       <Edit className="mr-2 h-3.5 w-3.5" /> Edit employee
                     </DropdownMenuItem>
                   )}
-
-                  
 
                   {customActions && customActions(data)}
                 </DropdownMenuContent>
@@ -253,33 +222,21 @@ export function EmployeeDetail({
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
                   {/* Basic Information */}
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Basic Information
-                    </h3>
-                    <dl className="space-y-3">
-                      <div>
-                        <dt className="text-sm font-medium">Name</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.name)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt className="text-sm font-medium">Code</dt>
-                        <dd className="mt-1 text-sm text-muted-foreground">
-                          {formatFieldValue(data.code)}
-                        </dd>
-                      </div>
-                      {data.work_email && (
+                  {data.work_email && (
+                    <div>
+                      <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                        Basic Information
+                      </h3>
+                      <dl className="space-y-3">
                         <div>
                           <dt className="text-sm font-medium">Work Email</dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(data.work_email)}
                           </dd>
                         </div>
-                      )}
-                    </dl>
-                  </div>
+                      </dl>
+                    </div>
+                  )}
 
                   {/* Organization */}
                   <div>
@@ -305,7 +262,9 @@ export function EmployeeDetail({
                       )}
                       {data.employment_type && (
                         <div>
-                          <dt className="text-sm font-medium">Employment Type</dt>
+                          <dt className="text-sm font-medium">
+                            Employment Type
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(data.employment_type)}
                           </dd>
@@ -346,7 +305,9 @@ export function EmployeeDetail({
                       )}
                       {data.office_location && (
                         <div>
-                          <dt className="text-sm font-medium">Office Location</dt>
+                          <dt className="text-sm font-medium">
+                            Office Location
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(data.office_location)}
                           </dd>
@@ -355,7 +316,7 @@ export function EmployeeDetail({
                       <div>
                         <dt className="text-sm font-medium">Timezone</dt>
                         <dd className="mt-1 text-sm text-muted-foreground">
-                          {data.timezone || 'UTC'}
+                          {data.timezone || "UTC"}
                         </dd>
                       </div>
                     </dl>
@@ -363,7 +324,9 @@ export function EmployeeDetail({
                 </div>
 
                 {/* Sales & Operations */}
-                {(data.skills || data.assigned_territories || data.commission_tier) && (
+                {(data.skills ||
+                  data.assigned_territories ||
+                  data.commission_tier) && (
                   <div>
                     <h3 className="mb-4 text-sm font-medium text-muted-foreground">
                       Sales & Operations
@@ -374,28 +337,37 @@ export function EmployeeDetail({
                           <dt className="text-sm font-medium">Skills</dt>
                           <dd className="mt-2 flex flex-wrap gap-1">
                             {data.skills.map((skill, i) => (
-                              <span key={i} className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                              >
                                 {skill}
                               </span>
                             ))}
                           </dd>
                         </div>
                       )}
-                      {data.assigned_territories && data.assigned_territories.length > 0 && (
-                        <div>
-                          <dt className="text-sm font-medium">Territories</dt>
-                          <dd className="mt-2 flex flex-wrap gap-1">
-                            {data.assigned_territories.map((territory, i) => (
-                              <span key={i} className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground">
-                                {territory}
-                              </span>
-                            ))}
-                          </dd>
-                        </div>
-                      )}
+                      {data.assigned_territories &&
+                        data.assigned_territories.length > 0 && (
+                          <div>
+                            <dt className="text-sm font-medium">Territories</dt>
+                            <dd className="mt-2 flex flex-wrap gap-1">
+                              {data.assigned_territories.map((territory, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground"
+                                >
+                                  {territory}
+                                </span>
+                              ))}
+                            </dd>
+                          </div>
+                        )}
                       {data.commission_tier && (
                         <div>
-                          <dt className="text-sm font-medium">Commission Tier</dt>
+                          <dt className="text-sm font-medium">
+                            Commission Tier
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(data.commission_tier)}
                           </dd>
@@ -406,22 +378,33 @@ export function EmployeeDetail({
                 )}
 
                 {/* Emergency Contact */}
-                {(data.emergency_contact_name || data.emergency_contact_phone || data.birthday) && (
+                {(data.emergency_contact_name ||
+                  data.emergency_contact_phone ||
+                  data.birthday) && (
                   <div>
                     <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                     HR / Personal
+                      HR / Personal
                     </h3>
                     <dl className="grid gap-4 md:grid-cols-3">
                       {data.emergency_contact_name && (
                         <div>
-                          <dt className="text-sm font-medium">Emergency Contact</dt>
+                          <dt className="text-sm font-medium">
+                            Emergency Contact
+                          </dt>
                           <dd className="mt-1 text-sm text-muted-foreground">
                             {formatFieldValue(data.emergency_contact_name)}
                             {data.emergency_contact_phone && (
-                              <> ({formatFieldValue(data.emergency_contact_phone)})</>
+                              <>
+                                {" "}
+                                (
+                                {formatFieldValue(data.emergency_contact_phone)}
+                                )
+                              </>
                             )}
                             {data.emergency_contact_relationship && (
-                              <div className="text-xs mt-1">{data.emergency_contact_relationship}</div>
+                              <div className="text-xs mt-1">
+                                {data.emergency_contact_relationship}
+                              </div>
                             )}
                           </dd>
                         </div>

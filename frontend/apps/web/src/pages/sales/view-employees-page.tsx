@@ -1,20 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "@tanstack/react-router";
 import {
   EmployeeDetail,
   EmployeeProvider,
   useEmployee,
   useEmployeeService,
+  EditEmployeeDialog,
+  useUpdateEmployee,
 } from "@truths/sales";
+import type { UpdateEmployeeInput } from "@truths/sales";
 import { api } from "@truths/api";
 
 function EmployeeDetailContent({ id }: { id: string | undefined }) {
   const service = useEmployeeService();
-  const {
-    data,
-    isLoading,
-    error,
-  } = useEmployee(service, id ?? null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const updateMutation = useUpdateEmployee(service);
+  const { data, isLoading, error } = useEmployee(service, id ?? null);
 
   useEffect(() => {
     if (!data) return;
@@ -30,13 +31,39 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
     );
   }, [id, data]);
 
+  const handleEdit = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async (
+    employeeId: string,
+    input: UpdateEmployeeInput
+  ) => {
+    try {
+      await updateMutation.mutateAsync({ id: employeeId, input });
+      setEditDialogOpen(false);
+    } catch (error) {
+      console.error("Error updating employee:", error);
+    }
+  };
+
   return (
-    <EmployeeDetail
-      data={data ?? undefined}
-      loading={isLoading}
-      error={error as Error | null}
-      editable={true}
-    />
+    <>
+      <EmployeeDetail
+        data={data ?? undefined}
+        loading={isLoading}
+        error={error as Error | null}
+        editable={true}
+        onEdit={handleEdit}
+      />
+
+      <EditEmployeeDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={handleEditSubmit}
+        employee={data ?? null}
+      />
+    </>
   );
 }
 
@@ -56,4 +83,3 @@ export function ViewEmployeePage() {
     </EmployeeProvider>
   );
 }
-

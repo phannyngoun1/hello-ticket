@@ -55,15 +55,7 @@ export function CreateEmployeeDialog({
   // createValue is null for timestamp fields, so they are automatically excluded
   const buildPayload = useMemo(() => {
     return (data: EmployeeFormData): CreateEmployeeInput => ({
-
-
-      code: undefined,
-
-
-
       name: data.name,
-
-
     });
   }, []);
 

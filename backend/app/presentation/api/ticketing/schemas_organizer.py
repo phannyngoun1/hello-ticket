@@ -10,6 +10,14 @@ class OrganizerCreateRequest(BaseModel):
 
     code: Optional[str] = Field(None, description="Organizer business code (auto-generated)")
     name: str = Field(..., description="Display name for the organizer")
+    description: Optional[str] = Field(None, description="Detailed description")
+    email: Optional[str] = Field(None, description="Contact email")
+    phone: Optional[str] = Field(None, description="Contact phone")
+    website: Optional[str] = Field(None, description="Website URL")
+    address: Optional[str] = Field(None, description="Physical address")
+    city: Optional[str] = Field(None, description="City")
+    country: Optional[str] = Field(None, description="Country")
+    logo: Optional[str] = Field(None, description="Logo URL")
 
 
 class OrganizerUpdateRequest(BaseModel):
@@ -17,6 +25,14 @@ class OrganizerUpdateRequest(BaseModel):
 
     code: Optional[str] = Field(None, description="Organizer business code")
     name: Optional[str] = Field(None, description="Display name for the organizer")
+    description: Optional[str] = Field(None, description="Detailed description")
+    email: Optional[str] = Field(None, description="Contact email")
+    phone: Optional[str] = Field(None, description="Contact phone")
+    website: Optional[str] = Field(None, description="Website URL")
+    address: Optional[str] = Field(None, description="Physical address")
+    city: Optional[str] = Field(None, description="City")
+    country: Optional[str] = Field(None, description="Country")
+    logo: Optional[str] = Field(None, description="Logo URL")
 
 
 class OrganizerResponse(BaseModel):
@@ -26,6 +42,14 @@ class OrganizerResponse(BaseModel):
     tenant_id: str
     code: str
     name: str
+    description: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    logo: Optional[str] = None
 
     is_active: bool
     created_at: datetime

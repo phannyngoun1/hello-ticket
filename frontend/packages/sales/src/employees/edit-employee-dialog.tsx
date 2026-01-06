@@ -38,15 +38,7 @@ export function EditEmployeeDialog({
   const defaultValues = useMemo(() => {
     if (!employee) return undefined;
     return {
-
-
-      code: employee.code ?? "",
-
-
-
       name: employee.name ?? "",
-
-
     };
   }, [employee]);
 
@@ -69,15 +61,7 @@ export function EditEmployeeDialog({
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
     return (data: EmployeeFormData): UpdateEmployeeInput => ({
-
-
-      code: undefined,
-
-
-
       name: data.name,
-
-
     });
   }, []);
 

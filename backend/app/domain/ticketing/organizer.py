@@ -17,6 +17,14 @@ class Organizer(AggregateRoot):
         tenant_id: str,
         code: str,
         name: str,
+        description: Optional[str] = None,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        website: Optional[str] = None,
+        address: Optional[str] = None,
+        city: Optional[str] = None,
+        country: Optional[str] = None,
+        logo: Optional[str] = None,
         organizer_id: Optional[str] = None,
 
         is_active: bool = True,
@@ -32,6 +40,14 @@ class Organizer(AggregateRoot):
         self.tenant_id = tenant_id
         self.code = self._validate_code(code) if code else None
         self.name = self._validate_name(name)
+        self.description = description
+        self.email = email
+        self.phone = phone
+        self.website = website
+        self.address = address
+        self.city = city
+        self.country = country
+        self.logo = logo
 
         self.is_active = is_active
         self.attributes = attributes or {}
@@ -47,6 +63,14 @@ class Organizer(AggregateRoot):
         *,
         code: Optional[str] = None,
         name: Optional[str] = None,
+        description: Optional[str] = None,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        website: Optional[str] = None,
+        address: Optional[str] = None,
+        city: Optional[str] = None,
+        country: Optional[str] = None,
+        logo: Optional[str] = None,
 
     ) -> None:
         """Update organizer master data with validation."""
@@ -54,6 +78,23 @@ class Organizer(AggregateRoot):
             self.code = self._validate_code(code)
         if name is not None:
             self.name = self._validate_name(name)
+        
+        if description is not None:
+            self.description = description
+        if email is not None:
+            self.email = email
+        if phone is not None:
+            self.phone = phone
+        if website is not None:
+            self.website = website
+        if address is not None:
+            self.address = address
+        if city is not None:
+            self.city = city
+        if country is not None:
+            self.country = country
+        if logo is not None:
+            self.logo = logo
 
         self._validate()
         self._touch()

@@ -11,7 +11,7 @@
 
 export interface Employee {
     id: string;
-    code?: string;
+    code?: string; // Auto-generated, read-only
     name: string;
 
     // System Link
@@ -49,7 +49,6 @@ export interface Employee {
 }
 
 export interface CreateEmployeeInput {
-    code?: string;
     name: string;
 
     // System Link
@@ -83,7 +82,6 @@ export interface CreateEmployeeInput {
 }
 
 export interface UpdateEmployeeInput {
-    code?: string;
     name?: string;
 
     // System Link
