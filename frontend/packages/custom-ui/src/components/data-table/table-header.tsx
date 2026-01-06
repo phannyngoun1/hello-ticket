@@ -19,6 +19,9 @@ interface TableHeaderProps<TData> {
   loading?: boolean;
   compact?: boolean;
   customActions?: React.ReactNode;
+  filterDefs?: any[]; // using any temporarily, should be imported FilterDef but circular dep risk?
+  density?: string;
+  onDensityChange?: (density: string) => void;
 }
 
 export const TableHeader = forwardRef<TableToolbarRef, TableHeaderProps<any>>(
@@ -39,6 +42,9 @@ export const TableHeader = forwardRef<TableToolbarRef, TableHeaderProps<any>>(
       loading = false,
       compact = true,
       customActions,
+      filterDefs,
+      density = "comfortable",
+      onDensityChange = () => {},
     },
     ref
   ) {
@@ -65,10 +71,12 @@ export const TableHeader = forwardRef<TableToolbarRef, TableHeaderProps<any>>(
           onFilterClick={onFilterClick}
           hasActiveFilters={hasActiveFilters}
           onResetFilters={onResetFilters}
-          onStatusFilterChange={onStatusFilterChange}
           manualFiltering={manualFiltering}
           loading={loading}
           customActions={customActions}
+          filterDefs={filterDefs}
+          density={density}
+          onDensityChange={onDensityChange}
         />
       </div>
     );

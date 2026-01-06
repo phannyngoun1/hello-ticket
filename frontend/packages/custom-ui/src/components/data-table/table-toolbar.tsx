@@ -1,10 +1,11 @@
 import { Table } from "@tanstack/react-table";
 import { Button, Input, cn } from "@truths/ui";
 import { Filter, Plus, Download, Search, X, Loader2 } from "lucide-react";
-import { ColumnVisibilityMenu } from "./column-visibility-menu";
 import { exportToCSV } from "./utils";
 import { DataTableFacetedFilter } from "./data-table-faceted-filter";
 import React, { useRef, forwardRef, useImperativeHandle } from "react";
+import { FilterDef } from "./types";
+import { DataTableViewOptions } from "./view-options";
 
 interface TableToolbarProps<TData> {
   table: Table<TData>;
@@ -15,10 +16,12 @@ interface TableToolbarProps<TData> {
   onFilterClick?: () => void;
   hasActiveFilters?: boolean;
   onResetFilters?: () => void;
-  onStatusFilterChange?: (status: string | undefined) => void;
   manualFiltering?: boolean;
   loading?: boolean;
   customActions?: React.ReactNode;
+  filterDefs?: FilterDef[];
+  density: string;
+  onDensityChange: (density: string) => void;
 }
 
 export interface TableToolbarRef {
@@ -36,10 +39,12 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
       onFilterClick,
       hasActiveFilters = false,
       onResetFilters,
-      onStatusFilterChange,
       manualFiltering = false,
       loading = false,
       customActions,
+      filterDefs = [],
+      density,
+      onDensityChange,
     },
     ref
   ) {
@@ -63,46 +68,19 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
       }
     };
 
-    // Get status column if it exists (safely check without throwing)
-    // Check if column exists in the column definitions first
-    const statusColumnId = "status";
-    const hasStatusColumn = table
-      .getAllColumns()
-      .some(
-        (col) =>
-          col.id === statusColumnId ||
-          (col.columnDef as { accessorKey?: string })?.accessorKey ===
-            statusColumnId
-      );
-
-    let statusColumn: ReturnType<typeof table.getColumn> | undefined;
-    if (hasStatusColumn) {
-      try {
-        statusColumn = table.getColumn(statusColumnId);
-      } catch {
-        // Column doesn't exist or can't be accessed, which is fine
-        statusColumn = undefined;
-      }
-    }
-
-    // Check if any filters are active (global filter, column filters, or advanced filters)
-    const hasAnyFilters =
+    // Check if any filters are active (global filter or any column filter)
+    const isFiltered =
       globalFilter.trim() !== "" ||
-      statusColumn?.getFilterValue() !== undefined ||
-      hasActiveFilters;
+      hasActiveFilters ||
+      table.getState().columnFilters.length > 0;
 
     const handleReset = () => {
       // Reset global filter
       onGlobalFilterChange("");
-      // Reset status column filter
-      if (statusColumn) {
-        if (manualFiltering && onStatusFilterChange) {
-          // In server-side mode, use callback
-          onStatusFilterChange(undefined);
-        } else {
-          statusColumn.setFilterValue(undefined);
-        }
-      }
+      
+      // Reset all column filters
+      table.resetColumnFilters();
+
       // Call custom reset handler if provided
       onResetFilters?.();
     };
@@ -149,54 +127,31 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
               </Button>
             )}
 
-            {statusColumn && (
-              <>
+            {filterDefs.map((filter) => {
+              const column = table.getColumn(filter.columnId);
+              if (!column) return null;
+              
+              return (
                 <DataTableFacetedFilter
-                  column={statusColumn}
-                  title="Status"
-                  options={[
-                    {
-                      label: "Active",
-                      value: "active",
-                    },
-                    {
-                      label: "Inactive",
-                      value: "inactive",
-                    },
-                    {
-                      label: "Pending",
-                      value: "pending",
-                    },
-                  ]}
-                  onFilterChange={
-                    manualFiltering && onStatusFilterChange
-                      ? (value) => {
-                          // For server-side mode, extract the status from filter value
-                          // Filter value is an array of selected statuses
-                          if (Array.isArray(value) && value.length > 0) {
-                            // Take first selected status (or you could modify to handle multiple)
-                            // Cast to string since the callback accepts string | undefined
-                            onStatusFilterChange(value[0] as string);
-                          } else {
-                            onStatusFilterChange(undefined);
-                          }
-                        }
-                      : undefined
-                  }
+                  key={filter.columnId}
+                  column={column}
+                  title={filter.title}
+                  options={filter.options}
                 />
-                {hasAnyFilters && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn("h-8 px-2 text-xs", "whitespace-nowrap")}
-                    onClick={handleReset}
-                    title="Reset all filters"
-                  >
-                    <X className={cn("h-3 w-3", "mr-1")} />
-                    Reset
-                  </Button>
-                )}
-              </>
+              );
+            })}
+
+            {isFiltered && (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn("h-8 px-2 text-xs", "whitespace-nowrap")}
+                onClick={handleReset}
+                title="Reset all filters"
+              >
+                <X className={cn("h-3 w-3", "mr-1")} />
+                Reset
+              </Button>
             )}
           </div>
         </div>
@@ -222,7 +177,11 @@ export const TableToolbar = forwardRef<TableToolbarRef, TableToolbarProps<any>>(
             <Download className={cn("h-3 w-3", "mr-1")} />
             Export
           </Button>
-          <ColumnVisibilityMenu table={table} />
+          <DataTableViewOptions 
+            table={table} 
+            density={density}
+            onDensityChange={onDensityChange}
+           />
         </div>
       </div>
     );

@@ -379,14 +379,20 @@ export function UserList({
         hasActiveFilters={hasActiveFilters}
         onResetFilters={handleResetFilters}
         onSearch={onSearch}
-        onStatusFilterChange={
-          onStatusFilterChange
-            ? (status: string | undefined) => {
-                // Cast to User status type
-                onStatusFilterChange(status as User["status"] | undefined);
-              }
-            : undefined
-        }
+        viewId="user-list"
+        filterDefs={[
+            {
+                columnId: "status",
+                title: "Status",
+                options: [
+                  { label: "Active", value: "active" },
+                  { label: "Inactive", value: "inactive" },
+                  { label: "Pending", value: "pending" },
+                  { label: "Suspended", value: "suspended" },
+                ]
+            }
+        ]}
+        onStatusFilterChange={(val) => onStatusFilterChange?.(val as any)} 
         manualFiltering={true}
         loading={loading}
         // Enable server-side pagination in the table and wire handlers
