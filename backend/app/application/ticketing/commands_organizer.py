@@ -9,6 +9,15 @@ class CreateOrganizerCommand:
 
     name: str
     code: Optional[str] = None
+    description: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    logo: Optional[str] = None
+    tags: Optional[list[str]] = None
 
 
 @dataclass
@@ -16,8 +25,17 @@ class UpdateOrganizerCommand:
     """Command to update organizer details"""
 
     organizer_id: str
-    name: Optional[str] = None
     code: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    logo: Optional[str] = None
+    tags: Optional[list[str]] = None
 
 
 @dataclass

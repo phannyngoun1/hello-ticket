@@ -57,7 +57,7 @@ export function CreateOrganizerDialog({
     return (data: OrganizerFormData): CreateOrganizerInput => ({
 
 
-      code: undefined,
+
 
 
 

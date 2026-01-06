@@ -22,7 +22,7 @@ const organizerFormSchema = z
   .object({
     
     
-    code: z.string().optional(),
+
     
     
     
@@ -68,7 +68,7 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
       defaultValues: {
         
         
-        code: undefined,
+
         
         
         
@@ -124,47 +124,7 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         >
           
           
-          <Field data-invalid={!!errors.code}>
-            <FieldLabel htmlFor="code">
-              Code
-            </FieldLabel>
-            
-              
-                
-                {(() => {
-                  const isCodeLocked =
-                    (true && mode === "edit") ||
-                    (true && mode === "create");
-                  const lockReason =
-                    true && mode === "edit"
-                      ? "Codes cannot be modified after creation"
-                      : true && mode === "create"
-                        ? "Code will be generated automatically"
-                        : undefined;
-                  return (
-                    <Input
-                      id="code"
-                      type="text"
-                      placeholder="Auto generated"
-                      {...register("code")}
-                      disabled={isLoading || isCodeLocked}
-                      readOnly={isCodeLocked}
-                      tabIndex={isCodeLocked ? -1 : undefined}
-                      aria-disabled={isCodeLocked || undefined}
-                      aria-readonly={isCodeLocked || undefined}
-                      title={lockReason}
-                      className={cn(
-                        isCodeLocked && "cursor-not-allowed bg-muted text-muted-foreground",
-                        errors.code && "border-destructive"
-                      )}
-                    />
-                  );
-                })()}
-                
-              
-              <FieldError>{errors.code?.message}</FieldError>
-            
-          </Field>
+
           
           
           
@@ -214,18 +174,6 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         </div>
         
         <div className="space-y-4">
-             <Field data-invalid={!!errors.description}>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
-                <Textarea
-                    id="description"
-                    placeholder="Enter description"
-                    {...register("description")}
-                    disabled={isLoading}
-                    className={cn(errors.description && "border-destructive")}
-                />
-                <FieldError>{errors.description?.message}</FieldError>
-            </Field>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <Field data-invalid={!!errors.email}>
                     <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -319,6 +267,18 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
                     <FieldError>{errors.country?.message}</FieldError>
                 </Field>
              </div>
+
+             <Field data-invalid={!!errors.description}>
+                <FieldLabel htmlFor="description">Description</FieldLabel>
+                <Textarea
+                    id="description"
+                    placeholder="Enter description"
+                    {...register("description")}
+                    disabled={isLoading}
+                    className={cn(errors.description && "border-destructive")}
+                />
+                <FieldError>{errors.description?.message}</FieldError>
+            </Field>
         </div>
       </form>
     );

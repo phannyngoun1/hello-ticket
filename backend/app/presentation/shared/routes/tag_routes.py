@@ -31,7 +31,7 @@ from app.presentation.api.shared.schemas_tag import (
     ManageEntityTagsRequest,
     ManageEntityTagsResponse,
 )
-from app.presentation.core.dependencies.auth_dependencies import RequirePermission
+from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
@@ -39,6 +39,8 @@ from app.domain.shared.tag_repository import TagRepository
 from app.shared.container import get_container
 
 router = APIRouter(prefix="/shared/tags", tags=["tags"])
+
+
 
 
 def tag_to_response(tag) -> TagResponse:
@@ -208,7 +210,10 @@ async def get_or_create_tags(
 async def get_entity_tags(
     entity_type: str,
     entity_id: str,
-    current_user: AuthenticatedUser = Depends(RequirePermission(Permission.VIEW_SALES_CUSTOMER)),
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([
+        Permission.VIEW_SALES_CUSTOMER,
+        Permission.VIEW_TICKETING_ORGANIZER
+    ])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
     """Get all tags for an entity"""
@@ -225,7 +230,10 @@ async def set_entity_tags(
     entity_type: str,
     entity_id: str,
     request: SetEntityTagsRequest,
-    current_user: AuthenticatedUser = Depends(RequirePermission(Permission.CREATE_SALES_CUSTOMER)),
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([
+        Permission.CREATE_SALES_CUSTOMER,
+        Permission.MANAGE_TICKETING_ORGANIZER
+    ])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
     """Set tags for an entity (replaces existing tags)"""
@@ -249,7 +257,10 @@ async def get_available_tags_for_entity(
     entity_id: str,
     search: Optional[str] = Query(None, description="Search term for tag names"),
     limit: int = Query(200, ge=1, le=500, description="Maximum number of tags to return"),
-    current_user: AuthenticatedUser = Depends(RequirePermission(Permission.VIEW_SALES_CUSTOMER)),
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([
+        Permission.VIEW_SALES_CUSTOMER,
+        Permission.VIEW_TICKETING_ORGANIZER
+    ])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
     """Get all available tags for an entity type with attachment status"""
@@ -288,7 +299,10 @@ async def manage_entity_tags(
     entity_type: str,
     entity_id: str,
     request: ManageEntityTagsRequest,
-    current_user: AuthenticatedUser = Depends(RequirePermission(Permission.CREATE_SALES_CUSTOMER)),
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([
+        Permission.CREATE_SALES_CUSTOMER,
+        Permission.MANAGE_TICKETING_ORGANIZER
+    ])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
     """Manage entity tags - creates new tags and attaches them in one operation"""

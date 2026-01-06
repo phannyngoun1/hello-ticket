@@ -40,7 +40,7 @@ export function EditOrganizerDialog({
     return {
 
 
-      code: organizer.code ?? "",
+
 
 
 
@@ -71,7 +71,7 @@ export function EditOrganizerDialog({
     return (data: OrganizerFormData): UpdateOrganizerInput => ({
 
 
-      code: undefined,
+
 
 
 

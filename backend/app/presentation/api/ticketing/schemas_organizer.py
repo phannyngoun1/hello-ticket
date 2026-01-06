@@ -18,6 +18,7 @@ class OrganizerCreateRequest(BaseModel):
     city: Optional[str] = Field(None, description="City")
     country: Optional[str] = Field(None, description="Country")
     logo: Optional[str] = Field(None, description="Logo URL")
+    tags: Optional[List[str]] = Field(None, description="List of tags")
 
 
 class OrganizerUpdateRequest(BaseModel):
@@ -33,6 +34,7 @@ class OrganizerUpdateRequest(BaseModel):
     city: Optional[str] = Field(None, description="City")
     country: Optional[str] = Field(None, description="Country")
     logo: Optional[str] = Field(None, description="Logo URL")
+    tags: Optional[List[str]] = Field(None, description="List of tags")
 
 
 class OrganizerResponse(BaseModel):
@@ -50,6 +52,7 @@ class OrganizerResponse(BaseModel):
     city: Optional[str] = None
     country: Optional[str] = None
     logo: Optional[str] = None
+    tags: List[str] = []
 
     is_active: bool
     created_at: datetime

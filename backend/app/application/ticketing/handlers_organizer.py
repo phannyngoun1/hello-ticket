@@ -50,7 +50,15 @@ class OrganizerCommandHandler:
             tenant_id=tenant_id,
             code=code_value,
             name=command.name,
-
+            description=command.description,
+            email=command.email,
+            phone=command.phone,
+            website=command.website,
+            address=command.address,
+            city=command.city,
+            country=command.country,
+            logo=command.logo,
+            tags=command.tags,
         )
 
         saved = await self._organizer_repository.save(organizer)
@@ -74,6 +82,25 @@ class OrganizerCommandHandler:
             update_kwargs['code'] = command.code
         if command.name is not None:
             update_kwargs['name'] = command.name
+        if command.description is not None:
+            update_kwargs['description'] = command.description
+        if command.email is not None:
+            update_kwargs['email'] = command.email
+        if command.phone is not None:
+            update_kwargs['phone'] = command.phone
+        if command.website is not None:
+            update_kwargs['website'] = command.website
+        if command.address is not None:
+            update_kwargs['address'] = command.address
+        if command.city is not None:
+            update_kwargs['city'] = command.city
+        if command.country is not None:
+            update_kwargs['country'] = command.country
+        if command.logo is not None:
+            update_kwargs['logo'] = command.logo
+        if command.tags is not None:
+            update_kwargs['tags'] = command.tags
+            
         organizer.update_details(**update_kwargs)
 
         saved = await self._organizer_repository.save(organizer)

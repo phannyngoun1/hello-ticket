@@ -16,5 +16,8 @@ export * from './organizer-provider';
 export * from './organizer-list-container';
 
 export * from './organizer-filter-sheet';
+export * from './organizer-tags-dialog';
+export * from './organizer-attachments-dialog';
+export * from './organizer-profile-photo-upload';
 
 

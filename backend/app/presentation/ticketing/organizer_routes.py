@@ -46,7 +46,15 @@ async def create_organizer(
         command = CreateOrganizerCommand(
             code=request.code,
             name=request.name,
-
+            description=request.description,
+            email=request.email,
+            phone=request.phone,
+            website=request.website,
+            address=request.address,
+            city=request.city,
+            country=request.country,
+            logo=request.logo,
+            tags=request.tags,
         )
         organizer = await mediator.send(command)
         return TicketingApiMapper.organizer_to_response(organizer)
@@ -115,7 +123,15 @@ async def update_organizer(
             organizer_id=organizer_id,
             code=request.code,
             name=request.name,
-
+            description=request.description,
+            email=request.email,
+            phone=request.phone,
+            website=request.website,
+            address=request.address,
+            city=request.city,
+            country=request.country,
+            logo=request.logo,
+            tags=request.tags,
         )
         organizer = await mediator.send(command)
         return TicketingApiMapper.organizer_to_response(organizer)

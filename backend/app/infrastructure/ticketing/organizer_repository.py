@@ -1,12 +1,12 @@
 """
 Organizer repository implementation - Adapter in Hexagonal Architecture
 """
-from typing import List, Optional
-from sqlmodel import Session, select, and_, or_
+from typing import List, Optional, Set
+from sqlmodel import Session, select, and_, or_, delete
 from sqlalchemy.exc import IntegrityError
 from app.domain.ticketing.organizer import Organizer
 from app.domain.ticketing.organizer_repositories import OrganizerRepository, OrganizerSearchResult
-from app.infrastructure.shared.database.models import OrganizerModel
+from app.infrastructure.shared.database.models import OrganizerModel, TagModel, TagLinkModel
 from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.ticketing.mapper_organizer import OrganizerMapper
 from app.shared.tenant_context import get_tenant_context
@@ -51,7 +51,16 @@ class SQLOrganizerRepository(OrganizerRepository):
                 try:
                     session.commit()
                     session.refresh(merged_model)
-                    return self._mapper.to_domain(merged_model)
+
+                    if organizer.tags is not None:
+                        self._update_tags(session, tenant_id, merged_model.id, organizer.tags)
+
+                    domain = self._mapper.to_domain(merged_model)
+                    if organizer.tags is not None:
+                        domain.tags = organizer.tags
+                    else:
+                        domain.tags = self._get_tags(session, tenant_id, domain.id)
+                    return domain
                 except IntegrityError as e:
                     session.rollback()
                     raise BusinessRuleError(f"Failed to update organizer: {str(e)}")
@@ -62,7 +71,13 @@ class SQLOrganizerRepository(OrganizerRepository):
                 try:
                     session.commit()
                     session.refresh(new_model)
-                    return self._mapper.to_domain(new_model)
+
+                    if organizer.tags is not None:
+                        self._update_tags(session, tenant_id, new_model.id, organizer.tags)
+
+                    domain = self._mapper.to_domain(new_model)
+                    domain.tags = organizer.tags or []
+                    return domain
                 except IntegrityError as e:
                     session.rollback()
                     raise BusinessRuleError(f"Failed to create organizer: {str(e)}")
@@ -75,7 +90,11 @@ class SQLOrganizerRepository(OrganizerRepository):
                 OrganizerModel.tenant_id == tenant_id
             )
             model = session.exec(statement).first()
-            return self._mapper.to_domain(model) if model else None
+            if not model:
+                return None
+            domain = self._mapper.to_domain(model)
+            domain.tags = self._get_tags(session, tenant_id, domain.id)
+            return domain
     
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[Organizer]:
         """Get organizer by business code"""
@@ -87,7 +106,11 @@ class SQLOrganizerRepository(OrganizerRepository):
                 OrganizerModel.code == code.strip().upper()
             )
             model = session.exec(statement).first()
-            return self._mapper.to_domain(model) if model else None
+            if not model:
+                return None
+            domain = self._mapper.to_domain(model)
+            domain.tags = self._get_tags(session, tenant_id, domain.id)
+            return domain
     
     async def search(
         self,
@@ -132,7 +155,11 @@ class SQLOrganizerRepository(OrganizerRepository):
             )
             models = session.exec(statement).all()
             
-            items = [self._mapper.to_domain(model) for model in models]
+            items = []
+            for model in models:
+                domain = self._mapper.to_domain(model)
+                domain.tags = self._get_tags(session, tenant_id, domain.id)
+                items.append(domain)
             has_next = skip + limit < total
             
             return OrganizerSearchResult(items=items, total=total, has_next=has_next)
@@ -144,7 +171,12 @@ class SQLOrganizerRepository(OrganizerRepository):
                 OrganizerModel.tenant_id == tenant_id
             )
             models = session.exec(statement).all()
-            return [self._mapper.to_domain(model) for model in models]
+            result = []
+            for model in models:
+                domain = self._mapper.to_domain(model)
+                domain.tags = self._get_tags(session, tenant_id, domain.id)
+                result.append(domain)
+            return result
     
     async def delete(self, tenant_id: str, organizer_id: str, hard_delete: bool = False) -> bool:
         """Delete a organizer (soft-delete by default, hard-delete if specified)"""
@@ -174,4 +206,91 @@ class SQLOrganizerRepository(OrganizerRepository):
             except IntegrityError as e:
                 session.rollback()
                 raise BusinessRuleError(f"Failed to delete organizer: {str(e)}")
+
+    def _get_tags(self, session: Session, tenant_id: str, organizer_id: str) -> List[str]:
+        """Get tags for organizer"""
+        stmt = (
+            select(TagModel.name)
+            .join(TagLinkModel, TagLinkModel.tag_id == TagModel.id)
+            .where(
+                TagLinkModel.tenant_id == tenant_id,
+                TagLinkModel.entity_type == "organizer",
+                TagLinkModel.entity_id == organizer_id,
+                TagModel.is_active == True
+            )
+        )
+        return session.exec(stmt).all()
+
+    def _update_tags(self, session: Session, tenant_id: str, organizer_id: str, tags: List[str]) -> None:
+        """Update tags for organizer"""
+        if tags is None:
+            return
+
+        # 1. Get current tags
+        current_tags = set(self._get_tags(session, tenant_id, organizer_id))
+        new_tags = set(tags)
+
+        # 2. Determine changes
+        to_add = new_tags - current_tags
+        to_remove = current_tags - new_tags
+
+        if not to_add and not to_remove:
+            return
+
+        # 3. Add new tags
+        if to_add:
+            # Check existing tags in DB
+            existing_tag_models = session.exec(
+                select(TagModel).where(
+                    TagModel.tenant_id == tenant_id,
+                    TagModel.entity_type == "organizer",
+                    TagModel.name.in_(to_add)
+                )
+            ).all()
+            
+            existing_tag_map = {t.name: t.id for t in existing_tag_models}
+            
+            for tag_name in to_add:
+                tag_id = existing_tag_map.get(tag_name)
+                
+                # Create tag if not exists
+                if not tag_id:
+                    new_tag = TagModel(
+                        tenant_id=tenant_id,
+                        name=tag_name,
+                        entity_type="organizer",
+                        is_active=True
+                    )
+                    session.add(new_tag)
+                    session.flush() # Get ID
+                    tag_id = new_tag.id
+                
+                # Link tag
+                link = TagLinkModel(
+                    tenant_id=tenant_id,
+                    tag_id=tag_id,
+                    entity_type="organizer",
+                    entity_id=organizer_id
+                )
+                session.add(link)
+
+        # 4. Remove tags
+        if to_remove:
+            # Find tag IDs to remove
+            tags_to_remove = session.exec(
+                select(TagModel.id).where(
+                    TagModel.tenant_id == tenant_id,
+                    TagModel.entity_type == "organizer",
+                    TagModel.name.in_(to_remove)
+                )
+            ).all()
+            
+            if tags_to_remove:
+                statement = delete(TagLinkModel).where(
+                    TagLinkModel.tenant_id == tenant_id,
+                    TagLinkModel.entity_type == "organizer",
+                    TagLinkModel.entity_id == organizer_id,
+                    TagLinkModel.tag_id.in_(tags_to_remove)
+                )
+                session.exec(statement)
 
