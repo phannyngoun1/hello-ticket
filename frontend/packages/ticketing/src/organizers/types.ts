@@ -13,6 +13,14 @@ export interface Organizer {
     id: string;
     code?: string;
     name: string;
+    description?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    website?: string | null;
+    address?: string | null;
+    city?: string | null;
+    country?: string | null;
+    logo?: string | null;
     created_at: Date;
     updated_at?: Date;
 }
@@ -20,11 +28,27 @@ export interface Organizer {
 export interface CreateOrganizerInput {
     code?: string;
     name: string;
+    description?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    logo?: string;
 }
 
 export interface UpdateOrganizerInput {
     code?: string;
     name?: string;
+    description?: string;
+    email?: string;
+    phone?: string;
+    website?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    logo?: string;
 }
 
 export interface OrganizerFilter {
