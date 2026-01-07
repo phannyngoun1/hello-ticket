@@ -16,6 +16,10 @@ import {
   CustomerTagsDialog,
   CustomerAttachmentsDialog,
   type Customer,
+  CreateBookingDialog,
+  BookingService,
+  useCreateBooking,
+  type CreateBookingInput,
 } from "@truths/sales";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { useToast } from "@truths/ui";
@@ -41,12 +45,21 @@ function CustomerDetailContent({ id }: { id: string }) {
     },
   });
 
+  const bookingService = new BookingService({
+    apiClient: api,
+    endpoints: {
+      bookings: "/api/v1/sales/bookings",
+    },
+  });
+  const createBookingMutation = useCreateBooking(bookingService);
+
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [activateDialogOpen, setActivateDialogOpen] = useState(false);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
+  const [createBookingDialogOpen, setCreateBookingDialogOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<FileUpload | null>(null);
 
   // Load profile photo
@@ -185,14 +198,38 @@ function CustomerDetailContent({ id }: { id: string }) {
   );
 
   const handleCreateBooking = useCallback(
-    (cus: Customer) => {
-      navigate({
-        to: "/sales/bookings",
-        search: { customer_id: cus.id },
-      });
+    (_: Customer) => {
+      setCreateBookingDialogOpen(true);
     },
-    [navigate]
+    []
   );
+
+  const handleCreateBookingSubmit = useCallback(
+    async (data: CreateBookingInput) => {
+      try {
+        const booking = await createBookingMutation.mutateAsync(data);
+        toast({
+          title: "Success",
+          description: "Booking created successfully",
+        });
+        setCreateBookingDialogOpen(false);
+        // Navigate to the new booking
+        navigate({
+          to: "/sales/bookings/$id",
+          params: { id: booking.id },
+        });
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: err instanceof Error ? err.message : "Failed to create booking",
+          variant: "destructive",
+        });
+        throw err;
+      }
+    },
+    [createBookingMutation, navigate, toast]
+  );
+
 
   const handleViewBookings = useCallback(
     (cus: Customer) => {
@@ -372,6 +409,13 @@ function CustomerDetailContent({ id }: { id: string }) {
             attachmentService={attachmentService}
             onSave={handleAttachmentsSave}
             loading={false}
+          />
+
+          <CreateBookingDialog
+            open={createBookingDialogOpen}
+            onOpenChange={setCreateBookingDialogOpen}
+            onSubmit={handleCreateBookingSubmit}
+            initialCustomerId={customer.id}
           />
         </>
       )}
