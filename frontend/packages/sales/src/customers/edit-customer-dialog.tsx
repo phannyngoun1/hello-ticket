@@ -74,7 +74,6 @@ export function EditCustomerDialog({
       linkedin_url: customer.linkedin_url ?? "",
       instagram_handle: customer.instagram_handle ?? "",
       website: customer.website ?? "",
-      priority: customer.priority ?? "",
       notes: customer.notes ?? "",
       public_notes: customer.public_notes ?? "",
     };
@@ -136,7 +135,6 @@ export function EditCustomerDialog({
         linkedin_url: toNullIfEmpty(data.linkedin_url),
         instagram_handle: toNullIfEmpty(data.instagram_handle),
         website: toNullIfEmpty(data.website),
-        priority: toNullIfEmpty(data.priority),
         notes: toNullIfEmpty(data.notes),
         public_notes: toNullIfEmpty(data.public_notes),
       };

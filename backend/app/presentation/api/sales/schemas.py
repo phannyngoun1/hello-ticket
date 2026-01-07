@@ -43,7 +43,6 @@ class CustomerCreateRequest(BaseModel):
     instagram_handle: Optional[str] = Field(None, description="Instagram handle")
     website: Optional[str] = Field(None, description="Website URL")
     # Classification
-    priority: Optional[str] = Field(None, description="Priority level (High, Medium, Low)")
     notes: Optional[str] = Field(None, description="Internal notes")
     public_notes: Optional[str] = Field(None, description="Public notes")
 
@@ -80,7 +79,7 @@ class CustomerUpdateRequest(BaseModel):
     linkedin_url: Optional[str] = Field(None, description="LinkedIn URL")
     instagram_handle: Optional[str] = Field(None, description="Instagram handle")
     website: Optional[str] = Field(None, description="Website URL")
-    priority: Optional[str] = Field(None, description="Priority level")
+    website: Optional[str] = Field(None, description="Website URL")
     status: Optional[str] = Field(None, description="Customer status (active/inactive)")
     status_reason: Optional[str] = Field(None, description="Status reason")
     notes: Optional[str] = Field(None, description="Internal notes")
@@ -129,7 +128,6 @@ class CustomerResponse(BaseModel):
     instagram_handle: Optional[str]
     website: Optional[str]
     tags: List[str]
-    priority: Optional[str]
     status_reason: Optional[str]
     notes: Optional[str]
     public_notes: Optional[str]

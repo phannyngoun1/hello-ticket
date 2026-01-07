@@ -6,7 +6,6 @@
  * @author Phanny
  */
 
-import React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { cn } from "@truths/ui/lib/utils";
 import { useDensityStyles } from "@truths/utils";
@@ -35,7 +34,7 @@ export function CustomerList({
   className,
   customers = [],
   loading = false,
-  error = null,
+  // error = null,
   pagination,
   onCustomerClick,
   onCreate,
@@ -135,28 +134,6 @@ export function CustomerList({
       },
     }),
 
-    createTextColumn<Customer>({
-      accessorKey: "priority",
-      header: "Priority",
-      cell: (info) => {
-        const value = info.getValue() as string | null | undefined;
-        if (!value) return <span className={cn("text-muted-foreground", density.textSize)}>-</span>;
-        const priorityColors = {
-          high: "text-destructive",
-          medium: "text-yellow-600",
-          low: "text-muted-foreground",
-        };
-        return (
-          <span className={cn(
-            "capitalize",
-            priorityColors[value.toLowerCase() as keyof typeof priorityColors] || "text-muted-foreground",
-            density.textSize
-          )}>
-            {value}
-          </span>
-        );
-      },
-    }),
   ];
 
   const tableData = customers;

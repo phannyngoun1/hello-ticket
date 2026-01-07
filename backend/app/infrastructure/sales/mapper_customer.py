@@ -63,7 +63,6 @@ class CustomerMapper:
             instagram_handle=model.instagram_handle,
             website=model.website,
             tags=[],  # Tags will be loaded from TagLinkRepository if available
-            priority=model.priority,
             status_reason=model.status_reason,
             notes=model.notes,
             public_notes=model.public_notes,
@@ -124,7 +123,6 @@ class CustomerMapper:
             instagram_handle=customer.instagram_handle,
             website=customer.website,
             # Tags are now managed via TagLink table, not stored in customer table
-            priority=customer.priority,
             status_reason=customer.status_reason,
             notes=customer.notes,
             public_notes=customer.public_notes,

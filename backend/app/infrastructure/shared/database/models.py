@@ -587,7 +587,6 @@ class CustomerModel(SQLModel, table=True):
     
     # Tags & Classification
     # Tags are now managed via TagLink table, not stored directly in customer table
-    priority: Optional[str] = Field(default=None, index=True)
     status_reason: Optional[str] = Field(default=None)
     notes: Optional[str] = Field(default=None)
     public_notes: Optional[str] = Field(default=None)
