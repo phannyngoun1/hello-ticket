@@ -20,7 +20,6 @@ import {
   useShows,
   useCreateShow,
   useUpdateShow,
-  useDeleteShow,
 } from "./use-shows";
 import { useShowService } from "./show-provider";
 

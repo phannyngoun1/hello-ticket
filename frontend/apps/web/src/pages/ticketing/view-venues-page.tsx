@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   useParams,
   useNavigate,
@@ -95,16 +95,18 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
           data ? (
             <VenueProfilePhotoUpload
               venue={data}
-              attachmentService={
-                new AttachmentService({
-                  apiClient: api,
-                  endpoints: {
-                    attachments: "/api/v1/shared/attachments",
-                    entityAttachments: "/api/v1/shared/attachments/entity",
-                    profilePhoto: "/api/v1/shared/attachments/entity",
-                  },
-                })
-              }
+              attachmentService={useMemo(
+                () =>
+                  new AttachmentService({
+                    apiClient: api,
+                    endpoints: {
+                      attachments: "/api/v1/shared/attachments",
+                      entityAttachments: "/api/v1/shared/attachments/entity",
+                      profilePhoto: "/api/v1/shared/attachments/entity",
+                    },
+                  }),
+                []
+              )}
             />
           ) : undefined
         }

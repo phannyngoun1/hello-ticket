@@ -18,3 +18,4 @@ export type { DataRow } from './components/data-table';
 export type { DataListProps, DataListItem, StatConfig, BadgeConfig } from './components/data-list';
 export type { FormField } from './components/custom-form';
 export type { ActivityItem } from './components/dashboard-widgets';
+export * from './components/entity-profile-photo-upload';
