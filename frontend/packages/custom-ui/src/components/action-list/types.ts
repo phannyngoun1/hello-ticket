@@ -14,14 +14,21 @@ export interface ActionItem {
   onClick: () => void;
   /** Button variant style */
   variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
+  | "default"
+  | "destructive"
+  | "outline"
+  | "secondary"
+  | "ghost"
+  | "link";
   /** Whether the action is disabled */
   disabled?: boolean;
+  /**
+   * Controls how the action is displayed.
+   * - 'button': Always displayed as a button.
+   * - 'dropdown-item': Always displayed in the overflow dropdown menu.
+   * - undefined: Automatically determined based on maxVisibleActions.
+   */
+  display?: "button" | "dropdown-item";
 }
 
 /**

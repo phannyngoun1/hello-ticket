@@ -14,7 +14,7 @@ import {
 } from "@truths/ui";
 import { MoreVertical } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
-import type { ActionListProps } from "./types";
+import type { ActionListProps, ActionItem } from "./types";
 
 /**
  * ActionList component
@@ -42,9 +42,24 @@ export function ActionList({
   className,
   size = "sm",
 }: ActionListProps) {
-  // Split actions into visible and overflow
-  const visibleActions = actions.slice(0, maxVisibleActions);
-  const overflowActions = actions.slice(maxVisibleActions);
+  // Split actions into visible and overflow based on display prop and maxVisibleActions
+  const visibleActions: ActionItem[] = [];
+  const overflowActions: ActionItem[] = [];
+
+  actions.forEach((action) => {
+    if (action.display === "button") {
+      visibleActions.push(action);
+    } else if (action.display === "dropdown-item") {
+      overflowActions.push(action);
+    } else {
+      // Auto behavior
+      if (visibleActions.length < maxVisibleActions) {
+        visibleActions.push(action);
+      } else {
+        overflowActions.push(action);
+      }
+    }
+  });
 
   // Don't render anything if there are no actions
   if (actions.length === 0 && !customActions) {

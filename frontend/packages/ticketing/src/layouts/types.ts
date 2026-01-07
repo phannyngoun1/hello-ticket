@@ -24,6 +24,7 @@ export interface CreateLayoutInput {
   description?: string;
   image_url?: string; // Deprecated: use file_id instead
   file_id?: string;
+  design_mode?: "seat-level" | "section-level";
 }
 
 export interface UpdateLayoutInput {

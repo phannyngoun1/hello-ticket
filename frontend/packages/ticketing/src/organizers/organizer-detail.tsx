@@ -6,19 +6,13 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
-  Button,
   Card,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Tabs,
   Badge,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
-  MoreVertical,
   Info,
   Database,
   MapPin,
@@ -28,7 +22,7 @@ import {
   Tag,
   File,
 } from "lucide-react";
-import { DocumentList, DescriptionList, DescriptionItem } from "@truths/custom-ui";
+import { DocumentList, DescriptionList, DescriptionItem, ActionList } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 import { Organizer } from "./types";
@@ -228,49 +222,43 @@ export function OrganizerDetail({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1.5">
-              {customActions?.(data)}
-            </div>
-            {editable && onEdit && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(data)}
-                className="h-8 px-3 text-xs"
-                aria-label="Edit organizer"
-              >
-                <Edit className="h-3.5 w-3.5 mr-1" />
-                Edit
-              </Button>
-            )}
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={cn("h-8 px-2 text-xs")}
-                    aria-label="Actions"
-                  >
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {editable && onManageTags && (
-                    <DropdownMenuItem onClick={() => onManageTags(data)}>
-                      <Tag className="mr-2 h-3.5 w-3.5" /> Manage tags
-                    </DropdownMenuItem>
-                  )}
-                  {editable && onManageAttachments && (
-                    <DropdownMenuItem onClick={() => onManageAttachments(data)}>
-                      <File className="mr-2 h-3.5 w-3.5" /> Manage documents
-                    </DropdownMenuItem>
-                  )}
-
-                  {customActions && customActions(data)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <ActionList
+              actions={[
+                ...(editable && onEdit
+                  ? [
+                      {
+                        id: "edit",
+                        label: "Edit",
+                        icon: <Edit className="h-3.5 w-3.5" />,
+                        onClick: () => onEdit(data),
+                      },
+                    ]
+                  : []),
+                ...(editable && onManageTags
+                  ? [
+                      {
+                        id: "manage-tags",
+                        label: "Manage tags",
+                        icon: <Tag className="h-3.5 w-3.5" />,
+                        onClick: () => onManageTags(data),
+                        display: "dropdown-item" as const
+                      },
+                    ]
+                  : []),
+                ...(editable && onManageAttachments
+                  ? [
+                      {
+                        id: "manage-documents",
+                        label: "Manage documents",
+                        icon: <File className="h-3.5 w-3.5" />,
+                        onClick: () => onManageAttachments(data),
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+              ]}
+              customActions={customActions?.(data)}
+            />
           </div>
         </div>
 

@@ -8,14 +8,9 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
-  Button,
   Card,
   Tabs,
   Badge,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -33,20 +28,20 @@ import {
   ShoppingCart,
   Users,
   FileText,
-  Copy,
-  CheckCircle2,
   XCircle,
+  CheckCircle2,
   User,
   Building2,
   Share2,
   Tag,
-  MoreVertical,
 } from "lucide-react";
 import {
   DocumentList,
   DescriptionList,
   DescriptionItem,
   DescriptionSection,
+  ActionList,
+  CopyButton,
 } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
@@ -97,7 +92,7 @@ export function CustomerDetail({
   const [activeTab, setActiveTab] = useState<
     "overview" | "profile" | "account" | "social" | "metadata" | "documents"
   >("overview");
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const [documents, setDocuments] = useState<FileUpload[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
 
@@ -160,15 +155,7 @@ export function CustomerDetail({
     }
   }, [activeTab, cus?.id, attachmentServiceInstance, loadDocuments]);
 
-  const copyToClipboard = async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
+
 
   // Build action items
   const isActive = cus?.status === "active";
@@ -248,19 +235,13 @@ export function CustomerDetail({
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-muted-foreground">Code:</span>
                     <span className="text-sm font-medium">{cus.code}</span>
-                    <Button
+                    <CopyButton
+                      value={cus.code}
                       variant="ghost"
                       size="icon"
                       className="h-4 w-4 ml-1"
-                      onClick={() => copyToClipboard(cus.code, "code")}
                       title="Copy code"
-                    >
-                      {copiedField === "code" ? (
-                        <CheckCircle2 className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                    </Button>
+                    />
                   </div>
                 )}
                 {cus.email && (
@@ -287,78 +268,100 @@ export function CustomerDetail({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1.5">
-              {cus && onCreateBooking && (
-                <Button
-                  onClick={() => onCreateBooking(cus)}
-                  size="sm"
-                  className={cn("h-8 px-2 text-xs")}
-                >
-                  <ShoppingCart className="h-3 w-3 mr-1" />
-                  Book Now
-                </Button>
-              )}
-              {editable && cus && onEdit && (
-                <Button
-                  onClick={() => onEdit(cus)}
-                  size="sm"
-                  variant="outline"
-                  className={cn("h-8 px-2 text-xs")}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-              )}
-               {cus && onViewBookings && (
-                <Button
-                  onClick={() => onViewBookings(cus)}
-                  size="sm"
-                  variant="outline"
-                  className={cn("h-8 px-2 text-xs")}
-                >
-                  <CreditCard className="h-3 w-3 mr-1" />
-                  View Bookings
-                </Button>
-              )}
-            </div>
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {cus && isActive && onDeactivate && (
-                    <DropdownMenuItem onClick={() => onDeactivate(cus)}>
-                        <UserX className="mr-2 h-3.5 w-3.5" /> Deactivate
-                    </DropdownMenuItem>
-                  )}
-                  {cus && !isActive && onActivate && (
-                    <DropdownMenuItem onClick={() => onActivate(cus)}>
-                        <UserCheck className="mr-2 h-3.5 w-3.5" /> Activate
-                    </DropdownMenuItem>
-                  )}
-                  {cus && editable && onManageTags && (
-                    <DropdownMenuItem onClick={() => onManageTags(cus)}>
-                      <Tag className="mr-2 h-3.5 w-3.5" /> Manage Tags
-                    </DropdownMenuItem>
-                  )}
-                  {cus && editable && onManageAttachments && (
-                    <DropdownMenuItem onClick={() => onManageAttachments(cus)}>
-                      <FileText className="mr-2 h-3.5 w-3.5" /> Manage Documents
-                    </DropdownMenuItem>
-                  )}
-                  {cus && onDelete && (
-                    <DropdownMenuItem onClick={() => onDelete(cus)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
-                    </DropdownMenuItem>
-                  )}
-
-                  {customActions && customActions(cus)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <ActionList
+              actions={[
+                ...(cus && onCreateBooking
+                  ? [
+                      {
+                        id: "book-now",
+                        label: "Book Now",
+                        icon: <ShoppingCart className="h-4 w-4" />,
+                        onClick: () => onCreateBooking(cus),
+                        variant: "default" as const, // Using default variant for primary action
+                      },
+                    ]
+                  : []),
+                ...(editable && cus && onEdit
+                  ? [
+                      {
+                        id: "edit",
+                        label: "Edit",
+                        icon: <Edit className="h-4 w-4" />,
+                        onClick: () => onEdit(cus),
+                        variant: "outline" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && onViewBookings
+                  ? [
+                      {
+                        id: "view-bookings",
+                        label: "View Bookings",
+                        icon: <CreditCard className="h-4 w-4" />,
+                        onClick: () => onViewBookings(cus),
+                        variant: "outline" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && isActive && onDeactivate
+                  ? [
+                      {
+                        id: "deactivate",
+                        label: "Deactivate",
+                        icon: <UserX className="h-4 w-4" />,
+                        onClick: () => onDeactivate(cus),
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && !isActive && onActivate
+                  ? [
+                      {
+                        id: "activate",
+                        label: "Activate",
+                        icon: <UserCheck className="h-4 w-4" />,
+                        onClick: () => onActivate(cus),
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && editable && onManageTags
+                  ? [
+                      {
+                        id: "manage-tags",
+                        label: "Manage Tags",
+                        icon: <Tag className="h-4 w-4" />,
+                        onClick: () => onManageTags(cus),
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && editable && onManageAttachments
+                  ? [
+                      {
+                        id: "manage-documents",
+                        label: "Manage Documents",
+                        icon: <FileText className="h-4 w-4" />,
+                        onClick: () => onManageAttachments(cus),
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+                ...(cus && onDelete
+                  ? [
+                      {
+                        id: "delete",
+                        label: "Delete",
+                        icon: <Trash2 className="h-4 w-4" />,
+                        onClick: () => onDelete(cus),
+                        variant: "destructive" as const, // This only affects button variant, but good to have
+                        display: "dropdown-item" as const,
+                      },
+                    ]
+                  : []),
+              ]}
+              customActions={customActions?.(cus)}
+            />
           </div>
         </div>
 

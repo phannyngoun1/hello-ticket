@@ -12,6 +12,7 @@ import {
   ActionList,
   NoteEditor,
   ImageGallery,
+  CopyButton,
 } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import {
@@ -384,6 +385,16 @@ export function ShowDetail({
               <h2 className="text-xl font-semibold">
                 {data.name || "Untitled Show"}
               </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                                Code: {data.code}
+                                <CopyButton
+                                  value={data.code || ''}
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-4 w-4 ml-1"
+                                  title="Copy code"
+                                />  
+                              </p>
             </div>
           </div>
 

@@ -37,7 +37,7 @@ import {
   Tag,
   FileText,
 } from "lucide-react";
-import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList } from "@truths/custom-ui";
+import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList, CopyButton } from "@truths/custom-ui";
 import { Employee } from "./types";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
@@ -193,6 +193,13 @@ export function EmployeeDetail({
               {data.code && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Code: {data.code}
+                  <CopyButton
+                    value={data.code}
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 ml-1"
+                    title="Copy code"
+                  />  
                 </p>
               )}
             </div>
