@@ -19,7 +19,7 @@ import { EventConfigurationType as EventConfigurationTypeEnum } from "./types";
 import { useShow, useShowService } from "../shows";
 import { useLayout, useLayoutService } from "../layouts";
 import { useState } from "react";
-import { EventInventory } from "./event-inventory";
+import { EventInventoryList } from "./event-inventory-list";
 
 export interface EventDetailProps {
   className?: string;
@@ -34,8 +34,8 @@ export function EventDetail({
   loading = false,
   error = null,
 }: EventDetailProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "inventory">(
-    "profile"
+  const [activeTab, setActiveTab] = useState<"information" | "inventory">(
+    "information"
   );
   const showService = useShowService();
   const layoutService = useLayoutService();
@@ -130,22 +130,7 @@ export function EventDetail({
   return (
     <Card className={cn("p-6", className)}>
       <div>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-              <Calendar className="h-10 w-10 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">{data.title || "Event"}</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {showData?.name || showData?.code || data.id}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
+        
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
@@ -155,15 +140,15 @@ export function EventDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
+                  activeTab === "information"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => setActiveTab("profile")}
+                onClick={() => setActiveTab("information")}
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
+                  Information
                 </span>
               </button>
               <button
@@ -186,7 +171,7 @@ export function EventDetail({
           <div className="mt-0">
             {/* Profile Tab - Keep mounted but hide when inactive */}
             <div
-              className={cn("space-y-6", activeTab !== "profile" && "hidden")}
+              className={cn("space-y-6", activeTab !== "information" && "hidden")}
             >
               <div className="pb-6 border-b">
                 <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -210,13 +195,6 @@ export function EventDetail({
                     </dt>
                     <dd className="text-sm text-muted-foreground">
                       {formatDuration(data.duration_minutes)}
-                    </dd>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <dt className="text-sm font-medium min-w-[140px]">Title</dt>
-                    <dd className="text-sm text-muted-foreground">
-                      {formatFieldValue(data.title)}
                     </dd>
                   </div>
                 </dl>
@@ -307,7 +285,9 @@ export function EventDetail({
 
             {/* Inventory Tab - Keep mounted but hide when inactive */}
             <div className={cn(activeTab !== "inventory" && "hidden")}>
-              {data?.id && <EventInventory eventId={data.id} />}
+              {data?.id && (
+                <EventInventoryList eventId={data.id} className="border-0 shadow-none" />
+              )}
             </div>
           </div>
         </Tabs>
