@@ -14,8 +14,10 @@ import {
   useVenueService,
   EditVenueDialog,
   useUpdateVenue,
+  VenueProfilePhotoUpload,
 } from "@truths/ticketing";
 import { api } from "@truths/api";
+import { AttachmentService } from "@truths/shared";
 import { toast } from "@truths/ui";
 import type { UpdateVenueInput } from "@truths/ticketing";
 
@@ -89,6 +91,23 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
             search: { layoutId },
           });
         }}
+        profilePhotoComponent={
+          data ? (
+            <VenueProfilePhotoUpload
+              venue={data}
+              attachmentService={
+                new AttachmentService({
+                  apiClient: api,
+                  endpoints: {
+                    attachments: "/api/v1/shared/attachments",
+                    entityAttachments: "/api/v1/shared/attachments/entity",
+                    profilePhoto: "/api/v1/shared/attachments/entity",
+                  },
+                })
+              }
+            />
+          ) : undefined
+        }
       />
       {data && (
         <EditVenueDialog
