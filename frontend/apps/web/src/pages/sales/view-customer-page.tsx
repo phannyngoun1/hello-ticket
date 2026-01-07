@@ -104,11 +104,11 @@ function CustomerDetailContent({ id }: { id: string }) {
     setDeleteDialogOpen(false);
   }, [customer, deleteMutation, toast, navigate]);
 
-  const handleActivate = useCallback((cus: Customer) => {
+  const handleActivate = useCallback(() => {
     setActivateDialogOpen(true);
   }, []);
 
-  const handleDeactivate = useCallback((cus: Customer) => {
+  const handleDeactivate = useCallback(() => {
     setDeactivateDialogOpen(true);
   }, []);
 
@@ -204,7 +204,7 @@ function CustomerDetailContent({ id }: { id: string }) {
     [navigate]
   );
 
-  const handleManageTags = useCallback((cus: Customer) => {
+  const handleManageTags = useCallback(() => {
     setTagsDialogOpen(true);
   }, []);
 
@@ -242,12 +242,12 @@ function CustomerDetailContent({ id }: { id: string }) {
     [refetchProfilePhoto]
   );
 
-  const handleManageAttachments = useCallback((cus: Customer) => {
+  const handleManageAttachments = useCallback(() => {
     setAttachmentsDialogOpen(true);
   }, []);
 
   const handleAttachmentsSave = useCallback(
-    async (attachments: FileUpload[]) => {
+    async (_: FileUpload[]) => {
       // Attachments are already saved, just refetch if needed
       toast({
         title: "Success",
