@@ -42,6 +42,7 @@ import { PaymentDialog } from "../payments/payment-dialog";
 import { VoidPaymentsDialog } from "../payments/void-payments-dialog";
 import { api } from "@truths/api";
 import type { Payment } from "../payments/types";
+import { CopyButton } from "@truths/custom-ui";
 
 export interface BookingDetailProps {
   className?: string;
@@ -267,8 +268,16 @@ export function BookingDetail({
               <Info className="h-10 w-10 text-primary" />
             </div>
             <div>
+              <span className="flex items-center gap-2">
               <h2 className="text-xl font-semibold">{displayName}</h2>
-
+              <CopyButton
+                value={data.booking_number}
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 ml-1"
+                title="Copy code"
+              />
+              </span>
               <div className="flex items-center gap-4 mt-2">
                 {data.status && (
                   <span

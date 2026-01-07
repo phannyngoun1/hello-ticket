@@ -184,3 +184,7 @@ export type { EntityTagsDialogProps, EntityAttachmentsDialogProps } from './shar
 // Document List
 export { DocumentList } from './document-list';
 
+// Copy Button
+export { CopyButton } from './copy-button';
+export type { CopyButtonProps } from './copy-button';
+

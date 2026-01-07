@@ -8,10 +8,6 @@ import React, { useMemo, useState } from "react";
 import {
   Button,
   Card,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   Tabs,
   Dialog,
   DialogContent,
@@ -27,10 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@truths/ui";
+import { ActionList, CopyButton } from "@truths/custom-ui";
+import type { ActionItem } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
+import { Edit, Info, Database, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
 import { Venue } from "./types";
-import { LayoutList, useLayoutService, useCreateLayout, useLayoutsByVenue } from "../layouts";
+import { LayoutList, useLayoutService, useCreateLayout } from "../layouts";
 
 export interface VenueDetailProps {
   className?: string;
@@ -70,7 +68,7 @@ export function VenueDetail({
   // All hooks must be called before any early returns
   const layoutService = useLayoutService();
   const createLayoutMutation = useCreateLayout(layoutService);
-  const { data: layouts } = useLayoutsByVenue(layoutService, data?.id ?? null);
+
 
   const getVenueDisplayName = () => {
     return data?.name || data?.id || "";
@@ -160,6 +158,27 @@ export function VenueDetail({
     }
   };
 
+  // Build action list
+  const actionItems: ActionItem[] = [];
+
+  // Add Edit action if editable
+  if (editable && onEdit && data) {
+    actionItems.push({
+      id: "edit",
+      label: "Edit",
+      icon: <Edit className="h-3.5 w-3.5" />,
+      onClick: () => onEdit(data),
+    });
+  }
+
+  // Add Create Layout action
+  actionItems.push({
+      id: "add-layout",
+      label: "Add Layout",
+      icon: <Plus className="h-3.5 w-3.5" />,
+      onClick: () => setIsCreateDialogOpen(true),
+  });
+
   return (
     <Card className={cn("p-6", className)}>
       <div>
@@ -174,55 +193,25 @@ export function VenueDetail({
               {data.code && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Code: {data.code}
+                  <CopyButton
+                    value={data.code}
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 ml-1"
+                    title="Copy code"
+                  />  
                 </p>
               )}
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1.5">
-              {customActions?.(data)}
-              {editable && onEdit && (
-                <Button
-                  onClick={() => onEdit(data)}
-                  size="sm"
-                  variant="outline"
-                  className={cn("h-8 px-2 text-xs")}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-              )}
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                size="sm"
-                variant="outline"
-                className={cn("h-8 px-2 text-xs")}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Add Layout
-              </Button>
-            </div>
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {editable && onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(data)}>
-                      <Edit className="mr-2 h-3.5 w-3.5" /> Edit venue
-                    </DropdownMenuItem>
-                  )}
-
-                  {customActions && customActions(data)}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
+          <ActionList
+            actions={actionItems}
+            maxVisibleActions={2}
+            customActions={customActions?.(data)}
+            size="sm"
+          />
         </div>
 
 
