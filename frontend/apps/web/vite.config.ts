@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
         react(),
         tanstackRouter(),
     ],
+    envDir: false, // Disable automatic .env loading
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),

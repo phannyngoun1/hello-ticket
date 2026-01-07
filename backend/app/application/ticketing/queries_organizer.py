@@ -1,6 +1,6 @@
 """Ticketing queries for CQRS pattern."""
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -25,4 +25,11 @@ class SearchOrganizersQuery:
     is_active: Optional[bool] = None
     skip: int = 0
     limit: int = 50
+
+
+@dataclass
+class GetOrganizersByIdsQuery:
+    """Query to retrieve multiple organizers by their identifiers."""
+
+    organizer_ids: List[str]
 

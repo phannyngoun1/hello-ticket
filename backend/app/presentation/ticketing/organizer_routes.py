@@ -89,6 +89,8 @@ async def list_organizers(
             limit=limit,
             total=result.total,
             has_next=result.has_next,
+            search_term=search,
+            is_active_filter=is_active,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=400, detail=str(exc))

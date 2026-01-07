@@ -4,7 +4,7 @@
  * Encapsulates all show API operations and data transformations.
  */
 
-import type { Show, CreateShowInput, UpdateShowInput, ShowImage, CreateShowImageInput, UpdateShowImageInput } from "./types";
+import type { Show, CreateShowInput, UpdateShowInput, ShowImage, CreateShowImageInput, UpdateShowImageInput, ShowOrganizer } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 
 interface ShowDTO {
@@ -13,6 +13,11 @@ interface ShowDTO {
   code: string;
   name: string;
   organizer_id?: string | null;
+  organizer?: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
   started_date?: string | null;
   ended_date?: string | null;
   note?: string | null;
@@ -26,9 +31,14 @@ interface ShowDTO {
 function transformShow(dto: ShowDTO): Show {
   return {
     id: dto.id,
-    code: dto.code,
+    code: dto.code || undefined,
     name: dto.name,
     organizer_id: dto.organizer_id || undefined,
+    organizer: dto.organizer ? {
+      id: dto.organizer.id,
+      code: dto.organizer.code,
+      name: dto.organizer.name,
+    } as ShowOrganizer : undefined,
     started_date: dto.started_date || undefined,
     ended_date: dto.ended_date || undefined,
     note: dto.note || undefined,

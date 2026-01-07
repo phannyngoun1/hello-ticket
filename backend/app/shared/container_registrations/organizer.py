@@ -13,12 +13,12 @@ from app.application.ticketing.commands_organizer import (
     CreateOrganizerCommand,
     UpdateOrganizerCommand,
     DeleteOrganizerCommand,
-
 )
 from app.application.ticketing.queries_organizer import (
     GetOrganizerByIdQuery,
     GetOrganizerByCodeQuery,
     SearchOrganizersQuery,
+    GetOrganizersByIdsQuery,
 )
 
 from app.shared.services.code_generator import CodeGeneratorService
@@ -72,3 +72,4 @@ def register_organizer_mediator(mediator: Mediator) -> None:
     mediator.register_query_handler(GetOrganizerByIdQuery, OrganizerQueryHandler)
     mediator.register_query_handler(GetOrganizerByCodeQuery, OrganizerQueryHandler)
     mediator.register_query_handler(SearchOrganizersQuery, OrganizerQueryHandler)
+    mediator.register_query_handler(GetOrganizersByIdsQuery, OrganizerQueryHandler)

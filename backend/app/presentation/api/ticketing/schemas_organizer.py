@@ -61,11 +61,15 @@ class OrganizerResponse(BaseModel):
 
 
 class OrganizerListResponse(BaseModel):
-    """Paginated organizer list response"""
+    """Paginated organizer list response with search metadata"""
 
     items: List[OrganizerResponse]
     skip: int
     limit: int
     total: int
     has_next: bool
+
+    # Search request metadata
+    search_term: Optional[str] = None
+    is_active_filter: Optional[bool] = None
 

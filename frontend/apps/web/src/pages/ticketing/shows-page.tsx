@@ -1,5 +1,9 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { ShowListContainer, ShowProvider, OrganizerProvider } from "@truths/ticketing";
+import {
+  ShowListContainer,
+  ShowProvider,
+  OrganizerProvider,
+} from "@truths/ticketing";
 import { api } from "@truths/api";
 
 export function ShowPage() {
@@ -29,7 +33,7 @@ export function ShowPage() {
           <ShowListContainer
             autoOpenCreate={autoOpenCreate}
             onCreateDialogClose={() =>
-              navigate({ to: "/ticketing/shows", search: {}})
+              navigate({ to: "/ticketing/shows", search: {} })
             }
             onNavigateToShow={(id) =>
               navigate({
@@ -43,4 +47,3 @@ export function ShowPage() {
     </ShowProvider>
   );
 }
-

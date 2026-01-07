@@ -93,7 +93,7 @@ export function ShowList({
       cell: (info) => {
         const show = info.row.original;
         // This will be populated by the container if organizer data is available
-        const organizerName = (show as any).organizerName;
+        const organizerName = show.organizer?.name;
         return (
           <span className={cn("text-muted-foreground", density.textSize)}>
             {organizerName ?? "-"}

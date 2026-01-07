@@ -9,11 +9,20 @@
  * These entity-specific types are automatically exported via the entity's index.ts.
  */
 
+
+// Minimal organizer info for show responses
+export interface ShowOrganizer {
+    id: string;
+    code: string;
+    name: string;
+}
+
 export interface Show {
     id: string;
     code?: string;
     name: string;
     organizer_id?: string;
+    organizer?: ShowOrganizer;
     started_date?: string; // ISO date string
     ended_date?: string; // ISO date string
     note?: string;
