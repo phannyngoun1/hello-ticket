@@ -42,6 +42,8 @@ export interface VenueDetailProps {
   onEdit?: (data: Venue) => void;
   onNavigateToSeatDesigner?: (venueId: string, layoutId: string) => void;
 
+  profilePhotoComponent?: React.ReactNode;
+
   customActions?: (data: Venue) => React.ReactNode;
 }
 
@@ -55,6 +57,8 @@ export function VenueDetail({
   editable = true,
   onEdit,
   onNavigateToSeatDesigner,
+
+  profilePhotoComponent,
 
   customActions,
 }: VenueDetailProps) {
@@ -185,9 +189,13 @@ export function VenueDetail({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-              <Info className="h-10 w-10 text-primary" />
-            </div>
+            {profilePhotoComponent ? (
+              <div className="flex-shrink-0">{profilePhotoComponent}</div>
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
+                <Info className="h-10 w-10 text-primary" />
+              </div>
+            )}
             <div>
               <h2 className="text-xl font-semibold">{displayName}</h2>
               {data.code && (
