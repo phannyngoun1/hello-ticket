@@ -9,7 +9,7 @@ export * from './customer-form';
 export * from './create-customer-dialog';
 export * from './edit-customer-dialog';
 export * from './customer-tags-dialog';
-export * from './profile-photo-upload';
+export * from './customer-profile-photo-upload';
 export * from './customer-attachments-dialog';
 
 export * from './customer-service';

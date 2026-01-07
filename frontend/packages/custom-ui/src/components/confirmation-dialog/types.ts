@@ -49,7 +49,7 @@ export interface ConfirmationDialogProps {
   /** Text that must be typed to confirm (e.g., "delete"). If provided, an input field will be shown */
   confirmText?: string;
   /** Label for the confirmation text input */
-  confirmTextLabel?: string;
+  confirmTextLabel?: string | ReactNode;
   /** Placeholder for the confirmation text input */
   confirmTextPlaceholder?: string;
 }

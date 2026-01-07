@@ -14,7 +14,6 @@ import {
   useDeleteCustomer,
   EditCustomerDialog,
   CustomerTagsDialog,
-  ProfilePhotoUpload,
   CustomerAttachmentsDialog,
   type Customer,
 } from "@truths/sales";
@@ -32,8 +31,15 @@ function CustomerDetailContent({ id }: { id: string }) {
   const deleteMutation = useDeleteCustomer(service);
   const { toast } = useToast();
   
-  const tagService = new TagService({ apiClient: api });
-  const attachmentService = new AttachmentService({ apiClient: api });
+  const tagService = new TagService({ apiClient: api, endpoints: {} });
+  const attachmentService = new AttachmentService({
+    apiClient: api,
+    endpoints: {
+      attachments: "/api/v1/shared/attachments",
+      entityAttachments: "/api/v1/shared/attachments/entity",
+      profilePhoto: "/api/v1/shared/attachments/entity",
+    },
+  });
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -71,11 +77,11 @@ function CustomerDetailContent({ id }: { id: string }) {
     );
   }, [id, customer]);
 
-  const handleEdit = useCallback((cus: Customer) => {
+  const handleEdit = useCallback(() => {
     setEditDialogOpen(true);
   }, []);
 
-  const handleDelete = useCallback((cus: Customer) => {
+  const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true);
   }, []);
 
@@ -181,7 +187,7 @@ function CustomerDetailContent({ id }: { id: string }) {
   const handleCreateBooking = useCallback(
     (cus: Customer) => {
       navigate({
-        to: "/sales/bookings/create",
+        to: "/sales/bookings",
         search: { customer_id: cus.id },
       });
     },
@@ -267,16 +273,7 @@ function CustomerDetailContent({ id }: { id: string }) {
         onManageTags={handleManageTags}
         onManageAttachments={handleManageAttachments}
         profilePhoto={profilePhoto}
-        profilePhotoComponent={
-          customer ? (
-            <ProfilePhotoUpload
-              customer={customer}
-              attachmentService={attachmentService}
-              currentPhoto={profilePhoto}
-              onPhotoChange={handleProfilePhotoChange}
-            />
-          ) : undefined
-        }
+        onProfilePhotoChange={handleProfilePhotoChange}
       />
 
       {customer && (
