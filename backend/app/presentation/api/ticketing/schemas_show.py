@@ -38,6 +38,13 @@ class ShowUpdateRequest(BaseModel):
     images: Optional[List[ShowImageData]] = Field(None, description="List of show images (replaces all existing images)")
 
 
+class ShowOrganizerResponse(BaseModel):
+    """Minimal organizer response for nesting"""
+    id: str
+    code: str
+    name: str
+
+
 class ShowResponse(BaseModel):
     """Show response model"""
 
@@ -46,6 +53,7 @@ class ShowResponse(BaseModel):
     code: str
     name: str
     organizer_id: Optional[str] = None
+    organizer: Optional[ShowOrganizerResponse] = None
     is_active: bool
     started_date: Optional[date] = None
     ended_date: Optional[date] = None

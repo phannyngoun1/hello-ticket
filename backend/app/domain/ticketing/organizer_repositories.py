@@ -27,6 +27,10 @@ class OrganizerRepository(ABC):
         """Retrieve organizer by identifier scoped to tenant"""
 
     @abstractmethod
+    async def get_by_ids(self, tenant_id: str, organizer_ids: List[str]) -> List[Organizer]:
+        """Retrieve multiple organizers by identifiers"""
+
+    @abstractmethod
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[Organizer]:
         """Retrieve organizer by business code"""
 

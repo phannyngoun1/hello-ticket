@@ -113,6 +113,31 @@ class SQLOrganizerRepository(OrganizerRepository):
             domain = self._mapper.to_domain(model)
             domain.tags = self._get_tags(session, tenant_id, domain.id)
             return domain
+
+    async def get_by_ids(self, tenant_id: str, organizer_ids: List[str]) -> List[Organizer]:
+        """Get multiple organizers by IDs"""
+        if not organizer_ids:
+            return []
+        
+        with self._session_factory() as session:
+            try:
+                statement = select(OrganizerModel).where(
+                    OrganizerModel.id.in_(organizer_ids),
+                    OrganizerModel.tenant_id == tenant_id
+                )
+                models = session.exec(statement).all()
+                
+                results = []
+                for model in models:
+                    domain = self._mapper.to_domain(model)
+                    # For list views, we might optimize by skipping tags or batch fetching them
+                    # For now, let's skip tags for performance unless critically needed
+                    # If needed later, we should implement batch tag fetching
+                    domain.tags = [] 
+                    results.append(domain)
+                return results
+            except Exception:
+                return []
     
     async def search(
         self,

@@ -9,8 +9,10 @@ from app.application.ticketing.commands_organizer import (
 from app.application.ticketing.queries_organizer import (
     GetOrganizerByIdQuery,
     GetOrganizerByCodeQuery,
-    SearchOrganizersQuery
+    SearchOrganizersQuery,
+    GetOrganizersByIdsQuery,
 )
+from typing import List
 from app.domain.ticketing.organizer_repositories import OrganizerRepository, OrganizerSearchResult
 from app.domain.ticketing.organizer import Organizer
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
@@ -163,4 +165,10 @@ class OrganizerQueryHandler:
             skip=query.skip,
             limit=query.limit,
         )
+
+    async def handle_get_organizers_by_ids(self, query: GetOrganizersByIdsQuery) -> List[Organizer]:
+        tenant_id = require_tenant_context()
+        if not query.organizer_ids:
+            return []
+        return await self._organizer_repository.get_by_ids(tenant_id, query.organizer_ids)
 

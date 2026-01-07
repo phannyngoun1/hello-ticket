@@ -11,7 +11,12 @@ from app.application.ticketing.commands_show import (
 )
 from app.application.ticketing.queries_show import (
     GetShowByIdQuery,
+    GetShowByIdQuery,
     SearchShowsQuery,
+)
+from app.application.ticketing.queries_organizer import (
+    GetOrganizersByIdsQuery,
+    GetOrganizerByIdQuery,
 )
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
@@ -102,7 +107,22 @@ async def list_shows(
                 limit=limit,
             )
         )
-        items = [TicketingApiMapper.show_to_response(show) for show in result.items]
+
+        # Batch fetch organizers
+        organizers_map = {}
+        organizer_ids = list(set(show.organizer_id for show in result.items if show.organizer_id))
+
+        if organizer_ids:
+            organizers = await mediator.query(GetOrganizersByIdsQuery(organizer_ids=organizer_ids))
+            organizers_map = {org.id: org for org in organizers}
+
+        items = [
+            TicketingApiMapper.show_to_response(
+                show,
+                organizers_map.get(show.organizer_id) if show.organizer_id else None
+            )
+            for show in result.items
+        ]
         return ShowListResponse(
             items=items,
             skip=skip,
@@ -365,7 +385,16 @@ async def get_show(
 
     try:
         show = await mediator.query(GetShowByIdQuery(show_id=show_id))
-        return TicketingApiMapper.show_to_response(show)
+        
+        organizer = None
+        if show.organizer_id:
+            try:
+                organizer = await mediator.query(GetOrganizerByIdQuery(organizer_id=show.organizer_id))
+            except NotFoundError:
+                # If organizer is missing (data inconsistency), just proceed without it
+                pass
+                
+        return TicketingApiMapper.show_to_response(show, organizer)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
