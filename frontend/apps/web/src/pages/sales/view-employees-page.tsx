@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams } from "@tanstack/react-router";
 import {
   EmployeeDetail,
@@ -95,7 +95,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
       setAttachmentsDialogOpen(false);
   };
 
-  const handlePhotoChange = () => {
+  const handlePhotoChange = useCallback(() => {
     // Determine if we need to update local state or just refetch
      // Ideally we update the data.user.profile_photo_url if that structure exists, 
      // but 'Employee' type might not have photo URL field explicitly in 'data'. 
@@ -105,7 +105,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
      // We are passing `profilePhotoComponent` which manages its own preview state. 
      // But we should probably refetch to ensure consistency if other parts use it.
     refetch();
-  };
+  }, [refetch]);
 
   if (!id) return null;
 
