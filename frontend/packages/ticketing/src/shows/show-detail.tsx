@@ -378,23 +378,31 @@ export function ShowDetail({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
-              <Info className="h-10 w-10 text-primary" />
+            <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10 overflow-hidden">
+              {images.find((img) => img.is_banner) ? (
+                <img
+                  src={images.find((img) => img.is_banner)?.file_url}
+                  alt="Show Banner"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Info className="h-10 w-10 text-primary" />
+              )}
             </div>
             <div>
               <h2 className="text-xl font-semibold">
                 {data.name || "Untitled Show"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                                Code: {data.code}
-                                <CopyButton
-                                  value={data.code || ''}
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-4 w-4 ml-1"
-                                  title="Copy code"
-                                />  
-                              </p>
+                  {data.code}
+                  <CopyButton
+                    value={data.code || ''}
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 ml-1"
+                    title="Copy code"
+                  />  
+                </p>
             </div>
           </div>
 
