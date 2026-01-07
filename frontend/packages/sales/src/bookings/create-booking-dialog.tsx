@@ -63,6 +63,7 @@ export interface CreateBookingDialogProps {
   maxWidth?: string;
   initialShowId?: string | null;
   initialEventId?: string | null;
+  initialCustomerId?: string | null;
 }
 
 export function CreateBookingDialog({
@@ -73,6 +74,7 @@ export function CreateBookingDialog({
   maxWidth = "95vw",
   initialShowId,
   initialEventId,
+  initialCustomerId,
 }: CreateBookingDialogProps) {
   const density = useDensityStyles();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,7 +114,7 @@ export function CreateBookingDialog({
 
   // Customer selection
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
-    null
+    initialCustomerId || null
   );
 
   // Discount type: 'percentage' or 'amount'
@@ -316,8 +318,9 @@ export function CreateBookingDialog({
       // When opening, initialize with props if provided
       if (initialShowId) setSelectedShowId(initialShowId);
       if (initialEventId) setSelectedEventId(initialEventId);
+      if (initialCustomerId) setSelectedCustomerId(initialCustomerId);
     }
-  }, [open, initialShowId, initialEventId]);
+  }, [open, initialShowId, initialEventId, initialCustomerId]);
 
   // Handle seat selection from visualization
   const handleSeatClick = useCallback(
