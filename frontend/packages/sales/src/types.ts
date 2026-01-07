@@ -175,6 +175,7 @@ export interface UpdateCustomerInput {
     status_reason?: string | null;
     notes?: string | null;
     public_notes?: string | null;
+    status?: 'active' | 'inactive' | null;
 }
 
 export interface CustomerFilter {

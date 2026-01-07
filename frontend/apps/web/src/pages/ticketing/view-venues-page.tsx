@@ -35,6 +35,19 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
     params: { id },
   });
 
+  const attachmentService = useMemo(
+    () =>
+      new AttachmentService({
+        apiClient: api,
+        endpoints: {
+          attachments: "/api/v1/shared/attachments",
+          entityAttachments: "/api/v1/shared/attachments/entity",
+          profilePhoto: "/api/v1/shared/attachments/entity",
+        },
+      }),
+    []
+  );
+
   useEffect(() => {
     if (!data || isDesignerRoute) return;
     const title = data.name || data.id;
@@ -95,18 +108,7 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
           data ? (
             <VenueProfilePhotoUpload
               venue={data}
-              attachmentService={useMemo(
-                () =>
-                  new AttachmentService({
-                    apiClient: api,
-                    endpoints: {
-                      attachments: "/api/v1/shared/attachments",
-                      entityAttachments: "/api/v1/shared/attachments/entity",
-                      profilePhoto: "/api/v1/shared/attachments/entity",
-                    },
-                  }),
-                []
-              )}
+              attachmentService={attachmentService}
             />
           ) : undefined
         }

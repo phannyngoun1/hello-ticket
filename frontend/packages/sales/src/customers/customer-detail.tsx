@@ -48,6 +48,8 @@ import { api } from "@truths/api";
 
 import { Customer } from "../types";
 
+import { CustomerProfilePhotoUpload } from "./customer-profile-photo-upload";
+
 export interface CustomerDetailProps {
   className?: string;
   cus?: Customer;
@@ -65,8 +67,8 @@ export interface CustomerDetailProps {
   onViewBookings?: (cus: Customer) => void;
   onManageTags?: (cus: Customer) => void;
   onManageAttachments?: (cus: Customer) => void;
-  profilePhoto?: { url: string } | null;
-  profilePhotoComponent?: React.ReactNode;
+  profilePhoto?: FileUpload | null;
+  onProfilePhotoChange?: (photo: FileUpload | null) => void;
   customActions?: (cus: Customer) => React.ReactNode;
 }
 
@@ -86,7 +88,8 @@ export function CustomerDetail({
   onViewBookings,
   onManageTags,
   onManageAttachments,
-  profilePhotoComponent,
+  profilePhoto,
+  onProfilePhotoChange,
   customActions,
 }: CustomerDetailProps) {
   const [activeTab, setActiveTab] = useState<
@@ -197,8 +200,15 @@ export function CustomerDetail({
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            {profilePhotoComponent ? (
-              <div className="flex-shrink-0">{profilePhotoComponent}</div>
+            {cus ? (
+              <div className="flex-shrink-0">
+                <CustomerProfilePhotoUpload
+                  customer={cus}
+                  attachmentService={attachmentServiceInstance}
+                  currentPhoto={profilePhoto}
+                  onPhotoChange={onProfilePhotoChange}
+                />
+              </div>
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10">
                 <Info className="h-10 w-10 text-primary" />

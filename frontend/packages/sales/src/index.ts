@@ -2,6 +2,7 @@
  * @truths/sales
  * 
  * A comprehensive sales management package.
+ * Exports all sales related components and hooks.
  */
 
 // Registry

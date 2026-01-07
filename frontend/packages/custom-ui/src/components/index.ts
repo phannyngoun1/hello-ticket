@@ -188,3 +188,5 @@ export { DocumentList } from './document-list';
 export { CopyButton } from './copy-button';
 export type { CopyButtonProps } from './copy-button';
 
+export * from './entity-profile-photo';
+export type { EntityProfilePhotoProps } from './entity-profile-photo';
