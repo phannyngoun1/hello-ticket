@@ -60,7 +60,6 @@ class Customer(AggregateRoot):
         website: Optional[str] = None,
         # Tags & Classification
         tags: Optional[List[str]] = None,
-        priority: Optional[str] = None,  # High, Medium, Low
         status_reason: Optional[str] = None,
         notes: Optional[str] = None,  # Internal notes
         public_notes: Optional[str] = None,
@@ -127,7 +126,6 @@ class Customer(AggregateRoot):
         
         # Tags & Classification
         self.tags = tags or []
-        self.priority = priority.strip() if priority else None
         self.status_reason = status_reason.strip() if status_reason else None
         self.notes = notes.strip() if notes else None
         self.public_notes = public_notes.strip() if public_notes else None
@@ -177,7 +175,6 @@ class Customer(AggregateRoot):
         instagram_handle: Optional[str] = None,
         website: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        priority: Optional[str] = None,
         status_reason: Optional[str] = None,
         notes: Optional[str] = None,
         public_notes: Optional[str] = None,
@@ -253,8 +250,6 @@ class Customer(AggregateRoot):
             self.website = website.strip() if website else None
         if tags is not None:
             self.tags = tags
-        if priority is not None:
-            self.priority = priority.strip() if priority else None
         if status_reason is not None:
             self.status_reason = status_reason.strip() if status_reason else None
         if notes is not None:

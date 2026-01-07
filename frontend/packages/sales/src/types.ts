@@ -95,7 +95,6 @@ export interface Customer {
     instagram_handle?: string;
     website?: string;
     tags?: string[];
-    priority?: string;
     status_reason?: string;
     notes?: string;
     public_notes?: string;
@@ -136,7 +135,6 @@ export interface CreateCustomerInput {
     instagram_handle?: string;
     website?: string;
     tags?: string[];
-    priority?: string;
     notes?: string;
     public_notes?: string;
     status: string;
@@ -174,7 +172,6 @@ export interface UpdateCustomerInput {
     instagram_handle?: string | null;
     website?: string | null;
     tags?: string[] | null;
-    priority?: string | null;
     status_reason?: string | null;
     notes?: string | null;
     public_notes?: string | null;

@@ -49,7 +49,6 @@ class SalesApiMapper:
             instagram_handle=customer.instagram_handle,
             website=customer.website,
             tags=customer.tags or [],
-            priority=customer.priority,
             status_reason=customer.status_reason,
             notes=customer.notes,
             public_notes=customer.public_notes,

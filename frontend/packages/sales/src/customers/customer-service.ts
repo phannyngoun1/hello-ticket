@@ -50,7 +50,6 @@ interface CustomerDTO {
   instagram_handle?: string | null;
   website?: string | null;
   tags?: string[] | null;
-  priority?: string | null;
   status_reason?: string | null;
   notes?: string | null;
   public_notes?: string | null;
@@ -102,7 +101,6 @@ function transformCustomer(dto: CustomerDTO): Customer {
     instagram_handle: dto.instagram_handle ?? undefined,
     website: dto.website ?? undefined,
     tags: dto.tags ?? undefined,
-    priority: dto.priority ?? undefined,
     status_reason: dto.status_reason ?? undefined,
     notes: dto.notes ?? undefined,
     public_notes: dto.public_notes ?? undefined,
@@ -253,9 +251,6 @@ function transformToBackend(input: CreateCustomerInput | UpdateCustomerInput): R
   // Tags are now managed via tag service - only tag_ids are accepted
   if ("tag_ids" in input && input.tag_ids !== undefined && input.tag_ids !== null) {
     payload.tag_ids = input.tag_ids;
-  }
-  if ("priority" in input && input.priority !== undefined && input.priority !== null) {
-    payload.priority = input.priority;
   }
   if ("status_reason" in input && input.status_reason !== undefined && input.status_reason !== null) {
     payload.status_reason = input.status_reason;

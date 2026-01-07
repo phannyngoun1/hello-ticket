@@ -57,7 +57,6 @@ const customerFormSchema = z.object({
   linkedin_url: z.string().url("Invalid URL").optional().or(z.literal("")),
   instagram_handle: z.string().optional(),
   website: z.string().url("Invalid URL").optional().or(z.literal("")),
-  priority: z.string().optional(),
   notes: z.string().optional(),
   public_notes: z.string().optional(),
 });
@@ -613,26 +612,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-4">
           <h3 className="text-base font-semibold">Tags & Classification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field data-invalid={!!errors.priority}>
-                <FieldLabel htmlFor="priority">Priority</FieldLabel>
-                <Controller
-                  name="priority"
-                  control={control}
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                <FieldError>{errors.priority?.message}</FieldError>
-              </Field>
 
 
               <Field data-invalid={!!errors.notes} className="md:col-span-2">

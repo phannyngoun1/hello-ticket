@@ -806,26 +806,6 @@ export function CustomerDetail({
                     icon={Tag}
                   />
 
-                  <DescriptionItem
-                    label="Priority"
-                    value={
-                      cus.priority ? (
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-2 py-1 rounded text-xs font-medium capitalize",
-                            cus.priority.toLowerCase() === "high" &&
-                              "bg-destructive/10 text-destructive",
-                            cus.priority.toLowerCase() === "medium" &&
-                              "bg-yellow-500/10 text-yellow-600",
-                            cus.priority.toLowerCase() === "low" &&
-                              "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          {cus.priority}
-                        </span>
-                      ) : undefined
-                    }
-                  />
 
                   <DescriptionItem
                     label="Internal Notes"

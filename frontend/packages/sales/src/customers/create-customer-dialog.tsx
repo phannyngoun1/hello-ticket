@@ -87,7 +87,6 @@ export function CreateCustomerDialog({
         linkedin_url: data.linkedin_url || undefined,
         instagram_handle: data.instagram_handle || undefined,
         website: data.website || undefined,
-        priority: data.priority || undefined,
         notes: data.notes || undefined,
         public_notes: data.public_notes || undefined,
         status: "active",
