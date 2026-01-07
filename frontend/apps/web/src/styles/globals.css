@@ -247,13 +247,13 @@
     display: none;  /* Safari and Chrome */
   }
 
-  /* Better overflow handling for tab containers */
+  /* Tab containers with hidden scrollbars but functional scrolling */
   .tab-container {
-    overflow-x: var(--tab-overflow, auto);
-    scrollbar-width: var(--tab-scrollbar-width, auto);
-    -ms-overflow-style: var(--tab-overflow-style, auto);
+    overflow-x: auto;
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
   }
   .tab-container::-webkit-scrollbar {
-    display: var(--tab-scrollbar-display, auto);
+    display: none;  /* Safari and Chrome */
   }
 }
