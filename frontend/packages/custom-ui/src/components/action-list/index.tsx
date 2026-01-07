@@ -59,12 +59,17 @@ export function ActionList({
           {visibleActions.map((action) => (
             <Button
               key={action.id}
-              variant={action.variant || "default"}
+              variant={action.variant || "outline"}
               size={size}
+              className="h-8 px-2 text-xs"
               onClick={action.onClick}
               disabled={action.disabled}
             >
-              {action.icon && <span className="mr-2">{action.icon}</span>}
+              {action.icon && (
+                <span className="mr-1 flex items-center [&_svg]:h-3 [&_svg]:w-3">
+                  {action.icon}
+                </span>
+              )}
               {action.label}
             </Button>
           ))}
@@ -76,8 +81,13 @@ export function ActionList({
       {overflowActions.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="More actions">
-              <MoreVertical className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs"
+              aria-label="More actions"
+            >
+              <MoreVertical className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -87,7 +97,11 @@ export function ActionList({
                 onClick={action.onClick}
                 disabled={action.disabled}
               >
-                {action.icon && <span className="mr-2">{action.icon}</span>}
+                {action.icon && (
+                  <span className="mr-2 flex items-center [&_svg]:h-3.5 [&_svg]:w-3.5">
+                    {action.icon}
+                  </span>
+                )}
                 {action.label}
               </DropdownMenuItem>
             ))}

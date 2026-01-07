@@ -333,17 +333,6 @@ export function ShowDetail({
   // Build action list
   const actionItems: ActionItem[] = [];
 
-  // Add Edit action if editable
-  if (editable && data) {
-    actionItems.push({
-      id: "edit",
-      label: "Edit",
-      icon: <Edit className="h-3.5 w-3.5" />,
-      onClick: handleInternalEdit,
-      variant: "ghost",
-    });
-  }
-
   // Add Add Image action
   if (data) {
     actionItems.push({
@@ -351,15 +340,24 @@ export function ShowDetail({
       label: "Add Event",
       icon: <Plus className="h-3.5 w-3.5" />,
       onClick: () => setShowCreateEventDialog(true),
-      variant: "ghost",
+    
     });
 
+  // Add Edit action if editable
+  if (editable && data) {
+    actionItems.push({
+      id: "edit",
+      label: "Edit",
+      icon: <Edit className="h-3.5 w-3.5" />,
+      onClick: handleInternalEdit,
+    });
+  }
     actionItems.push({
       id: "add-image",
       label: "Add Image",
       icon: <Upload className="h-3.5 w-3.5" />,
       onClick: handleInternalAddImage,
-      variant: "ghost",
+  
     });
   }
 
@@ -370,7 +368,6 @@ export function ShowDetail({
       label: "Delete",
       icon: <Trash2 className="h-3.5 w-3.5" />,
       onClick: handleInternalDelete,
-      variant: "destructive",
     });
   }
 

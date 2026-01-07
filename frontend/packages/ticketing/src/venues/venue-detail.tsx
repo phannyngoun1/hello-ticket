@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, MoreVertical, Info, Database, MapPin, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
+import { Edit, MoreVertical, Info, Database, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
 import { Venue } from "./types";
 import { LayoutList, useLayoutService, useCreateLayout, useLayoutsByVenue } from "../layouts";
 
