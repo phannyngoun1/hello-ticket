@@ -9,7 +9,7 @@ import { useState, useCallback } from "react";
 import { EventList } from "./event-list";
 import { CreateEventDialog } from "./create-event-dialog";
 import { EditEventDialog } from "./edit-event-dialog";
-import { EventDetail } from "./event-detail";
+import { EventDetailSheet } from "./event-detail-sheet";
 import { useEventService } from "./event-provider";
 import {
   useEvents,
@@ -18,7 +18,7 @@ import {
   useDeleteEvent,
   useEvent,
 } from "./use-events";
-import { Sheet, SheetContent } from "@truths/ui";
+
 import type {
   Event,
   CreateEventInput,
@@ -206,21 +206,13 @@ export function EventListContainer({
       )}
 
       {/* Event Detail Sheet */}
-      <Sheet open={detailSheetOpen} onOpenChange={handleDetailSheetClose}>
-        <SheetContent
-          side="right"
-          className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0"
-          style={{ width: "600px", maxWidth: "740px" }}
-        >
-          <div className="flex-1 overflow-y-auto p-6">
-            <EventDetail
-              data={eventDetail || undefined}
-              loading={isLoadingDetail}
-              error={detailError as Error | null}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <EventDetailSheet
+        open={detailSheetOpen}
+        onOpenChange={handleDetailSheetClose}
+        data={eventDetail || undefined}
+        loading={isLoadingDetail}
+        error={detailError as Error | null}
+      />
     </div>
   );
 }
