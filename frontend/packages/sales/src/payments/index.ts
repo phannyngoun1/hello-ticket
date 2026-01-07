@@ -5,6 +5,7 @@
  */
 
 export { PaymentDialog } from "./payment-dialog";
+export { PaymentDetailDialog } from "./payment-detail-dialog";
 export { VoidPaymentsDialog } from "./void-payments-dialog";
 export { PaymentList } from "./payment-list";
 export { PaymentListContainer } from "./payment-list-container";

@@ -4,10 +4,11 @@
  * Integrates the payment list with service hooks
  */
 
-import React, { useCallback, useMemo, useState } from "react";
-import { toast } from "@truths/ui";
+import { useCallback, useMemo, useState } from "react";
 import type { Pagination } from "@truths/shared";
 import { PaymentList } from "./payment-list";
+import { PaymentDetailDialog } from "./payment-detail-dialog";
+import type { Payment } from "./types";
 import { PaymentService } from "./payment-service";
 import { api } from "@truths/api";
 import { useQuery } from "@tanstack/react-query";
@@ -17,9 +18,11 @@ export interface PaymentListContainerProps {
 }
 
 export function PaymentListContainer({
-  onNavigateToPayment,
+  // onNavigateToPayment,
 }: PaymentListContainerProps) {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // Create payment service
   const paymentService = useMemo(
@@ -56,12 +59,10 @@ export function PaymentListContainer({
     setPagination({ page: 1, pageSize });
   }, []);
 
-  const handleNavigateToPayment = useCallback(
-    (payment: import("./types").Payment) => {
-      onNavigateToPayment?.(payment.id);
-    },
-    [onNavigateToPayment]
-  );
+  const handleViewPayment = useCallback((payment: Payment) => {
+    setSelectedPayment(payment);
+    setDetailDialogOpen(true);
+  }, []);
 
   // Calculate pagination with total and totalPages
   const paginationWithTotal = useMemo(() => {
@@ -74,16 +75,24 @@ export function PaymentListContainer({
   }, [pagination, payments.length]);
 
   return (
-    <PaymentList
-      payments={payments}
-      loading={isLoading}
-      error={error as Error | null}
-      onPaymentClick={handleNavigateToPayment}
-      onSearch={handleSearch}
-      pagination={paginationWithTotal}
-      onPageChange={handlePageChange}
-      onPageSizeChange={handlePageSizeChange}
-    />
+    <>
+      <PaymentList
+        payments={payments}
+        loading={isLoading}
+        error={error as Error | null}
+        onPaymentClick={handleViewPayment}
+        onSearch={handleSearch}
+        pagination={paginationWithTotal}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
+
+      <PaymentDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        payment={selectedPayment}
+      />
+    </>
   );
 }
 
