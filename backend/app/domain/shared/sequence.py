@@ -1,10 +1,12 @@
 """Sequence aggregate for document code generation"""
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
+from typing import Optional, TYPE_CHECKING
+from pydantic import BaseModel, Field
 
-from app.domain.aggregates.base import AggregateRoot
+if TYPE_CHECKING:
+    from app.domain.aggregates.base import AggregateRoot
 from app.shared.utils import generate_id
 
 

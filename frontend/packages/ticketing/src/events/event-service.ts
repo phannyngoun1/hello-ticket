@@ -7,6 +7,7 @@
 import type { Event, CreateEventInput, UpdateEventInput, EventSeat, EventSeatStatus, BrokerSeatImportItem } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 import { EventStatus, EventConfigurationType } from "./types";
+import { API_CONFIG } from "@truths/config";
 
 interface EventDTO {
   id: string;
@@ -96,6 +97,10 @@ export class EventService {
     this.endpoints = config.endpoints;
   }
 
+  private getEndpoint(): string {
+    return this.endpoints?.events || API_CONFIG.ENDPOINTS.TICKETING.EVENTS;
+  }
+
   async fetchEvents(params?: {
     skip?: number;
     limit?: number;
@@ -122,7 +127,7 @@ export class EventService {
         queryParams.append('show_id', params.show_id);
       }
 
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = queryParams.toString()
         ? `${baseEndpoint}?${queryParams.toString()}`
         : baseEndpoint;
@@ -173,7 +178,7 @@ export class EventService {
         queryParams.append('show_id', show_id);
       }
 
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = `${baseEndpoint}?${queryParams.toString()}`;
 
       const response = await this.apiClient.get<{
@@ -196,7 +201,7 @@ export class EventService {
 
   async fetchEventById(id: string): Promise<Event> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.get<EventDTO>(
         `${baseEndpoint}/${id}`,
         { requiresAuth: true }
@@ -211,7 +216,7 @@ export class EventService {
   async createEvent(input: CreateEventInput): Promise<Event> {
     try {
       const response = await this.apiClient.post<EventDTO>(
-        this.endpoints.events,
+        this.getEndpoint(),
         input,
         { requiresAuth: true }
       );
@@ -224,7 +229,7 @@ export class EventService {
 
   async updateEvent(id: string, input: UpdateEventInput): Promise<Event> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.put<EventDTO>(
         `${baseEndpoint}/${id}`,
         input,
@@ -239,7 +244,7 @@ export class EventService {
 
   async deleteEvent(id: string): Promise<void> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       await this.apiClient.delete(
         `${baseEndpoint}/${id}`,
         { requiresAuth: true }
@@ -256,7 +261,7 @@ export class EventService {
       if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
       if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
 
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = `${baseEndpoint}/${eventId}/seats?${queryParams.toString()}`;
 
       const response = await this.apiClient.get<{
@@ -299,7 +304,7 @@ export class EventService {
     }
   ): Promise<EventSeat[]> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO[]>(
         `${baseEndpoint}/${eventId}/seats/initialize`,
         {
@@ -322,7 +327,7 @@ export class EventService {
 
   async importBrokerSeats(eventId: string, brokerId: string, seats: BrokerSeatImportItem[]): Promise<EventSeat[]> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO[]>(
         `${baseEndpoint}/${eventId}/seats/import`,
         { broker_id: brokerId, seats },
@@ -337,7 +342,7 @@ export class EventService {
 
   async deleteEventSeats(eventId: string, seatIds: string[]): Promise<void> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       // Use POST for bulk delete with body
       await this.apiClient.post(
         `${baseEndpoint}/${eventId}/seats/delete`,
@@ -352,7 +357,7 @@ export class EventService {
 
   async createTicketsFromSeats(eventId: string, seatIds: string[], ticketPrice: number = 0): Promise<EventSeat[]> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO[]>(
         `${baseEndpoint}/${eventId}/seats/create-tickets`,
         { seat_ids: seatIds, ticket_price: ticketPrice },
@@ -377,7 +382,7 @@ export class EventService {
     attributes?: Record<string, any>;
   }): Promise<EventSeat> {
     try {
-      const baseEndpoint = this.endpoints.events.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.post<EventSeatDTO>(
         `${baseEndpoint}/${eventId}/seats`,
         input,
