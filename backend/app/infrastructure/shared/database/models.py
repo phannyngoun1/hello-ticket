@@ -90,7 +90,6 @@ class EmployeeModel(SQLModel, table=True):
         Index('ix_employees_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_employees_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
         Index('ix_employees_tenant_department', 'tenant_id', 'department'),
-        Index('ix_employees_work_email', 'work_email'),
         Index('ix_employees_manager', 'manager_id'),
     )
 
@@ -161,7 +160,6 @@ class BookingModel(SQLModel, table=True):
         Index('ix_bookings_tenant_status', 'tenant_id', 'status'),
         Index('ix_bookings_tenant_event', 'tenant_id', 'event_id'),
         Index('ix_bookings_tenant_customer', 'tenant_id', 'customer_id'),
-        Index('ix_bookings_booking_number', 'booking_number', unique=True),
         Index('ix_bookings_payment_status', 'payment_status'),
     )
 
@@ -210,7 +208,6 @@ class BookingItemModel(SQLModel, table=True):
     __table_args__ = (
         Index('ix_booking_items_booking', 'tenant_id', 'booking_id'),
         Index('ix_booking_items_event_seat', 'event_seat_id'),
-        Index('ix_booking_items_ticket', 'ticket_id'),
     )
 
 
@@ -259,8 +256,6 @@ class PaymentModel(SQLModel, table=True):
     __table_args__ = (
         Index('ix_payments_tenant_booking', 'tenant_id', 'booking_id'),
         Index('ix_payments_tenant_status', 'tenant_id', 'status'),
-        Index('ix_payments_booking', 'booking_id'),
-        Index('ix_payments_transaction_ref', 'transaction_reference'),
     )
 
 
@@ -612,8 +607,6 @@ class CustomerModel(SQLModel, table=True):
         Index('ix_customers_tenant_code', 'tenant_id', 'code', unique=True),
         Index('ix_customers_tenant_active', 'tenant_id', 'is_active'),
         Index('ix_customers_tenant_email', 'tenant_id', 'email'),
-        Index('ix_customers_code', 'code'),
-        Index('ix_customers_name', 'name'),
     )
 
 
@@ -918,10 +911,6 @@ class ShowImageModel(SQLModel, table=True):
     )
     
     __table_args__ = (
-        Index('ix_show_images_show_id', 'show_id'),
-        Index('ix_show_images_tenant_id', 'tenant_id'),
-        Index('ix_show_images_file_id', 'file_id'),
-        Index('ix_show_images_is_banner', 'is_banner'),
     )
 
 
@@ -1397,7 +1386,6 @@ class AuditLogModel(SQLModel, table=True):
         Index('ix_audit_logs_entity', 'entity_type', 'entity_id', 'timestamp'),
         Index('ix_audit_logs_user', 'user_id', 'timestamp'),
         Index('ix_audit_logs_event_type', 'event_type', 'timestamp'),
-        Index('ix_audit_logs_event_id', 'event_id'),
     )
 
 
