@@ -4,13 +4,13 @@ Employee mapper - handles conversion between domain entities and database models
 from typing import Optional
 from app.domain.sales.employee import Employee
 from app.infrastructure.shared.database.models import EmployeeModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class EmployeeMapper:
+class EmployeeMapper(BaseMapper[Employee, EmployeeModel]):
     """Mapper for Employee entity to EmployeeModel conversion"""
     
-    @staticmethod
-    def to_domain(model: EmployeeModel) -> Employee:
+    def to_domain(self, model: EmployeeModel) -> Optional[Employee]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class EmployeeMapper:
         Returns:
             Employee domain entity
         """
+        if not model:
+            return None
         return Employee(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -55,8 +57,7 @@ class EmployeeMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(employee: Employee) -> EmployeeModel:
+    def to_model(self, employee: Employee) -> Optional[EmployeeModel]:
         """Convert domain entity to database model
         
         Args:
@@ -65,6 +66,8 @@ class EmployeeMapper:
         Returns:
             EmployeeModel for database persistence
         """
+        if not employee:
+            return None
         return EmployeeModel(
             id=employee.id,
             tenant_id=employee.tenant_id,

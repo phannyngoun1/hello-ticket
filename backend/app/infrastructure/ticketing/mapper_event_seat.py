@@ -1,15 +1,18 @@
 """EventSeat mapper for Ticketing - Translates between domain and database models."""
+from typing import Optional
 from app.domain.ticketing.event_seat import EventSeat
 from app.infrastructure.shared.database.models import EventSeatModel
 from app.shared.enums import EventSeatStatusEnum
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class EventSeatMapper:
+class EventSeatMapper(BaseMapper[EventSeat, EventSeatModel]):
     """Mapper for translating between EventSeat domain and database models"""
 
-    @staticmethod
-    def to_domain(model: EventSeatModel) -> EventSeat:
+    def to_domain(self, model: EventSeatModel) -> Optional[EventSeat]:
         """Convert database model to domain aggregate"""
+        if not model:
+            return None
         return EventSeat(
             tenant_id=model.tenant_id,
             event_id=model.event_id,
@@ -28,9 +31,10 @@ class EventSeatMapper:
             version=model.version,
         )
 
-    @staticmethod
-    def to_model(domain: EventSeat) -> EventSeatModel:
+    def to_model(self, domain: EventSeat) -> Optional[EventSeatModel]:
         """Convert domain aggregate to database model"""
+        if not domain:
+            return None
         return EventSeatModel(
             id=domain.id,
             tenant_id=domain.tenant_id,

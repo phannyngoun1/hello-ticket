@@ -4,13 +4,13 @@ CustomerGroup mapper - handles conversion between domain entities and database m
 from typing import Optional
 from app.domain.sales.customer_group import CustomerGroup
 from app.infrastructure.shared.database.models import CustomerGroupModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class CustomerGroupMapper:
+class CustomerGroupMapper(BaseMapper[CustomerGroup, CustomerGroupModel]):
     """Mapper for CustomerGroup entity to CustomerGroupModel conversion"""
     
-    @staticmethod
-    def to_domain(model: CustomerGroupModel) -> CustomerGroup:
+    def to_domain(self, model: CustomerGroupModel) -> Optional[CustomerGroup]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class CustomerGroupMapper:
         Returns:
             CustomerGroup domain entity
         """
+        if not model:
+            return None
         return CustomerGroup(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -33,8 +35,7 @@ class CustomerGroupMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(customer_group: CustomerGroup) -> CustomerGroupModel:
+    def to_model(self, customer_group: CustomerGroup) -> Optional[CustomerGroupModel]:
         """Convert domain entity to database model
         
         Args:
@@ -43,6 +44,8 @@ class CustomerGroupMapper:
         Returns:
             CustomerGroupModel for database persistence
         """
+        if not customer_group:
+            return None
         return CustomerGroupModel(
             id=customer_group.id,
             tenant_id=customer_group.tenant_id,

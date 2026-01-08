@@ -9,6 +9,7 @@ from app.domain.core.rbac.role_repository import IRoleRepository
 from app.infrastructure.shared.database.platform_models import RoleModel, UserRoleModel
 from app.shared.utils import generate_id
 import json
+from app.infrastructure.core.rbac.role_mapper import RoleMapper
 
 
 class RoleRepository(IRoleRepository):
@@ -16,25 +17,15 @@ class RoleRepository(IRoleRepository):
     
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._mapper = RoleMapper()
     
     async def create(self, role: Role) -> Role:
         """Create a new role"""
-        model = RoleModel(
-            id=role.id,
-            tenant_id=role.tenant_id,
-            name=role.name,
-            description=role.description,
-            permissions=json.dumps(role.permissions),
-            is_active=role.is_active,
-            is_system_role=role.is_system_role,
-            created_by=role.created_by,
-            created_at=role.created_at,
-            updated_at=role.updated_at
-        )
+        model = self._mapper.to_model(role)
         self.session.add(model)
         await self.session.commit()
         await self.session.refresh(model)
-        return self._to_entity(model)
+        return self._mapper.to_domain(model)
     
     async def get_by_id(self, role_id: str, tenant_id: str) -> Optional[Role]:
         """Get role by ID"""
@@ -44,7 +35,7 @@ class RoleRepository(IRoleRepository):
         )
         result = await self.session.execute(statement)
         model = result.scalar_one_or_none()
-        return self._to_entity(model) if model else None
+        return self._mapper.to_domain(model) if model else None
     
     async def get_by_name(self, name: str, tenant_id: str) -> Optional[Role]:
         """Get role by name"""
@@ -54,7 +45,7 @@ class RoleRepository(IRoleRepository):
         )
         result = await self.session.execute(statement)
         model = result.scalar_one_or_none()
-        return self._to_entity(model) if model else None
+        return self._mapper.to_domain(model) if model else None
     
     async def list_by_tenant(self, tenant_id: str, include_inactive: bool = False) -> List[Role]:
         """List all roles for a tenant"""
@@ -65,7 +56,7 @@ class RoleRepository(IRoleRepository):
         
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [self._to_entity(model) for model in models]
+        return [self._mapper.to_domain(model) for model in models]
     
     async def update(self, role: Role) -> Role:
         """Update a role"""
@@ -87,7 +78,7 @@ class RoleRepository(IRoleRepository):
         
         await self.session.commit()
         await self.session.refresh(model)
-        return self._to_entity(model)
+        return self._mapper.to_domain(model)
     
     async def delete(self, role_id: str, tenant_id: str) -> bool:
         """Delete a role"""
@@ -176,7 +167,7 @@ class RoleRepository(IRoleRepository):
         )
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [self._to_entity(model) for model in models]
+        return [self._mapper.to_domain(model) for model in models]
     
     async def get_user_roles(self, user_id: str, tenant_id: str) -> List[Role]:
         """
@@ -205,21 +196,7 @@ class RoleRepository(IRoleRepository):
         result = await self.session.execute(statement)
         return list(result.scalars().all())
     
-    def _to_entity(self, model: RoleModel) -> Role:
-        """Convert model to entity"""
-        permissions = json.loads(model.permissions) if model.permissions else []
-        return Role(
-            id=model.id,
-            tenant_id=model.tenant_id,
-            name=model.name,
-            description=model.description,
-            permissions=permissions,
-            is_active=model.is_active,
-            is_system_role=model.is_system_role,
-            created_by=model.created_by,
-            created_at=model.created_at,
-            updated_at=model.updated_at
-        )
+
     
     def _user_role_to_entity(self, model: UserRoleModel) -> UserRole:
         """Convert user role model to entity"""

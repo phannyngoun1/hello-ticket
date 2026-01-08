@@ -1,16 +1,17 @@
 """
 Event mapper - handles conversion between domain entities and database models
 """
+from typing import Optional
 from app.domain.ticketing.event import Event
 from app.infrastructure.shared.database.models import EventModel
 from app.shared.enums import EventStatusEnum, EventConfigurationTypeEnum
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class EventMapper:
+class EventMapper(BaseMapper[Event, EventModel]):
     """Mapper for Event entity to EventModel conversion"""
     
-    @staticmethod
-    def to_domain(model: EventModel) -> Event:
+    def to_domain(self, model: EventModel) -> Optional[Event]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +20,9 @@ class EventMapper:
         Returns:
             Event domain entity
         """
+        if not model:
+            return None
+
         # Handle configuration_type - convert string to enum, handling case variations and None values
         config_type = model.configuration_type
         if not config_type:
@@ -52,8 +56,7 @@ class EventMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(event: Event) -> EventModel:
+    def to_model(self, event: Event) -> Optional[EventModel]:
         """Convert domain entity to database model
         
         Args:
@@ -62,6 +65,9 @@ class EventMapper:
         Returns:
             EventModel for database persistence
         """
+        if not event:
+            return None
+            
         return EventModel(
             id=event.id,
             tenant_id=event.tenant_id,

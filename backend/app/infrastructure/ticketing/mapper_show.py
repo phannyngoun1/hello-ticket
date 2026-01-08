@@ -4,13 +4,13 @@ Show mapper - handles conversion between domain entities and database models
 from typing import Optional
 from app.domain.ticketing.show import Show
 from app.infrastructure.shared.database.models import ShowModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class ShowMapper:
+class ShowMapper(BaseMapper[Show, ShowModel]):
     """Mapper for Show entity to ShowModel conversion"""
     
-    @staticmethod
-    def to_domain(model: ShowModel) -> Show:
+    def to_domain(self, model: ShowModel) -> Optional[Show]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class ShowMapper:
         Returns:
             Show domain entity
         """
+        if not model:
+            return None
         # Handle optional columns gracefully in case they don't exist in database yet
         started_date = getattr(model, 'started_date', None)
         ended_date = getattr(model, 'ended_date', None)
@@ -39,8 +41,7 @@ class ShowMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(show: Show) -> ShowModel:
+    def to_model(self, show: Show) -> Optional[ShowModel]:
         """Convert domain entity to database model
         
         Args:
@@ -49,6 +50,8 @@ class ShowMapper:
         Returns:
             ShowModel for database persistence
         """
+        if not show:
+            return None
         # Only include optional fields if they exist (for compatibility with older schemas)
         model_data = {
             'id': show.id,

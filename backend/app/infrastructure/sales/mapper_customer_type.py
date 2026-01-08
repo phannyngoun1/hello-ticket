@@ -4,13 +4,13 @@ CustomerType mapper - handles conversion between domain entities and database mo
 from typing import Optional
 from app.domain.sales.customer_type import CustomerType
 from app.infrastructure.shared.database.models import CustomerTypeModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class CustomerTypeMapper:
+class CustomerTypeMapper(BaseMapper[CustomerType, CustomerTypeModel]):
     """Mapper for CustomerType entity to CustomerTypeModel conversion"""
     
-    @staticmethod
-    def to_domain(model: CustomerTypeModel) -> CustomerType:
+    def to_domain(self, model: CustomerTypeModel) -> Optional[CustomerType]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class CustomerTypeMapper:
         Returns:
             CustomerType domain entity
         """
+        if not model:
+            return None
         return CustomerType(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -30,8 +32,7 @@ class CustomerTypeMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(customer_type: CustomerType) -> CustomerTypeModel:
+    def to_model(self, customer_type: CustomerType) -> Optional[CustomerTypeModel]:
         """Convert domain entity to database model
         
         Args:
@@ -40,6 +41,8 @@ class CustomerTypeMapper:
         Returns:
             CustomerTypeModel for database persistence
         """
+        if not customer_type:
+            return None
         return CustomerTypeModel(
             id=customer_type.id,
             tenant_id=customer_type.tenant_id,

@@ -4,13 +4,13 @@ Organizer mapper - handles conversion between domain entities and database model
 from typing import Optional
 from app.domain.ticketing.organizer import Organizer
 from app.infrastructure.shared.database.models import OrganizerModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class OrganizerMapper:
+class OrganizerMapper(BaseMapper[Organizer, OrganizerModel]):
     """Mapper for Organizer entity to OrganizerModel conversion"""
     
-    @staticmethod
-    def to_domain(model: OrganizerModel) -> Organizer:
+    def to_domain(self, model: OrganizerModel) -> Optional[Organizer]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class OrganizerMapper:
         Returns:
             Organizer domain entity
         """
+        if not model:
+            return None
         return Organizer(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -38,8 +40,7 @@ class OrganizerMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(organizer: Organizer) -> OrganizerModel:
+    def to_model(self, organizer: Organizer) -> Optional[OrganizerModel]:
         """Convert domain entity to database model
         
         Args:
@@ -48,6 +49,8 @@ class OrganizerMapper:
         Returns:
             OrganizerModel for database persistence
         """
+        if not organizer:
+            return None
         return OrganizerModel(
             id=organizer.id,
             tenant_id=organizer.tenant_id,

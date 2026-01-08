@@ -1,17 +1,18 @@
 """
 Session mapper - handles conversion between domain entities and database models
 """
+from typing import Optional
 from app.domain.core.session.entity import Session
 from app.domain.shared.value_objects.device_info import DeviceInfo, DeviceType
 from app.domain.shared.value_objects.session_status import SessionStatus
 from app.infrastructure.shared.database.platform_models import SessionModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class SessionMapper:
+class SessionMapper(BaseMapper[Session, SessionModel]):
     """Mapper for Session entity to SessionModel conversion"""
     
-    @staticmethod
-    def to_domain(model: SessionModel) -> Session:
+    def to_domain(self, model: SessionModel) -> Optional[Session]:
         """Convert database model to domain entity
         
         Args:
@@ -20,6 +21,9 @@ class SessionMapper:
         Returns:
             Session domain entity
         """
+        if not model:
+            return None
+            
         device_info = DeviceInfo(
             device_type=DeviceType(model.device_type),
             user_agent=model.user_agent,
@@ -43,8 +47,7 @@ class SessionMapper:
             revocation_reason=model.revocation_reason
         )
     
-    @staticmethod
-    def to_model(session: Session) -> SessionModel:
+    def to_model(self, session: Session) -> Optional[SessionModel]:
         """Convert domain entity to database model
         
         Args:
@@ -53,6 +56,8 @@ class SessionMapper:
         Returns:
             SessionModel for database persistence
         """
+        if not session:
+            return None
         return SessionModel(
             id=session.id,
             user_id=session.user_id,

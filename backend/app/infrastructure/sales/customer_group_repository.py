@@ -10,73 +10,20 @@ from app.domain.sales.customer_group_repositories import CustomerGroupRepository
 from app.infrastructure.shared.database.models import CustomerGroupModel
 from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.sales.mapper_customer_group import CustomerGroupMapper
-from app.shared.tenant_context import get_tenant_context
+from app.infrastructure.shared.repository import BaseSQLRepository
 from app.shared.exceptions import BusinessRuleError
 
 
-class SQLCustomerGroupRepository(CustomerGroupRepository):
-    """SQLModel implementation of CustomerGroupRepository"""
+class SQLCustomerGroupRepository(BaseSQLRepository[CustomerGroup, CustomerGroupModel], CustomerGroupRepository):
+    """SQLModel implementation of CustomerGroupRepository using BaseSQLRepository"""
     
     def __init__(self, session: Optional[Session] = None, tenant_id: Optional[str] = None):
-        self._session_factory = session if session else get_session_sync
-        self._mapper = CustomerGroupMapper()
-        self._tenant_id = tenant_id  # Override tenant context if provided
-    
-    def _get_tenant_id(self) -> str:
-        """Get tenant ID from override or context"""
-        if self._tenant_id:
-            return self._tenant_id
-        tenant_id = get_tenant_context()
-        if not tenant_id:
-            raise ValueError("Tenant context not set. Multi-tenancy requires tenant identification.")
-        return tenant_id
-    
-    async def save(self, customer_group: CustomerGroup) -> CustomerGroup:
-        """Save or update a customer_group"""
-        tenant_id = self._get_tenant_id()
-        
-        with self._session_factory() as session:
-            # Check if customer_group exists (within tenant scope)
-            statement = select(CustomerGroupModel).where(
-                CustomerGroupModel.id == customer_group.id,
-                CustomerGroupModel.tenant_id == tenant_id
-            )
-            existing_model = session.exec(statement).first()
-            
-            if existing_model:
-                # Update existing customer_group
-                # Use merge with a new model instance to ensure proper change tracking
-                updated_model = self._mapper.to_model(customer_group)
-                # Merge will update the existing model in the session
-                merged_model = session.merge(updated_model)
-                try:
-                    session.commit()
-                    session.refresh(merged_model)
-                    return self._mapper.to_domain(merged_model)
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to update customer_group: {str(e)}")
-            else:
-                # Create new customer_group
-                new_model = self._mapper.to_model(customer_group)
-                session.add(new_model)
-                try:
-                    session.commit()
-                    session.refresh(new_model)
-                    return self._mapper.to_domain(new_model)
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to create customer_group: {str(e)}")
-    
-    async def get_by_id(self, tenant_id: str, customer_group_id: str) -> Optional[CustomerGroup]:
-        """Get customer_group by ID (within tenant scope)"""
-        with self._session_factory() as session:
-            statement = select(CustomerGroupModel).where(
-                CustomerGroupModel.id == customer_group_id,
-                CustomerGroupModel.tenant_id == tenant_id
-            )
-            model = session.exec(statement).first()
-            return self._mapper.to_domain(model) if model else None
+        super().__init__(
+            model_cls=CustomerGroupModel, 
+            mapper=CustomerGroupMapper(), 
+            session_factory=session, 
+            tenant_id=tenant_id
+        )
     
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[CustomerGroup]:
         """Get customer_group by business code"""
@@ -360,33 +307,5 @@ class SQLCustomerGroupRepository(CustomerGroupRepository):
                 node.children.sort(key=lambda child: (child.sort_order, child.name))
         roots.sort(key=lambda root: (root.sort_order, root.name))
         return roots
-    
-    async def delete(self, tenant_id: str, customer_group_id: str, hard_delete: bool = False) -> bool:
-        """Delete a customer_group (soft-delete by default, hard-delete if specified)"""
-        with self._session_factory() as session:
-            statement = select(CustomerGroupModel).where(
-                CustomerGroupModel.id == customer_group_id,
-                CustomerGroupModel.tenant_id == tenant_id
-            )
-            model = session.exec(statement).first()
-            if not model:
-                return False
-            
-            if hard_delete:
-                # Hard delete: permanently remove from database
-                session.delete(model)
-            else:
-                # Soft delete: mark as deleted
-                from datetime import datetime, timezone
-                model.is_deleted = True
-                model.deleted_at = datetime.now(timezone.utc)
-                model.updated_at = datetime.now(timezone.utc)
-                # Model is already in session from .first(), SQLAlchemy tracks changes automatically
-            
-            try:
-                session.commit()
-                return True
-            except IntegrityError as e:
-                session.rollback()
-                raise BusinessRuleError(f"Failed to delete customer_group: {str(e)}")
+
 

@@ -4,12 +4,13 @@ Mapper between Layout domain entity and LayoutModel database model
 from typing import Optional
 from app.domain.ticketing.layout import Layout
 from app.infrastructure.shared.database.models import LayoutModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class LayoutMapper:
+class LayoutMapper(BaseMapper[Layout, LayoutModel]):
     """Maps between Layout domain entity and LayoutModel"""
     
-    def to_domain(self, model: Optional[LayoutModel]) -> Optional[Layout]:
+    def to_domain(self, model: LayoutModel) -> Optional[Layout]:
         """Convert LayoutModel to Layout domain entity"""
         if not model:
             return None
@@ -29,8 +30,11 @@ class LayoutMapper:
             version=model.version,
         )
     
-    def to_model(self, layout: Layout) -> LayoutModel:
+    def to_model(self, layout: Layout) -> Optional[LayoutModel]:
         """Convert Layout domain entity to LayoutModel"""
+        if not layout:
+            return None
+            
         return LayoutModel(
             id=layout.id,
             tenant_id=layout.tenant_id,

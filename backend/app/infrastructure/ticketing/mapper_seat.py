@@ -1,13 +1,17 @@
 """Mapper between Seat domain entity and SeatModel database model."""
+from typing import Optional
 from app.domain.ticketing.seat import Seat, SeatType
 from app.infrastructure.shared.database.models import SeatModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class SeatMapper:
+class SeatMapper(BaseMapper[Seat, SeatModel]):
     """Maps between Seat domain entity and SeatModel database model"""
 
-    def to_model(self, seat: Seat) -> SeatModel:
+    def to_model(self, seat: Seat) -> Optional[SeatModel]:
         """Convert domain entity to database model"""
+        if not seat:
+            return None
         return SeatModel(
             id=seat.id,
             tenant_id=seat.tenant_id,
@@ -29,8 +33,10 @@ class SeatMapper:
             deleted_at=None,
         )
 
-    def to_domain(self, model: SeatModel) -> Seat:
+    def to_domain(self, model: SeatModel) -> Optional[Seat]:
         """Convert database model to domain entity"""
+        if not model:
+            return None
         # Get shape from model - it's stored as JSONB (dict) in the database
         shape = None
         if hasattr(model, 'shape') and model.shape is not None:
