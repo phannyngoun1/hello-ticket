@@ -20,6 +20,7 @@ import {
   BookingService,
   useCreateBooking,
   type CreateBookingInput,
+  type UpdateCustomerInput,
 } from "@truths/sales";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { useToast } from "@truths/ui";
@@ -172,7 +173,7 @@ function CustomerDetailContent({ id }: { id: string }) {
   }, [customer, updateMutation, toast, refetch]);
 
   const handleEditSubmit = useCallback(
-    async (id: string, data: any) => {
+    async (id: string, data: UpdateCustomerInput) => {
       try {
         await updateMutation.mutateAsync({
           id: id,
