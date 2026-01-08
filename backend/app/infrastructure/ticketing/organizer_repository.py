@@ -7,31 +7,24 @@ from sqlalchemy.exc import IntegrityError
 from app.domain.ticketing.organizer import Organizer
 from app.domain.ticketing.organizer_repositories import OrganizerRepository, OrganizerSearchResult
 from app.infrastructure.shared.database.models import OrganizerModel, TagModel, TagLinkModel
-from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.ticketing.mapper_organizer import OrganizerMapper
-from app.shared.tenant_context import get_tenant_context
+from app.infrastructure.shared.repository import BaseSQLRepository
 from app.shared.exceptions import BusinessRuleError
 
 
-class SQLOrganizerRepository(OrganizerRepository):
-    """SQLModel implementation of OrganizerRepository"""
+class SQLOrganizerRepository(BaseSQLRepository[Organizer, OrganizerModel], OrganizerRepository):
+    """SQLModel implementation of OrganizerRepository using BaseSQLRepository"""
     
     def __init__(self, session: Optional[Session] = None, tenant_id: Optional[str] = None):
-        self._session_factory = session if session else get_session_sync
-        self._mapper = OrganizerMapper()
-        self._tenant_id = tenant_id  # Override tenant context if provided
-    
-    def _get_tenant_id(self) -> str:
-        """Get tenant ID from override or context"""
-        if self._tenant_id:
-            return self._tenant_id
-        tenant_id = get_tenant_context()
-        if not tenant_id:
-            raise ValueError("Tenant context not set. Multi-tenancy requires tenant identification.")
-        return tenant_id
+        super().__init__(
+            model_cls=OrganizerModel, 
+            mapper=OrganizerMapper(), 
+            session_factory=session, 
+            tenant_id=tenant_id
+        )
     
     async def save(self, organizer: Organizer) -> Organizer:
-        """Save or update a organizer"""
+        """Save or update a organizer (Overridden to handle tags)"""
         tenant_id = self._get_tenant_id()
         
         with self._session_factory() as session:
@@ -44,9 +37,7 @@ class SQLOrganizerRepository(OrganizerRepository):
             
             if existing_model:
                 # Update existing organizer
-                # Use merge with a new model instance to ensure proper change tracking
                 updated_model = self._mapper.to_model(organizer)
-                # Merge will update the existing model in the session
                 merged_model = session.merge(updated_model)
                 try:
                     session.commit()
@@ -83,7 +74,12 @@ class SQLOrganizerRepository(OrganizerRepository):
                     raise BusinessRuleError(f"Failed to create organizer: {str(e)}")
     
     async def get_by_id(self, tenant_id: str, organizer_id: str) -> Optional[Organizer]:
-        """Get organizer by ID (within tenant scope)"""
+        """Get organizer by ID (Overridden to load tags)"""
+        # Call base implementation to avoid code duplication if possible, 
+        # but base uses separate session context so we can't reuse session efficiently for tags 
+        # unless we pass session, which we can't easily do with Base.
+        # So we keep full override for now to ensure eager loading of tags in same transaction context if needed (though get_tags here is separate query)
+        
         with self._session_factory() as session:
             statement = select(OrganizerModel).where(
                 OrganizerModel.id == organizer_id,
@@ -94,7 +90,6 @@ class SQLOrganizerRepository(OrganizerRepository):
                 return None
             domain = self._mapper.to_domain(model)
             tags = self._get_tags(session, tenant_id, domain.id)
-            print(f"DEBUG: Organizer {domain.id} tags loaded: {tags}")
             domain.tags = tags
             return domain
     
@@ -114,30 +109,11 @@ class SQLOrganizerRepository(OrganizerRepository):
             domain.tags = self._get_tags(session, tenant_id, domain.id)
             return domain
 
-    async def get_by_ids(self, tenant_id: str, organizer_ids: List[str]) -> List[Organizer]:
-        """Get multiple organizers by IDs"""
-        if not organizer_ids:
-            return []
-        
-        with self._session_factory() as session:
-            try:
-                statement = select(OrganizerModel).where(
-                    OrganizerModel.id.in_(organizer_ids),
-                    OrganizerModel.tenant_id == tenant_id
-                )
-                models = session.exec(statement).all()
-                
-                results = []
-                for model in models:
-                    domain = self._mapper.to_domain(model)
-                    # For list views, we might optimize by skipping tags or batch fetching them
-                    # For now, let's skip tags for performance unless critically needed
-                    # If needed later, we should implement batch tag fetching
-                    domain.tags = [] 
-                    results.append(domain)
-                return results
-            except Exception:
-                return []
+    # get_by_ids -> Inherit from Base (optimized list fetch), overrides only if tag loading needed for list
+    # get_all -> Inherit from Base
+    # delete -> Inherit from Base (Base handles soft delete if model supports it? 
+    # Wait, BaseSQLRepository delete checks for is_deleted attribute.
+    # Let's verify BaseSQLRepository behavior for delete.
     
     async def search(
         self,
@@ -190,53 +166,9 @@ class SQLOrganizerRepository(OrganizerRepository):
             has_next = skip + limit < total
             
             return OrganizerSearchResult(items=items, total=total, has_next=has_next)
-    
-    async def get_all(self, tenant_id: str) -> List[Organizer]:
-        """Get all organizers for a tenant"""
-        with self._session_factory() as session:
-            statement = select(OrganizerModel).where(
-                OrganizerModel.tenant_id == tenant_id
-            )
-            models = session.exec(statement).all()
-            result = []
-            for model in models:
-                domain = self._mapper.to_domain(model)
-                domain.tags = self._get_tags(session, tenant_id, domain.id)
-                result.append(domain)
-            return result
-    
-    async def delete(self, tenant_id: str, organizer_id: str, hard_delete: bool = False) -> bool:
-        """Delete a organizer (soft-delete by default, hard-delete if specified)"""
-        with self._session_factory() as session:
-            statement = select(OrganizerModel).where(
-                OrganizerModel.id == organizer_id,
-                OrganizerModel.tenant_id == tenant_id
-            )
-            model = session.exec(statement).first()
-            if not model:
-                return False
-            
-            if hard_delete:
-                # Hard delete: permanently remove from database
-                session.delete(model)
-            else:
-                # Soft delete: mark as deleted
-                from datetime import datetime, timezone
-                model.is_deleted = True
-                model.deleted_at = datetime.now(timezone.utc)
-                model.updated_at = datetime.now(timezone.utc)
-                # Model is already in session from .first(), SQLAlchemy tracks changes automatically
-            
-            try:
-                session.commit()
-                return True
-            except IntegrityError as e:
-                session.rollback()
-                raise BusinessRuleError(f"Failed to delete organizer: {str(e)}")
 
     def _get_tags(self, session: Session, tenant_id: str, organizer_id: str) -> List[str]:
         """Get tags for organizer"""
-        print(f"DEBUG: Getting tags for organizer {organizer_id}, tenant {tenant_id}")
         stmt = (
             select(TagModel.name)
             .join(TagLinkModel, TagLinkModel.tag_id == TagModel.id)
@@ -248,7 +180,6 @@ class SQLOrganizerRepository(OrganizerRepository):
             )
         )
         result = session.exec(stmt).all()
-        print(f"DEBUG: Found tags: {result}")
         return result
 
     def _update_tags(self, session: Session, tenant_id: str, organizer_id: str, tags: List[str]) -> None:

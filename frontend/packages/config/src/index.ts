@@ -29,6 +29,16 @@ export const API_CONFIG = {
         ORDERS: '/api/v1/orders',
         ROLES: '/api/v1/roles',
         GROUPS: '/api/v1/groups',
+        SALES: {
+            CUSTOMERS: '/api/v1/sales/customers',
+            BOOKINGS: '/api/v1/sales/bookings',
+        },
+        TICKETING: {
+            VENUES: '/api/v1/ticketing/venues',
+            EVENTS: '/api/v1/ticketing/events',
+            ORGANIZERS: '/api/v1/ticketing/organizers',
+            SHOWS: '/api/v1/ticketing/shows',
+        },
     },
 } as const
 

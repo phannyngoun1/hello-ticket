@@ -1,6 +1,6 @@
 import { api, registerAuthService, setLoginGracePeriod, setLoggingOut } from '@truths/api'
 import { storage, userPreferences } from '@truths/utils'
-import { STORAGE_KEYS } from '@truths/config'
+import { API_CONFIG, STORAGE_KEYS } from '@truths/config'
 
 export interface LoginCredentials {
     username: string
@@ -59,7 +59,15 @@ export const authService = {
         formData.append('username', credentials.username)
         formData.append('password', credentials.password)
 
-        const response = await fetch('http://localhost:8000/api/v1/auth/token', {
+        // Construct full URL using config
+        // BASE_URL is likely http://localhost:8000
+        // ENDPOINTS.AUTH.LOGIN is /api/v1/auth/token
+        // We need to be careful about double slashes if BASE_URL has a trailing slash
+        const baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, '')
+        const endpoint = API_CONFIG.ENDPOINTS.AUTH.LOGIN
+        const url = `${baseUrl}${endpoint}`
+
+        const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -167,7 +175,7 @@ export const authService = {
         // Clear cached session configuration using centralized cache manager
         const { cacheManager, CACHE_KEYS } = await import('@truths/utils')
         cacheManager.remove(CACHE_KEYS.SESSION_CONFIG)
-        
+
         // Also clear session monitor cache if it's running
         try {
             const { getSessionMonitor } = await import('./session-monitor')
@@ -178,7 +186,7 @@ export const authService = {
         } catch {
             // Session monitor might not be available, ignore
         }
-        
+
         // Trigger cache invalidation for logout
         cacheManager.handleInvalidation({
             type: 'invalidate',
@@ -208,7 +216,7 @@ export const authService = {
         storage.remove(STORAGE_KEYS.AUTH_TOKEN)
         storage.remove(STORAGE_KEYS.REFRESH_TOKEN)
         storage.remove('must_change_password')
-        
+
         // Use centralized cache manager (synchronous import)
         // Note: Dynamic import would be async, so we'll handle cache clearing
         // via the async logout method when possible
@@ -219,7 +227,7 @@ export const authService = {
         } catch {
             // Ignore - cache clearing is non-critical for sync logout
         }
-        
+
         // Note: Session monitor cache will be cleared when it next checks for auth token
         // For synchronous cleanup, localStorage removal is sufficient
     },

@@ -7,6 +7,8 @@ from typing import Optional, List
 from app.domain.aggregates.base import AggregateRoot
 from app.shared.exceptions import BusinessRuleError, ValidationError
 from app.shared.utils import generate_id
+from app.domain.shared.value_objects.address import Address
+from app.domain.shared.value_objects.contact_info import ContactInfo
 
 class Customer(AggregateRoot):
     """Represents a customer."""
@@ -18,15 +20,10 @@ class Customer(AggregateRoot):
         name: str,
         customer_id: Optional[str] = None,
         # Essential Contact Information
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
+        contact_info: Optional[ContactInfo] = None,
         business_name: Optional[str] = None,
         # Address Information
-        street_address: Optional[str] = None,
-        city: Optional[str] = None,
-        state_province: Optional[str] = None,
-        postal_code: Optional[str] = None,
-        country: Optional[str] = None,
+        address: Optional[Address] = None,
         # Customer Profile
         date_of_birth: Optional[date] = None,
         gender: Optional[str] = None,
@@ -77,17 +74,11 @@ class Customer(AggregateRoot):
         self.code = self._normalize_code(code)
         self.name = self._normalize_name(name)
         
-        # Essential Contact Information
-        self.email = email.strip() if email else None
-        self.phone = phone.strip() if phone else None
-        self.business_name = business_name.strip() if business_name else None
+        # Vo Integration
+        self.contact_info = contact_info or ContactInfo()
+        self.address = address or Address()
         
-        # Address Information
-        self.street_address = street_address.strip() if street_address else None
-        self.city = city.strip() if city else None
-        self.state_province = state_province.strip() if state_province else None
-        self.postal_code = postal_code.strip() if postal_code else None
-        self.country = country.strip() if country else None
+        self.business_name = business_name.strip() if business_name else None
         
         # Customer Profile
         self.date_of_birth = date_of_birth
@@ -143,14 +134,9 @@ class Customer(AggregateRoot):
         *,
         code: Optional[str] = None,
         name: Optional[str] = None,
-        email: Optional[str] = None,
-        phone: Optional[str] = None,
+        contact_info: Optional[ContactInfo] = None,
         business_name: Optional[str] = None,
-        street_address: Optional[str] = None,
-        city: Optional[str] = None,
-        state_province: Optional[str] = None,
-        postal_code: Optional[str] = None,
-        country: Optional[str] = None,
+        address: Optional[Address] = None,
         date_of_birth: Optional[date] = None,
         gender: Optional[str] = None,
         nationality: Optional[str] = None,
@@ -186,22 +172,12 @@ class Customer(AggregateRoot):
             self.code = self._normalize_code(code)
         if name is not None:
             self.name = self._normalize_name(name)
-        if email is not None:
-            self.email = email.strip() if email else None
-        if phone is not None:
-            self.phone = phone.strip() if phone else None
+        if contact_info is not None:
+            self.contact_info = contact_info
+        if address is not None:
+            self.address = address
         if business_name is not None:
             self.business_name = business_name.strip() if business_name else None
-        if street_address is not None:
-            self.street_address = street_address.strip() if street_address else None
-        if city is not None:
-            self.city = city.strip() if city else None
-        if state_province is not None:
-            self.state_province = state_province.strip() if state_province else None
-        if postal_code is not None:
-            self.postal_code = postal_code.strip() if postal_code else None
-        if country is not None:
-            self.country = country.strip() if country else None
         if date_of_birth is not None:
             self.date_of_birth = date_of_birth
         if gender is not None:

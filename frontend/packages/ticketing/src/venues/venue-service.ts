@@ -6,19 +6,20 @@
 
 import type { Venue, CreateVenueInput, UpdateVenueInput } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
+import { API_CONFIG } from "@truths/config";
 
 interface VenueDTO {
   id: string;
   tenant_id: string;
-  
-  
+
+
   code: string;
-  
-  
-  
+
+
+
   name: string;
-  
-  
+
+
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -29,15 +30,15 @@ interface VenueDTO {
 function transformVenue(dto: VenueDTO): Venue {
   return {
     id: dto.id,
-    
-    
+
+
     code: dto.code,
-    
-    
-    
+
+
+
     name: dto.name,
-    
-    
+
+
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };
@@ -56,6 +57,10 @@ export class VenueService {
   constructor(config: VenueServiceConfig) {
     this.apiClient = config.apiClient;
     this.endpoints = config.endpoints;
+  }
+
+  private getEndpoint(): string {
+    return this.endpoints?.venues || API_CONFIG.ENDPOINTS.TICKETING.VENUES;
   }
 
   async fetchVenues(params?: {
@@ -80,7 +85,7 @@ export class VenueService {
         queryParams.append('is_active', params.is_active.toString());
       }
 
-      const baseEndpoint = this.endpoints.venues.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = queryParams.toString()
         ? `${baseEndpoint}?${queryParams.toString()}`
         : baseEndpoint;
@@ -128,7 +133,7 @@ export class VenueService {
       queryParams.append('search', trimmedQuery);
       queryParams.append('limit', Math.min(limit, 200).toString());
 
-      const baseEndpoint = this.endpoints.venues.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = `${baseEndpoint}?${queryParams.toString()}`;
 
       const response = await this.apiClient.get<{
@@ -151,7 +156,7 @@ export class VenueService {
 
   async fetchVenueById(id: string): Promise<Venue> {
     try {
-      const baseEndpoint = this.endpoints.venues.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.get<VenueDTO>(
         `${baseEndpoint}/${id}`,
         { requiresAuth: true }
@@ -166,7 +171,7 @@ export class VenueService {
   async createVenue(input: CreateVenueInput): Promise<Venue> {
     try {
       const response = await this.apiClient.post<VenueDTO>(
-        this.endpoints.venues,
+        this.getEndpoint(),
         input,
         { requiresAuth: true }
       );
@@ -179,7 +184,7 @@ export class VenueService {
 
   async updateVenue(id: string, input: UpdateVenueInput): Promise<Venue> {
     try {
-      const baseEndpoint = this.endpoints.venues.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.put<VenueDTO>(
         `${baseEndpoint}/${id}`,
         input,
@@ -194,7 +199,7 @@ export class VenueService {
 
   async deleteVenue(id: string): Promise<void> {
     try {
-      const baseEndpoint = this.endpoints.venues.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       await this.apiClient.delete(
         `${baseEndpoint}/${id}`,
         { requiresAuth: true }
