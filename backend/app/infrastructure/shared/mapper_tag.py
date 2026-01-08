@@ -1,14 +1,16 @@
 """
 Tag mapper - converts between domain Tag and database TagModel
 """
+from typing import Optional
 from app.domain.shared.tag import Tag
 from app.infrastructure.shared.database.models import TagModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class TagMapper:
+class TagMapper(BaseMapper[Tag, TagModel]):
     """Mapper for Tag domain entity and TagModel database model"""
     
-    def to_domain(self, model: TagModel) -> Tag:
+    def to_domain(self, model: TagModel) -> Optional[Tag]:
         """Convert database model to domain entity"""
         if not model:
             return None
@@ -26,7 +28,7 @@ class TagMapper:
             version=model.version,
         )
     
-    def to_model(self, tag: Tag) -> TagModel:
+    def to_model(self, tag: Tag) -> Optional[TagModel]:
         """Convert domain entity to database model"""
         if not tag:
             return None

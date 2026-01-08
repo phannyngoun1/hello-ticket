@@ -9,38 +9,20 @@ from app.domain.ticketing.ticket_repositories import TicketRepository
 from app.infrastructure.shared.database.models import TicketModel
 from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.ticketing.mapper_ticket import TicketMapper
-from app.shared.tenant_context import get_tenant_context
+from app.infrastructure.shared.repository import BaseSQLRepository
 from app.shared.exceptions import BusinessRuleError
 
 
-class SQLTicketRepository(TicketRepository):
-    """SQLModel implementation of TicketRepository"""
+class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketRepository):
+    """SQLModel implementation of TicketRepository using BaseSQLRepository"""
 
     def __init__(self, session: Optional[Session] = None, tenant_id: Optional[str] = None):
-        self._session_factory = session if session else get_session_sync
-        self._mapper = TicketMapper()
-        self._tenant_id = tenant_id
-
-    def _get_tenant_id(self) -> str:
-        """Get tenant ID from override or context"""
-        if self._tenant_id:
-            return self._tenant_id
-        tenant_id = get_tenant_context()
-        if not tenant_id:
-            raise ValueError("Tenant context not set. Multi-tenancy requires tenant identification.")
-        return tenant_id
-
-    async def get_by_id(self, tenant_id: str, ticket_id: str) -> Optional[Ticket]:
-        """Get ticket by ID"""
-        with self._session_factory() as session:
-            statement = select(TicketModel).where(
-                and_(
-                    TicketModel.id == ticket_id,
-                    TicketModel.tenant_id == tenant_id
-                )
-            )
-            model = session.exec(statement).first()
-            return self._mapper.to_domain(model) if model else None
+        super().__init__(
+            model_cls=TicketModel, 
+            mapper=TicketMapper(), 
+            session_factory=session, 
+            tenant_id=tenant_id
+        )
 
     async def get_by_ticket_number(self, tenant_id: str, ticket_number: str) -> Optional[Ticket]:
         """Get ticket by ticket number"""
@@ -98,41 +80,6 @@ class SQLTicketRepository(TicketRepository):
             models = session.exec(statement).all()
             return [self._mapper.to_domain(m) for m in models]
 
-    async def save(self, ticket: Ticket) -> Ticket:
-        """Save ticket (create or update)"""
-        tenant_id = self._get_tenant_id()
-
-        with self._session_factory() as session:
-            statement = select(TicketModel).where(
-                and_(
-                    TicketModel.id == ticket.id,
-                    TicketModel.tenant_id == tenant_id
-                )
-            )
-            existing_model = session.exec(statement).first()
-
-            if existing_model:
-                updated_model = self._mapper.to_model(ticket)
-                merged_model = session.merge(updated_model)
-                try:
-                    session.commit()
-                    session.refresh(merged_model)
-                    return self._mapper.to_domain(merged_model)
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to update ticket: {str(e)}")
-            else:
-                new_model = self._mapper.to_model(ticket)
-                new_model.tenant_id = tenant_id  # Ensure tenant consistency
-                session.add(new_model)
-                try:
-                    session.commit()
-                    session.refresh(new_model)
-                    return self._mapper.to_domain(new_model)
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to create ticket: {str(e)}")
-
     async def save_all(self, tickets: List[Ticket]) -> List[Ticket]:
         """Save multiple tickets (create or update)"""
         tenant_id = self._get_tenant_id()
@@ -182,23 +129,3 @@ class SQLTicketRepository(TicketRepository):
                 session.rollback()
                 raise BusinessRuleError(f"Failed to bulk save tickets: {str(e)}")
 
-    async def delete(self, tenant_id: str, ticket_id: str) -> bool:
-        """Delete ticket"""
-        with self._session_factory() as session:
-            statement = select(TicketModel).where(
-                and_(
-                    TicketModel.id == ticket_id,
-                    TicketModel.tenant_id == tenant_id
-                )
-            )
-            model = session.exec(statement).first()
-            if not model:
-                return False
-            
-            session.delete(model)
-            try:
-                session.commit()
-                return True
-            except IntegrityError as e:
-                session.rollback()
-                raise BusinessRuleError(f"Failed to delete ticket: {str(e)}")

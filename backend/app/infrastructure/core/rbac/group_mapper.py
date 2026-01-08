@@ -4,13 +4,13 @@ Mapper for converting between Group entity and GroupModel
 from typing import Optional
 from app.domain.core.rbac.group import Group
 from app.infrastructure.shared.database.platform_models import GroupModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class GroupMapper:
+class GroupMapper(BaseMapper[Group, GroupModel]):
     """Mapper for Group entity <-> GroupModel"""
     
-    @staticmethod
-    def to_entity(model: Optional[GroupModel]) -> Optional[Group]:
+    def to_domain(self, model: GroupModel) -> Optional[Group]:
         """Convert GroupModel to Group entity"""
         if not model:
             return None
@@ -25,9 +25,10 @@ class GroupMapper:
             updated_at=model.updated_at
         )
     
-    @staticmethod
-    def to_model(entity: Group) -> GroupModel:
+    def to_model(self, entity: Group) -> Optional[GroupModel]:
         """Convert Group entity to GroupModel"""
+        if not entity:
+            return None
         return GroupModel(
             id=entity.id,
             tenant_id=entity.tenant_id,

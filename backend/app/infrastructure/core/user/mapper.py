@@ -2,18 +2,19 @@
 User mapper - handles conversion between domain entities and database models
 """
 import hashlib
+from typing import Optional
 from app.domain.core.user.entity import User
 from app.domain.shared.value_objects.email import Email
 from app.domain.shared.value_objects.first_name import FirstName
 from app.domain.shared.value_objects.last_name import LastName
 from app.infrastructure.shared.database.platform_models import UserModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class UserMapper:
+class UserMapper(BaseMapper[User, UserModel]):
     """Mapper for User entity to UserModel conversion"""
     
-    @staticmethod
-    def to_domain(model: UserModel) -> User:
+    def to_domain(self, model: UserModel) -> Optional[User]:
         """Convert database model to domain entity
         
         Args:
@@ -22,6 +23,8 @@ class UserMapper:
         Returns:
             User domain entity
         """
+        if not model:
+            return None
         return User(
             id=model.id,
             username=model.username,
@@ -37,8 +40,7 @@ class UserMapper:
             locked_until=model.locked_until
         )
     
-    @staticmethod
-    def to_model(user: User) -> UserModel:
+    def to_model(self, user: User) -> Optional[UserModel]:
         """Convert domain entity to database model
         
         Args:
@@ -47,6 +49,8 @@ class UserMapper:
         Returns:
             UserModel for database persistence
         """
+        if not user:
+            return None
         # Generate a default password hash (users created via user routes can't login)
         # This is a placeholder hash - these users need to be activated via auth routes
         default_password_hash = hashlib.sha256(f"no-login-{user.id}".encode()).hexdigest()

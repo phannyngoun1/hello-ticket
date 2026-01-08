@@ -5,15 +5,16 @@ from typing import Optional
 from app.domain.sales.customer import Customer
 from app.infrastructure.shared.database.models import CustomerModel
 from app.domain.shared.tag_repository import TagLinkRepository
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class CustomerMapper:
+class CustomerMapper(BaseMapper[Customer, CustomerModel]):
     """Mapper for Customer entity to CustomerModel conversion"""
     
     def __init__(self, tag_link_repository: Optional[TagLinkRepository] = None):
         self._tag_link_repository = tag_link_repository
     
-    def to_domain(self, model: CustomerModel, tenant_id: Optional[str] = None) -> Customer:
+    def to_domain(self, model: CustomerModel) -> Optional[Customer]:
         """Convert database model to domain entity
         
         Args:
@@ -22,6 +23,9 @@ class CustomerMapper:
         Returns:
             Customer domain entity
         """
+        if not model:
+            return None
+            
         return Customer(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -73,7 +77,7 @@ class CustomerMapper:
             version=model.version,
         )
     
-    def to_model(self, customer: Customer) -> CustomerModel:
+    def to_model(self, customer: Customer) -> Optional[CustomerModel]:
         """Convert domain entity to database model
         
         Args:
@@ -82,6 +86,9 @@ class CustomerMapper:
         Returns:
             CustomerModel for database persistence
         """
+        if not customer:
+            return None
+            
         return CustomerModel(
             id=customer.id,
             tenant_id=customer.tenant_id,

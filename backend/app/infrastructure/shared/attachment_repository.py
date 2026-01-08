@@ -13,6 +13,7 @@ from app.domain.shared.file_upload_repository import FileUploadRepository
 from app.infrastructure.shared.database.models import AttachmentLinkModel, FileUploadModel
 from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.shared.file_upload_mapper import FileUploadMapper
+from app.infrastructure.shared.attachment_link_mapper import AttachmentLinkMapper
 from app.shared.tenant_context import get_tenant_context
 from app.shared.exceptions import BusinessRuleError
 
@@ -28,6 +29,7 @@ class SQLAttachmentLinkRepository(AttachmentLinkRepository):
         self._session_factory = session_factory or get_session_sync
         self._file_upload_repository = file_upload_repository
         self._mapper = FileUploadMapper()
+        self._link_mapper = AttachmentLinkMapper()
     
     async def link_attachment(
         self,
@@ -54,15 +56,7 @@ class SQLAttachmentLinkRepository(AttachmentLinkRepository):
                 existing = session.exec(statement).first()
                 
                 if existing:
-                    return AttachmentLink(
-                        file_upload_id=existing.file_upload_id,
-                        entity_type=existing.entity_type,
-                        entity_id=existing.entity_id,
-                        attachment_type=existing.attachment_type,
-                        attachment_link_id=existing.id,
-                        tenant_id=existing.tenant_id,
-                        created_at=existing.created_at,
-                    )
+                    return self._link_mapper.to_domain(existing)
                 
                 # Create new link
                 link_model = AttachmentLinkModel(
@@ -76,15 +70,7 @@ class SQLAttachmentLinkRepository(AttachmentLinkRepository):
                 try:
                     session.commit()
                     session.refresh(link_model)
-                    return AttachmentLink(
-                        file_upload_id=link_model.file_upload_id,
-                        entity_type=link_model.entity_type,
-                        entity_id=link_model.entity_id,
-                        attachment_type=link_model.attachment_type,
-                        attachment_link_id=link_model.id,
-                        tenant_id=link_model.tenant_id,
-                        created_at=link_model.created_at,
-                    )
+                    return self._link_mapper.to_domain(link_model)
                 except IntegrityError as e:
                     session.rollback()
                     raise BusinessRuleError(f"Failed to link attachment: {str(e)}")
@@ -184,18 +170,7 @@ class SQLAttachmentLinkRepository(AttachmentLinkRepository):
                 
                 statement = select(AttachmentLinkModel).where(and_(*conditions))
                 models = session.exec(statement).all()
-                return [
-                    AttachmentLink(
-                        file_upload_id=model.file_upload_id,
-                        entity_type=model.entity_type,
-                        entity_id=model.entity_id,
-                        attachment_type=model.attachment_type,
-                        attachment_link_id=model.id,
-                        tenant_id=model.tenant_id,
-                        created_at=model.created_at,
-                    )
-                    for model in models
-                ]
+                return [self._link_mapper.to_domain(model) for model in models]
             finally:
                 session.close()
         

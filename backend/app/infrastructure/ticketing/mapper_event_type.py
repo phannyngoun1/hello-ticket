@@ -4,13 +4,13 @@ EventType mapper - handles conversion between domain entities and database model
 from typing import Optional
 from app.domain.ticketing.event_type import EventType
 from app.infrastructure.shared.database.models import EventTypeModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class EventTypeMapper:
+class EventTypeMapper(BaseMapper[EventType, EventTypeModel]):
     """Mapper for EventType entity to EventTypeModel conversion"""
     
-    @staticmethod
-    def to_domain(model: EventTypeModel) -> EventType:
+    def to_domain(self, model: EventTypeModel) -> Optional[EventType]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class EventTypeMapper:
         Returns:
             EventType domain entity
         """
+        if not model:
+            return None
         return EventType(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -30,8 +32,7 @@ class EventTypeMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(event_type: EventType) -> EventTypeModel:
+    def to_model(self, event_type: EventType) -> Optional[EventTypeModel]:
         """Convert domain entity to database model
         
         Args:
@@ -40,6 +41,8 @@ class EventTypeMapper:
         Returns:
             EventTypeModel for database persistence
         """
+        if not event_type:
+            return None
         return EventTypeModel(
             id=event_type.id,
             tenant_id=event_type.tenant_id,

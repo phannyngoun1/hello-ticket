@@ -5,13 +5,13 @@ import json
 from typing import Optional
 from app.domain.core.rbac.entity import Role
 from app.infrastructure.shared.database.platform_models import RoleModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class RoleMapper:
+class RoleMapper(BaseMapper[Role, RoleModel]):
     """Mapper for Role entity <-> RoleModel"""
     
-    @staticmethod
-    def to_entity(model: Optional[RoleModel]) -> Optional[Role]:
+    def to_domain(self, model: RoleModel) -> Optional[Role]:
         """Convert RoleModel to Role entity"""
         if not model:
             return None
@@ -36,13 +36,15 @@ class RoleMapper:
             permissions=permissions,
             description=model.description,
             is_system_role=model.is_system_role,
+            created_by=model.created_by,
             created_at=model.created_at,
             updated_at=model.updated_at
         )
     
-    @staticmethod
-    def to_model(entity: Role) -> RoleModel:
+    def to_model(self, entity: Role) -> Optional[RoleModel]:
         """Convert Role entity to RoleModel"""
+        if not entity:
+            return None
         # Role entity permissions are already strings, just serialize as JSON
         permissions_json = json.dumps(entity.permissions)
         
@@ -53,6 +55,7 @@ class RoleMapper:
             permissions=permissions_json,
             description=entity.description,
             is_system_role=entity.is_system_role,
+            created_by=entity.created_by,
             created_at=entity.created_at,
             updated_at=entity.updated_at
         )

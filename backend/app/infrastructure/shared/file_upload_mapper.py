@@ -1,15 +1,16 @@
 """
 File upload mapper - handles conversion between domain entities and database models
 """
+from typing import Optional
 from app.domain.shared.file_upload import FileUpload
 from app.infrastructure.shared.database.models import FileUploadModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class FileUploadMapper:
+class FileUploadMapper(BaseMapper[FileUpload, FileUploadModel]):
     """Mapper for FileUpload entity to FileUploadModel conversion"""
     
-    @staticmethod
-    def to_domain(model: FileUploadModel) -> FileUpload:
+    def to_domain(self, model: FileUploadModel) -> Optional[FileUpload]:
         """Convert database model to domain entity
         
         Args:
@@ -18,6 +19,8 @@ class FileUploadMapper:
         Returns:
             FileUpload domain entity
         """
+        if not model:
+            return None
         return FileUpload(
             id=model.id,
             tenant_id=model.tenant_id,
@@ -32,8 +35,7 @@ class FileUploadMapper:
             updated_at=model.updated_at
         )
     
-    @staticmethod
-    def to_model(file_upload: FileUpload) -> FileUploadModel:
+    def to_model(self, file_upload: FileUpload) -> Optional[FileUploadModel]:
         """Convert domain entity to database model
         
         Args:
@@ -42,6 +44,8 @@ class FileUploadMapper:
         Returns:
             FileUploadModel for database persistence
         """
+        if not file_upload:
+            return None
         return FileUploadModel(
             id=file_upload.id,
             tenant_id=file_upload.tenant_id,

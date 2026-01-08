@@ -1,15 +1,18 @@
 """Ticket mapper for Ticketing - Translates between domain and database models."""
+from typing import Optional
 from app.domain.ticketing.ticket import Ticket
 from app.infrastructure.shared.database.models import TicketModel
 from app.shared.enums import TicketStatusEnum
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class TicketMapper:
+class TicketMapper(BaseMapper[Ticket, TicketModel]):
     """Mapper for translating between Ticket domain and database models"""
 
-    @staticmethod
-    def to_domain(model: TicketModel) -> Ticket:
+    def to_domain(self, model: TicketModel) -> Optional[Ticket]:
         """Convert database model to domain aggregate"""
+        if not model:
+            return None
         return Ticket(
             tenant_id=model.tenant_id,
             event_id=model.event_id,
@@ -33,9 +36,10 @@ class TicketMapper:
             version=model.version,
         )
 
-    @staticmethod
-    def to_model(domain: Ticket) -> TicketModel:
+    def to_model(self, domain: Ticket) -> Optional[TicketModel]:
         """Convert domain aggregate to database model"""
+        if not domain:
+            return None
         return TicketModel(
             id=domain.id,
             tenant_id=domain.tenant_id,

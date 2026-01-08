@@ -13,10 +13,11 @@ from app.infrastructure.sales.mapper_customer import CustomerMapper
 from app.domain.shared.tag_repository import TagLinkRepository
 from app.shared.tenant_context import get_tenant_context
 from app.shared.exceptions import BusinessRuleError
+from app.infrastructure.shared.repository import BaseSQLRepository
 
 
-class SQLCustomerRepository(CustomerRepository):
-    """SQLModel implementation of CustomerRepository"""
+class SQLCustomerRepository(BaseSQLRepository[Customer, CustomerModel], CustomerRepository):
+    """SQLModel implementation of CustomerRepository using BaseSQLRepository"""
     
     def __init__(
         self,
@@ -24,98 +25,46 @@ class SQLCustomerRepository(CustomerRepository):
         tenant_id: Optional[str] = None,
         tag_link_repository: Optional[TagLinkRepository] = None,
     ):
-        self._session_factory = session if session else get_session_sync
-        self._mapper = CustomerMapper(tag_link_repository=tag_link_repository)
-        self._tenant_id = tenant_id  # Override tenant context if provided
+        super().__init__(
+            model_cls=CustomerModel,
+            mapper=CustomerMapper(tag_link_repository=tag_link_repository),
+            session_factory=session,
+            tenant_id=tenant_id
+        )
         self._tag_link_repository = tag_link_repository
     
-    def _get_tenant_id(self) -> str:
-        """Get tenant ID from override or context"""
-        if self._tenant_id:
-            return self._tenant_id
-        tenant_id = get_tenant_context()
-        if not tenant_id:
-            raise ValueError("Tenant context not set. Multi-tenancy requires tenant identification.")
-        return tenant_id
-    
+    async def _load_tags(self, customer: Customer) -> Customer:
+        """Helper to load tags for a customer"""
+        if self._tag_link_repository and customer:
+            tags = await self._tag_link_repository.get_tags_for_entity(
+                tenant_id=customer.tenant_id,
+                entity_type="customer",
+                entity_id=customer.id,
+            )
+            customer.tags = [tag.name for tag in tags]
+        return customer
+
     async def save(self, customer: Customer) -> Customer:
         """Save or update a customer"""
-        tenant_id = self._get_tenant_id()
-        
-        with self._session_factory() as session:
-            # Check if customer exists (within tenant scope)
-            statement = select(CustomerModel).where(
-                CustomerModel.id == customer.id,
-                CustomerModel.tenant_id == tenant_id
-            )
-            existing_model = session.exec(statement).first()
-            
-            if existing_model:
-                # Update existing customer
-                updated_model = self._mapper.to_model(customer)
-                merged_model = session.merge(updated_model)
-                try:
-                    session.commit()
-                    session.refresh(merged_model)
-                    customer_domain = self._mapper.to_domain(merged_model, tenant_id=tenant_id)
-                    # Load tags from TagLinkRepository if available
-                    if self._tag_link_repository:
-                        tags = await self._tag_link_repository.get_tags_for_entity(
-                            tenant_id=tenant_id,
-                            entity_type="customer",
-                            entity_id=customer_domain.id,
-                        )
-                        customer_domain.tags = [tag.name for tag in tags]
-                    return customer_domain
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to update customer: {str(e)}")
-            else:
-                # Create new customer
-                new_model = self._mapper.to_model(customer)
-                session.add(new_model)
-                try:
-                    session.commit()
-                    session.refresh(new_model)
-                    customer_domain = self._mapper.to_domain(new_model, tenant_id=tenant_id)
-                    # Load tags from TagLinkRepository if available
-                    if self._tag_link_repository:
-                        tags = await self._tag_link_repository.get_tags_for_entity(
-                            tenant_id=tenant_id,
-                            entity_type="customer",
-                            entity_id=customer_domain.id,
-                        )
-                        customer_domain.tags = [tag.name for tag in tags]
-                    return customer_domain
-                except IntegrityError as e:
-                    session.rollback()
-                    raise BusinessRuleError(f"Failed to create customer: {str(e)}")
+        # specialized save handled by BaseSQLRepository, then load tags
+        saved_customer = await super().save(customer)
+        return await self._load_tags(saved_customer)
     
     async def get_by_id(self, tenant_id: str, customer_id: str) -> Optional[Customer]:
         """Get customer by ID (within tenant scope)"""
-        with self._session_factory() as session:
-            statement = select(CustomerModel).where(
-                CustomerModel.id == customer_id,
-                CustomerModel.tenant_id == tenant_id
-            )
-            model = session.exec(statement).first()
-            if not model:
-                return None
-            customer = self._mapper.to_domain(model, tenant_id=tenant_id)
-            # Load tags from TagLinkRepository if available
-            if self._tag_link_repository:
-                tags = await self._tag_link_repository.get_tags_for_entity(
-                    tenant_id=tenant_id,
-                    entity_type="customer",
-                    entity_id=customer.id,
-                )
-                customer.tags = [tag.name for tag in tags]
-            return customer
+        customer = await super().get_by_id(tenant_id, customer_id)
+        if customer:
+            return await self._load_tags(customer)
+        return None
     
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[Customer]:
         """Get customer by business code"""
         if not code or not code.strip():
             return None
+        
+        # Override BaseSQLRepository since it might not have get_by_code or implementation differs
+        # Wait, BaseSQLRepository doesn't have get_by_code.
+        # Custom implementation:
         with self._session_factory() as session:
             statement = select(CustomerModel).where(
                 CustomerModel.tenant_id == tenant_id,
@@ -124,16 +73,8 @@ class SQLCustomerRepository(CustomerRepository):
             model = session.exec(statement).first()
             if not model:
                 return None
-            customer = self._mapper.to_domain(model, tenant_id=tenant_id)
-            # Load tags from TagLinkRepository if available
-            if self._tag_link_repository:
-                tags = await self._tag_link_repository.get_tags_for_entity(
-                    tenant_id=tenant_id,
-                    entity_type="customer",
-                    entity_id=customer.id,
-                )
-                customer.tags = [tag.name for tag in tags]
-            return customer
+            customer = self._mapper.to_domain(model)
+            return await self._load_tags(customer)
     
     async def search(
         self,
@@ -178,7 +119,7 @@ class SQLCustomerRepository(CustomerRepository):
             
             items = []
             for model in models:
-                customer = self._mapper.to_domain(model, tenant_id=tenant_id)
+                customer = self._mapper.to_domain(model)
                 # Load tags from TagLinkRepository if available
                 if self._tag_link_repository:
                     tags = await self._tag_link_repository.get_tags_for_entity(
@@ -195,6 +136,7 @@ class SQLCustomerRepository(CustomerRepository):
     
     async def delete(self, tenant_id: str, customer_id: str) -> bool:
         """Delete a customer (soft-delete by marking inactive)"""
+        # CUSTOM implementation because 'is_active' vs 'is_deleted' semantics
         with self._session_factory() as session:
             statement = select(CustomerModel).where(
                 CustomerModel.id == customer_id,

@@ -23,16 +23,18 @@ class GroupRepository(IGroupRepository):
     
     def __init__(self, session: AsyncSession):
         self.session = session
+        self._group_mapper = GroupMapper()
+        self._role_mapper = RoleMapper()
     
     # Group CRUD operations
     
     async def create(self, group: Group) -> Group:
         """Create a new group"""
-        model = GroupMapper.to_model(group)
+        model = self._group_mapper.to_model(group)
         self.session.add(model)
         await self.session.commit()
         await self.session.refresh(model)
-        return GroupMapper.to_entity(model)
+        return self._group_mapper.to_domain(model)
     
     async def get_by_id(self, group_id: str, tenant_id: str) -> Optional[Group]:
         """Get group by ID"""
@@ -44,7 +46,7 @@ class GroupRepository(IGroupRepository):
         )
         result = await self.session.execute(statement)
         model = result.scalar_one_or_none()
-        return GroupMapper.to_entity(model) if model else None
+        return self._group_mapper.to_domain(model) if model else None
     
     async def get_by_name(self, name: str, tenant_id: str) -> Optional[Group]:
         """Get group by name"""
@@ -56,7 +58,7 @@ class GroupRepository(IGroupRepository):
         )
         result = await self.session.execute(statement)
         model = result.scalar_one_or_none()
-        return GroupMapper.to_entity(model) if model else None
+        return self._group_mapper.to_domain(model) if model else None
     
     async def list_by_tenant(self, tenant_id: str, include_inactive: bool = False) -> List[Group]:
         """List all groups for a tenant"""
@@ -67,7 +69,7 @@ class GroupRepository(IGroupRepository):
         
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [GroupMapper.to_entity(model) for model in models]
+        return [self._group_mapper.to_domain(model) for model in models]
     
     async def update(self, group: Group) -> Group:
         """Update a group"""
@@ -92,7 +94,7 @@ class GroupRepository(IGroupRepository):
         self.session.add(model)
         await self.session.commit()
         await self.session.refresh(model)
-        return GroupMapper.to_entity(model)
+        return self._group_mapper.to_domain(model)
     
     async def delete(self, group_id: str, tenant_id: str) -> bool:
         """Delete a group"""
@@ -176,7 +178,7 @@ class GroupRepository(IGroupRepository):
         )
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [GroupMapper.to_entity(model) for model in models]
+        return [self._group_mapper.to_domain(model) for model in models]
     
     async def get_group_users(self, group_id: str, tenant_id: str) -> List[str]:
         """Get all user IDs in a group"""
@@ -264,7 +266,7 @@ class GroupRepository(IGroupRepository):
         )
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [RoleMapper.to_entity(model) for model in models]
+        return [self._role_mapper.to_domain(model) for model in models]
     
     async def is_role_in_group(self, group_id: str, role_id: str, tenant_id: str) -> bool:
         """Check if a role belongs to a group"""
@@ -303,7 +305,7 @@ class GroupRepository(IGroupRepository):
         )
         result = await self.session.execute(statement)
         models = result.scalars().all()
-        return [RoleMapper.to_entity(model) for model in models]
+        return [self._role_mapper.to_domain(model) for model in models]
     
     async def get_groups_member_counts(self, group_ids: List[str], tenant_id: str) -> dict[str, int]:
         """

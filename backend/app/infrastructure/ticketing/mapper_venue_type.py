@@ -4,13 +4,13 @@ VenueType mapper - handles conversion between domain entities and database model
 from typing import Optional
 from app.domain.ticketing.venue_type import VenueType
 from app.infrastructure.shared.database.models import VenueTypeModel
+from app.infrastructure.shared.mapper import BaseMapper
 
 
-class VenueTypeMapper:
+class VenueTypeMapper(BaseMapper[VenueType, VenueTypeModel]):
     """Mapper for VenueType entity to VenueTypeModel conversion"""
     
-    @staticmethod
-    def to_domain(model: VenueTypeModel) -> VenueType:
+    def to_domain(self, model: VenueTypeModel) -> Optional[VenueType]:
         """Convert database model to domain entity
         
         Args:
@@ -19,6 +19,8 @@ class VenueTypeMapper:
         Returns:
             VenueType domain entity
         """
+        if not model:
+            return None
         return VenueType(
             tenant_id=model.tenant_id,
             code=model.code,
@@ -30,8 +32,7 @@ class VenueTypeMapper:
             version=model.version,
         )
     
-    @staticmethod
-    def to_model(venue_type: VenueType) -> VenueTypeModel:
+    def to_model(self, venue_type: VenueType) -> Optional[VenueTypeModel]:
         """Convert domain entity to database model
         
         Args:
@@ -40,6 +41,8 @@ class VenueTypeMapper:
         Returns:
             VenueTypeModel for database persistence
         """
+        if not venue_type:
+            return None
         return VenueTypeModel(
             id=venue_type.id,
             tenant_id=venue_type.tenant_id,
