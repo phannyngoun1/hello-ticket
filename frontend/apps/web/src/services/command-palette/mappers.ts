@@ -45,12 +45,13 @@ function mapToCommandPaletteItem<T extends keyof typeof mapperRegistry>(
     type: T
 ): CommandPaletteItem<Parameters<typeof mapperRegistry[T]["extractName"]>[0]> {
     const config = mapperRegistry[type];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const name = config.extractName(entity as any) || config.fallbackName || "Unknown";
+    // We know that config.extractName expects the entity type corresponding to the type key
+    // so we can safely cast the extractName function to accept the entity
+    const extractor = config.extractName as (e: typeof entity) => string;
+    const name = extractor(entity) || config.fallbackName || "Unknown";
 
     return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(entity as any),
+        ...entity,
         name,
     } as CommandPaletteItem<Parameters<typeof mapperRegistry[T]["extractName"]>[0]>;
 }
