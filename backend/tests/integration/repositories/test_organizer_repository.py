@@ -1,15 +1,24 @@
-
+"""Integration tests for OrganizerRepository"""
 import pytest
-from sqlmodel import SQLModel, create_engine, Session, select
-from app.infrastructure.shared.database.models import OrganizerModel
+from sqlmodel import create_engine, Session
+from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, INET
+from sqlalchemy import JSON, String
+
+# Register type compilers for SQLite BEFORE importing models
+@compiles(ARRAY, "sqlite")
+def compile_array(element, compiler, **kw):
+    return "JSON"
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb(element, compiler, **kw):
+
 from app.infrastructure.ticketing.organizer_repository import SQLOrganizerRepository
 from app.domain.ticketing.organizer import Organizer
-from app.infrastructure.shared.database.connection import operational_metadata
 
 # Use in-memory SQLite for sync tests matching the repository implementation
 TEST_DB_URL = "sqlite:///:memory:"
-
-from sqlalchemy.pool import StaticPool
 
 @pytest.fixture(name="sync_engine")
 def fixture_sync_engine():
@@ -18,7 +27,58 @@ def fixture_sync_engine():
         connect_args={"check_same_thread": False}, 
         poolclass=StaticPool
     )
-    operational_metadata.create_all(engine)
+    # Create tables manually to avoid issues with Postgres-specific types
+    with engine.begin() as conn:
+        # Create organizers table
+        conn.exec_driver_sql("""
+            CREATE TABLE IF NOT EXISTS organizers (
+                id VARCHAR NOT NULL PRIMARY KEY,
+                tenant_id VARCHAR NOT NULL,
+                code VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                description VARCHAR,
+                email VARCHAR,
+                phone VARCHAR,
+                website VARCHAR,
+                address VARCHAR,
+                city VARCHAR,
+                country VARCHAR,
+                logo VARCHAR,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                is_deleted BOOLEAN NOT NULL DEFAULT 0,
+                version INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                deleted_at TIMESTAMP
+            )
+        """)
+        # Create tags table
+        conn.exec_driver_sql("""
+            CREATE TABLE IF NOT EXISTS tags (
+                id VARCHAR NOT NULL PRIMARY KEY,
+                tenant_id VARCHAR NOT NULL,
+                name VARCHAR NOT NULL,
+                entity_type VARCHAR NOT NULL,
+                description VARCHAR,
+                color VARCHAR,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                version INTEGER NOT NULL DEFAULT 0,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            )
+        """)
+        # Create tag_links table
+        conn.exec_driver_sql("""
+            CREATE TABLE IF NOT EXISTS tag_links (
+                id VARCHAR NOT NULL PRIMARY KEY,
+                tenant_id VARCHAR NOT NULL,
+                tag_id VARCHAR NOT NULL,
+                entity_type VARCHAR NOT NULL,
+                entity_id VARCHAR NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (tag_id) REFERENCES tags(id)
+            )
+        """)
     return engine
 
 @pytest.fixture(name="sync_session_factory")
