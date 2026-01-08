@@ -21,7 +21,7 @@ from app.presentation.api.ticketing.schemas_event import (
     EventResponse,
     EventUpdateRequest,
 )
-from app.presentation.api.ticketing.mapper_event import TicketingApiMapper
+from app.presentation.api.ticketing.mapper_event import EventPresenter
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
@@ -53,7 +53,7 @@ async def create_event(
             status=request.status,
         )
         event = await mediator.send(command)
-        return TicketingApiMapper.event_to_response(event)
+        return EventPresenter().from_domain(event)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -80,7 +80,8 @@ async def list_events(
                 limit=limit,
             )
         )
-        items = [TicketingApiMapper.event_to_response(event) for event in result.items]
+        presenter = EventPresenter()
+        items = presenter.from_domain_list(result.items)
         return EventListResponse(
             items=items,
             skip=skip,
@@ -102,7 +103,7 @@ async def get_event(
 
     try:
         event = await mediator.query(GetEventByIdQuery(event_id=event_id))
-        return TicketingApiMapper.event_to_response(event)
+        return EventPresenter().from_domain(event)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -127,7 +128,7 @@ async def update_event(
             status=request.status,
         )
         event = await mediator.send(command)
-        return TicketingApiMapper.event_to_response(event)
+        return EventPresenter().from_domain(event)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:

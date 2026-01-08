@@ -139,6 +139,24 @@ class BaseSQLRepository(Generic[TDomain, TModel]):
                 session.rollback()
                 raise BusinessRuleError(f"Failed to delete {self._model_cls.__name__}: {str(e)}")
 
+    async def get_by_ids(self, tenant_id: str, ids: List[str]) -> List[TDomain]:
+        """Get entities by list of IDs"""
+        if not ids:
+            return []
+        
+        with self._session_factory() as session:
+            conditions = [
+                self._model_cls.id.in_(ids),
+                self._model_cls.tenant_id == tenant_id
+            ]
+            
+            if hasattr(self._model_cls, 'is_deleted'):
+                conditions.append(self._model_cls.is_deleted == False)
+                
+            statement = select(self._model_cls).where(and_(*conditions))
+            models = session.exec(statement).all()
+            return [self._mapper.to_domain(model) for model in models]
+
     async def get_all(self, tenant_id: str) -> List[TDomain]:
         """Get all entities for a tenant"""
         with self._session_factory() as session:

@@ -6,6 +6,7 @@
 
 import type { Booking, CreateBookingInput, UpdateBookingInput } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
+import { API_CONFIG } from "@truths/config";
 
 interface BookingItemDTO {
   id?: string;
@@ -93,6 +94,10 @@ export class BookingService {
     this.endpoints = config.endpoints;
   }
 
+  private getEndpoint(): string {
+    return this.endpoints?.bookings || API_CONFIG.ENDPOINTS.SALES.BOOKINGS;
+  }
+
   async fetchBookings(params?: {
     skip?: number;
     limit?: number;
@@ -115,7 +120,7 @@ export class BookingService {
         queryParams.append('status', params.status);
       }
 
-      const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = queryParams.toString()
         ? `${baseEndpoint}?${queryParams.toString()}`
         : baseEndpoint;
@@ -163,7 +168,7 @@ export class BookingService {
       queryParams.append('search', trimmedQuery);
       queryParams.append('limit', Math.min(limit, 200).toString());
 
-      const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const url = `${baseEndpoint}?${queryParams.toString()}`;
 
       const response = await this.apiClient.get<{
@@ -186,7 +191,7 @@ export class BookingService {
 
   async fetchBookingById(id: string): Promise<Booking> {
     try {
-      const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.get<BookingDTO>(
         `${baseEndpoint}/${id}`,
         { requiresAuth: true }
@@ -201,7 +206,7 @@ export class BookingService {
   async createBooking(input: CreateBookingInput): Promise<Booking> {
     try {
       const response = await this.apiClient.post<BookingDTO>(
-        this.endpoints.bookings,
+        this.getEndpoint(),
         input,
         { requiresAuth: true }
       );
@@ -214,7 +219,7 @@ export class BookingService {
 
   async updateBooking(id: string, input: UpdateBookingInput): Promise<Booking> {
     try {
-      const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const response = await this.apiClient.put<BookingDTO>(
         `${baseEndpoint}/${id}`,
         input,
@@ -229,7 +234,7 @@ export class BookingService {
 
   async deleteBooking(id: string, cancellationReason: string): Promise<void> {
     try {
-      const baseEndpoint = this.endpoints.bookings.replace(/\/$/, '');
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
       const params = new URLSearchParams({ cancellation_reason: cancellationReason });
       const endpoint = `${baseEndpoint}/${id}?${params.toString()}`;
       await this.apiClient.delete(

@@ -21,7 +21,7 @@ from app.presentation.api.sales.schemas_booking import (
     BookingResponse,
     BookingUpdateRequest,
 )
-from app.presentation.api.sales.mapper_booking import SalesApiMapper
+from app.presentation.api.sales.mapper_booking import BookingPresenter
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
@@ -70,7 +70,7 @@ async def create_booking(
             currency=request.currency,
         )
         booking = await mediator.send(command)
-        return SalesApiMapper.booking_to_response(booking)
+        return BookingPresenter().from_domain(booking)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -95,7 +95,8 @@ async def list_bookings(
                 limit=limit,
             )
         )
-        items = [SalesApiMapper.booking_to_response(booking) for booking in result.items]
+        presenter = BookingPresenter()
+        items = presenter.from_domain_list(result.items)
         return BookingListResponse(
             items=items,
             skip=skip,
@@ -117,7 +118,7 @@ async def get_booking(
 
     try:
         booking = await mediator.query(GetBookingByIdQuery(booking_id=booking_id))
-        return SalesApiMapper.booking_to_response(booking)
+        return BookingPresenter().from_domain(booking)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -141,7 +142,7 @@ async def update_booking(
             payment_status=request.payment_status,
         )
         booking = await mediator.send(command)
-        return SalesApiMapper.booking_to_response(booking)
+        return BookingPresenter().from_domain(booking)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:

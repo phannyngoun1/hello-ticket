@@ -1,13 +1,12 @@
-"""API mapper for Sales module"""
+from app.presentation.api.shared.presenter import BasePresenter
 from app.domain.sales.booking import Booking
 from app.presentation.api.sales.schemas_booking import BookingResponse, BookingItemResponse
 
 
-class SalesApiMapper:
-    """Mapper for converting domain entities to API responses"""
+class BookingPresenter(BasePresenter[Booking, BookingResponse]):
+    """Presenter for converting Booking entities to API responses"""
 
-    @staticmethod
-    def booking_to_response(booking: Booking) -> BookingResponse:
+    def from_domain(self, booking: Booking) -> BookingResponse:
         # Convert booking items to response items
         items = [
             BookingItemResponse(

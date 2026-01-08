@@ -1,13 +1,12 @@
-"""API mapper for Ticketing module"""
+from app.presentation.api.shared.presenter import BasePresenter
 from app.domain.ticketing.event import Event
 from app.presentation.api.ticketing.schemas_event import EventResponse
 
 
-class TicketingApiMapper:
-    """Mapper for converting domain entities to API responses"""
+class EventPresenter(BasePresenter[Event, EventResponse]):
+    """Presenter for converting Event entities to API responses"""
 
-    @staticmethod
-    def event_to_response(event: Event) -> EventResponse:
+    def from_domain(self, event: Event) -> EventResponse:
         return EventResponse(
             id=event.id,
             tenant_id=event.tenant_id,
