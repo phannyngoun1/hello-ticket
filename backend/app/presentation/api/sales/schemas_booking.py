@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+from app.presentation.api.shared.schemas import BaseListResponse, BaseResponse
+
+
 class BookingItemRequest(BaseModel):
     """Booking item request model"""
     event_seat_id: str
@@ -54,10 +57,8 @@ class BookingItemResponse(BaseModel):
     ticket_status: Optional[str] = None
 
 
-class BookingResponse(BaseModel):
+class BookingResponse(BaseResponse):
     """Booking response model"""
-    id: str
-    tenant_id: str
     booking_number: str
     customer_id: Optional[str] = None
     salesperson_id: Optional[str] = None
@@ -76,17 +77,10 @@ class BookingResponse(BaseModel):
     cancelled_at: Optional[datetime] = None
     cancellation_reason: Optional[str] = None
     items: List[BookingItemResponse] = []
-    created_at: datetime
-    updated_at: Optional[datetime] = None
     version: Optional[int] = 0
 
 
-class BookingListResponse(BaseModel):
+class BookingListResponse(BaseListResponse[BookingResponse]):
     """Paginated booking list response"""
-
-    items: List[BookingResponse]
-    skip: int
-    limit: int
-    total: int
-    has_next: bool
+    pass
 

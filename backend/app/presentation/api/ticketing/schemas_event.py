@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 from app.shared.enums import EventStatusEnum, EventConfigurationTypeEnum
 
 
+from app.presentation.api.shared.schemas import BaseListResponse, BaseResponse
+
 class EventCreateRequest(BaseModel):
     """Payload for event creation"""
 
@@ -32,11 +34,8 @@ class EventUpdateRequest(BaseModel):
     configuration_type: Optional[EventConfigurationTypeEnum] = Field(None, description="Configuration type")
 
 
-class EventResponse(BaseModel):
+class EventResponse(BaseResponse):
     """Event response model"""
-
-    id: str
-    tenant_id: str
     show_id: str
     title: str
     start_dt: datetime
@@ -46,19 +45,12 @@ class EventResponse(BaseModel):
     status: EventStatusEnum
     configuration_type: EventConfigurationTypeEnum
     is_active: bool
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         use_enum_values = True
 
 
-class EventListResponse(BaseModel):
+class EventListResponse(BaseListResponse[EventResponse]):
     """Paginated event list response"""
-
-    items: List[EventResponse]
-    skip: int
-    limit: int
-    total: int
-    has_next: bool
+    pass
 

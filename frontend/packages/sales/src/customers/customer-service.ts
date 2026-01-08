@@ -8,6 +8,7 @@
 
 import { Customer, CreateCustomerInput, UpdateCustomerInput } from "../types";
 import { ServiceConfig, PaginatedResponse } from "@truths/shared";
+import { API_CONFIG } from "@truths/config";
 
 interface CustomerDTO {
   id: string;
@@ -279,7 +280,7 @@ export class CustomerService {
   }
 
   private getEndpoint() {
-    return this.config.endpoints?.["customers"] || "/api/v1/sales/customers";
+    return this.config.endpoints?.["customers"] || API_CONFIG.ENDPOINTS.SALES.CUSTOMERS;
   }
 
   async fetchCustomers(params?: {

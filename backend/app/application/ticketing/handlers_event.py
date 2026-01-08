@@ -16,12 +16,13 @@ from app.domain.ticketing.venue_repositories import VenueRepository
 from app.domain.ticketing.layout_repositories import LayoutRepository
 from app.domain.ticketing.event import Event
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
-from app.shared.tenant_context import require_tenant_context
+from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
+from app.application.shared.base.base_application_handler import BaseApplicationHandler
 
 logger = logging.getLogger(__name__)
 
 
-class EventCommandHandler:
+class EventCommandHandler(BaseApplicationHandler):
     """Handles event commands."""
 
     def __init__(
@@ -37,7 +38,7 @@ class EventCommandHandler:
         self._layout_repository = layout_repository
 
     async def handle_create_event(self, command: CreateEventCommand) -> Event:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
 
         # Validate show exists and is active
         await self._validate_show(tenant_id, command.show_id)
@@ -65,8 +66,13 @@ class EventCommandHandler:
         return saved
 
     async def handle_update_event(self, command: UpdateEventCommand) -> Event:
-        tenant_id = require_tenant_context()
-        event = await self._get_event_or_raise(tenant_id, command.event_id)
+        tenant_id = self.get_tenant_id()
+        event = await self.get_entity_or_404(
+            self._event_repository,
+            command.event_id,
+            "Event",
+            tenant_id
+        )
 
         # Validate venue if provided
         venue_id_to_validate = command.venue_id if command.venue_id is not None else event.venue_id
@@ -96,7 +102,7 @@ class EventCommandHandler:
         return saved
 
     async def handle_delete_event(self, command: DeleteEventCommand) -> bool:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
         deleted = await self._event_repository.delete(tenant_id, command.event_id)
 
         if not deleted:
@@ -105,14 +111,7 @@ class EventCommandHandler:
         logger.info("Soft deleted event %s for tenant=%s", command.event_id, tenant_id)
         return True
 
-    async def _get_event_or_raise(self, tenant_id: str, event_id: str) -> Event:
-        if not event_id or not event_id.strip():
-            raise ValidationError("Event identifier is required")
 
-        event = await self._event_repository.get_by_id(tenant_id, event_id)
-        if not event:
-            raise NotFoundError(f"Event {event_id} not found")
-        return event
 
     async def _validate_show(self, tenant_id: str, show_id: str) -> None:
         """Validate that show exists and is active"""
@@ -166,22 +165,22 @@ class EventCommandHandler:
             raise BusinessRuleError(f"Layout {layout_id} does not belong to venue {venue_id}")
 
 
-class EventQueryHandler:
+class EventQueryHandler(BaseApplicationHandler):
     """Handles event queries."""
 
     def __init__(self, event_repository: EventRepository):
         self._event_repository = event_repository
 
     async def handle_get_event_by_id(self, query: GetEventByIdQuery) -> Event:
-        tenant_id = require_tenant_context()
-        event = await self._event_repository.get_by_id(tenant_id, query.event_id)
-        if not event:
-            raise NotFoundError(f"Event {query.event_id} not found")
-        return event
+        return await self.get_entity_or_404(
+            self._event_repository,
+            query.event_id,
+            "Event"
+        )
 
 
     async def handle_search_events(self, query: SearchEventsQuery) -> EventSearchResult:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
 
         if query.limit <= 0 or query.limit > 200:
             raise ValidationError("Limit must be between 1 and 200")

@@ -1,18 +1,20 @@
 """
 Customer mapper - handles conversion between domain entities and database models
 """
-from typing import Optional
+from typing import Optional, List
 from app.domain.sales.customer import Customer
 from app.infrastructure.shared.database.models import CustomerModel
-from app.domain.shared.tag_repository import TagLinkRepository
 from app.infrastructure.shared.mapper import BaseMapper
+from app.domain.shared.tag_repository import TagLinkRepository
+from app.domain.shared.value_objects.address import Address
+from app.domain.shared.value_objects.contact_info import ContactInfo
 
 
 class CustomerMapper(BaseMapper[Customer, CustomerModel]):
     """Mapper for Customer entity to CustomerModel conversion"""
-    
+
     def __init__(self, tag_link_repository: Optional[TagLinkRepository] = None):
-        self._tag_link_repository = tag_link_repository
+        self.tag_link_repository = tag_link_repository
     
     def to_domain(self, model: CustomerModel) -> Optional[Customer]:
         """Convert database model to domain entity
@@ -25,31 +27,49 @@ class CustomerMapper(BaseMapper[Customer, CustomerModel]):
         """
         if not model:
             return None
-            
-        return Customer(
-            tenant_id=model.tenant_id,
-            code=model.code,
-            name=model.name,
-            customer_id=model.id,
+        
+        # Instantiate Value Objects from flat model fields
+        contact_info = ContactInfo(
             email=model.email,
-            phone=model.phone,
-            business_name=model.business_name,
+            phone=model.phone
+        )
+        
+        address = Address(
             street_address=model.street_address,
             city=model.city,
             state_province=model.state_province,
             postal_code=model.postal_code,
-            country=model.country,
+            country=model.country
+        )
+
+        customer = Customer(
+            tenant_id=model.tenant_id,
+            code=model.code,
+            name=model.name,
+            customer_id=model.id,
+            
+            # Pass VOs
+            contact_info=contact_info,
+            address=address,
+            
+            business_name=model.business_name,
+            
+            # Customer Profile
             date_of_birth=model.date_of_birth,
             gender=model.gender,
             nationality=model.nationality,
             id_number=model.id_number,
             id_type=model.id_type,
+            
+            # Account Management
             account_manager_id=model.account_manager_id,
             sales_representative_id=model.sales_representative_id,
             customer_since=model.customer_since,
             last_purchase_date=model.last_purchase_date,
             total_purchase_amount=model.total_purchase_amount,
             last_contact_date=model.last_contact_date,
+            
+            # Preferences & Settings
             event_preferences=model.event_preferences,
             seating_preferences=model.seating_preferences,
             accessibility_needs=model.accessibility_needs,
@@ -61,21 +81,28 @@ class CustomerMapper(BaseMapper[Customer, CustomerModel]):
             marketing_opt_in=model.marketing_opt_in,
             email_marketing=model.email_marketing,
             sms_marketing=model.sms_marketing,
+            
+            # Social & Online
             facebook_url=model.facebook_url,
             twitter_handle=model.twitter_handle,
             linkedin_url=model.linkedin_url,
             instagram_handle=model.instagram_handle,
             website=model.website,
-            tags=[],  # Tags will be loaded from TagLinkRepository if available
-            status_reason=model.status_reason,
-            notes=model.notes,
-            public_notes=model.public_notes,
+            
+            # System fields
             is_active=model.is_active,
             created_at=model.created_at,
             updated_at=model.updated_at,
             deactivated_at=model.deactivated_at,
             version=model.version,
+            
+            # Tags are loaded separately by repository if needed, or we can init empty here
+            tags=[], 
+            status_reason=model.status_reason,
+            notes=model.notes,
+            public_notes=model.public_notes
         )
+        return customer
     
     def to_model(self, customer: Customer) -> Optional[CustomerModel]:
         """Convert domain entity to database model
@@ -88,31 +115,46 @@ class CustomerMapper(BaseMapper[Customer, CustomerModel]):
         """
         if not customer:
             return None
-            
+        
+        # Flatten VOs to model fields
+        email = customer.contact_info.email if customer.contact_info else None
+        phone = customer.contact_info.phone if customer.contact_info else None
+        
+        street_address = customer.address.street_address if customer.address else None
+        city = customer.address.city if customer.address else None
+        state_province = customer.address.state_province if customer.address else None
+        postal_code = customer.address.postal_code if customer.address else None
+        country = customer.address.country if customer.address else None
+
         return CustomerModel(
             id=customer.id,
             tenant_id=customer.tenant_id,
             code=customer.code,
             name=customer.name,
-            email=customer.email,
-            phone=customer.phone,
+            
+            # Flattened fields
+            email=email,
+            phone=phone,
             business_name=customer.business_name,
-            street_address=customer.street_address,
-            city=customer.city,
-            state_province=customer.state_province,
-            postal_code=customer.postal_code,
-            country=customer.country,
+            street_address=street_address,
+            city=city,
+            state_province=state_province,
+            postal_code=postal_code,
+            country=country,
+            
             date_of_birth=customer.date_of_birth,
             gender=customer.gender,
             nationality=customer.nationality,
             id_number=customer.id_number,
             id_type=customer.id_type,
+            
             account_manager_id=customer.account_manager_id,
             sales_representative_id=customer.sales_representative_id,
             customer_since=customer.customer_since,
             last_purchase_date=customer.last_purchase_date,
             total_purchase_amount=customer.total_purchase_amount,
             last_contact_date=customer.last_contact_date,
+            
             event_preferences=customer.event_preferences,
             seating_preferences=customer.seating_preferences,
             accessibility_needs=customer.accessibility_needs,
@@ -124,19 +166,20 @@ class CustomerMapper(BaseMapper[Customer, CustomerModel]):
             marketing_opt_in=customer.marketing_opt_in,
             email_marketing=customer.email_marketing,
             sms_marketing=customer.sms_marketing,
+            
             facebook_url=customer.facebook_url,
             twitter_handle=customer.twitter_handle,
             linkedin_url=customer.linkedin_url,
             instagram_handle=customer.instagram_handle,
             website=customer.website,
-            # Tags are now managed via TagLink table, not stored in customer table
+            
             status_reason=customer.status_reason,
             notes=customer.notes,
             public_notes=customer.public_notes,
+            
             is_active=customer.is_active,
             version=customer.get_version(),
             created_at=customer.created_at,
             updated_at=customer.updated_at,
             deactivated_at=customer.deactivated_at,
-        )
 

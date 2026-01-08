@@ -17,13 +17,13 @@ from app.domain.sales.booking import Booking, BookingItem
 from app.domain.shared.repositories import SequenceRepository
 from app.domain.ticketing.ticket_repositories import TicketRepository
 from app.domain.ticketing.event_seat_repositories import EventSeatRepository
-from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
-from app.shared.tenant_context import require_tenant_context
+from app.shared.exceptions import BusinessRuleError, NotFoundError
+from app.application.shared.base.base_application_handler import BaseApplicationHandler
 
 logger = logging.getLogger(__name__)
 
 
-class BookingCommandHandler:
+class BookingCommandHandler(BaseApplicationHandler):
     """Handles booking master data commands."""
 
     def __init__(
@@ -42,7 +42,7 @@ class BookingCommandHandler:
 
     async def _generate_booking_number(self) -> str:
         """Generate booking number in format BK-[yymmdd]-[sequence of the year]"""
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
         now = datetime.now(timezone.utc)
         
         # Format: YYMMDD
@@ -71,7 +71,7 @@ class BookingCommandHandler:
         return f"BK-{date_part}-{sequence_value}"
 
     async def handle_create_booking(self, command: CreateBookingCommand) -> Booking:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
         
         # Generate booking number
         booking_number = await self._generate_booking_number()
@@ -158,8 +158,13 @@ class BookingCommandHandler:
                 await self._event_seat_repository.save(seat)
 
     async def handle_update_booking(self, command: UpdateBookingCommand) -> Booking:
-        tenant_id = require_tenant_context()
-        booking = await self._get_booking_or_raise(tenant_id, command.booking_id)
+        tenant_id = self.get_tenant_id()
+        booking = await self.get_entity_or_404(
+            self._booking_repository, 
+            command.booking_id, 
+            "Booking",
+            tenant_id
+        )
         
         old_status = booking.status
 
@@ -237,8 +242,13 @@ class BookingCommandHandler:
                 await self._event_seat_repository.save(seat)
 
     async def handle_delete_booking(self, command: DeleteBookingCommand) -> bool:
-        tenant_id = require_tenant_context()
-        booking = await self._get_booking_or_raise(tenant_id, command.booking_id)
+        tenant_id = self.get_tenant_id()
+        booking = await self.get_entity_or_404(
+            self._booking_repository, 
+            command.booking_id, 
+            "Booking",
+            tenant_id
+        )
         
         # Cancel the booking with reason if provided
         booking.cancel(reason=command.cancellation_reason)
@@ -292,38 +302,31 @@ class BookingCommandHandler:
                 await self._event_seat_repository.save(seat)
 
 
-    async def _get_booking_or_raise(self, tenant_id: str, booking_id: str) -> Booking:
-        if not booking_id or not booking_id.strip():
-            raise ValidationError("Booking identifier is required")
-
-        booking = await self._booking_repository.get_by_id(tenant_id, booking_id)
-        if not booking:
-            raise NotFoundError(f"Booking " + str(booking_id) + " not found")
-        return booking
 
 
-class BookingQueryHandler:
+
+class BookingQueryHandler(BaseApplicationHandler):
     """Handles booking queries."""
 
     def __init__(self, booking_repository: BookingRepository):
         self._booking_repository = booking_repository
 
     async def handle_get_booking_by_id(self, query: GetBookingByIdQuery) -> Booking:
-        tenant_id = require_tenant_context()
-        booking = await self._booking_repository.get_by_id(tenant_id, query.booking_id)
-        if not booking:
-            raise NotFoundError(f"Booking {query.booking_id} not found")
-        return booking
+        return await self.get_entity_or_404(
+            self._booking_repository,
+            query.booking_id,
+            "Booking"
+        )
 
     async def handle_get_booking_by_code(self, query: GetBookingByCodeQuery) -> Booking:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
         booking = await self._booking_repository.get_by_code(tenant_id, query.code)
         if not booking:
             raise NotFoundError(f"Booking code {query.code} not found")
         return booking
 
     async def handle_search_bookings(self, query: SearchBookingsQuery) -> BookingSearchResult:
-        tenant_id = require_tenant_context()
+        tenant_id = self.get_tenant_id()
 
         if query.limit <= 0 or query.limit > 200:
             raise ValidationError("Limit must be between 1 and 200")
