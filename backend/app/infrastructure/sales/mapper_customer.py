@@ -182,4 +182,5 @@ class CustomerMapper(BaseMapper[Customer, CustomerModel]):
             created_at=customer.created_at,
             updated_at=customer.updated_at,
             deactivated_at=customer.deactivated_at,
+        )
 
