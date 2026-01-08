@@ -208,7 +208,7 @@ export class SessionMonitor {
         // Fetch from server (only if cache is expired and we have a token)
         try {
             const config = await api.get<SessionConfig>('/api/v1/sessions/config', { requiresAuth: true });
-            
+
             // Update cache
             this.sessionConfig = config;
             this.sessionConfigCacheTimestamp = now;
@@ -222,12 +222,12 @@ export class SessionMonitor {
                 // Don't log, don't retry - just use default config
                 return;
             }
-            
+
             // For other errors, log a warning (but only in development)
             if (process.env.NODE_ENV === 'development' && errorStatus && errorStatus !== 404 && errorStatus !== 401) {
                 console.debug('Failed to fetch session configuration:', error);
             }
-            
+
             // Try to use cached config as fallback (even if expired)
             const fallbackConfig = this.loadSessionConfigFromCache();
             if (fallbackConfig) {
@@ -401,7 +401,8 @@ export class SessionMonitor {
                 hasRefreshToken &&
                 timeUntilExpiration <= autoRefreshThresholdMs &&
                 timeUntilExpiration > 0 &&
-                !this.isRefreshing
+                !this.isRefreshing &&
+                !isUserIdle
             ) {
                 // Refresh proactively in background
                 this.refreshSession().catch((error) => {
