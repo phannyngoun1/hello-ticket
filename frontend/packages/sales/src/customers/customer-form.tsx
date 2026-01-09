@@ -352,6 +352,66 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
 
         <Separator />
 
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium">Emergency Contact</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field data-invalid={!!errors.emergency_contact_name}>
+              <FieldLabel htmlFor="emergency_contact_name">
+                Contact Name
+              </FieldLabel>
+              <Input
+                id="emergency_contact_name"
+                type="text"
+                placeholder="Emergency contact name"
+                {...register("emergency_contact_name")}
+                disabled={isLoading}
+                className={cn(
+                  errors.emergency_contact_name && "border-destructive"
+                )}
+              />
+              <FieldError>{errors.emergency_contact_name?.message}</FieldError>
+            </Field>
+
+            <Field data-invalid={!!errors.emergency_contact_phone}>
+              <FieldLabel htmlFor="emergency_contact_phone">
+                Contact Phone
+              </FieldLabel>
+              <Input
+                id="emergency_contact_phone"
+                type="tel"
+                placeholder="Emergency contact phone"
+                {...register("emergency_contact_phone")}
+                disabled={isLoading}
+                className={cn(
+                  errors.emergency_contact_phone && "border-destructive"
+                )}
+              />
+              <FieldError>{errors.emergency_contact_phone?.message}</FieldError>
+            </Field>
+
+            <Field data-invalid={!!errors.emergency_contact_relationship}>
+              <FieldLabel htmlFor="emergency_contact_relationship">
+                Relationship
+              </FieldLabel>
+              <Input
+                id="emergency_contact_relationship"
+                type="text"
+                placeholder="Relationship"
+                {...register("emergency_contact_relationship")}
+                disabled={isLoading}
+                className={cn(
+                  errors.emergency_contact_relationship && "border-destructive"
+                )}
+              />
+              <FieldError>
+                {errors.emergency_contact_relationship?.message}
+              </FieldError>
+            </Field>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* 4. Preferences & Settings */}
         <div className="space-y-4">
           <h3 className="text-base font-semibold">Preferences & Settings</h3>
@@ -441,71 +501,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
                 />
                 <FieldError>{errors.preferred_language?.message}</FieldError>
               </Field>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Emergency Contact</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Field data-invalid={!!errors.emergency_contact_name}>
-                  <FieldLabel htmlFor="emergency_contact_name">
-                    Contact Name
-                  </FieldLabel>
-                  <Input
-                    id="emergency_contact_name"
-                    type="text"
-                    placeholder="Emergency contact name"
-                    {...register("emergency_contact_name")}
-                    disabled={isLoading}
-                    className={cn(
-                      errors.emergency_contact_name && "border-destructive"
-                    )}
-                  />
-                  <FieldError>
-                    {errors.emergency_contact_name?.message}
-                  </FieldError>
-                </Field>
-
-                <Field data-invalid={!!errors.emergency_contact_phone}>
-                  <FieldLabel htmlFor="emergency_contact_phone">
-                    Contact Phone
-                  </FieldLabel>
-                  <Input
-                    id="emergency_contact_phone"
-                    type="tel"
-                    placeholder="Emergency contact phone"
-                    {...register("emergency_contact_phone")}
-                    disabled={isLoading}
-                    className={cn(
-                      errors.emergency_contact_phone && "border-destructive"
-                    )}
-                  />
-                  <FieldError>
-                    {errors.emergency_contact_phone?.message}
-                  </FieldError>
-                </Field>
-
-                <Field data-invalid={!!errors.emergency_contact_relationship}>
-                  <FieldLabel htmlFor="emergency_contact_relationship">
-                    Relationship
-                  </FieldLabel>
-                  <Input
-                    id="emergency_contact_relationship"
-                    type="text"
-                    placeholder="Relationship"
-                    {...register("emergency_contact_relationship")}
-                    disabled={isLoading}
-                    className={cn(
-                      errors.emergency_contact_relationship &&
-                        "border-destructive"
-                    )}
-                  />
-                  <FieldError>
-                    {errors.emergency_contact_relationship?.message}
-                  </FieldError>
-                </Field>
-              </div>
             </div>
 
             <Separator />
