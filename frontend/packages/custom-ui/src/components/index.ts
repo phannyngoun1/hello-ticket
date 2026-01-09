@@ -150,6 +150,17 @@ export type {
   CustomTabItem,
 } from './tabs';
 
+// Tab Configurations
+export {
+  flattenTabGroups,
+  groupTabsByPriority,
+} from './tabs/tab-configs';
+export type {
+  TabGroup,
+  DetailPageTabs,
+} from './tabs/tab-configs';
+
+
 // Data Description
 export { DataDescription, DescriptionList, DescriptionItem, DescriptionSection } from './data-description';
 export type {

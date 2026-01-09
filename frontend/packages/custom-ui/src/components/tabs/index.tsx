@@ -34,7 +34,7 @@ export interface CustomTabsProps {
   value?: string;
   /** Callback when tab changes */
   onValueChange?: (value: string) => void;
-  /** Tab items configuration */
+  /** Tab items configuration - DEPRECATED: Use children instead for better reusability */
   items?: CustomTabItem[];
   /** Visual variant */
   variant?: "default" | "underline";
@@ -46,7 +46,7 @@ export interface CustomTabsProps {
   triggerClassName?: string;
   /** Additional className for tab content */
   contentClassName?: string;
-  /** Children - can be used instead of items prop for more control */
+  /** Children - preferred way to define tabs for reusability */
   children?: React.ReactNode;
 }
 
