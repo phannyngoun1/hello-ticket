@@ -5,11 +5,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import {
-  Card,
-  Tabs,
-  Badge,
-} from "@truths/ui";
+import { Card, Tabs, Badge } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -22,7 +18,13 @@ import {
   Tag,
   File,
 } from "lucide-react";
-import { DocumentList, DescriptionList, DescriptionItem, ActionList } from "@truths/custom-ui";
+import {
+  DocumentList,
+  DescriptionList,
+  DescriptionItem,
+  ActionList,
+  TagList,
+} from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 import { Organizer } from "./types";
@@ -70,8 +72,8 @@ export function OrganizerDetail({
   console.log("DEBUG: OrganizerDetail received data:", data);
 
   const [activeTab, setActiveTab] = useState<
-    "profile" | "documents" | "metadata"
-  >("profile");
+    "overview" | "documents" | "metadata"
+  >("overview");
   const [documents, setDocuments] = useState<FileUpload[]>([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
 
@@ -241,7 +243,7 @@ export function OrganizerDetail({
                         label: "Manage tags",
                         icon: <Tag className="h-3.5 w-3.5" />,
                         onClick: () => onManageTags(data),
-                        display: "dropdown-item" as const
+                        display: "dropdown-item" as const,
                       },
                     ]
                   : []),
@@ -272,15 +274,15 @@ export function OrganizerDetail({
               <button
                 className={cn(
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
+                  activeTab === "overview"
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
-                onClick={() => setActiveTab("profile")}
+                onClick={() => setActiveTab("overview")}
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Profile
+                  Overview
                 </span>
               </button>
               <button
@@ -325,41 +327,28 @@ export function OrganizerDetail({
           </div>
 
           <div className="mt-0">
-            {/* Profile Tab */}
-            {activeTab === "profile" && (
+            {/* Overview Tab */}
+            {activeTab === "overview" && (
               <div className="space-y-8">
                 {/* Basic Information */}
-                <DescriptionList title="Basic Information" columns={3}>
+                <DescriptionList
+                  title="Basic Information"
+                  icon={Info}
+                  columns={3}
+                >
                   <DescriptionItem
                     label="Description"
                     value={data.description}
                     span="md:col-span-3"
                   />
-                  <DescriptionItem
-                    label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
-                    value={
-                      data.tags && data.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {data.tags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="text-xs px-1.5 py-0 h-5"
-                            >
-                              <Tag className="h-3 w-3 mr-1 opacity-70" />
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      ) : null
-                    }
-                    span="md:col-span-3"
-                    hideIfEmpty={false}
-                  />
                 </DescriptionList>
 
                 {/* Contact & Location */}
-                <DescriptionList title="Contact & Location" columns={3}>
+                <DescriptionList
+                  title="Contact & Location"
+                  icon={Mail}
+                  columns={3}
+                >
                   <DescriptionItem
                     label="Email"
                     value={data.email}
@@ -386,10 +375,25 @@ export function OrganizerDetail({
                     icon={MapPin}
                     span="md:col-span-3"
                   />
+
+                  <DescriptionItem
+                    label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                    value={
+                      data.tags && data.tags.length > 0 ? (
+                        <TagList tags={data.tags} />
+                      ) : null
+                    }
+                    span="md:col-span-3"
+                    hideIfEmpty={false}
+                  />
                 </DescriptionList>
 
                 {/* Timeline */}
-                <DescriptionList title="Timeline" columns={3}>
+                <DescriptionList
+                  title="System Information"
+                  icon={Database}
+                  columns={3}
+                >
                   <DescriptionItem
                     label="Created"
                     value={data.created_at}

@@ -7,11 +7,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import {
-  Card,
-  Tabs,
-  Badge,
-} from "@truths/ui";
+import { Card, Tabs, Badge } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -34,6 +30,9 @@ import {
   Building2,
   Share2,
   Tag,
+  SettingsIcon,
+  AlertCircle,
+  Globe,
 } from "lucide-react";
 import {
   DocumentList,
@@ -42,6 +41,7 @@ import {
   DescriptionSection,
   ActionList,
   CopyButton,
+  TagList,
 } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
@@ -157,8 +157,6 @@ export function CustomerDetail({
       loadDocuments();
     }
   }, [activeTab, cus?.id, attachmentServiceInstance, loadDocuments]);
-
-
 
   // Build action items
   const isActive = cus?.status === "active";
@@ -406,8 +404,8 @@ export function CustomerDetail({
                 onClick={() => setActiveTab("profile")}
               >
                 <span className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Profile
+                  <SettingsIcon className="h-4 w-4" />
+                  Preferences & Settings
                 </span>
               </button>
               <button
@@ -475,8 +473,37 @@ export function CustomerDetail({
             {/* Overview Tab */}
             {activeTab === "overview" && (
               <div className="space-y-8">
+                {/* Personal Information */}
+                <DescriptionList
+                  title="Personal Information"
+                  icon={User}
+                  columns={3}
+                >
+                  <DescriptionItem
+                    label="Date of Birth"
+                    value={cus.date_of_birth}
+                    render={(value) =>
+                      formatDate(value as Date | string) as React.ReactNode
+                    }
+                  />
+                  <DescriptionItem
+                    label="Gender"
+                    value={cus.gender}
+                    valueClassName="capitalize"
+                  />
+                  <DescriptionItem
+                    label="Nationality"
+                    value={cus.nationality}
+                  />
+                  <DescriptionItem label="ID Type" value={cus.id_type} />
+                  <DescriptionItem label="ID Number" value={cus.id_number} />
+                </DescriptionList>
                 {/* 1. Essential Information */}
-                <DescriptionList title="Contact Information" columns={3}>
+                <DescriptionList
+                  title="Contact Information"
+                  icon={Mail}
+                  columns={3}
+                >
                   <DescriptionItem
                     label="Business Name"
                     value={cus.business_name}
@@ -495,6 +522,27 @@ export function CustomerDetail({
                     label="Website"
                     value={cus.website}
                     linkType="external"
+                  />
+                </DescriptionList>
+
+                <DescriptionList
+                  columns={3}
+                  title="Emergency Contact"
+                  icon={AlertCircle}
+                  className="mt-0 mb-0"
+                >
+                  <DescriptionItem
+                    label="Contact Name"
+                    value={cus.emergency_contact_name}
+                  />
+                  <DescriptionItem
+                    label="Contact Phone"
+                    value={cus.emergency_contact_phone}
+                    linkType="tel"
+                  />
+                  <DescriptionItem
+                    label="Relationship"
+                    value={cus.emergency_contact_relationship}
                   />
                 </DescriptionList>
 
@@ -526,30 +574,8 @@ export function CustomerDetail({
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div className="space-y-8">
-                {/* Personal Information */}
-                <DescriptionList title="Personal Information" columns={3}>
-                  <DescriptionItem
-                    label="Date of Birth"
-                    value={cus.date_of_birth}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="Gender"
-                    value={cus.gender}
-                    valueClassName="capitalize"
-                  />
-                  <DescriptionItem
-                    label="Nationality"
-                    value={cus.nationality}
-                  />
-                  <DescriptionItem label="ID Type" value={cus.id_type} />
-                  <DescriptionItem label="ID Number" value={cus.id_number} />
-                </DescriptionList>
-
                 {/* Preferences & Settings */}
-                <DescriptionList title="Preferences & Settings" columns={2}>
+                <DescriptionList columns={2}>
                   <DescriptionItem
                     label="Event Preferences"
                     value={cus.event_preferences}
@@ -570,96 +596,77 @@ export function CustomerDetail({
                     label="Preferred Language"
                     value={cus.preferred_language}
                   />
-
-                  <DescriptionSection title="Emergency Contact" showBorder>
-                    <DescriptionList columns={3} className="mt-0 mb-0">
-                      <DescriptionItem
-                        label="Contact Name"
-                        value={cus.emergency_contact_name}
-                      />
-                      <DescriptionItem
-                        label="Contact Phone"
-                        value={cus.emergency_contact_phone}
-                        linkType="tel"
-                      />
-                      <DescriptionItem
-                        label="Relationship"
-                        value={cus.emergency_contact_relationship}
-                      />
-                    </DescriptionList>
-                  </DescriptionSection>
-
-                  <DescriptionSection title="Marketing Preferences" showBorder>
-                    <div className="flex flex-wrap gap-4">
-                      {cus.marketing_opt_in !== undefined && (
-                        <DescriptionItem
-                          label=""
-                          value={
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.marketing_opt_in
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                )}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                Marketing Opt-in:{" "}
-                                {cus.marketing_opt_in ? "Yes" : "No"}
-                              </span>
-                            </div>
-                          }
-                          hideIfEmpty={false}
-                        />
-                      )}
-                      {cus.email_marketing !== undefined && (
-                        <DescriptionItem
-                          label=""
-                          value={
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.email_marketing
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                )}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                Email Marketing:{" "}
-                                {cus.email_marketing ? "Yes" : "No"}
-                              </span>
-                            </div>
-                          }
-                          hideIfEmpty={false}
-                        />
-                      )}
-                      {cus.sms_marketing !== undefined && (
-                        <DescriptionItem
-                          label=""
-                          value={
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "h-2 w-2 rounded-full",
-                                  cus.sms_marketing
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                )}
-                              />
-                              <span className="text-sm text-muted-foreground">
-                                SMS Marketing:{" "}
-                                {cus.sms_marketing ? "Yes" : "No"}
-                              </span>
-                            </div>
-                          }
-                          hideIfEmpty={false}
-                        />
-                      )}
-                    </div>
-                  </DescriptionSection>
                 </DescriptionList>
+
+                <DescriptionSection showBorder>
+                  <div className="flex flex-wrap gap-4">
+                    {cus.marketing_opt_in !== undefined && (
+                      <DescriptionItem
+                        label=""
+                        value={
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                cus.marketing_opt_in
+                                  ? "bg-green-500"
+                                  : "bg-gray-300"
+                              )}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              Marketing Opt-in:{" "}
+                              {cus.marketing_opt_in ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        }
+                        hideIfEmpty={false}
+                      />
+                    )}
+                    {cus.email_marketing !== undefined && (
+                      <DescriptionItem
+                        label=""
+                        value={
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                cus.email_marketing
+                                  ? "bg-green-500"
+                                  : "bg-gray-300"
+                              )}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              Email Marketing:{" "}
+                              {cus.email_marketing ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        }
+                        hideIfEmpty={false}
+                      />
+                    )}
+                    {cus.sms_marketing !== undefined && (
+                      <DescriptionItem
+                        label=""
+                        value={
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                "h-2 w-2 rounded-full",
+                                cus.sms_marketing
+                                  ? "bg-green-500"
+                                  : "bg-gray-300"
+                              )}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              SMS Marketing: {cus.sms_marketing ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        }
+                        hideIfEmpty={false}
+                      />
+                    )}
+                  </div>
+                </DescriptionSection>
               </div>
             )}
 
@@ -752,7 +759,11 @@ export function CustomerDetail({
             {activeTab === "social" && (
               <div className="space-y-8">
                 {/* Social & Online */}
-                <DescriptionList title="Social & Online" columns={2}>
+                <DescriptionList
+                  title="Social & Online"
+                  icon={Globe}
+                  columns={2}
+                >
                   <DescriptionItem
                     label="Facebook"
                     value={cus.facebook_url}
@@ -790,21 +801,10 @@ export function CustomerDetail({
                   columns={2}
                 >
                   <DescriptionItem
-                    label={`Tags${cus.tags && cus.tags.length > 0 ? ` (${cus.tags.length})` : ""}`}
+                    label={``}
                     value={
                       cus.tags && cus.tags.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {cus.tags.map((tag, index) => (
-                            <Badge
-                              key={`tag-${index}-${tag}`}
-                              variant="secondary"
-                              className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
-                            >
-                              <Tag className="h-3 w-3" />
-                              <span>{tag}</span>
-                            </Badge>
-                          ))}
-                        </div>
+                        <TagList tags={cus.tags} />
                       ) : (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Tag className="h-4 w-4 opacity-50" />
@@ -813,9 +813,7 @@ export function CustomerDetail({
                       )
                     }
                     hideIfEmpty={false}
-                    icon={Tag}
                   />
-
 
                   <DescriptionItem
                     label="Internal Notes"
