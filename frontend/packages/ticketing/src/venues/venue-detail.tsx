@@ -26,7 +26,17 @@ import {
 import { ActionList, CopyButton } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Edit, Info, Database, Plus, LayoutGrid, Phone, Mail, Globe, MapPin as MapPinIcon } from "lucide-react";
+import {
+  Edit,
+  Info,
+  Database,
+  Plus,
+  LayoutGrid,
+  Phone,
+  Mail,
+  Globe,
+  MapPin as MapPinIcon,
+} from "lucide-react";
 import { Venue } from "./types";
 import { LayoutList, useLayoutService, useCreateLayout } from "../layouts";
 
@@ -62,17 +72,18 @@ export function VenueDetail({
 
   customActions,
 }: VenueDetailProps) {
-  const [activeTab, setActiveTab] = useState<"seats" | "details" | "contact" | "address" | "metadata">(
-    "seats"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "seats" | "details" | "contact" | "address" | "metadata"
+  >("seats");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState("");
-  const [newLayoutDesignMode, setNewLayoutDesignMode] = useState<"seat-level" | "section-level">("seat-level");
+  const [newLayoutDesignMode, setNewLayoutDesignMode] = useState<
+    "seat-level" | "section-level"
+  >("seat-level");
 
   // All hooks must be called before any early returns
   const layoutService = useLayoutService();
   const createLayoutMutation = useCreateLayout(layoutService);
-
 
   const getVenueDisplayName = () => {
     return data?.name || data?.id || "";
@@ -177,10 +188,10 @@ export function VenueDetail({
 
   // Add Create Layout action
   actionItems.push({
-      id: "add-layout",
-      label: "Add Layout",
-      icon: <Plus className="h-3.5 w-3.5" />,
-      onClick: () => setIsCreateDialogOpen(true),
+    id: "add-layout",
+    label: "Add Layout",
+    icon: <Plus className="h-3.5 w-3.5" />,
+    onClick: () => setIsCreateDialogOpen(true),
   });
 
   return (
@@ -207,7 +218,7 @@ export function VenueDetail({
                     size="icon"
                     className="h-4 w-4 ml-1"
                     title="Copy code"
-                  />  
+                  />
                 </p>
               )}
             </div>
@@ -221,7 +232,6 @@ export function VenueDetail({
             size="sm"
           />
         </div>
-
 
         {/* Tabs */}
         <Tabs
@@ -255,7 +265,7 @@ export function VenueDetail({
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Details
+                  Overview
                 </span>
               </button>
               <button
@@ -329,7 +339,9 @@ export function VenueDetail({
                     <dl className="space-y-4">
                       {data.venue_type && (
                         <div>
-                          <dt className="text-sm font-medium mb-1">Venue Type</dt>
+                          <dt className="text-sm font-medium mb-1">
+                            Venue Type
+                          </dt>
                           <dd className="text-sm text-muted-foreground">
                             {formatFieldValue(data.venue_type)}
                           </dd>
@@ -345,7 +357,9 @@ export function VenueDetail({
                       )}
                       {data.opening_hours && (
                         <div>
-                          <dt className="text-sm font-medium mb-1">Opening Hours</dt>
+                          <dt className="text-sm font-medium mb-1">
+                            Opening Hours
+                          </dt>
                           <dd className="text-sm text-muted-foreground whitespace-pre-line">
                             {formatFieldValue(data.opening_hours)}
                           </dd>
@@ -369,7 +383,9 @@ export function VenueDetail({
                       )}
                       {data.accessibility && (
                         <div>
-                          <dt className="text-sm font-medium mb-1">Accessibility</dt>
+                          <dt className="text-sm font-medium mb-1">
+                            Accessibility
+                          </dt>
                           <dd className="text-sm text-muted-foreground">
                             {formatFieldValue(data.accessibility)}
                           </dd>
@@ -377,7 +393,9 @@ export function VenueDetail({
                       )}
                       {data.amenities && data.amenities.length > 0 && (
                         <div>
-                          <dt className="text-sm font-medium mb-2">Amenities</dt>
+                          <dt className="text-sm font-medium mb-2">
+                            Amenities
+                          </dt>
                           <dd className="text-sm text-muted-foreground">
                             <div className="flex flex-wrap gap-2">
                               {data.amenities.map((amenity, index) => (
@@ -412,7 +430,9 @@ export function VenueDetail({
                     )}
                     {data.updated_at && (
                       <div>
-                        <dt className="text-sm font-medium mb-1">Last Updated</dt>
+                        <dt className="text-sm font-medium mb-1">
+                          Last Updated
+                        </dt>
                         <dd className="text-sm text-muted-foreground">
                           {formatDate(data.updated_at)}
                         </dd>
@@ -427,7 +447,7 @@ export function VenueDetail({
             {activeTab === "contact" && (
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
-                  {(data.phone || data.email || data.website) ? (
+                  {data.phone || data.email || data.website ? (
                     <>
                       {data.phone && (
                         <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
@@ -435,7 +455,10 @@ export function VenueDetail({
                           <div className="flex-1">
                             <dt className="text-sm font-medium mb-1">Phone</dt>
                             <dd className="text-sm">
-                              <a href={`tel:${data.phone}`} className="text-primary hover:underline">
+                              <a
+                                href={`tel:${data.phone}`}
+                                className="text-primary hover:underline"
+                              >
                                 {data.phone}
                               </a>
                             </dd>
@@ -448,7 +471,10 @@ export function VenueDetail({
                           <div className="flex-1">
                             <dt className="text-sm font-medium mb-1">Email</dt>
                             <dd className="text-sm">
-                              <a href={`mailto:${data.email}`} className="text-primary hover:underline">
+                              <a
+                                href={`mailto:${data.email}`}
+                                className="text-primary hover:underline"
+                              >
                                 {data.email}
                               </a>
                             </dd>
@@ -459,9 +485,16 @@ export function VenueDetail({
                         <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg md:col-span-2">
                           <Globe className="h-5 w-5 text-primary mt-0.5" />
                           <div className="flex-1">
-                            <dt className="text-sm font-medium mb-1">Website</dt>
+                            <dt className="text-sm font-medium mb-1">
+                              Website
+                            </dt>
                             <dd className="text-sm">
-                              <a href={data.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">
+                              <a
+                                href={data.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline break-all"
+                              >
                                 {data.website}
                               </a>
                             </dd>
@@ -481,30 +514,48 @@ export function VenueDetail({
             {/* Address Tab */}
             {activeTab === "address" && (
               <div className="space-y-6">
-                {(data.street_address || data.city || data.state_province || data.postal_code || data.country) ? (
+                {data.street_address ||
+                data.city ||
+                data.state_province ||
+                data.postal_code ||
+                data.country ? (
                   <div className="space-y-4">
                     <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
                       <MapPinIcon className="h-5 w-5 text-primary mt-0.5" />
                       <div className="flex-1 space-y-2">
                         {data.street_address && (
                           <div>
-                            <dt className="text-sm font-medium mb-1">Street Address</dt>
+                            <dt className="text-sm font-medium mb-1">
+                              Street Address
+                            </dt>
                             <dd className="text-sm text-muted-foreground">
                               {data.street_address}
                             </dd>
                           </div>
                         )}
-                        {(data.city || data.state_province || data.postal_code) && (
+                        {(data.city ||
+                          data.state_province ||
+                          data.postal_code) && (
                           <div>
-                            <dt className="text-sm font-medium mb-1">City, State, ZIP</dt>
+                            <dt className="text-sm font-medium mb-1">
+                              City, State, ZIP
+                            </dt>
                             <dd className="text-sm text-muted-foreground">
-                              {[data.city, data.state_province, data.postal_code].filter(Boolean).join(", ")}
+                              {[
+                                data.city,
+                                data.state_province,
+                                data.postal_code,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")}
                             </dd>
                           </div>
                         )}
                         {data.country && (
                           <div>
-                            <dt className="text-sm font-medium mb-1">Country</dt>
+                            <dt className="text-sm font-medium mb-1">
+                              Country
+                            </dt>
                             <dd className="text-sm text-muted-foreground">
                               {data.country}
                             </dd>
@@ -557,7 +608,8 @@ export function VenueDetail({
           <DialogHeader>
             <DialogTitle>Create New Layout</DialogTitle>
             <DialogDescription>
-              Create a new layout for this venue. Design mode cannot be changed after seats are added.
+              Create a new layout for this venue. Design mode cannot be changed
+              after seats are added.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -580,7 +632,9 @@ export function VenueDetail({
               <Label htmlFor="design-mode">Design Mode</Label>
               <Select
                 value={newLayoutDesignMode}
-                onValueChange={(v) => setNewLayoutDesignMode(v as "seat-level" | "section-level")}
+                onValueChange={(v) =>
+                  setNewLayoutDesignMode(v as "seat-level" | "section-level")
+                }
               >
                 <SelectTrigger id="design-mode">
                   <SelectValue />
@@ -589,13 +643,17 @@ export function VenueDetail({
                   <SelectItem value="seat-level">
                     <div className="flex flex-col items-start">
                       <span className="font-medium">Seat Level</span>
-                      <span className="text-xs text-muted-foreground">Place seats directly on venue floor plan</span>
+                      <span className="text-xs text-muted-foreground">
+                        Place seats directly on venue floor plan
+                      </span>
                     </div>
                   </SelectItem>
                   <SelectItem value="section-level">
                     <div className="flex flex-col items-start">
                       <span className="font-medium">Section Level</span>
-                      <span className="text-xs text-muted-foreground">Define sections first, then add seats to each section</span>
+                      <span className="text-xs text-muted-foreground">
+                        Define sections first, then add seats to each section
+                      </span>
                     </div>
                   </SelectItem>
                 </SelectContent>

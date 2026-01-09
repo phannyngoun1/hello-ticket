@@ -548,7 +548,7 @@ export function DescriptionList({
       {title && (
         <h3
           className={cn(
-            "mb-4 text-sm font-semibold text-foreground",
+            "mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider",
             Icon && "flex items-center gap-2"
           )}
         >
