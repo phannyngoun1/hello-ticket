@@ -157,10 +157,17 @@ export type {
 export {
   flattenTabGroups,
   groupTabsByPriority,
+  getTabMetadata,
+  isListPageFromConfig,
+  isDetailPageFromConfig,
+  getTitleAndIconFromConfig,
+  getModuleFromConfig,
 } from './tabs/tab-configs';
 export type {
   TabGroup,
   DetailPageTabs,
+  TabMetadata,
+  TabConfiguration,
 } from './tabs/tab-configs';
 
 

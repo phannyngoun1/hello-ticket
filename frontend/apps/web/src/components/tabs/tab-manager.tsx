@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { storage } from "@truths/utils";
 import {
@@ -15,7 +15,7 @@ import {
   GripVertical,
   Layers, // For "Group Tabs" icon
   Pin,
-  PinOff
+  PinOff,
 } from "lucide-react";
 import {
   Button,
@@ -32,6 +32,13 @@ import {
   DropdownMenuSeparator,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
+import { tabConfiguration, moduleOrder } from "../../config/tab-config";
+import {
+  getTitleAndIconFromConfig,
+  isListPageFromConfig,
+  isDetailPageFromConfig,
+  getModuleFromConfig,
+} from "@truths/custom-ui";
 
 const TABS_STORAGE_KEY = "app_tabs";
 const ENABLE_TABS_STORAGE_KEY = "enable_tabs";
@@ -55,7 +62,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const location = useLocation();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLDivElement>(null);
-  
+
   const [tabs, setTabs] = useState<AppTab[]>(() => {
     // Load saved tabs from localStorage
     const saved = storage.get<AppTab[]>(TABS_STORAGE_KEY);
@@ -100,9 +107,10 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     const isSeatDesignerRoute = location.pathname.includes("/seats/designer");
     const searchParams = new URLSearchParams(location.search);
     const layoutId = searchParams.get("layoutId");
-    const currentPath = isSeatDesignerRoute && layoutId
-      ? `${location.pathname}?layoutId=${layoutId}`
-      : location.pathname;
+    const currentPath =
+      isSeatDesignerRoute && layoutId
+        ? `${location.pathname}?layoutId=${layoutId}`
+        : location.pathname;
 
     setTabs((prevTabs) => {
       const currentTab = prevTabs.find((tab) => tab.path === currentPath);
@@ -123,9 +131,18 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
         const combined = [...prevTabs, newTab];
         const pinnedPaths = ["/"];
-        const pinnedTabs = combined.filter((tab) => pinnedPaths.includes(tab.path));
-        const otherTabs = combined.filter((tab) => !pinnedPaths.includes(tab.path));
-        return [...pinnedTabs.sort((a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)), ...otherTabs];
+        const pinnedTabs = combined.filter((tab) =>
+          pinnedPaths.includes(tab.path)
+        );
+        const otherTabs = combined.filter(
+          (tab) => !pinnedPaths.includes(tab.path)
+        );
+        return [
+          ...pinnedTabs.sort(
+            (a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)
+          ),
+          ...otherTabs,
+        ];
       } else {
         // Switch to existing tab
         setActiveTabId(currentTab.id);
@@ -133,13 +150,19 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
           onTabChange(currentTab);
         }
         const pinnedPaths = ["/"];
-        const pinnedTabs = prevTabs.filter((tab) => pinnedPaths.includes(tab.path));
+        const pinnedTabs = prevTabs.filter((tab) =>
+          pinnedPaths.includes(tab.path)
+        );
         const otherTabs = prevTabs.filter((tab) => !pinnedTabs.includes(tab));
-        return [...pinnedTabs.sort((a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)), ...otherTabs];
+        return [
+          ...pinnedTabs.sort(
+            (a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)
+          ),
+          ...otherTabs,
+        ];
       }
     });
   }, [location.pathname, location.search, onTabChange]);
-
 
   // Scroll active tab into view when it changes (except for user clicks)
   useEffect(() => {
@@ -188,38 +211,12 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const generateTabId = () =>
     `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const getTitleAndIconFromPath = (
-    path: string
-  ): { title: string; iconName: string } => {
-    const routeMap: Record<string, { title: string; iconName: string }> = {
-      "/": { title: "Home", iconName: "Home" },
-      "/users": { title: "Users", iconName: "Users" },
-      "/profile": { title: "Profile", iconName: "User" },
-      "/settings": { title: "Settings", iconName: "Settings" },
-      "/settings/profile": { title: "Profile Settings", iconName: "User" },
-      "/settings/account": { title: "Account Settings", iconName: "User" },
-      "/settings/notifications": { title: "Notifications", iconName: "User" },
-      "/settings/appearance": { title: "Appearance", iconName: "Settings" },
-      "/settings/language": { title: "Language", iconName: "User" },
-      "/settings/security": { title: "Security", iconName: "User" },
-    };
-
-    if (routeMap[path]) {
-      return routeMap[path];
-    }
-
-    // Detail routes: provide friendlier defaults rather than raw IDs
-    if (/^\/users\/[^/]+$/.test(path)) {
-      return { title: "User", iconName: "User" };
-    }
-
-    // Fallback: Capitalize last segment
-    const segment = path.split("/").pop() || "Page";
-    const safe = segment.match(/^[a-zA-Z][a-zA-Z0-9_-]*$/)
-      ? segment.charAt(0).toUpperCase() + segment.slice(1)
-      : "Page";
-    return { title: safe, iconName: "FileText" };
-  };
+  const getTitleAndIconFromPath = useCallback(
+    (path: string): { title: string; iconName: string } => {
+      return getTitleAndIconFromConfig(tabConfiguration, path);
+    },
+    []
+  );
 
   const getIconComponent = (iconName?: string) => {
     const iconMap: Record<string, LucideIcon> = {
@@ -235,14 +232,17 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   };
 
   // Helper to navigate to a tab path (handles query strings)
-  const navigateToTabPath = useCallback((path: string) => {
-    const [pathname, search] = path.split("?");
-    const searchParams = search ? new URLSearchParams(search) : undefined;
-    navigate({ 
-      to: pathname,
-      search: searchParams ? Object.fromEntries(searchParams) : undefined
-    } as any);
-  }, [navigate]);
+  const navigateToTabPath = useCallback(
+    (path: string) => {
+      const [pathname, search] = path.split("?");
+      const searchParams = search ? new URLSearchParams(search) : undefined;
+      navigate({
+        to: pathname,
+        search: searchParams ? Object.fromEntries(searchParams) : undefined,
+      } as any);
+    },
+    [navigate]
+  );
 
   const handleTabClick = useCallback(
     (tab: AppTab) => {
@@ -391,41 +391,45 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     };
   }, []);
 
-  const getModuleInfo = (path: string) => {
-    if (path === "/") return "General";
-    if (path.startsWith("/users")) return "Users";
-    if (path.startsWith("/sales") || path.startsWith("/bookings") || path.startsWith("/explore")) return "Sales & Bookings";
-    if (path.startsWith("/settings")) return "Settings";
-    return "Other";
-  };
+  const getModuleInfo = useCallback((path: string) => {
+    return getModuleFromConfig(tabConfiguration, path);
+  }, []);
+
+  const isListPage = useCallback((path: string) => {
+    return isListPageFromConfig(tabConfiguration, path);
+  }, []);
+
+  const isDetailPage = useCallback((path: string) => {
+    return isDetailPageFromConfig(tabConfiguration, path);
+  }, []);
 
   const sortTabsWithPins = (tabsList: AppTab[]) => {
-      const homePaths = ["/"];
-      return [...tabsList].sort((a, b) => {
-          const aIsHome = homePaths.includes(a.path);
-          const bIsHome = homePaths.includes(b.path);
+    const homePaths = ["/"];
+    return [...tabsList].sort((a, b) => {
+      const aIsHome = homePaths.includes(a.path);
+      const bIsHome = homePaths.includes(b.path);
 
-          // 1. Home always first
-          if (aIsHome && !bIsHome) return -1;
-          if (!aIsHome && bIsHome) return 1;
-          if (aIsHome && bIsHome) return 0; // Maintain relative order of home paths
+      // 1. Home always first
+      if (aIsHome && !bIsHome) return -1;
+      if (!aIsHome && bIsHome) return 1;
+      if (aIsHome && bIsHome) return 0; // Maintain relative order of home paths
 
-          // 2. Then Pinned tabs
-          if (a.pinned && !b.pinned) return -1;
-          if (!a.pinned && b.pinned) return 1;
-          
-          // 3. Keep existing order
-          return 0; 
-      });
+      // 2. Then Pinned tabs
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+
+      // 3. Keep existing order
+      return 0;
+    });
   };
 
   const handleTogglePin = useCallback((tab: AppTab) => {
-      setTabs(prev => {
-          const updated = prev.map(t => 
-              t.id === tab.id ? { ...t, pinned: !t.pinned } : t
-          );
-          return sortTabsWithPins(updated);
-      });
+    setTabs((prev) => {
+      const updated = prev.map((t) =>
+        t.id === tab.id ? { ...t, pinned: !t.pinned } : t
+      );
+      return sortTabsWithPins(updated);
+    });
   }, []);
 
   const handleGroupTabs = useCallback(() => {
@@ -439,29 +443,47 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         const moduleA = getModuleInfo(a.path);
         const moduleB = getModuleInfo(b.path);
         if (moduleA === moduleB) {
-          // Keep pinned tabs (Home) at top if same module, otherwise sort by title
+          // Within the same module, sort by page type: list pages first, then detail pages
+          const aIsList = isListPage(a.path);
+          const bIsList = isListPage(b.path);
+          const aIsDetail = isDetailPage(a.path);
+          const bIsDetail = isDetailPage(b.path);
+
+          // List pages come before detail pages
+          if (aIsList && bIsDetail) return -1;
+          if (aIsDetail && bIsList) return 1;
+
+          // If both are same type (both list or both detail), sort by title
+          // Keep home tab at top if same module
           if (a.path === "/") return -1;
           if (b.path === "/") return 1;
           return a.title.localeCompare(b.title);
         }
-        
+
         // Define module order
-        const order = ["General", "Sales & Bookings", "Users", "Settings", "Other"];
+        const order = [
+          "General",
+          "Sales & Bookings",
+          "Users",
+          "Settings",
+          "Other",
+        ];
         return order.indexOf(moduleA) - order.indexOf(moduleB);
       });
       return sorted;
     });
-  }, []);
+  }, [isListPage, isDetailPage, getModuleInfo]);
 
   // Group tabs for the dropdown
-  const groupedTabs = tabs.reduce((acc, tab) => {
-    const module = tab.pinned ? "Pinned" : getModuleInfo(tab.path);
-    if (!acc[module]) acc[module] = [];
-    acc[module].push(tab);
-    return acc;
-  }, {} as Record<string, AppTab[]>);
-
-  const moduleOrder = ["Pinned", "General", "Sales & Bookings", "Users", "Settings", "Other"];
+  const groupedTabs = tabs.reduce(
+    (acc, tab) => {
+      const module = tab.pinned ? "Pinned" : getModuleInfo(tab.path);
+      if (!acc[module]) acc[module] = [];
+      acc[module].push(tab);
+      return acc;
+    },
+    {} as Record<string, AppTab[]>
+  );
 
   // Hide tabs if disabled by user preference or if there's only one tab (but not in inline mode)
   // Also hide if inline mode is requested but tab position is separate
@@ -487,187 +509,218 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       <div
         className={cn(
           "flex items-center",
-          inline
-            ? "gap-1.5"
-            : "gap-0.5 h-8 px-4 sm:px-6"
+          inline ? "gap-1.5" : "gap-0.5 h-8 px-4 sm:px-6"
         )}
       >
         <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">
-            <div
-                className={cn(
-                    "flex items-center scroll-smooth tab-container",
-                    inline ? "gap-1.5" : "gap-0.5"
-                )}
-                ref={scrollViewportRef}
-            >
-                {validTabs.map((tab) => (
-                    <ContextMenu key={tab.id}>
-                    <ContextMenuTrigger asChild>
-                        <div
-                        ref={activeTabId === tab.id ? activeTabRef : null}
-                        draggable={hoveredGripTabId === tab.id}
-                        onDragStart={(e) => handleDragStart(e, tab.id)}
-                        onDragOver={(e) => handleDragOver(e, tab.id)}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, tab.id)}
-                        onDragEnd={handleDragEnd}
-                        onClick={() => handleTabClick(tab)}
+          <div
+            className={cn(
+              "flex items-center scroll-smooth tab-container",
+              inline ? "gap-1.5" : "gap-0.5"
+            )}
+            ref={scrollViewportRef}
+          >
+            {validTabs.map((tab) => (
+              <ContextMenu key={tab.id}>
+                <ContextMenuTrigger asChild>
+                  <div
+                    ref={activeTabId === tab.id ? activeTabRef : null}
+                    draggable={hoveredGripTabId === tab.id}
+                    onDragStart={(e) => handleDragStart(e, tab.id)}
+                    onDragOver={(e) => handleDragOver(e, tab.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, tab.id)}
+                    onDragEnd={handleDragEnd}
+                    onClick={() => handleTabClick(tab)}
+                    className={cn(
+                      "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
+                      "transition-all duration-200 whitespace-nowrap text-xs border",
+                      "flex-shrink-0 select-none",
+                      tab.pinned
+                        ? "w-8 px-0 justify-center min-w-[32px]"
+                        : cn(
+                            "min-w-0",
+                            inline
+                              ? "max-w-[140px] text-[11px]"
+                              : "max-w-[200px]"
+                          ),
+                      hoveredGripTabId === tab.id
+                        ? "cursor-grab"
+                        : "cursor-pointer",
+                      activeTabId === tab.id
+                        ? "bg-accent text-accent-foreground border-border shadow-sm"
+                        : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
+                      draggedTabId === tab.id ? "opacity-50 scale-95" : "",
+                      dragOverTabId === tab.id && draggedTabId !== tab.id
+                        ? "ring-2 ring-primary/50 bg-primary/10"
+                        : ""
+                    )}
+                    title={tab.pinned ? tab.title : undefined}
+                  >
+                    {!tab.pinned && (
+                      <GripVertical
+                        className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                        onMouseEnter={() => handleGripMouseEnter(tab.id)}
+                        onMouseLeave={handleGripMouseLeave}
+                      />
+                    )}
+                    {(() => {
+                      const IconComponent = getIconComponent(tab.iconName);
+                      return IconComponent ? (
+                        <IconComponent
+                          className={cn(
+                            "h-3.5 w-3.5 flex-shrink-0",
+                            tab.pinned ? "mx-auto" : ""
+                          )}
+                        />
+                      ) : null;
+                    })()}
+                    {!tab.pinned && (
+                      <span className="font-medium truncate">{tab.title}</span>
+                    )}
+                    {!tab.pinned && tabs.length > 1 && (
+                      <button
+                        onClick={(e) => handleTabClose(e, tab.id)}
                         className={cn(
-                            "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
-                            "transition-all duration-200 whitespace-nowrap text-xs border",
-                            "flex-shrink-0 select-none",
-                            tab.pinned 
-                                ? "w-8 px-0 justify-center min-w-[32px]" 
-                                : cn("min-w-0", inline ? "max-w-[140px] text-[11px]" : "max-w-[200px]"),
-                            hoveredGripTabId === tab.id ? "cursor-grab" : "cursor-pointer",
-                            activeTabId === tab.id
-                                ? "bg-accent text-accent-foreground border-border shadow-sm"
-                                : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
-                            draggedTabId === tab.id ? "opacity-50 scale-95" : "",
-                            dragOverTabId === tab.id && draggedTabId !== tab.id
-                                ? "ring-2 ring-primary/50 bg-primary/10"
-                                : ""
+                          "opacity-0 group-hover:opacity-100 transition-all duration-150",
+                          "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
+                          "shrink-0",
+                          activeTabId === tab.id ? "opacity-100" : ""
                         )}
-                        title={tab.pinned ? tab.title : undefined}
-                        >
-                            {!tab.pinned && (
-                                <GripVertical
-                                    className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                                    onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                                    onMouseLeave={handleGripMouseLeave}
-                                />
-                            )}
-                        {(() => {
-                            const IconComponent = getIconComponent(tab.iconName);
-                            return IconComponent ? (
-                            <IconComponent className={cn("h-3.5 w-3.5 flex-shrink-0", tab.pinned ? "mx-auto" : "")} />
-                            ) : null;
-                        })()}
-                        {!tab.pinned && <span className="font-medium truncate">{tab.title}</span>}
-                        {!tab.pinned && tabs.length > 1 && (
-                            <button
-                            onClick={(e) => handleTabClose(e, tab.id)}
-                            className={cn(
-                                "opacity-0 group-hover:opacity-100 transition-all duration-150",
-                                "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
-                                "shrink-0",
-                                activeTabId === tab.id ? "opacity-100" : ""
-                            )}
-                            aria-label={`Close ${tab.title}`}
-                            title={`Close ${tab.title}`}
-                            >
-                            <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
-                            </button>
+                        aria-label={`Close ${tab.title}`}
+                        title={`Close ${tab.title}`}
+                      >
+                        <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
+                      </button>
+                    )}
+                  </div>
+                </ContextMenuTrigger>
+                <ContextMenuContent className="min-w-[120px]">
+                  {tabs.length > 1 && (
+                    <>
+                      <ContextMenuItem
+                        onClick={() => handleTogglePin(tab)}
+                        className="text-xs"
+                      >
+                        {tab.pinned ? (
+                          <PinOff className="mr-2 h-3.5 w-3.5" />
+                        ) : (
+                          <Pin className="mr-2 h-3.5 w-3.5" />
                         )}
-                        </div>
-                    </ContextMenuTrigger>
-                    <ContextMenuContent className="min-w-[120px]">
-                        {tabs.length > 1 && (
-                        <>
-                            <ContextMenuItem
-                                onClick={() => handleTogglePin(tab)}
-                                className="text-xs"
-                            >
-                                {tab.pinned ? <PinOff className="mr-2 h-3.5 w-3.5" /> : <Pin className="mr-2 h-3.5 w-3.5" />}
-                                {tab.pinned ? "Unpin Tab" : "Pin Tab"}
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                                onClick={handleGroupTabs}
-                                className="text-xs"
-                            >
-                                <Layers className="mr-2 h-3.5 w-3.5" />
-                                Group Related Tabs
-                            </ContextMenuItem>
-                            <ContextMenuSeparator />
-                            <ContextMenuItem
-                            onClick={handleCloseOthers}
-                            className="text-xs"
-                            >
-                            Close Others
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                            onClick={handleCloseAll}
-                            className="text-xs"
-                            >
-                            Close All
-                            </ContextMenuItem>
-                        </>
-                        )}
-                    </ContextMenuContent>
-                    </ContextMenu>
-                ))}
-            </div>
+                        {tab.pinned ? "Unpin Tab" : "Pin Tab"}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={handleGroupTabs}
+                        className="text-xs"
+                      >
+                        <Layers className="mr-2 h-3.5 w-3.5" />
+                        Group Related Tabs
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem
+                        onClick={handleCloseOthers}
+                        className="text-xs"
+                      >
+                        Close Others
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={handleCloseAll}
+                        className="text-xs"
+                      >
+                        Close All
+                      </ContextMenuItem>
+                    </>
+                  )}
+                </ContextMenuContent>
+              </ContextMenu>
+            ))}
+          </div>
         </div>
 
         {/* Permanent List All Toggle */}
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                    "h-[26px] w-[26px] p-0 border border-transparent rounded-md hover:bg-accent/50 shrink-0 ml-1",
-                    "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="List all tabs"
-                title="List all tabs"
-                >
-                <ChevronDown className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="max-h-[400px] overflow-y-auto min-w-[200px]">
-                {moduleOrder.map(module => {
-                    const moduleTabs = groupedTabs[module];
-                    if (!moduleTabs || moduleTabs.length === 0) return null;
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-[26px] w-[26px] p-0 border border-transparent rounded-md hover:bg-accent/50 shrink-0 ml-1",
+                "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label="List all tabs"
+              title="List all tabs"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="max-h-[400px] overflow-y-auto min-w-[200px]"
+          >
+            {moduleOrder.map((module) => {
+              const moduleTabs = groupedTabs[module];
+              if (!moduleTabs || moduleTabs.length === 0) return null;
+              return (
+                <div key={module}>
+                  <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 font-bold tracking-wider opacity-70">
+                    {module}
+                  </DropdownMenuLabel>
+                  {moduleTabs.map((tab) => {
+                    const IconComponent = getIconComponent(tab.iconName);
                     return (
-                        <div key={module}>
-                            <DropdownMenuLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5 font-bold tracking-wider opacity-70">
-                                {module}
-                            </DropdownMenuLabel>
-                            {moduleTabs.map(tab => {
-                                const IconComponent = getIconComponent(tab.iconName);
-                                return (
-                                    <DropdownMenuItem
-                                    key={tab.id}
-                                    onClick={() => handleTabClick(tab)}
-                                    className={cn(
-                                        "text-xs flex items-center justify-between gap-2 pl-4",
-                                        activeTabId === tab.id && "bg-accent text-accent-foreground font-medium"
-                                    )}
-                                    >   
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        {tab.pinned && <Pin className="h-3 w-3 text-muted-foreground shrink-0 rotate-45" />}
-                                        {IconComponent && (
-                                            <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
-                                        )}
-                                        <span className="truncate">{tab.title}</span>
-                                    </div>
-                                    {!tab.pinned && tabs.length > 1 && (
-                                        <div
-                                            role="button"
-                                            onClick={(e) => handleTabClose(e, tab.id)}
-                                            className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
-                                        >
-                                            <X className="h-3 w-3" />
-                                        </div>
-                                    )}
-                                    </DropdownMenuItem>
-                                );
-                            })}
-                            <DropdownMenuSeparator className="my-1" />
+                      <DropdownMenuItem
+                        key={tab.id}
+                        onClick={() => handleTabClick(tab)}
+                        className={cn(
+                          "text-xs flex items-center justify-between gap-2 pl-4",
+                          activeTabId === tab.id &&
+                            "bg-accent text-accent-foreground font-medium"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          {tab.pinned && (
+                            <Pin className="h-3 w-3 text-muted-foreground shrink-0 rotate-45" />
+                          )}
+                          {IconComponent && (
+                            <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
+                          )}
+                          <span className="truncate">{tab.title}</span>
                         </div>
+                        {!tab.pinned && tabs.length > 1 && (
+                          <div
+                            role="button"
+                            onClick={(e) => handleTabClose(e, tab.id)}
+                            className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
+                          >
+                            <X className="h-3 w-3" />
+                          </div>
+                        )}
+                      </DropdownMenuItem>
                     );
-                })}
+                  })}
+                  <DropdownMenuSeparator className="my-1" />
+                </div>
+              );
+            })}
 
-                {tabs.length > 1 && (
-                    <DropdownMenuItem onClick={handleCloseAll} className="text-xs text-red-500 focus:text-red-600 mt-1">
-                        Close All Tabs
-                    </DropdownMenuItem>
-                )}
-            </DropdownMenuContent>
+            {tabs.length > 1 && (
+              <>
+                <DropdownMenuItem onClick={handleGroupTabs} className="text-xs">
+                  <Layers className="mr-2 h-3.5 w-3.5" />
+                  Group Related Tabs
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="my-1" />
+                <DropdownMenuItem
+                  onClick={handleCloseAll}
+                  className="text-xs text-red-500 focus:text-red-600"
+                >
+                  Close All Tabs
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </div>
   );
 }
-
