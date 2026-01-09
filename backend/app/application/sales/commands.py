@@ -36,7 +36,6 @@ class CreateCustomerCommand:
     linkedin_url: Optional[str] = None
     instagram_handle: Optional[str] = None
     website: Optional[str] = None
-    priority: Optional[str] = None
     notes: Optional[str] = None
     public_notes: Optional[str] = None
 
@@ -74,7 +73,6 @@ class UpdateCustomerCommand:
     linkedin_url: Optional[str] = None
     instagram_handle: Optional[str] = None
     website: Optional[str] = None
-    priority: Optional[str] = None
     status: Optional[str] = None  # "active" or "inactive"
     status_reason: Optional[str] = None
     notes: Optional[str] = None

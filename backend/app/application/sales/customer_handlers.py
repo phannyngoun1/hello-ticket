@@ -13,6 +13,8 @@ from app.application.sales.queries import (
 )
 from app.domain.sales.repositories import CustomerRepository, CustomerSearchResult
 from app.domain.sales.customer import Customer
+from app.domain.shared.value_objects.contact_info import ContactInfo
+from app.domain.shared.value_objects.address import Address
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
 
@@ -36,18 +38,28 @@ class CustomerCommandHandler:
         # Auto-generate code
         code = await self._customer_repository.generate_next_code(tenant_id)
 
-        customer = Customer(
-            tenant_id=tenant_id,
-            code=code,
-            name=command.name,
+        # Construct value objects from command fields
+        contact_info = ContactInfo(
             email=command.email,
             phone=command.phone,
-            business_name=command.business_name,
+            website=command.website,
+        )
+
+        address = Address(
             street_address=command.street_address,
             city=command.city,
             state_province=command.state_province,
             postal_code=command.postal_code,
             country=command.country,
+        )
+
+        customer = Customer(
+            tenant_id=tenant_id,
+            code=code,
+            name=command.name,
+            contact_info=contact_info,
+            address=address,
+            business_name=command.business_name,
             date_of_birth=command.date_of_birth,
             gender=command.gender,
             nationality=command.nationality,
@@ -70,7 +82,6 @@ class CustomerCommandHandler:
             instagram_handle=command.instagram_handle,
             website=command.website,
             tags=[],  # Tags are now managed via TagLink, not stored in customer
-            priority=command.priority,
             notes=command.notes,
             public_notes=command.public_notes,
         )
@@ -93,16 +104,26 @@ class CustomerCommandHandler:
             else:
                 raise ValidationError(f"Invalid status: {command.status}. Must be 'active' or 'inactive'")
 
+        # Construct value objects from command fields, merging with existing values
+        contact_info = ContactInfo(
+            email=command.email if command.email is not None else customer.contact_info.email,
+            phone=command.phone if command.phone is not None else customer.contact_info.phone,
+            website=command.website if command.website is not None else customer.contact_info.website,
+        )
+
+        address = Address(
+            street_address=command.street_address if command.street_address is not None else customer.address.street_address,
+            city=command.city if command.city is not None else customer.address.city,
+            state_province=command.state_province if command.state_province is not None else customer.address.state_province,
+            postal_code=command.postal_code if command.postal_code is not None else customer.address.postal_code,
+            country=command.country if command.country is not None else customer.address.country,
+        )
+
         customer.update_details(
             name=command.name,
-            email=command.email,
-            phone=command.phone,
+            contact_info=contact_info,
+            address=address,
             business_name=command.business_name,
-            street_address=command.street_address,
-            city=command.city,
-            state_province=command.state_province,
-            postal_code=command.postal_code,
-            country=command.country,
             date_of_birth=command.date_of_birth,
             gender=command.gender,
             nationality=command.nationality,
@@ -125,7 +146,6 @@ class CustomerCommandHandler:
             instagram_handle=command.instagram_handle,
             website=command.website,
             tags=None,  # Tags are now managed via TagLink, not stored in customer
-            priority=command.priority,
             status_reason=command.status_reason,
             notes=command.notes,
             public_notes=command.public_notes,

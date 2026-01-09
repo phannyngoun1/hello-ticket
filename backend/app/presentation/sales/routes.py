@@ -164,7 +164,6 @@ async def update_customer(
             linkedin_url=request.linkedin_url,
             instagram_handle=request.instagram_handle,
             website=request.website,
-            priority=request.priority,
             status=request.status,
             status_reason=request.status_reason,
             notes=request.notes,
