@@ -16,11 +16,7 @@ import type {
 import { ShowList } from "./show-list";
 import { CreateShowDialog } from "./create-show-dialog";
 import { EditShowDialog } from "./edit-show-dialog";
-import {
-  useShows,
-  useCreateShow,
-  useUpdateShow,
-} from "./use-shows";
+import { useShows, useCreateShow, useUpdateShow } from "./use-shows";
 import { useShowService } from "./show-provider";
 
 export interface ShowListContainerProps {

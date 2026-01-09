@@ -44,7 +44,16 @@ export function EditOrganizerDialog({
 
 
 
+      code: organizer.code ?? "",
       name: organizer.name ?? "",
+      description: organizer.description ?? "",
+      email: organizer.email ?? "",
+      phone: organizer.phone ?? "",
+      website: organizer.website ?? "",
+      address: organizer.address ?? "",
+      city: organizer.city ?? "",
+      country: organizer.country ?? "",
+      logo: organizer.logo ?? "",
 
 
     };
@@ -75,7 +84,16 @@ export function EditOrganizerDialog({
 
 
 
+      code: data.code || undefined,
       name: data.name,
+      description: data.description || undefined,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      website: data.website || undefined,
+      address: data.address || undefined,
+      city: data.city || undefined,
+      country: data.country || undefined,
+      logo: data.logo || undefined,
 
 
     });
