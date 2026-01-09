@@ -5,25 +5,13 @@
  */
 
 import React, { useMemo, useState } from "react";
+import { Card, Tabs } from "@truths/ui";
 import {
-  Button,
-  Card,
-  Tabs,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@truths/ui";
-import { ActionList, CopyButton } from "@truths/custom-ui";
+  ActionList,
+  CopyButton,
+  DescriptionList,
+  DescriptionItem,
+} from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
@@ -38,7 +26,8 @@ import {
   MapPin as MapPinIcon,
 } from "lucide-react";
 import { Venue } from "./types";
-import { LayoutList, useLayoutService, useCreateLayout } from "../layouts";
+import { LayoutList } from "../layouts";
+import { CreateLayoutDialog } from "./create-layout-dialog";
 
 export interface VenueDetailProps {
   className?: string;
@@ -76,14 +65,6 @@ export function VenueDetail({
     "seats" | "details" | "contact" | "address" | "metadata"
   >("seats");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newLayoutName, setNewLayoutName] = useState("");
-  const [newLayoutDesignMode, setNewLayoutDesignMode] = useState<
-    "seat-level" | "section-level"
-  >("seat-level");
-
-  // All hooks must be called before any early returns
-  const layoutService = useLayoutService();
-  const createLayoutMutation = useCreateLayout(layoutService);
 
   const getVenueDisplayName = () => {
     return data?.name || data?.id || "";
@@ -98,30 +79,6 @@ export function VenueDetail({
     if (!value) return "N/A";
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
-  };
-
-  const formatFieldValue = (value: unknown) => {
-    if (value === null || value === undefined) return "N/A";
-    if (value instanceof Date) {
-      return value.toLocaleString();
-    }
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      if (!trimmed) return "N/A";
-      const potentialDate = new Date(trimmed);
-      if (!Number.isNaN(potentialDate.getTime())) {
-        return potentialDate.toLocaleString();
-      }
-      return trimmed;
-    }
-    if (typeof value === "number" || typeof value === "boolean") {
-      return String(value);
-    }
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
   };
 
   if (loading) {
@@ -155,23 +112,6 @@ export function VenueDetail({
   }
 
   const hasMetadata = showMetadata;
-
-  const handleCreateLayout = async () => {
-    if (!data || !newLayoutName.trim()) return;
-
-    try {
-      await createLayoutMutation.mutateAsync({
-        venue_id: data.id,
-        name: newLayoutName.trim(),
-        design_mode: newLayoutDesignMode,
-      });
-      setNewLayoutName("");
-      setNewLayoutDesignMode("seat-level");
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error("Failed to create layout:", error);
-    }
-  };
 
   // Build action list
   const actionItems: ActionItem[] = [];
@@ -332,244 +272,124 @@ export function VenueDetail({
                 )}
 
                 <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Venue Information
-                    </h3>
-                    <dl className="space-y-4">
-                      {data.venue_type && (
-                        <div>
-                          <dt className="text-sm font-medium mb-1">
-                            Venue Type
-                          </dt>
-                          <dd className="text-sm text-muted-foreground">
-                            {formatFieldValue(data.venue_type)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.capacity && (
-                        <div>
-                          <dt className="text-sm font-medium mb-1">Capacity</dt>
-                          <dd className="text-sm text-muted-foreground">
-                            {data.capacity.toLocaleString()} seats
-                          </dd>
-                        </div>
-                      )}
-                      {data.opening_hours && (
-                        <div>
-                          <dt className="text-sm font-medium mb-1">
-                            Opening Hours
-                          </dt>
-                          <dd className="text-sm text-muted-foreground whitespace-pre-line">
-                            {formatFieldValue(data.opening_hours)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                  <DescriptionList title="Venue Information" columns={3}>
+                    <DescriptionItem
+                      label="Venue Type"
+                      value={data.venue_type}
+                    />
+                    <DescriptionItem
+                      label="Capacity"
+                      value={
+                        data.capacity
+                          ? `${data.capacity.toLocaleString()} seats`
+                          : null
+                      }
+                    />
+                    <DescriptionItem
+                      label="Opening Hours"
+                      value={data.opening_hours}
+                      preserveWhitespace
+                    />
+                  </DescriptionList>
 
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Facilities & Amenities
-                    </h3>
-                    <dl className="space-y-4">
-                      {data.parking_info && (
-                        <div>
-                          <dt className="text-sm font-medium mb-1">Parking</dt>
-                          <dd className="text-sm text-muted-foreground">
-                            {formatFieldValue(data.parking_info)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.accessibility && (
-                        <div>
-                          <dt className="text-sm font-medium mb-1">
-                            Accessibility
-                          </dt>
-                          <dd className="text-sm text-muted-foreground">
-                            {formatFieldValue(data.accessibility)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.amenities && data.amenities.length > 0 && (
-                        <div>
-                          <dt className="text-sm font-medium mb-2">
-                            Amenities
-                          </dt>
-                          <dd className="text-sm text-muted-foreground">
-                            <div className="flex flex-wrap gap-2">
-                              {data.amenities.map((amenity, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
-                                >
-                                  {amenity}
-                                </span>
-                              ))}
-                            </div>
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                  <DescriptionList title="Facilities & Amenities" columns={3}>
+                    <DescriptionItem
+                      label="Parking"
+                      value={data.parking_info}
+                    />
+                    <DescriptionItem
+                      label="Accessibility"
+                      value={data.accessibility}
+                    />
+                    <DescriptionItem
+                      label="Amenities"
+                      value={
+                        data.amenities && data.amenities.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {data.amenities.map((amenity, index) => (
+                              <span
+                                key={index}
+                                className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
+                              >
+                                {amenity}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null
+                      }
+                    />
+                  </DescriptionList>
                 </div>
 
                 {/* Timeline */}
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-                    Timeline
-                  </h3>
-                  <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {data.created_at && (
-                      <div>
-                        <dt className="text-sm font-medium mb-1">Created</dt>
-                        <dd className="text-sm text-muted-foreground">
-                          {formatDate(data.created_at)}
-                        </dd>
-                      </div>
-                    )}
-                    {data.updated_at && (
-                      <div>
-                        <dt className="text-sm font-medium mb-1">
-                          Last Updated
-                        </dt>
-                        <dd className="text-sm text-muted-foreground">
-                          {formatDate(data.updated_at)}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
+                <DescriptionList
+                  title="Timeline"
+                  icon={Database}
+                  columns={3}
+                  className="border-t pt-4"
+                >
+                  <DescriptionItem
+                    label="Created"
+                    value={data.created_at}
+                    render={(value) => formatDate(value as Date | string)}
+                  />
+                  <DescriptionItem
+                    label="Last Updated"
+                    value={data.updated_at}
+                    render={(value) => formatDate(value as Date | string)}
+                  />
+                </DescriptionList>
               </div>
             )}
 
             {/* Contact Tab */}
             {activeTab === "contact" && (
-              <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  {data.phone || data.email || data.website ? (
-                    <>
-                      {data.phone && (
-                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                          <Phone className="h-5 w-5 text-primary mt-0.5" />
-                          <div className="flex-1">
-                            <dt className="text-sm font-medium mb-1">Phone</dt>
-                            <dd className="text-sm">
-                              <a
-                                href={`tel:${data.phone}`}
-                                className="text-primary hover:underline"
-                              >
-                                {data.phone}
-                              </a>
-                            </dd>
-                          </div>
-                        </div>
-                      )}
-                      {data.email && (
-                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                          <Mail className="h-5 w-5 text-primary mt-0.5" />
-                          <div className="flex-1">
-                            <dt className="text-sm font-medium mb-1">Email</dt>
-                            <dd className="text-sm">
-                              <a
-                                href={`mailto:${data.email}`}
-                                className="text-primary hover:underline"
-                              >
-                                {data.email}
-                              </a>
-                            </dd>
-                          </div>
-                        </div>
-                      )}
-                      {data.website && (
-                        <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg md:col-span-2">
-                          <Globe className="h-5 w-5 text-primary mt-0.5" />
-                          <div className="flex-1">
-                            <dt className="text-sm font-medium mb-1">
-                              Website
-                            </dt>
-                            <dd className="text-sm">
-                              <a
-                                href={data.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline break-all"
-                              >
-                                {data.website}
-                              </a>
-                            </dd>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="col-span-2 text-center py-8 text-muted-foreground">
-                      No contact information available
-                    </div>
-                  )}
-                </div>
-              </div>
+              <DescriptionList title="Contact Information" columns={3}>
+                <DescriptionItem
+                  label="Phone"
+                  value={data.phone}
+                  linkType="tel"
+                  icon={Phone}
+                />
+                <DescriptionItem
+                  label="Email"
+                  value={data.email}
+                  linkType="email"
+                  icon={Mail}
+                />
+                <DescriptionItem
+                  label="Website"
+                  value={data.website}
+                  linkType="external"
+                  icon={Globe}
+                  span="md:col-span-3"
+                />
+              </DescriptionList>
             )}
 
             {/* Address Tab */}
             {activeTab === "address" && (
-              <div className="space-y-6">
-                {data.street_address ||
-                data.city ||
-                data.state_province ||
-                data.postal_code ||
-                data.country ? (
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
-                      <MapPinIcon className="h-5 w-5 text-primary mt-0.5" />
-                      <div className="flex-1 space-y-2">
-                        {data.street_address && (
-                          <div>
-                            <dt className="text-sm font-medium mb-1">
-                              Street Address
-                            </dt>
-                            <dd className="text-sm text-muted-foreground">
-                              {data.street_address}
-                            </dd>
-                          </div>
-                        )}
-                        {(data.city ||
-                          data.state_province ||
-                          data.postal_code) && (
-                          <div>
-                            <dt className="text-sm font-medium mb-1">
-                              City, State, ZIP
-                            </dt>
-                            <dd className="text-sm text-muted-foreground">
-                              {[
-                                data.city,
-                                data.state_province,
-                                data.postal_code,
-                              ]
-                                .filter(Boolean)
-                                .join(", ")}
-                            </dd>
-                          </div>
-                        )}
-                        {data.country && (
-                          <div>
-                            <dt className="text-sm font-medium mb-1">
-                              Country
-                            </dt>
-                            <dd className="text-sm text-muted-foreground">
-                              {data.country}
-                            </dd>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No address information available
-                  </div>
-                )}
-              </div>
+              <DescriptionList
+                title="Address Information"
+                icon={MapPinIcon}
+                columns={3}
+              >
+                <DescriptionItem
+                  label="Street Address"
+                  value={data.street_address}
+                />
+                <DescriptionItem
+                  label="City, State, ZIP"
+                  value={
+                    data.city || data.state_province || data.postal_code
+                      ? [data.city, data.state_province, data.postal_code]
+                          .filter(Boolean)
+                          .join(", ")
+                      : null
+                  }
+                />
+                <DescriptionItem label="Country" value={data.country} />
+              </DescriptionList>
             )}
 
             {/* Layout Tab */}
@@ -603,83 +423,11 @@ export function VenueDetail({
       </div>
 
       {/* Create Layout Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Layout</DialogTitle>
-            <DialogDescription>
-              Create a new layout for this venue. Design mode cannot be changed
-              after seats are added.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="layout-name">Layout Name</Label>
-              <Input
-                id="layout-name"
-                placeholder="Layout name"
-                value={newLayoutName}
-                onChange={(e) => setNewLayoutName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newLayoutName.trim()) {
-                    handleCreateLayout();
-                  }
-                }}
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="design-mode">Design Mode</Label>
-              <Select
-                value={newLayoutDesignMode}
-                onValueChange={(v) =>
-                  setNewLayoutDesignMode(v as "seat-level" | "section-level")
-                }
-              >
-                <SelectTrigger id="design-mode">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="seat-level">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Seat Level</span>
-                      <span className="text-xs text-muted-foreground">
-                        Place seats directly on venue floor plan
-                      </span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="section-level">
-                    <div className="flex flex-col items-start">
-                      <span className="font-medium">Section Level</span>
-                      <span className="text-xs text-muted-foreground">
-                        Define sections first, then add seats to each section
-                      </span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCreateDialogOpen(false);
-                setNewLayoutName("");
-                setNewLayoutDesignMode("seat-level");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateLayout}
-              disabled={!newLayoutName.trim() || createLayoutMutation.isPending}
-            >
-              {createLayoutMutation.isPending ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CreateLayoutDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        venue={data}
+      />
     </Card>
   );
 }
