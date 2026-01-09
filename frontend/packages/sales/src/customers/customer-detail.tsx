@@ -798,7 +798,7 @@ export function CustomerDetail({
                 <DescriptionList
                   title="Tags & Classification"
                   icon={Tag}
-                  columns={2}
+                  columns={1}
                 >
                   <DescriptionItem
                     label={``}

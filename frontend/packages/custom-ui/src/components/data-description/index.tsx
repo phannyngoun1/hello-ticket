@@ -494,7 +494,7 @@ export interface DescriptionListProps {
   /** Icon to display next to the title */
   icon?: LucideIcon;
   /** Number of columns in the grid (default: 3) */
-  columns?: 2 | 3 | 4;
+  columns?: 1 | 2 | 3 | 4;
   /** Custom className for the section container */
   className?: string;
   /** Custom className for the grid container */
