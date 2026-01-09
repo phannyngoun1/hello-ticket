@@ -12,5 +12,12 @@ export interface TabItem {
     content?: React.ReactNode;
 }
 
+export interface ButtonTabItem {
+    value: string;
+    label: string;
+    icon?: LucideIcon;
+    disabled?: boolean;
+}
+
 export type TabsVariant = "default" | "underline";
 

@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Card, Tabs, Input, Label } from "@truths/ui";
+import { Button, Card, Input, Label } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   ConfirmationDialog,
@@ -13,8 +13,9 @@ import {
   NoteEditor,
   ImageGallery,
   CopyButton,
+  ButtonTabs,
 } from "@truths/custom-ui";
-import type { ActionItem } from "@truths/custom-ui";
+import type { ActionItem, ButtonTabItem } from "@truths/custom-ui";
 import {
   Edit,
   Info,
@@ -331,6 +332,39 @@ export function ShowDetail({
   const hasMetadata = showMetadata;
   const hasImages = images.length > 0;
 
+  // Build tabs configuration
+  const tabs: ButtonTabItem[] = [
+    {
+      value: "events",
+      label: "Events",
+      icon: Calendar,
+    },
+    {
+      value: "profile",
+      label: "Information",
+      icon: Info,
+    },
+    {
+      value: "images",
+      label: `Images${hasImages ? ` (${images.length})` : ""}`,
+      icon: ImageIcon,
+    },
+    {
+      value: "note",
+      label: "Notes",
+      icon: FileText,
+    },
+  ];
+
+  // Add metadata tab if enabled
+  if (hasMetadata) {
+    tabs.push({
+      value: "metadata",
+      label: "Metadata",
+      icon: Database,
+    });
+  }
+
   // Build action list
   const actionItems: ActionItem[] = [];
 
@@ -415,110 +449,36 @@ export function ShowDetail({
         </div>
 
         {/* Tabs */}
-        <Tabs
+        <ButtonTabs
+          tabs={tabs}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-          <div className="border-b mb-4">
-            <div className="flex gap-4">
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "events"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("events")}
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Events
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("profile")}
-              >
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Information
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "images"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("images")}
-              >
-                <span className="flex items-center gap-2">
-                  <ImageIcon className="h-4 w-4" />
-                  Images {hasImages && `(${images.length})`}
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "note"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("note")}
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Note
-                </span>
-              </button>
-              {hasMetadata && (
-                <button
-                  className={cn(
-                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                    activeTab === "metadata"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("metadata")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Metadata
-                  </span>
-                </button>
+
+          {(activeTab) => (
+            <div className="mt-0">
+              {/* Events Tab */}
+              {activeTab === "events" && data?.id && (
+                <div className="space-y-6">
+                  <EventListContainer showId={data.id} />
+                </div>
               )}
-            </div>
-          </div>
 
-          <div className="mt-0">
-            {/* Events Tab */}
-            {activeTab === "events" && data?.id && (
-              <div className="space-y-6">
-                <EventListContainer showId={data.id} />
-              </div>
-            )}
+              {/* Events Tab - Fallback if provider not available */}
+              {activeTab === "events" && !data?.id && (
+                <div className="space-y-6">
+                  <Card>
+                    <div className="p-4">
+                      <p className="text-sm text-muted-foreground">
+                        Please select a show to view events.
+                      </p>
+                    </div>
+                  </Card>
+                </div>
+              )}
 
-            {/* Events Tab - Fallback if provider not available */}
-            {activeTab === "events" && !data?.id && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <p className="text-sm text-muted-foreground">
-                      Please select a show to view events.
-                    </p>
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {/* Information Tab */}
-            {activeTab === "profile" && (
+              {/* Information Tab */}
+              {activeTab === "profile" && (
               <div className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
                   <div>
@@ -669,8 +629,9 @@ export function ShowDetail({
                 </Card>
               </div>
             )}
-          </div>
-        </Tabs>
+            </div>
+          )}
+        </ButtonTabs>
       </div>
 
       {/* Image Preview Dialog - Full Screen */}

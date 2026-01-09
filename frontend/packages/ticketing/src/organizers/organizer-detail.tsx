@@ -5,7 +5,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { Card, Tabs, Badge } from "@truths/ui";
+import { Card } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -26,7 +26,9 @@ import {
   ActionList,
   TagList,
   DescriptionSection,
+  ButtonTabs,
 } from "@truths/custom-ui";
+import type { ButtonTabItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 import { Organizer } from "./types";
@@ -176,6 +178,29 @@ export function OrganizerDetail({
 
   const hasMetadata = showMetadata;
 
+  // Build tabs configuration
+  const tabs: ButtonTabItem[] = [
+    {
+      value: "overview",
+      label: "Overview",
+      icon: Info,
+    },
+    {
+      value: "documents",
+      label: `Documents${documents.length > 0 ? ` (${documents.length})` : ""}`,
+      icon: File,
+    },
+  ];
+
+  // Add metadata tab if enabled
+  if (hasMetadata) {
+    tabs.splice(1, 0, {
+      value: "metadata",
+      label: "Metadata",
+      icon: Database,
+    });
+  }
+
   return (
     <Card className={cn("p-6", className)}>
       <div>
@@ -262,181 +287,127 @@ export function OrganizerDetail({
         </div>
 
         {/* Tabs */}
-        <Tabs
+        <ButtonTabs
+          tabs={tabs}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-          <div className="border-b mb-4">
-            <div className="flex gap-4">
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "overview"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("overview")}
-              >
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Overview
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "documents"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("documents")}
-              >
-                <span className="flex items-center gap-2">
-                  <File className="h-4 w-4" />
-                  Documents
-                  {documents.length > 0 && (
-                    <Badge
-                      variant="secondary"
-                      className="ml-1 h-5 px-1.5 min-w-[1.25rem]"
-                    >
-                      {documents.length}
-                    </Badge>
-                  )}
-                </span>
-              </button>
-              {hasMetadata && (
-                <button
-                  className={cn(
-                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                    activeTab === "metadata"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("metadata")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Metadata
-                  </span>
-                </button>
+          {(activeTab) => (
+            <div className="mt-0">
+              {/* Overview Tab */}
+              {activeTab === "overview" && (
+                <div className="space-y-8">
+                  {/* Basic Information */}
+
+                  {/* Contact & Location */}
+                  <DescriptionList
+                    title="Contact & Location"
+                    icon={User}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Email"
+                      value={data.email}
+                      dataType="email"
+                      linkType="email"
+                      icon={Mail}
+                    />
+                    <DescriptionItem
+                      label="Phone"
+                      value={data.phone}
+                      dataType="phone"
+                      linkType="tel"
+                      icon={Phone}
+                    />
+                    <DescriptionItem
+                      label="Website"
+                      value={data.website}
+                      dataType="url"
+                      linkType="external"
+                      icon={Globe}
+                    />
+                    <DescriptionItem
+                      label="Address"
+                      value={[data.address, data.city, data.country]
+                        .filter(Boolean)
+                        .join(", ")}
+                      icon={MapPin}
+                      span="md:col-span-3"
+                    />
+                  </DescriptionList>
+                  <DescriptionSection>
+                    <DescriptionItem
+                      label="Description"
+                      value={data.description}
+                      span="md:col-span-3"
+                    />
+                  </DescriptionSection>
+
+                  <DescriptionSection>
+                    <DescriptionItem
+                      label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                      value={
+                        data.tags && data.tags.length > 0 ? (
+                          <TagList tags={data.tags} />
+                        ) : null
+                      }
+                      span="md:col-span-3"
+                      hideIfEmpty={false}
+                    />
+                  </DescriptionSection>
+
+                  {/* Timeline */}
+                  <DescriptionList
+                    title="System Information"
+                    icon={Database}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Created"
+                      value={data.created_at}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                    <DescriptionItem
+                      label="Last Updated"
+                      value={data.updated_at}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                  </DescriptionList>
+                </div>
+              )}
+
+              {/* Documents Tab */}
+              {activeTab === "documents" && (
+                <DocumentList
+                  documents={documents}
+                  isLoading={loadingDocuments}
+                  onManageAttachments={
+                    editable && onManageAttachments
+                      ? () => onManageAttachments(data)
+                      : undefined
+                  }
+                />
+              )}
+
+              {/* Metadata Tab */}
+              {activeTab === "metadata" && (
+                <div className="space-y-6">
+                  <Card>
+                    <div className="p-4">
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </div>
+                  </Card>
+                </div>
               )}
             </div>
-          </div>
-
-          <div className="mt-0">
-            {/* Overview Tab */}
-            {activeTab === "overview" && (
-              <div className="space-y-8">
-                {/* Basic Information */}
-
-                {/* Contact & Location */}
-                <DescriptionList
-                  title="Contact & Location"
-                  icon={User}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Email"
-                    value={data.email}
-                    dataType="email"
-                    linkType="email"
-                    icon={Mail}
-                  />
-                  <DescriptionItem
-                    label="Phone"
-                    value={data.phone}
-                    dataType="phone"
-                    linkType="tel"
-                    icon={Phone}
-                  />
-                  <DescriptionItem
-                    label="Website"
-                    value={data.website}
-                    dataType="url"
-                    linkType="external"
-                    icon={Globe}
-                  />
-                  <DescriptionItem
-                    label="Address"
-                    value={[data.address, data.city, data.country]
-                      .filter(Boolean)
-                      .join(", ")}
-                    icon={MapPin}
-                    span="md:col-span-3"
-                  />
-                </DescriptionList>
-                <DescriptionSection>
-                  <DescriptionItem
-                    label="Description"
-                    value={data.description}
-                    span="md:col-span-3"
-                  />
-                </DescriptionSection>
-
-                <DescriptionSection>
-                  <DescriptionItem
-                    label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
-                    value={
-                      data.tags && data.tags.length > 0 ? (
-                        <TagList tags={data.tags} />
-                      ) : null
-                    }
-                    span="md:col-span-3"
-                    hideIfEmpty={false}
-                  />
-                </DescriptionSection>
-
-                {/* Timeline */}
-                <DescriptionList
-                  title="System Information"
-                  icon={Database}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Created"
-                    value={data.created_at}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="Last Updated"
-                    value={data.updated_at}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Documents Tab */}
-            {activeTab === "documents" && (
-              <DocumentList
-                documents={documents}
-                isLoading={loadingDocuments}
-                onManageAttachments={
-                  editable && onManageAttachments
-                    ? () => onManageAttachments(data)
-                    : undefined
-                }
-              />
-            )}
-
-            {/* Metadata Tab */}
-            {activeTab === "metadata" && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <pre className="text-xs overflow-auto">
-                      {JSON.stringify(data, null, 2)}
-                    </pre>
-                  </div>
-                </Card>
-              </div>
-            )}
-          </div>
-        </Tabs>
+          )}
+        </ButtonTabs>
       </div>
     </Card>
   );

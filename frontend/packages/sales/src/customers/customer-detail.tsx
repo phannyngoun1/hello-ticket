@@ -7,7 +7,7 @@
  */
 
 import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { Card, Tabs, Badge } from "@truths/ui";
+import { Card, Badge } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   Edit,
@@ -42,7 +42,9 @@ import {
   ActionList,
   CopyButton,
   TagList,
+  ButtonTabs,
 } from "@truths/custom-ui";
+import type { ButtonTabItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
 
@@ -95,7 +97,6 @@ export function CustomerDetail({
   const [activeTab, setActiveTab] = useState<
     "overview" | "profile" | "account" | "social" | "metadata" | "documents"
   >("overview");
-
   const [documents, setDocuments] = useState<FileUpload[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
 
@@ -161,6 +162,45 @@ export function CustomerDetail({
   // Build action items
   const isActive = cus?.status === "active";
   const hasMetadata = showMetadata;
+
+  // Build tabs configuration
+  const tabs: ButtonTabItem[] = [
+    {
+      value: "overview",
+      label: "Overview",
+      icon: Info,
+    },
+    {
+      value: "profile",
+      label: "Preferences & Settings",
+      icon: SettingsIcon,
+    },
+    {
+      value: "account",
+      label: "Account",
+      icon: Building2,
+    },
+    {
+      value: "social",
+      label: "Social & Tags",
+      icon: Share2,
+    },
+    {
+      value: "documents",
+      label:
+        "Documents" + (documents.length > 0 ? ` (${documents.length})` : ""),
+      icon: FileText,
+    },
+  ];
+
+  // Add metadata tab if enabled
+  if (hasMetadata) {
+    tabs.splice(4, 0, {
+      value: "metadata",
+      label: "Metadata",
+      icon: Database,
+    });
+  }
 
   if (loading) {
     return (
@@ -374,490 +414,403 @@ export function CustomerDetail({
         </div>
 
         {/* Tabs */}
-        <Tabs
+        <ButtonTabs
+          tabs={tabs}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-          <div className="border-b mb-4">
-            <div className="flex gap-4">
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "overview"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("overview")}
-              >
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Overview
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "profile"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("profile")}
-              >
-                <span className="flex items-center gap-2">
-                  <SettingsIcon className="h-4 w-4" />
-                  Preferences & Settings
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "account"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("account")}
-              >
-                <span className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Account
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "social"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("social")}
-              >
-                <span className="flex items-center gap-2">
-                  <Share2 className="h-4 w-4" />
-                  Social & Tags
-                </span>
-              </button>
-              {hasMetadata && (
-                <button
-                  className={cn(
-                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                    activeTab === "metadata"
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
-                  )}
-                  onClick={() => setActiveTab("metadata")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Database className="h-4 w-4" />
-                    Metadata
-                  </span>
-                </button>
+          {(activeTab) => (
+            <div className="mt-0">
+              {/* Overview Tab */}
+              {activeTab === "overview" && (
+                <div className="space-y-8">
+                  {/* Personal Information */}
+                  <DescriptionList
+                    title="Personal Information"
+                    icon={User}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Date of Birth"
+                      value={cus.date_of_birth}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                    <DescriptionItem
+                      label="Gender"
+                      value={cus.gender}
+                      valueClassName="capitalize"
+                    />
+                    <DescriptionItem
+                      label="Nationality"
+                      value={cus.nationality}
+                    />
+                    <DescriptionItem label="ID Type" value={cus.id_type} />
+                    <DescriptionItem label="ID Number" value={cus.id_number} />
+                  </DescriptionList>
+                  {/* 1. Essential Information */}
+                  <DescriptionList
+                    title="Contact Information"
+                    icon={Mail}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Business Name"
+                      value={cus.business_name}
+                    />
+                    <DescriptionItem
+                      label="Email"
+                      value={cus.email}
+                      linkType="email"
+                    />
+                    <DescriptionItem
+                      label="Phone"
+                      value={cus.phone}
+                      linkType="tel"
+                    />
+                    <DescriptionItem
+                      label="Website"
+                      value={cus.website}
+                      linkType="external"
+                    />
+                  </DescriptionList>
+
+                  <DescriptionList
+                    columns={3}
+                    title="Emergency Contact"
+                    icon={AlertCircle}
+                    className="mt-0 mb-0"
+                  >
+                    <DescriptionItem
+                      label="Contact Name"
+                      value={cus.emergency_contact_name}
+                    />
+                    <DescriptionItem
+                      label="Contact Phone"
+                      value={cus.emergency_contact_phone}
+                      linkType="tel"
+                    />
+                    <DescriptionItem
+                      label="Relationship"
+                      value={cus.emergency_contact_relationship}
+                    />
+                  </DescriptionList>
+
+                  {/* 2. Address Information */}
+                  <DescriptionList
+                    title="Address Information"
+                    icon={MapPin}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Street Address"
+                      value={cus.street_address}
+                      span="md:col-span-2 lg:col-span-3"
+                    />
+                    <DescriptionItem label="City" value={cus.city} />
+                    <DescriptionItem
+                      label="State/Province"
+                      value={cus.state_province}
+                    />
+                    <DescriptionItem
+                      label="Postal Code"
+                      value={cus.postal_code}
+                    />
+                    <DescriptionItem label="Country" value={cus.country} />
+                  </DescriptionList>
+                </div>
               )}
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "documents"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("documents")}
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Documents {documents.length > 0 && `(${documents.length})`}
-                </span>
-              </button>
+
+              {/* Profile Tab */}
+              {activeTab === "profile" && (
+                <div className="space-y-8">
+                  {/* Preferences & Settings */}
+                  <DescriptionList columns={2}>
+                    <DescriptionItem
+                      label="Event Preferences"
+                      value={cus.event_preferences}
+                    />
+                    <DescriptionItem
+                      label="Seating Preferences"
+                      value={cus.seating_preferences}
+                    />
+                    <DescriptionItem
+                      label="Accessibility Needs"
+                      value={cus.accessibility_needs}
+                    />
+                    <DescriptionItem
+                      label="Dietary Restrictions"
+                      value={cus.dietary_restrictions}
+                    />
+                    <DescriptionItem
+                      label="Preferred Language"
+                      value={cus.preferred_language}
+                    />
+                  </DescriptionList>
+
+                  <DescriptionSection showBorder>
+                    <div className="flex flex-wrap gap-4">
+                      {cus.marketing_opt_in !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.marketing_opt_in
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                Marketing Opt-in:{" "}
+                                {cus.marketing_opt_in ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
+                      )}
+                      {cus.email_marketing !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.email_marketing
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                Email Marketing:{" "}
+                                {cus.email_marketing ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
+                      )}
+                      {cus.sms_marketing !== undefined && (
+                        <DescriptionItem
+                          label=""
+                          value={
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 rounded-full",
+                                  cus.sms_marketing
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                                )}
+                              />
+                              <span className="text-sm text-muted-foreground">
+                                SMS Marketing:{" "}
+                                {cus.sms_marketing ? "Yes" : "No"}
+                              </span>
+                            </div>
+                          }
+                          hideIfEmpty={false}
+                        />
+                      )}
+                    </div>
+                  </DescriptionSection>
+                </div>
+              )}
+
+              {/* Account Tab */}
+              {activeTab === "account" && (
+                <div className="space-y-8">
+                  {/* Account Management */}
+                  <DescriptionList
+                    title="Account Management"
+                    icon={Users}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Account Manager"
+                      value={cus.account_manager_id}
+                    />
+                    <DescriptionItem
+                      label="Sales Representative"
+                      value={cus.sales_representative_id}
+                    />
+                    <DescriptionItem
+                      label="Customer Since"
+                      value={cus.customer_since}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                      icon={Calendar}
+                    />
+                    <DescriptionItem
+                      label="Last Purchase"
+                      value={cus.last_purchase_date}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                      icon={ShoppingCart}
+                    />
+                    <DescriptionItem
+                      label="Total Purchase Amount"
+                      value={cus.total_purchase_amount}
+                      render={(value) =>
+                        `$${(value as number)?.toFixed(2) || "0.00"}` as React.ReactNode
+                      }
+                      valueClassName="font-semibold text-foreground"
+                      icon={CreditCard}
+                    />
+                    <DescriptionItem
+                      label="Last Contact"
+                      value={cus.last_contact_date}
+                      render={(value) => formatDate(value as Date | string)}
+                      icon={Phone}
+                    />
+                  </DescriptionList>
+
+                  {/* System Information */}
+                  <DescriptionList
+                    title="System Information"
+                    icon={Database}
+                    columns={3}
+                  >
+                    <DescriptionItem
+                      label="Status Reason"
+                      value={cus.status_reason}
+                    />
+                    <DescriptionItem
+                      label="Created"
+                      value={cus.createdAt}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                    <DescriptionItem
+                      label="Last Updated"
+                      value={cus.updatedAt}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                    <DescriptionItem
+                      label="Deactivated At"
+                      value={cus.deactivatedAt}
+                      render={(value) =>
+                        formatDate(value as Date | string) as React.ReactNode
+                      }
+                    />
+                  </DescriptionList>
+                </div>
+              )}
+
+              {/* Social & Tags Tab */}
+              {activeTab === "social" && (
+                <div className="space-y-8">
+                  {/* Social & Online */}
+                  <DescriptionList
+                    title="Social & Online"
+                    icon={Globe}
+                    columns={2}
+                  >
+                    <DescriptionItem
+                      label="Facebook"
+                      value={cus.facebook_url}
+                      linkType="external"
+                    />
+                    <DescriptionItem
+                      label="Twitter/X"
+                      value={cus.twitter_handle}
+                      render={(value) =>
+                        ((value as string).startsWith("@")
+                          ? value
+                          : `@${value}`) as React.ReactNode
+                      }
+                    />
+                    <DescriptionItem
+                      label="LinkedIn"
+                      value={cus.linkedin_url}
+                      linkType="external"
+                    />
+                    <DescriptionItem
+                      label="Instagram"
+                      value={cus.instagram_handle}
+                      render={(value) =>
+                        ((value as string).startsWith("@")
+                          ? value
+                          : `@${value}`) as React.ReactNode
+                      }
+                    />
+                  </DescriptionList>
+
+                  {/* Tags & Classification */}
+                  <DescriptionList
+                    title="Tags & Classification"
+                    icon={Tag}
+                    columns={1}
+                  >
+                    <DescriptionItem
+                      label={``}
+                      value={
+                        cus.tags && cus.tags.length > 0 ? (
+                          <TagList tags={cus.tags} />
+                        ) : (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Tag className="h-4 w-4 opacity-50" />
+                            <span>No tags assigned</span>
+                          </div>
+                        )
+                      }
+                      hideIfEmpty={false}
+                    />
+
+                    <DescriptionItem
+                      label="Internal Notes"
+                      value={cus.notes}
+                      valueClassName="whitespace-pre-wrap"
+                    />
+
+                    <DescriptionItem
+                      label="Public Notes"
+                      value={cus.public_notes}
+                      valueClassName="whitespace-pre-wrap"
+                    />
+                  </DescriptionList>
+                </div>
+              )}
+
+              {/* Metadata Tab */}
+              {activeTab === "metadata" && (
+                <div className="space-y-6">
+                  <Card>
+                    <div className="p-4">
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(cus, null, 2)}
+                      </pre>
+                    </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* Documents Tab */}
+              {activeTab === "documents" && (
+                <DocumentList
+                  documents={documents}
+                  isLoading={isLoadingDocuments}
+                  onManageAttachments={
+                    onManageAttachments
+                      ? () => onManageAttachments(cus!)
+                      : undefined
+                  }
+                  loading={loading}
+                />
+              )}
             </div>
-          </div>
-
-          <div className="mt-0">
-            {/* Overview Tab */}
-            {activeTab === "overview" && (
-              <div className="space-y-8">
-                {/* Personal Information */}
-                <DescriptionList
-                  title="Personal Information"
-                  icon={User}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Date of Birth"
-                    value={cus.date_of_birth}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="Gender"
-                    value={cus.gender}
-                    valueClassName="capitalize"
-                  />
-                  <DescriptionItem
-                    label="Nationality"
-                    value={cus.nationality}
-                  />
-                  <DescriptionItem label="ID Type" value={cus.id_type} />
-                  <DescriptionItem label="ID Number" value={cus.id_number} />
-                </DescriptionList>
-                {/* 1. Essential Information */}
-                <DescriptionList
-                  title="Contact Information"
-                  icon={Mail}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Business Name"
-                    value={cus.business_name}
-                  />
-                  <DescriptionItem
-                    label="Email"
-                    value={cus.email}
-                    linkType="email"
-                  />
-                  <DescriptionItem
-                    label="Phone"
-                    value={cus.phone}
-                    linkType="tel"
-                  />
-                  <DescriptionItem
-                    label="Website"
-                    value={cus.website}
-                    linkType="external"
-                  />
-                </DescriptionList>
-
-                <DescriptionList
-                  columns={3}
-                  title="Emergency Contact"
-                  icon={AlertCircle}
-                  className="mt-0 mb-0"
-                >
-                  <DescriptionItem
-                    label="Contact Name"
-                    value={cus.emergency_contact_name}
-                  />
-                  <DescriptionItem
-                    label="Contact Phone"
-                    value={cus.emergency_contact_phone}
-                    linkType="tel"
-                  />
-                  <DescriptionItem
-                    label="Relationship"
-                    value={cus.emergency_contact_relationship}
-                  />
-                </DescriptionList>
-
-                {/* 2. Address Information */}
-                <DescriptionList
-                  title="Address Information"
-                  icon={MapPin}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Street Address"
-                    value={cus.street_address}
-                    span="md:col-span-2 lg:col-span-3"
-                  />
-                  <DescriptionItem label="City" value={cus.city} />
-                  <DescriptionItem
-                    label="State/Province"
-                    value={cus.state_province}
-                  />
-                  <DescriptionItem
-                    label="Postal Code"
-                    value={cus.postal_code}
-                  />
-                  <DescriptionItem label="Country" value={cus.country} />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Profile Tab */}
-            {activeTab === "profile" && (
-              <div className="space-y-8">
-                {/* Preferences & Settings */}
-                <DescriptionList columns={2}>
-                  <DescriptionItem
-                    label="Event Preferences"
-                    value={cus.event_preferences}
-                  />
-                  <DescriptionItem
-                    label="Seating Preferences"
-                    value={cus.seating_preferences}
-                  />
-                  <DescriptionItem
-                    label="Accessibility Needs"
-                    value={cus.accessibility_needs}
-                  />
-                  <DescriptionItem
-                    label="Dietary Restrictions"
-                    value={cus.dietary_restrictions}
-                  />
-                  <DescriptionItem
-                    label="Preferred Language"
-                    value={cus.preferred_language}
-                  />
-                </DescriptionList>
-
-                <DescriptionSection showBorder>
-                  <div className="flex flex-wrap gap-4">
-                    {cus.marketing_opt_in !== undefined && (
-                      <DescriptionItem
-                        label=""
-                        value={
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                "h-2 w-2 rounded-full",
-                                cus.marketing_opt_in
-                                  ? "bg-green-500"
-                                  : "bg-gray-300"
-                              )}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                              Marketing Opt-in:{" "}
-                              {cus.marketing_opt_in ? "Yes" : "No"}
-                            </span>
-                          </div>
-                        }
-                        hideIfEmpty={false}
-                      />
-                    )}
-                    {cus.email_marketing !== undefined && (
-                      <DescriptionItem
-                        label=""
-                        value={
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                "h-2 w-2 rounded-full",
-                                cus.email_marketing
-                                  ? "bg-green-500"
-                                  : "bg-gray-300"
-                              )}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                              Email Marketing:{" "}
-                              {cus.email_marketing ? "Yes" : "No"}
-                            </span>
-                          </div>
-                        }
-                        hideIfEmpty={false}
-                      />
-                    )}
-                    {cus.sms_marketing !== undefined && (
-                      <DescriptionItem
-                        label=""
-                        value={
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                "h-2 w-2 rounded-full",
-                                cus.sms_marketing
-                                  ? "bg-green-500"
-                                  : "bg-gray-300"
-                              )}
-                            />
-                            <span className="text-sm text-muted-foreground">
-                              SMS Marketing: {cus.sms_marketing ? "Yes" : "No"}
-                            </span>
-                          </div>
-                        }
-                        hideIfEmpty={false}
-                      />
-                    )}
-                  </div>
-                </DescriptionSection>
-              </div>
-            )}
-
-            {/* Account Tab */}
-            {activeTab === "account" && (
-              <div className="space-y-8">
-                {/* Account Management */}
-                <DescriptionList
-                  title="Account Management"
-                  icon={Users}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Account Manager"
-                    value={cus.account_manager_id}
-                  />
-                  <DescriptionItem
-                    label="Sales Representative"
-                    value={cus.sales_representative_id}
-                  />
-                  <DescriptionItem
-                    label="Customer Since"
-                    value={cus.customer_since}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                    icon={Calendar}
-                  />
-                  <DescriptionItem
-                    label="Last Purchase"
-                    value={cus.last_purchase_date}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                    icon={ShoppingCart}
-                  />
-                  <DescriptionItem
-                    label="Total Purchase Amount"
-                    value={cus.total_purchase_amount}
-                    render={(value) =>
-                      `$${(value as number)?.toFixed(2) || "0.00"}` as React.ReactNode
-                    }
-                    valueClassName="font-semibold text-foreground"
-                    icon={CreditCard}
-                  />
-                  <DescriptionItem
-                    label="Last Contact"
-                    value={cus.last_contact_date}
-                    render={(value) => formatDate(value as Date | string)}
-                    icon={Phone}
-                  />
-                </DescriptionList>
-
-                {/* System Information */}
-                <DescriptionList
-                  title="System Information"
-                  icon={Database}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Status Reason"
-                    value={cus.status_reason}
-                  />
-                  <DescriptionItem
-                    label="Created"
-                    value={cus.createdAt}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="Last Updated"
-                    value={cus.updatedAt}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="Deactivated At"
-                    value={cus.deactivatedAt}
-                    render={(value) =>
-                      formatDate(value as Date | string) as React.ReactNode
-                    }
-                  />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Social & Tags Tab */}
-            {activeTab === "social" && (
-              <div className="space-y-8">
-                {/* Social & Online */}
-                <DescriptionList
-                  title="Social & Online"
-                  icon={Globe}
-                  columns={2}
-                >
-                  <DescriptionItem
-                    label="Facebook"
-                    value={cus.facebook_url}
-                    linkType="external"
-                  />
-                  <DescriptionItem
-                    label="Twitter/X"
-                    value={cus.twitter_handle}
-                    render={(value) =>
-                      ((value as string).startsWith("@")
-                        ? value
-                        : `@${value}`) as React.ReactNode
-                    }
-                  />
-                  <DescriptionItem
-                    label="LinkedIn"
-                    value={cus.linkedin_url}
-                    linkType="external"
-                  />
-                  <DescriptionItem
-                    label="Instagram"
-                    value={cus.instagram_handle}
-                    render={(value) =>
-                      ((value as string).startsWith("@")
-                        ? value
-                        : `@${value}`) as React.ReactNode
-                    }
-                  />
-                </DescriptionList>
-
-                {/* Tags & Classification */}
-                <DescriptionList
-                  title="Tags & Classification"
-                  icon={Tag}
-                  columns={1}
-                >
-                  <DescriptionItem
-                    label={``}
-                    value={
-                      cus.tags && cus.tags.length > 0 ? (
-                        <TagList tags={cus.tags} />
-                      ) : (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Tag className="h-4 w-4 opacity-50" />
-                          <span>No tags assigned</span>
-                        </div>
-                      )
-                    }
-                    hideIfEmpty={false}
-                  />
-
-                  <DescriptionItem
-                    label="Internal Notes"
-                    value={cus.notes}
-                    valueClassName="whitespace-pre-wrap"
-                  />
-
-                  <DescriptionItem
-                    label="Public Notes"
-                    value={cus.public_notes}
-                    valueClassName="whitespace-pre-wrap"
-                  />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Metadata Tab */}
-            {activeTab === "metadata" && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <pre className="text-xs overflow-auto">
-                      {JSON.stringify(cus, null, 2)}
-                    </pre>
-                  </div>
-                </Card>
-              </div>
-            )}
-
-            {/* Documents Tab */}
-            {activeTab === "documents" && (
-              <DocumentList
-                documents={documents}
-                isLoading={isLoadingDocuments}
-                onManageAttachments={
-                  onManageAttachments
-                    ? () => onManageAttachments(cus!)
-                    : undefined
-                }
-                loading={loading}
-              />
-            )}
-          </div>
-        </Tabs>
+          )}
+        </ButtonTabs>
       </div>
     </Card>
   );
