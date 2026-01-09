@@ -11,15 +11,24 @@ import { API_CONFIG } from "@truths/config";
 interface VenueDTO {
   id: string;
   tenant_id: string;
-
-
   code: string;
-
-
-
   name: string;
-
-
+  description?: string;
+  image_url?: string;
+  venue_type?: string;
+  capacity?: number;
+  parking_info?: string;
+  accessibility?: string;
+  amenities?: string[];
+  opening_hours?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  street_address?: string;
+  city?: string;
+  state_province?: string;
+  postal_code?: string;
+  country?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -30,15 +39,24 @@ interface VenueDTO {
 function transformVenue(dto: VenueDTO): Venue {
   return {
     id: dto.id,
-
-
     code: dto.code,
-
-
-
     name: dto.name,
-
-
+    description: dto.description,
+    image_url: dto.image_url,
+    venue_type: dto.venue_type,
+    capacity: dto.capacity,
+    parking_info: dto.parking_info,
+    accessibility: dto.accessibility,
+    amenities: dto.amenities,
+    opening_hours: dto.opening_hours,
+    phone: dto.phone,
+    email: dto.email,
+    website: dto.website,
+    street_address: dto.street_address,
+    city: dto.city,
+    state_province: dto.state_province,
+    postal_code: dto.postal_code,
+    country: dto.country,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : undefined,
   };

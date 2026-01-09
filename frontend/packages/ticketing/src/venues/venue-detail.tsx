@@ -11,6 +11,7 @@ import {
   CopyButton,
   DescriptionList,
   DescriptionItem,
+  DescriptionSection,
 } from "@truths/custom-ui";
 import type { ActionItem } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
@@ -62,7 +63,7 @@ export function VenueDetail({
   customActions,
 }: VenueDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "seats" | "details" | "contact" | "address" | "metadata"
+    "seats" | "details" | "contact" | "metadata"
   >("seats");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
@@ -75,10 +76,16 @@ export function VenueDetail({
     [data, data?.name]
   );
 
-  const formatDate = (value?: Date | string) => {
+  const formatDate = (value?: Date | string | null) => {
     if (!value) return "N/A";
-    const date = value instanceof Date ? value : new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+    try {
+      const date = value instanceof Date ? value : new Date(value);
+      return Number.isNaN(date.getTime())
+        ? "Invalid Date"
+        : date.toLocaleString();
+    } catch {
+      return "Invalid Date";
+    }
   };
 
   if (loading) {
@@ -219,21 +226,7 @@ export function VenueDetail({
               >
                 <span className="flex items-center gap-2">
                   <Phone className="h-4 w-4" />
-                  Contact
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
-                  activeTab === "address"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("address")}
-              >
-                <span className="flex items-center gap-2">
-                  <MapPinIcon className="h-4 w-4" />
-                  Address
+                  Contact & Address
                 </span>
               </button>
               {hasMetadata && (
@@ -260,66 +253,63 @@ export function VenueDetail({
             {activeTab === "details" && (
               <div className="space-y-6">
                 {/* Description */}
-                {data.description && (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h3 className="mb-2 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Description
-                    </h3>
-                    <p className="text-sm text-foreground whitespace-pre-line">
-                      {data.description}
-                    </p>
-                  </div>
-                )}
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <DescriptionList title="Venue Information" columns={3}>
-                    <DescriptionItem
-                      label="Venue Type"
-                      value={data.venue_type}
-                    />
-                    <DescriptionItem
-                      label="Capacity"
-                      value={
-                        data.capacity
-                          ? `${data.capacity.toLocaleString()} seats`
-                          : null
-                      }
-                    />
-                    <DescriptionItem
-                      label="Opening Hours"
-                      value={data.opening_hours}
-                      preserveWhitespace
-                    />
-                  </DescriptionList>
+                <DescriptionList title="Venue Information" columns={3}>
+                  <DescriptionItem
+                    label="Venue Type"
+                    value={data.venue_type || null}
+                  />
+                  <DescriptionItem
+                    label="Capacity"
+                    value={
+                      data.capacity
+                        ? `${data.capacity.toLocaleString()} seats`
+                        : null
+                    }
+                  />
+                  <DescriptionItem
+                    label="Opening Hours"
+                    value={data.opening_hours || null}
+                    preserveWhitespace
+                  />
+                </DescriptionList>
 
-                  <DescriptionList title="Facilities & Amenities" columns={3}>
-                    <DescriptionItem
-                      label="Parking"
-                      value={data.parking_info}
-                    />
-                    <DescriptionItem
-                      label="Accessibility"
-                      value={data.accessibility}
-                    />
-                    <DescriptionItem
-                      label="Amenities"
-                      value={
-                        data.amenities && data.amenities.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {data.amenities.map((amenity, index) => (
-                              <span
-                                key={index}
-                                className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
-                              >
-                                {amenity}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null
-                      }
-                    />
-                  </DescriptionList>
-                </div>
+                <DescriptionList title="Facilities & Amenities" columns={3}>
+                  <DescriptionItem
+                    label="Parking"
+                    value={data.parking_info || null}
+                  />
+                  <DescriptionItem
+                    label="Accessibility"
+                    value={data.accessibility || null}
+                  />
+                  <DescriptionItem
+                    label="Amenities"
+                    value={
+                      data.amenities &&
+                      Array.isArray(data.amenities) &&
+                      data.amenities.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {data.amenities.map((amenity, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center rounded-md bg-secondary px-2.5 py-1 text-xs font-medium"
+                            >
+                              {amenity}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null
+                    }
+                  />
+                </DescriptionList>
+
+                <DescriptionSection>
+                  <DescriptionItem
+                    label="Description"
+                    value={data.description || null}
+                  />
+                </DescriptionSection>
 
                 {/* Timeline */}
                 <DescriptionList
@@ -342,54 +332,54 @@ export function VenueDetail({
               </div>
             )}
 
-            {/* Contact Tab */}
+            {/* Contact & Address Tab */}
             {activeTab === "contact" && (
-              <DescriptionList title="Contact Information" columns={3}>
-                <DescriptionItem
-                  label="Phone"
-                  value={data.phone}
-                  linkType="tel"
-                  icon={Phone}
-                />
-                <DescriptionItem
-                  label="Email"
-                  value={data.email}
-                  linkType="email"
-                  icon={Mail}
-                />
-                <DescriptionItem
-                  label="Website"
-                  value={data.website}
-                  linkType="external"
-                  icon={Globe}
-                  span="md:col-span-3"
-                />
-              </DescriptionList>
-            )}
+              <div className="space-y-6">
+                <DescriptionList title="Contact Information" columns={3}>
+                  <DescriptionItem
+                    label="Phone"
+                    value={data.phone || null}
+                    linkType="tel"
+                    icon={Phone}
+                  />
+                  <DescriptionItem
+                    label="Email"
+                    value={data.email || null}
+                    linkType="email"
+                    icon={Mail}
+                  />
+                  <DescriptionItem
+                    label="Website"
+                    value={data.website || null}
+                    linkType="external"
+                    icon={Globe}
+                    span="md:col-span-3"
+                  />
+                </DescriptionList>
 
-            {/* Address Tab */}
-            {activeTab === "address" && (
-              <DescriptionList
-                title="Address Information"
-                icon={MapPinIcon}
-                columns={3}
-              >
-                <DescriptionItem
-                  label="Street Address"
-                  value={data.street_address}
-                />
-                <DescriptionItem
-                  label="City, State, ZIP"
-                  value={
-                    data.city || data.state_province || data.postal_code
-                      ? [data.city, data.state_province, data.postal_code]
-                          .filter(Boolean)
-                          .join(", ")
-                      : null
-                  }
-                />
-                <DescriptionItem label="Country" value={data.country} />
-              </DescriptionList>
+                <DescriptionList
+                  title="Address Information"
+                  icon={MapPinIcon}
+                  columns={3}
+                >
+                  <DescriptionItem
+                    label="Street Address"
+                    value={data.street_address || null}
+                  />
+                  <DescriptionItem
+                    label="City, State, ZIP"
+                    value={
+                      [data.city, data.state_province, data.postal_code]
+                        .filter(Boolean)
+                        .join(", ") || null
+                    }
+                  />
+                  <DescriptionItem
+                    label="Country"
+                    value={data.country || null}
+                  />
+                </DescriptionList>
+              </div>
             )}
 
             {/* Layout Tab */}

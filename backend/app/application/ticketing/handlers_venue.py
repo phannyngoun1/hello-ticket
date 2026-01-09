@@ -13,6 +13,8 @@ from app.application.ticketing.queries_venue import (
 )
 from app.domain.ticketing.venue_repositories import VenueRepository, VenueSearchResult
 from app.domain.ticketing.venue import Venue
+from app.domain.shared.value_objects.address import Address
+from app.domain.shared.value_objects.contact_info import ContactInfo
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.tenant_context import require_tenant_context
 
@@ -46,6 +48,21 @@ class VenueCommandHandler:
                 description="Venue code"
             )
 
+        # Create Value Objects for contact info and address
+        contact_info = ContactInfo(
+            email=command.email,
+            phone=command.phone,
+            website=command.website
+        )
+
+        address = Address(
+            street_address=command.street_address,
+            city=command.city,
+            state_province=command.state_province,
+            postal_code=command.postal_code,
+            country=command.country
+        )
+
         venue = Venue(
             tenant_id=tenant_id,
             code=code_value,
@@ -58,14 +75,8 @@ class VenueCommandHandler:
             accessibility=command.accessibility,
             amenities=command.amenities,
             opening_hours=command.opening_hours,
-            phone=command.phone,
-            email=command.email,
-            website=command.website,
-            street_address=command.street_address,
-            city=command.city,
-            state_province=command.state_province,
-            postal_code=command.postal_code,
-            country=command.country,
+            contact_info=contact_info,
+            address=address,
         )
 
         saved = await self._venue_repository.save(venue)
@@ -105,22 +116,31 @@ class VenueCommandHandler:
             update_kwargs['amenities'] = command.amenities
         if command.opening_hours is not None:
             update_kwargs['opening_hours'] = command.opening_hours
-        if command.phone is not None:
-            update_kwargs['phone'] = command.phone
-        if command.email is not None:
-            update_kwargs['email'] = command.email
-        if command.website is not None:
-            update_kwargs['website'] = command.website
-        if command.street_address is not None:
-            update_kwargs['street_address'] = command.street_address
-        if command.city is not None:
-            update_kwargs['city'] = command.city
-        if command.state_province is not None:
-            update_kwargs['state_province'] = command.state_province
-        if command.postal_code is not None:
-            update_kwargs['postal_code'] = command.postal_code
-        if command.country is not None:
-            update_kwargs['country'] = command.country
+
+        # Handle contact info fields - create new ContactInfo if any field is provided
+        contact_info_fields = ['phone', 'email', 'website']
+        if any(getattr(command, field, None) is not None for field in contact_info_fields):
+            # Start with existing contact info, then override provided fields
+            existing_contact = venue.contact_info
+            update_kwargs['contact_info'] = ContactInfo(
+                email=command.email if command.email is not None else (existing_contact.email if existing_contact else None),
+                phone=command.phone if command.phone is not None else (existing_contact.phone if existing_contact else None),
+                website=command.website if command.website is not None else (existing_contact.website if existing_contact else None)
+            )
+
+        # Handle address fields - create new Address if any field is provided
+        address_fields = ['street_address', 'city', 'state_province', 'postal_code', 'country']
+        if any(getattr(command, field, None) is not None for field in address_fields):
+            # Start with existing address, then override provided fields
+            existing_address = venue.address
+            update_kwargs['address'] = Address(
+                street_address=command.street_address if command.street_address is not None else (existing_address.street_address if existing_address else None),
+                city=command.city if command.city is not None else (existing_address.city if existing_address else None),
+                state_province=command.state_province if command.state_province is not None else (existing_address.state_province if existing_address else None),
+                postal_code=command.postal_code if command.postal_code is not None else (existing_address.postal_code if existing_address else None),
+                country=command.country if command.country is not None else (existing_address.country if existing_address else None)
+            )
+
         venue.update_details(**update_kwargs)
 
         saved = await self._venue_repository.save(venue)
