@@ -20,8 +20,7 @@ import { cn } from "@truths/ui/lib/utils";
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const organizerFormSchema = z
   .object({
-    
-    
+    code: z.string().optional(),
 
     
     
@@ -72,6 +71,7 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         
         
         
+        code: "",
         name: "",
         description: "",
         email: "",
@@ -123,11 +123,18 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
           ref={firstErrorRef}
         >
           
-          
-
-          
-          
-          
+          <Field data-invalid={!!errors.code}>
+            <FieldLabel htmlFor="code">Code</FieldLabel>
+            <Input
+              id="code"
+              type="text"
+              placeholder="Enter Code"
+              {...register("code")}
+              disabled={isLoading}
+              className={cn(errors.code && "border-destructive")}
+            />
+            <FieldError>{errors.code?.message}</FieldError>
+          </Field>
           <Field data-invalid={!!errors.name}>
             <FieldLabel htmlFor="name">
               Name <span className="text-destructive">*</span>

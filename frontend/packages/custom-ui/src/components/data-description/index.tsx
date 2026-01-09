@@ -22,6 +22,8 @@ export interface DataDescriptionField {
   preserveWhitespace?: boolean;
   /** Type of link to create (email, tel, or none). Only applies to string values. */
   linkType?: "email" | "tel" | "none";
+  /** Explicit data type hint to help with formatting */
+  dataType?: "string" | "number" | "date" | "email" | "phone" | "url" | "auto";
   /** Custom className for the dd element */
   className?: string;
 }
@@ -46,25 +48,117 @@ export interface DataDescriptionProps {
   className?: string;
   /** Custom className for the grid container */
   gridClassName?: string;
-  /** Function to format field values (default: simple string conversion) */
-  formatValue?: (value: unknown) => string;
 }
 
 /**
- * Default value formatter
+ * Checks if a string is likely intended to be a date (not just parseable as one)
+ * More conservative than just checking if new Date() succeeds
  */
-function defaultFormatValue(value: unknown): string {
+function isLikelyADateString(str: string): boolean {
+  // Quick reject for obviously non-date strings
+  if (!str || str.length < 6) return false;
+
+  // Reject strings that look like phone numbers (contain spaces, hyphens, plus signs)
+  if (/[\s\-\+\(\)]/.test(str)) return false;
+
+  // Reject strings that look like emails
+  if (str.includes("@")) return false;
+
+  // Reject strings that look like URLs
+  if (str.includes("://") || str.includes("www.")) return false;
+
+  // Only accept strings that look like actual date formats
+  // ISO dates: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/;
+  if (isoDateRegex.test(str)) return true;
+
+  // US dates: MM/DD/YYYY or MM-DD-YYYY
+  const usDateRegex = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/;
+  if (usDateRegex.test(str)) return true;
+
+  // European dates: DD/MM/YYYY or DD-MM-YYYY
+  const euDateRegex = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/;
+  if (euDateRegex.test(str)) return true;
+
+  // Time strings: HH:mm or HH:mm:ss
+  const timeRegex = /^\d{1,2}:\d{2}(:\d{2})?$/;
+  if (timeRegex.test(str)) return true;
+
+  // Month names
+  const monthNames = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+  ];
+  const lowerStr = str.toLowerCase();
+  if (monthNames.some((month) => lowerStr.includes(month))) return true;
+
+  // Reject everything else - if it doesn't match our patterns, don't treat it as a date
+  return false;
+}
+
+/**
+ * Default value formatter with improved smart formatting
+ */
+function defaultFormatValue(value: unknown, dataType: string = "auto"): string {
   if (value === null || value === undefined) return "N/A";
   if (value instanceof Date) {
     return value.toLocaleString();
   }
+
+  // Respect explicit data type hints
+  if (
+    dataType === "string" ||
+    dataType === "email" ||
+    dataType === "phone" ||
+    dataType === "url"
+  ) {
+    return String(value || "");
+  }
+  if (dataType === "date") {
+    if (value instanceof Date) return value.toLocaleString();
+    if (typeof value === "string") {
+      const potentialDate = new Date(value);
+      if (!Number.isNaN(potentialDate.getTime())) {
+        return potentialDate.toLocaleString();
+      }
+    }
+    return String(value);
+  }
+
   if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) return "N/A";
-    const potentialDate = new Date(trimmed);
-    if (!Number.isNaN(potentialDate.getTime())) {
-      return potentialDate.toLocaleString();
+
+    // For auto-detection mode, only format as date if it looks like an actual date string
+    if (dataType === "auto" && isLikelyADateString(trimmed)) {
+      const potentialDate = new Date(trimmed);
+      if (!Number.isNaN(potentialDate.getTime())) {
+        return potentialDate.toLocaleString();
+      }
     }
+
     return trimmed;
   }
   if (typeof value === "number" || typeof value === "boolean") {
@@ -108,7 +202,6 @@ export function DataDescription({
   columns = 3,
   className,
   gridClassName,
-  formatValue = defaultFormatValue,
 }: DataDescriptionProps) {
   const gridColsClass = {
     1: "grid-cols-1",
@@ -164,7 +257,10 @@ export function DataDescription({
                     displayValue = field.value as React.ReactNode;
                   } else {
                     // formatValue always returns a string, which is a valid ReactNode
-                    displayValue = formatValue(field.value);
+                    displayValue = defaultFormatValue(
+                      field.value,
+                      field.dataType
+                    );
                   }
 
                   const linkType = field.linkType ?? "none";
@@ -268,6 +364,8 @@ export interface DescriptionItemProps {
   preserveWhitespace?: boolean;
   /** Type of link to create (email, tel, external, or none). Only applies to string values. */
   linkType?: "email" | "tel" | "external" | "none";
+  /** Explicit data type hint to help with formatting */
+  dataType?: "string" | "number" | "date" | "email" | "phone" | "url" | "auto";
   /** Custom className for the dd element */
   className?: string;
   /** Custom className for the dt element */
@@ -300,6 +398,7 @@ export function DescriptionItem({
   render,
   preserveWhitespace = false,
   linkType = "none",
+  dataType = "auto",
   className,
   labelClassName,
   valueClassName,
@@ -324,7 +423,7 @@ export function DescriptionItem({
   } else if (isReactComponent) {
     displayValue = value as React.ReactNode;
   } else {
-    displayValue = defaultFormatValue(value);
+    displayValue = defaultFormatValue(value, dataType);
   }
 
   const isLink =
@@ -364,16 +463,18 @@ export function DescriptionItem({
       <dd
         className={cn(
           "mt-1 text-sm",
-          isLink
-            ? "text-primary hover:underline"
-            : !isReactComponent && "text-muted-foreground",
+          !isReactComponent && !isLink && "text-muted-foreground",
           preserveWhitespace && "whitespace-pre-wrap",
           valueClassName,
           className
         )}
       >
         {isLink ? (
-          <a href={linkHref} {...linkProps}>
+          <a
+            href={linkHref}
+            {...linkProps}
+            className="text-primary hover:underline"
+          >
             {displayValue}
           </a>
         ) : (

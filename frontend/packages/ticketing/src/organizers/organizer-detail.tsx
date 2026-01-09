@@ -17,6 +17,7 @@ import {
   Globe,
   Tag,
   File,
+  User,
 } from "lucide-react";
 import {
   DocumentList,
@@ -24,6 +25,7 @@ import {
   DescriptionItem,
   ActionList,
   TagList,
+  DescriptionSection,
 } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
@@ -204,11 +206,6 @@ export function OrganizerDetail({
                 </p>
               )}
 
-              {data.description && (
-                <p className="text-sm text-muted-foreground mt-2 max-w-lg">
-                  {data.description}
-                </p>
-              )}
               {data.website && (
                 <a
                   href={data.website}
@@ -331,39 +328,31 @@ export function OrganizerDetail({
             {activeTab === "overview" && (
               <div className="space-y-8">
                 {/* Basic Information */}
-                <DescriptionList
-                  title="Basic Information"
-                  icon={Info}
-                  columns={3}
-                >
-                  <DescriptionItem
-                    label="Description"
-                    value={data.description}
-                    span="md:col-span-3"
-                  />
-                </DescriptionList>
 
                 {/* Contact & Location */}
                 <DescriptionList
                   title="Contact & Location"
-                  icon={Mail}
+                  icon={User}
                   columns={3}
                 >
                   <DescriptionItem
                     label="Email"
                     value={data.email}
+                    dataType="email"
                     linkType="email"
                     icon={Mail}
                   />
                   <DescriptionItem
                     label="Phone"
                     value={data.phone}
+                    dataType="phone"
                     linkType="tel"
                     icon={Phone}
                   />
                   <DescriptionItem
                     label="Website"
                     value={data.website}
+                    dataType="url"
                     linkType="external"
                     icon={Globe}
                   />
@@ -375,7 +364,16 @@ export function OrganizerDetail({
                     icon={MapPin}
                     span="md:col-span-3"
                   />
+                </DescriptionList>
+                <DescriptionSection>
+                  <DescriptionItem
+                    label="Description"
+                    value={data.description}
+                    span="md:col-span-3"
+                  />
+                </DescriptionSection>
 
+                <DescriptionSection>
                   <DescriptionItem
                     label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
                     value={
@@ -386,7 +384,7 @@ export function OrganizerDetail({
                     span="md:col-span-3"
                     hideIfEmpty={false}
                   />
-                </DescriptionList>
+                </DescriptionSection>
 
                 {/* Timeline */}
                 <DescriptionList
