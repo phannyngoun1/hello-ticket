@@ -8,6 +8,7 @@ export * from './venue-detail';
 export * from './venue-form';
 
 export * from './create-venue-dialog';
+export * from './create-layout-dialog';
 export * from './edit-venue-dialog';
 
 export * from './venue-service';
