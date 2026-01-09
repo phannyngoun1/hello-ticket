@@ -219,5 +219,108 @@ export function CustomTabs({
   return tabsRoot;
 }
 
+// Button-based tabs component for simple use cases
+export interface ButtonTabItem {
+  value: string;
+  label: string;
+  icon?: LucideIcon;
+  disabled?: boolean;
+}
+
+export interface ButtonTabsProps {
+  /** Array of tab items */
+  tabs: ButtonTabItem[];
+  /** Default active tab value */
+  defaultValue?: string;
+  /** Controlled active tab value */
+  value?: string;
+  /** Callback when tab changes */
+  onValueChange?: (value: string) => void;
+  /** Additional className for root */
+  className?: string;
+  /** Additional className for tab button */
+  tabClassName?: string;
+  /** Additional className for content container */
+  contentClassName?: string;
+  /** Children to render based on active tab */
+  children?: (activeTab: string) => React.ReactNode;
+}
+
+/**
+ * Simple button-based tabs component
+ *
+ * A lightweight alternative to the full CustomTabs component.
+ * Uses buttons with underline styling for active states.
+ */
+export function ButtonTabs({
+  tabs,
+  defaultValue,
+  value,
+  onValueChange,
+  className,
+  tabClassName,
+  contentClassName,
+  children,
+}: ButtonTabsProps) {
+  const [activeTab, setActiveTab] = React.useState<string>(
+    value || defaultValue || tabs[0]?.value || ""
+  );
+
+  const currentValue = value !== undefined ? value : activeTab;
+
+  const handleTabChange = (tabValue: string) => {
+    if (value === undefined) {
+      setActiveTab(tabValue);
+    }
+    onValueChange?.(tabValue);
+  };
+
+  React.useEffect(() => {
+    if (value !== undefined && value !== activeTab) {
+      setActiveTab(value);
+    }
+  }, [value, activeTab]);
+
+  return (
+    <div className={cn("", className)}>
+      {/* Tab Bar */}
+      <div className="border-b mb-4">
+        <div className="flex gap-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = currentValue === tab.value;
+
+            return (
+              <button
+                key={tab.value}
+                className={cn(
+                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  isActive
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                  tab.disabled && "pointer-events-none opacity-50",
+                  tabClassName
+                )}
+                onClick={() => !tab.disabled && handleTabChange(tab.value)}
+                disabled={tab.disabled}
+              >
+                <span className="flex items-center gap-2">
+                  {Icon && <Icon className="h-4 w-4" />}
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className={cn("mt-0", contentClassName)}>
+        {children?.(currentValue)}
+      </div>
+    </div>
+  );
+}
+
 // Export individual components for advanced usage
 export { CustomTabsList, CustomTabsTrigger, CustomTabsContent };

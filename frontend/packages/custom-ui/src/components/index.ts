@@ -141,6 +141,7 @@ export {
   CustomTabsList,
   CustomTabsTrigger,
   CustomTabsContent,
+  ButtonTabs,
 } from './tabs';
 export type {
   CustomTabsProps,
@@ -148,6 +149,8 @@ export type {
   CustomTabsTriggerProps,
   CustomTabsContentProps,
   CustomTabItem,
+  ButtonTabsProps,
+  ButtonTabItem,
 } from './tabs';
 
 // Tab Configurations

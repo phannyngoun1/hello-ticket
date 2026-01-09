@@ -12,7 +12,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Tabs,
   Badge,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
@@ -37,7 +36,8 @@ import {
   Tag,
   FileText,
 } from "lucide-react";
-import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList, CopyButton } from "@truths/custom-ui";
+import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList, CopyButton, ButtonTabs } from "@truths/custom-ui";
+import type { ButtonTabItem } from "@truths/custom-ui";
 import { Employee } from "./types";
 import { AttachmentService, FileUpload } from "@truths/shared";
 import { api } from "@truths/api";
@@ -175,6 +175,44 @@ export function EmployeeDetail({
 
   const hasMetadata = showMetadata;
 
+  // Build tabs configuration
+  const tabs: ButtonTabItem[] = [
+    {
+      value: "profile",
+      label: "Profile",
+      icon: Info,
+    },
+    {
+      value: "contact",
+      label: "Contact",
+      icon: Mail,
+    },
+    {
+      value: "sales",
+      label: "Sales & Performance",
+      icon: TrendingUp,
+    },
+    {
+      value: "timeline",
+      label: "Timeline",
+      icon: Clock,
+    },
+    {
+      value: "documents",
+      label: `Documents${documents.length > 0 ? ` (${documents.length})` : ""}`,
+      icon: FileText,
+    },
+  ];
+
+  // Add metadata tab if enabled
+  if (hasMetadata) {
+    tabs.push({
+      value: "metadata",
+      label: "Metadata",
+      icon: Database,
+    });
+  }
+
   return (
     <Card className={cn("p-6", className)}>
       <div>
@@ -248,104 +286,16 @@ export function EmployeeDetail({
         </div>
 
         {/* Tabs */}
-        <Tabs
+        <ButtonTabs
+          tabs={tabs}
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-          <div className="border-b mb-4">
-            <div className="flex gap-4 overflow-x-auto">
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                  activeTab === "profile"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("profile")}
-              >
-                <span className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Basic Information
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                  activeTab === "contact"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("contact")}
-              >
-                <span className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Contact
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                  activeTab === "sales"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("sales")}
-              >
-                <span className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Sales
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                  activeTab === "timeline"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("timeline")}
-              >
-                <span className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Timeline
-                </span>
-              </button>
-              <button
-                className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                  activeTab === "documents"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("documents")}
-              >
-                <span className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Documents {documents.length > 0 && `(${documents.length})`}
-                </span>
-              </button>
-              {hasMetadata && (
-                <button
-                  className={cn(
-                    "border-b-2 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap",
-                    activeTab === "metadata"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-                onClick={() => setActiveTab("metadata")}
-              >
-                <span className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  Metadata
-                </span>
-              </button>
-            )}
-          </div>
-        </div>
 
-          <div className="mt-0">
-            {/* Basic Information Tab */}
-            {activeTab === "profile" && (
+          {(activeTab) => (
+            <div className="mt-0">
+              {/* Basic Information Tab */}
+              {activeTab === "profile" && (
               <div className="space-y-8">
                 <DescriptionList columns={3}>
                   <DescriptionItem
@@ -577,8 +527,9 @@ export function EmployeeDetail({
                 </Card>
               </div>
             )}
-          </div>
-        </Tabs>
+            </div>
+          )}
+        </ButtonTabs>
       </div>
     </Card>
   );
