@@ -18,7 +18,6 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Textarea,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 
@@ -77,7 +76,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
       defaultValues,
       onSubmit,
       isLoading = false,
-      mode = "create",
     },
     ref
   ) {

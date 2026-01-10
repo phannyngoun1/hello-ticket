@@ -407,7 +407,7 @@ export function EmployeeDetail({
               {activeTab === "contact" && (
                 <div className="space-y-8">
                   {/* Contact & Location */}
-                  <DescriptionList columns={3}>
+                  <DescriptionList icon={Mail} title="Contact" columns={3}>
                     <DescriptionItem
                       label="Work Phone"
                       value={data.work_phone}
@@ -422,18 +422,7 @@ export function EmployeeDetail({
                       icon={Smartphone}
                       hideIfEmpty={false}
                     />
-                    <DescriptionItem
-                      label="Address"
-                      value={
-                        data.office_location ? (
-                          <div className="whitespace-pre-line">
-                            {data.office_location}
-                          </div>
-                        ) : null
-                      }
-                      icon={MapPin}
-                      hideIfEmpty={false}
-                    />
+                    
 
                     {/* Emergency Contact */}
                     <DescriptionItem
@@ -458,6 +447,20 @@ export function EmployeeDetail({
                       icon={AlertCircle}
                       hideIfEmpty={false}
                     />
+                  </DescriptionList>
+
+                  <DescriptionList icon={MapPin} title="Address" columns={3}> 
+                    <DescriptionItem
+                      value={
+                        data.office_location ? (
+                          <div className="whitespace-pre-line">
+                            {data.office_location}
+                          </div>
+                        ) : null
+                      }
+                      
+                      hideIfEmpty={false}
+                    />  
                   </DescriptionList>
                 </div>
               )}
