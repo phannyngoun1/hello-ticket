@@ -272,30 +272,30 @@ export function HomePage() {
             <h3 className="text-2xl font-bold">{t("pages.home.title")}</h3>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <TabsList className="inline-flex h-8 items-center justify-center rounded-md bg-muted p-0.5 text-muted-foreground">
               <TabsTrigger
                 value="overview"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm flex items-center gap-2 hover:bg-muted/50"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5 hover:bg-muted/50"
                 title="View dashboard overview with key metrics and recent activity"
               >
-                <Home className="h-4 w-4" />
+                <Home className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm flex items-center gap-2 hover:bg-muted/50"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5 hover:bg-muted/50"
                 title="Detailed analytics and performance metrics"
               >
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Analytics</span>
               </TabsTrigger>
               <TabsTrigger
                 value="operations"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm flex items-center gap-2 hover:bg-muted/50"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5 hover:bg-muted/50"
                 title="Operational insights and status distributions"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Operations</span>
               </TabsTrigger>
             </TabsList>
@@ -305,7 +305,7 @@ export function HomePage() {
               onValueChange={setDateRange}
               disabled={loading}
             >
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px] h-7">
                 <SelectValue placeholder="Period" />
               </SelectTrigger>
               <SelectContent>
@@ -322,9 +322,11 @@ export function HomePage() {
               variant="outline"
               size="sm"
               disabled={loading}
-              className="h-9 w-9 p-0"
+              className="h-7 w-7 p-0"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </div>
@@ -457,8 +459,8 @@ export function HomePage() {
                       Draft Events
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {analytics.event_status_breakdown.draft || 0} shows pending
-                      publication
+                      {analytics.event_status_breakdown.draft || 0} shows
+                      pending publication
                     </p>
                   </div>
                   <Button variant="outline" size="sm" asChild>
