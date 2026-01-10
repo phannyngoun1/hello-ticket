@@ -60,7 +60,6 @@ export function VenueDetail({
   editable = true,
   onEdit,
   onNavigateToSeatDesigner,
-  onEditLayout,
 
   profilePhotoComponent,
 
@@ -68,7 +67,9 @@ export function VenueDetail({
 }: VenueDetailProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [layoutToEdit, setLayoutToEdit] = useState<import("../layouts").Layout | null>(null);
+  const [layoutToEdit, setLayoutToEdit] = useState<
+    import("../layouts").Layout | null
+  >(null);
 
   const getVenueDisplayName = () => {
     return data?.name || data?.id || "";

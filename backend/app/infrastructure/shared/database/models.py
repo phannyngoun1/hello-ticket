@@ -603,6 +603,7 @@ class EventSeatModel(SQLModel, table=True):
     broker_id: Optional[str] = Field(default=None, index=True)
     
     is_active: bool = Field(default=True, index=True)
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
     attributes: dict = Field(default_factory=dict, sa_column=Column(JSONB))
     
@@ -614,11 +615,16 @@ class EventSeatModel(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
     )
+    deleted_at: Optional[datetime] = Field(  # When soft deleted
+        default=None,
+        sa_column=Column(DateTime(timezone=True))
+    )
     
     __table_args__ = (
         Index('ix_event_seats_event_status', 'event_id', 'status'),
         Index('ix_event_seats_event_location', 'event_id', 'section_name', 'row_name', 'seat_number'),
         Index('ix_event_seats_tenant_active', 'tenant_id', 'is_active'),
+        Index('ix_event_seats_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
         Index('ix_event_seats_broker', 'tenant_id', 'broker_id'),
     )
 

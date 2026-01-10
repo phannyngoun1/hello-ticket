@@ -4,23 +4,32 @@
  * Displays a list of layouts for a venue with ability to add new layouts
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  Button,
   Card,
   Item,
   ItemMedia,
   ItemContent,
   ItemTitle,
   ItemDescription,
-  ItemActions,
   Badge,
 } from "@truths/ui";
-import { Edit, Trash2, MapPin, LayoutGrid, Loader2, Settings } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  MapPin,
+  LayoutGrid,
+  Loader2,
+  Settings,
+} from "lucide-react";
 import { useLayoutsByVenue, useDeleteLayout } from "./use-layouts";
 import { useLayoutService } from "./layout-provider";
 import type { Layout } from "./types";
-import { ConfirmationDialog } from "@truths/custom-ui";
+import {
+  ConfirmationDialog,
+  ActionButtonList,
+  type ActionButtonItem,
+} from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
 
 export interface LayoutListProps {
@@ -68,6 +77,44 @@ export function LayoutList({
     if (mode === "section-level") return "Section Level";
     return "Not Set";
   };
+
+  // Action button configuration
+  const actionButtons: ActionButtonItem[] = useMemo(
+    () => [
+      {
+        id: "designer",
+        icon: <Settings className="h-4 w-4" />,
+        title: "Open layout designer",
+        onClick: (layout: Layout) => {
+          if (onNavigateToDesigner) {
+            onNavigateToDesigner(layout.id);
+          }
+        },
+        show: !!onNavigateToDesigner,
+      },
+      {
+        id: "edit",
+        icon: <Edit className="h-4 w-4" />,
+        title: "Edit layout info",
+        onClick: (layout: Layout) => {
+          if (onEdit) {
+            onEdit(layout);
+          }
+        },
+        show: !!onEdit,
+      },
+      {
+        id: "delete",
+        icon: <Trash2 className="h-4 w-4" />,
+        title: "Delete layout",
+        onClick: (layout: Layout) => handleDelete(layout.id),
+        className:
+          "text-destructive hover:text-destructive hover:bg-destructive/10",
+        show: true,
+      },
+    ],
+    [onNavigateToDesigner, onEdit, handleDelete]
+  );
 
   if (isLoading) {
     return (
@@ -164,39 +211,7 @@ export function LayoutList({
                     </div>
                   </div>
                 </ItemContent>
-                <ItemActions>
-                  {onNavigateToDesigner && (
-                    <Button
-                      onClick={() => onNavigateToDesigner(layout.id)}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      title="Open layout designer"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onEdit && (
-                    <Button
-                      onClick={() => onEdit(layout)}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      title="Edit layout info"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <Button
-                    onClick={() => handleDelete(layout.id)}
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    title="Delete layout"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </ItemActions>
+                <ActionButtonList item={layout} actions={actionButtons} />
               </Item>
             ))}
           </div>

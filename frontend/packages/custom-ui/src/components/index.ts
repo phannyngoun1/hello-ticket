@@ -110,6 +110,10 @@ export type { QuickActionsListProps, } from './layout/quick-actions-list';
 export { ActionList } from './action-list';
 export type { ActionListProps, ActionItem } from './action-list';
 
+// Action Button List (for row actions)
+export { ActionButtonList } from './action-button-list';
+export type { ActionButtonListProps, ActionButtonItem } from './action-button-list';
+
 // Feedback
 export { ErrorAlert } from './feedback/error-alert';
 export type { ErrorAlertProps } from './feedback/error-alert';
