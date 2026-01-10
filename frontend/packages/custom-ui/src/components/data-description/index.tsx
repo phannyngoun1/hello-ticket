@@ -13,7 +13,7 @@ import { cn } from "@truths/ui";
 
 export interface DataDescriptionField {
   /** Label for the field */
-  label: string;
+  label?: string;
   /** Value to display. Can be a primitive value, React component, or null/undefined. If null/undefined/empty, the field won't be rendered */
   value?: string | number | Date | React.ReactNode | null;
   /** Custom render function for the value */
@@ -279,7 +279,9 @@ export function DataDescription({
 
                   return (
                     <div key={fieldIndex}>
-                      <dt className="text-sm font-medium">{field.label}</dt>
+                      {field.label && (
+                        <dt className="text-sm font-medium">{field.label}</dt>
+                      )}
                       <dd
                         className={cn(
                           "mt-1 text-sm",
@@ -355,7 +357,7 @@ export function DescriptionSection({
  */
 export interface DescriptionItemProps {
   /** Label text */
-  label: string;
+  label?: string;
   /** Value to display. Can be string, number, Date, React component, or null/undefined */
   value?: string | number | Date | React.ReactNode | null;
   /** Custom render function for the value */
@@ -451,15 +453,17 @@ export function DescriptionItem({
 
   return (
     <div className={span}>
-      <dt
-        className={cn(
-          "text-sm font-medium flex items-center gap-1",
-          labelClassName
-        )}
-      >
-        {Icon && <Icon className="h-3 w-3" />}
-        {label}
-      </dt>
+      {label && (
+        <dt
+          className={cn(
+            "text-sm font-medium flex items-center gap-1",
+            labelClassName
+          )}
+        >
+          {Icon && <Icon className="h-3 w-3" />}
+          {label}
+        </dt>
+      )}
       <dd
         className={cn(
           "mt-1 text-sm",
