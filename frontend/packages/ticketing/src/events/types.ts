@@ -24,11 +24,11 @@ export enum EventConfigurationType {
 }
 
 export enum EventSeatStatus {
-  AVAILABLE = "AVAILABLE",
-  RESERVED = "RESERVED",
-  SOLD = "SOLD",
-  HELD = "HELD",
-  BLOCKED = "BLOCKED",
+  AVAILABLE = "available",
+  RESERVED = "reserved",
+  SOLD = "sold",
+  HELD = "held",
+  BLOCKED = "blocked",
 }
 
 export interface EventSeat {
