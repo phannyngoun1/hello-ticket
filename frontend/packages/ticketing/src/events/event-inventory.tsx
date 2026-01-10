@@ -335,11 +335,11 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   return (
     <div className={cn("container mx-auto py-6 space-y-6", className)}>
       {/* Header */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h1 className="text-2xl font-semibold">{event.title}</h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-xl font-semibold">{event.title}</h1>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 {formatDate(event.start_dt)}
@@ -356,35 +356,35 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             {hasSeats && (
-              <div className="flex items-center flex-wrap gap-x-2 gap-y-2">
+              <div className="flex items-center flex-wrap gap-x-1 gap-y-1">
                 <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#10b981", borderColor: "#059669" }}
                 >
                   Available {statusCounts.AVAILABLE}
                 </span>
                 <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#eab308", borderColor: "#ca8a04" }}
                 >
                   Reserved {statusCounts.RESERVED}
                 </span>
                 <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#3b82f6", borderColor: "#2563eb" }}
                 >
                   Sold {statusCounts.SOLD}
                 </span>
                 <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#a855f7", borderColor: "#9333ea" }}
                 >
                   Held {statusCounts.HELD}
                 </span>
                 <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-2 text-white"
+                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#ef4444", borderColor: "#dc2626" }}
                 >
                   Blocked {statusCounts.BLOCKED}
@@ -395,11 +395,12 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               <Button
                 onClick={handleInitializeSeats}
                 disabled={initializeSeatsMutation.isPending}
-                className="gap-2"
+                size="sm"
+                className="gap-1.5 h-8 px-3"
               >
                 <RefreshCw
                   className={cn(
-                    "h-4 w-4",
+                    "h-3.5 w-3.5",
                     initializeSeatsMutation.isPending && "animate-spin"
                   )}
                 />
@@ -410,10 +411,11 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               <Button
                 onClick={() => setSeatListSheetOpen(true)}
                 variant="outline"
-                size="icon"
+                size="sm"
+                className="h-8 w-8 p-0"
                 title={`View Seat List (${totalSeats})`}
               >
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>

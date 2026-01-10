@@ -27,6 +27,8 @@ import {
   ConfirmationDialog,
   DataList,
   type DataListItem,
+  ActionButtonList,
+  type ActionButtonItem,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
@@ -243,63 +245,39 @@ export function EventList({
     );
   };
 
-  // Render action buttons
-  const renderActions = (item: EventListItem) => {
-    if (!onEdit && !onDelete && !onManageInventory && !customActions)
-      return null;
-
-    return (
-      <div
-        className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {customActions ? (
-          customActions(item.event)
-        ) : (
-          <>
-            {onManageInventory && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onManageInventory) {
-                    onManageInventory(item.event);
-                  }
-                }}
-                className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center"
-                title="Manage Inventory"
-              >
-                <Package className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(item);
-                }}
-                className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center"
-                title="Edit"
-              >
-                <Edit className="h-3.5 w-3.5" />
-              </button>
-            )}
-            {onDelete && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteClick(item);
-                }}
-                className="h-7 w-7 p-0 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors flex items-center justify-center"
-                title="Delete"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </>
-        )}
-      </div>
-    );
-  };
+  // Action button configuration
+  const actionButtons: ActionButtonItem[] = useMemo(
+    () => [
+      {
+        id: "manage-inventory",
+        icon: <Package className="h-3.5 w-3.5" />,
+        title: "Manage Inventory",
+        onClick: (item: EventListItem) => {
+          if (onManageInventory) {
+            onManageInventory(item.event);
+          }
+        },
+        show: !!onManageInventory,
+      },
+      {
+        id: "edit",
+        icon: <Edit className="h-3.5 w-3.5" />,
+        title: "Edit",
+        onClick: handleEdit,
+        show: !!onEdit,
+      },
+      {
+        id: "delete",
+        icon: <Trash2 className="h-3.5 w-3.5" />,
+        title: "Delete",
+        onClick: handleDeleteClick,
+        className:
+          "text-muted-foreground hover:text-destructive hover:bg-destructive/10",
+        show: !!onDelete,
+      },
+    ],
+    [onManageInventory, onEdit, onDelete, handleEdit, handleDeleteClick]
+  );
 
   // Custom item renderer - supports both card and list views
   const renderItem = useMemo(() => {
@@ -361,11 +339,15 @@ export function EventList({
                     <span>{formatDuration(item.event.duration_minutes)}</span>
                   </div>
                 </div>
-                {renderActions(item) && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {renderActions(item)}
-                  </div>
-                )}
+                <ActionButtonList
+                  item={item}
+                  actions={actionButtons}
+                  customActions={
+                    customActions
+                      ? (item) => customActions(item.event)
+                      : undefined
+                  }
+                />
               </div>
             </div>
           </div>

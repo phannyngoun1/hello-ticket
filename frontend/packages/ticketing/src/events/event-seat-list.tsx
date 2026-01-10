@@ -474,6 +474,7 @@ export function EventSeatList({
     }
   };
 
+
   // Calculate allSelected - only consider selectable seats (available and not already booked)
   const selectableSeats = useMemo(() => {
     return filteredSeats.filter((seat) => {
