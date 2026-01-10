@@ -7,24 +7,18 @@
  */
 
 import { forwardRef, useEffect, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  Input,
-  Textarea,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  Checkbox,
-  Field,
-  FieldLabel,
-  FieldError,
-  Separator,
-} from "@truths/ui";
-import { cn } from "@truths/ui/lib/utils";
+  TextInputField,
+  TextareaInputField,
+  SelectInputField,
+  CheckboxField,
+  DateInputField
+} from "@truths/custom-ui";
+import { Separator } from "@truths/ui";
+
 
 const customerFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -73,7 +67,6 @@ export interface CustomerFormProps {
 export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
   function CustomerForm({ defaultValues, onSubmit, isLoading = false }, ref) {
     const {
-      register,
       handleSubmit,
       control,
       formState: { errors, isSubmitted },
@@ -127,150 +120,98 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div ref={firstErrorRef} className="space-y-4">
           <h3 className="text-base font-semibold">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Full name"
-                {...register("name")}
-                disabled={isLoading}
-                className={cn(errors.name && "border-destructive")}
-              />
-              <FieldError>{errors.name?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="name"
+              label="Name"
+              placeholder="Full name"
+              required
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.email}>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="email@example.com"
-                {...register("email")}
-                disabled={isLoading}
-                className={cn(errors.email && "border-destructive")}
-              />
-              <FieldError>{errors.email?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="email"
+              label="Email"
+              type="email"
+              placeholder="email@example.com"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.phone}>
-              <FieldLabel htmlFor="phone">Phone</FieldLabel>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                {...register("phone")}
-                disabled={isLoading}
-                className={cn(errors.phone && "border-destructive")}
-              />
-              <FieldError>{errors.phone?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="phone"
+              label="Phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.business_name}>
-              <FieldLabel htmlFor="business_name">Business Name</FieldLabel>
-              <Input
-                id="business_name"
-                type="text"
-                placeholder="Business name"
-                {...register("business_name")}
-                disabled={isLoading}
-                className={cn(errors.business_name && "border-destructive")}
-              />
-              <FieldError>{errors.business_name?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="business_name"
+              label="Business Name"
+              placeholder="Business name"
+              disabled={isLoading}
+            />
           </div>
         </div>
         <Separator />
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.date_of_birth}>
-              <FieldLabel htmlFor="date_of_birth">Date of Birth</FieldLabel>
-              <Input
-                id="date_of_birth"
-                type="date"
-                {...register("date_of_birth")}
-                disabled={isLoading}
-                className={cn(errors.date_of_birth && "border-destructive")}
-              />
-              <FieldError>{errors.date_of_birth?.message}</FieldError>
-            </Field>
+            <DateInputField
+              control={control}
+              name="date_of_birth"
+              label="Date of Birth"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.gender}>
-              <FieldLabel htmlFor="gender">Gender</FieldLabel>
-              <Controller
-                name="gender"
+            <SelectInputField
+              control={control}
+              name="gender"
+              label="Gender"
+              placeholder="Select gender"
+              options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" },
+                { value: "prefer_not_to_say", label: "Prefer not to say" },
+              ]}
+              disabled={isLoading}
+            />
+
+            <TextInputField
+              control={control}
+              name="nationality"
+              label="Nationality"
+              placeholder="Nationality"
+              disabled={isLoading}
+            />
+
+            <SelectInputField
+              control={control}
+              name="id_type"
+              label="ID Type"
+              placeholder="Select ID type"
+              options={[
+                { value: "passport", label: "Passport" },
+                { value: "driver_license", label: "Driver's License" },
+                { value: "national_id", label: "National ID" },
+                { value: "other", label: "Other" },
+              ]}
+              disabled={isLoading}
+            />
+
+            <div className="md:col-span-2">
+              <TextInputField
                 control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                      <SelectItem value="prefer_not_to_say">
-                        Prefer not to say
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError>{errors.gender?.message}</FieldError>
-            </Field>
-
-            <Field data-invalid={!!errors.nationality}>
-              <FieldLabel htmlFor="nationality">Nationality</FieldLabel>
-              <Input
-                id="nationality"
-                type="text"
-                placeholder="Nationality"
-                {...register("nationality")}
-                disabled={isLoading}
-                className={cn(errors.nationality && "border-destructive")}
-              />
-              <FieldError>{errors.nationality?.message}</FieldError>
-            </Field>
-
-            <Field data-invalid={!!errors.id_type}>
-              <FieldLabel htmlFor="id_type">ID Type</FieldLabel>
-              <Controller
-                name="id_type"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select ID type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="passport">Passport</SelectItem>
-                      <SelectItem value="driver_license">
-                        Driver's License
-                      </SelectItem>
-                      <SelectItem value="national_id">National ID</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError>{errors.id_type?.message}</FieldError>
-            </Field>
-
-            <Field data-invalid={!!errors.id_number} className="md:col-span-2">
-              <FieldLabel htmlFor="id_number">ID Number</FieldLabel>
-              <Input
-                id="id_number"
-                type="text"
+                name="id_number"
+                label="ID Number"
                 placeholder="Government ID number"
-                {...register("id_number")}
                 disabled={isLoading}
-                className={cn(errors.id_number && "border-destructive")}
               />
-              <FieldError>{errors.id_number?.message}</FieldError>
-            </Field>
+            </div>
           </div>
         </div>
 
@@ -280,73 +221,47 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-4">
           <h3 className="text-base font-semibold">Address Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field
-              data-invalid={!!errors.street_address}
-              className="md:col-span-2"
-            >
-              <FieldLabel htmlFor="street_address">Street Address</FieldLabel>
-              <Input
-                id="street_address"
-                type="text"
+            <div className="md:col-span-2">
+              <TextInputField
+                control={control}
+                name="street_address"
+                label="Street Address"
                 placeholder="123 Main Street"
-                {...register("street_address")}
                 disabled={isLoading}
-                className={cn(errors.street_address && "border-destructive")}
               />
-              <FieldError>{errors.street_address?.message}</FieldError>
-            </Field>
+            </div>
 
-            <Field data-invalid={!!errors.city}>
-              <FieldLabel htmlFor="city">City</FieldLabel>
-              <Input
-                id="city"
-                type="text"
-                placeholder="City"
-                {...register("city")}
-                disabled={isLoading}
-                className={cn(errors.city && "border-destructive")}
-              />
-              <FieldError>{errors.city?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="city"
+              label="City"
+              placeholder="City"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.state_province}>
-              <FieldLabel htmlFor="state_province">State/Province</FieldLabel>
-              <Input
-                id="state_province"
-                type="text"
-                placeholder="State or Province"
-                {...register("state_province")}
-                disabled={isLoading}
-                className={cn(errors.state_province && "border-destructive")}
-              />
-              <FieldError>{errors.state_province?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="state_province"
+              label="State/Province"
+              placeholder="State or Province"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.postal_code}>
-              <FieldLabel htmlFor="postal_code">Postal Code</FieldLabel>
-              <Input
-                id="postal_code"
-                type="text"
-                placeholder="12345"
-                {...register("postal_code")}
-                disabled={isLoading}
-                className={cn(errors.postal_code && "border-destructive")}
-              />
-              <FieldError>{errors.postal_code?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="postal_code"
+              label="Postal Code"
+              placeholder="12345"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.country}>
-              <FieldLabel htmlFor="country">Country</FieldLabel>
-              <Input
-                id="country"
-                type="text"
-                placeholder="Country"
-                {...register("country")}
-                disabled={isLoading}
-                className={cn(errors.country && "border-destructive")}
-              />
-              <FieldError>{errors.country?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="country"
+              label="Country"
+              placeholder="Country"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -355,58 +270,30 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-3">
           <h4 className="text-sm font-medium">Emergency Contact</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Field data-invalid={!!errors.emergency_contact_name}>
-              <FieldLabel htmlFor="emergency_contact_name">
-                Contact Name
-              </FieldLabel>
-              <Input
-                id="emergency_contact_name"
-                type="text"
-                placeholder="Emergency contact name"
-                {...register("emergency_contact_name")}
-                disabled={isLoading}
-                className={cn(
-                  errors.emergency_contact_name && "border-destructive"
-                )}
-              />
-              <FieldError>{errors.emergency_contact_name?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_name"
+              label="Contact Name"
+              placeholder="Emergency contact name"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.emergency_contact_phone}>
-              <FieldLabel htmlFor="emergency_contact_phone">
-                Contact Phone
-              </FieldLabel>
-              <Input
-                id="emergency_contact_phone"
-                type="tel"
-                placeholder="Emergency contact phone"
-                {...register("emergency_contact_phone")}
-                disabled={isLoading}
-                className={cn(
-                  errors.emergency_contact_phone && "border-destructive"
-                )}
-              />
-              <FieldError>{errors.emergency_contact_phone?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_phone"
+              label="Contact Phone"
+              type="tel"
+              placeholder="Emergency contact phone"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.emergency_contact_relationship}>
-              <FieldLabel htmlFor="emergency_contact_relationship">
-                Relationship
-              </FieldLabel>
-              <Input
-                id="emergency_contact_relationship"
-                type="text"
-                placeholder="Relationship"
-                {...register("emergency_contact_relationship")}
-                disabled={isLoading}
-                className={cn(
-                  errors.emergency_contact_relationship && "border-destructive"
-                )}
-              />
-              <FieldError>
-                {errors.emergency_contact_relationship?.message}
-              </FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_relationship"
+              label="Relationship"
+              placeholder="Relationship"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -417,90 +304,60 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <h3 className="text-base font-semibold">Preferences & Settings</h3>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field data-invalid={!!errors.event_preferences}>
-                <FieldLabel htmlFor="event_preferences">
-                  Event Preferences
-                </FieldLabel>
-                <Textarea
-                  id="event_preferences"
-                  placeholder="Preferred event types or categories"
-                  {...register("event_preferences")}
-                  disabled={isLoading}
-                  rows={3}
-                  className={cn(
-                    errors.event_preferences && "border-destructive"
-                  )}
-                />
-                <FieldError>{errors.event_preferences?.message}</FieldError>
-              </Field>
+              <TextareaInputField
+                control={control}
+                name="event_preferences"
+                label="Event Preferences"
+                placeholder="Preferred event types or categories"
+                rows={3}
+                disabled={isLoading}
+              />
 
-              <Field data-invalid={!!errors.seating_preferences}>
-                <FieldLabel htmlFor="seating_preferences">
-                  Seating Preferences
-                </FieldLabel>
-                <Textarea
-                  id="seating_preferences"
-                  placeholder="Preferred seating areas"
-                  {...register("seating_preferences")}
-                  disabled={isLoading}
-                  rows={3}
-                  className={cn(
-                    errors.seating_preferences && "border-destructive"
-                  )}
-                />
-                <FieldError>{errors.seating_preferences?.message}</FieldError>
-              </Field>
+              <TextareaInputField
+                control={control}
+                name="seating_preferences"
+                label="Seating Preferences"
+                placeholder="Preferred seating areas"
+                rows={3}
+                disabled={isLoading}
+              />
 
-              <Field data-invalid={!!errors.accessibility_needs}>
-                <FieldLabel htmlFor="accessibility_needs">
-                  Accessibility Needs
-                </FieldLabel>
-                <Textarea
-                  id="accessibility_needs"
-                  placeholder="Special accessibility requirements"
-                  {...register("accessibility_needs")}
-                  disabled={isLoading}
-                  rows={3}
-                  className={cn(
-                    errors.accessibility_needs && "border-destructive"
-                  )}
-                />
-                <FieldError>{errors.accessibility_needs?.message}</FieldError>
-              </Field>
+              <TextareaInputField
+                control={control}
+                name="accessibility_needs"
+                label="Accessibility Needs"
+                placeholder="Special accessibility requirements"
+                rows={3}
+                disabled={isLoading}
+              />
 
-              <Field data-invalid={!!errors.dietary_restrictions}>
-                <FieldLabel htmlFor="dietary_restrictions">
-                  Dietary Restrictions
-                </FieldLabel>
-                <Textarea
-                  id="dietary_restrictions"
-                  placeholder="Dietary restrictions for events with catering"
-                  {...register("dietary_restrictions")}
-                  disabled={isLoading}
-                  rows={3}
-                  className={cn(
-                    errors.dietary_restrictions && "border-destructive"
-                  )}
-                />
-                <FieldError>{errors.dietary_restrictions?.message}</FieldError>
-              </Field>
+              <TextareaInputField
+                control={control}
+                name="dietary_restrictions"
+                label="Dietary Restrictions"
+                placeholder="Dietary restrictions for events with catering"
+                rows={3}
+                disabled={isLoading}
+              />
 
-              <Field data-invalid={!!errors.preferred_language}>
-                <FieldLabel htmlFor="preferred_language">
-                  Preferred Language
-                </FieldLabel>
-                <Input
-                  id="preferred_language"
-                  type="text"
-                  placeholder="e.g., English, Spanish"
-                  {...register("preferred_language")}
-                  disabled={isLoading}
-                  className={cn(
-                    errors.preferred_language && "border-destructive"
-                  )}
-                />
-                <FieldError>{errors.preferred_language?.message}</FieldError>
-              </Field>
+              <SelectInputField
+                control={control}
+                name="preferred_language"
+                label="Preferred Language"
+                placeholder="e.g., English, Spanish"
+                options={[
+                  { value: "en", label: "English" },
+                  { value: "es", label: "Spanish" },
+                  { value: "fr", label: "French" },
+                  { value: "de", label: "German" },
+                  { value: "it", label: "Italian" },
+                  { value: "pt", label: "Portuguese" },
+                  { value: "zh", label: "Chinese" },
+                  { value: "ja", label: "Japanese" },
+                  { value: "other", label: "Other" },
+                ]}
+                disabled={isLoading}
+              />
             </div>
 
             <Separator />
@@ -508,66 +365,24 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             <div className="space-y-3">
               <h4 className="text-sm font-medium">Marketing Preferences</h4>
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Controller
-                    name="marketing_opt_in"
-                    control={control}
-                    render={({ field }) => (
-                      <Checkbox
-                        id="marketing_opt_in"
-                        checked={field.value || false}
-                        onCheckedChange={field.onChange}
-                        disabled={isLoading}
-                      />
-                    )}
-                  />
-                  <FieldLabel
-                    htmlFor="marketing_opt_in"
-                    className="font-normal cursor-pointer"
-                  >
-                    Marketing Opt-in
-                  </FieldLabel>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Controller
-                    name="email_marketing"
-                    control={control}
-                    render={({ field }) => (
-                      <Checkbox
-                        id="email_marketing"
-                        checked={field.value || false}
-                        onCheckedChange={field.onChange}
-                        disabled={isLoading}
-                      />
-                    )}
-                  />
-                  <FieldLabel
-                    htmlFor="email_marketing"
-                    className="font-normal cursor-pointer"
-                  >
-                    Email Marketing
-                  </FieldLabel>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Controller
-                    name="sms_marketing"
-                    control={control}
-                    render={({ field }) => (
-                      <Checkbox
-                        id="sms_marketing"
-                        checked={field.value || false}
-                        onCheckedChange={field.onChange}
-                        disabled={isLoading}
-                      />
-                    )}
-                  />
-                  <FieldLabel
-                    htmlFor="sms_marketing"
-                    className="font-normal cursor-pointer"
-                  >
-                    SMS Marketing
-                  </FieldLabel>
-                </div>
+                <CheckboxField
+                  control={control}
+                  name="marketing_opt_in"
+                  label="Marketing Opt-in"
+                  disabled={isLoading}
+                />
+                <CheckboxField
+                  control={control}
+                  name="email_marketing"
+                  label="Email Marketing"
+                  disabled={isLoading}
+                />
+                <CheckboxField
+                  control={control}
+                  name="sms_marketing"
+                  label="SMS Marketing"
+                  disabled={isLoading}
+                />
               </div>
             </div>
           </div>
@@ -579,72 +394,45 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-4">
           <h3 className="text-base font-semibold">Social & Online</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.website}>
-              <FieldLabel htmlFor="website">Website</FieldLabel>
-              <Input
-                id="website"
-                type="url"
-                placeholder="https://example.com"
-                {...register("website")}
-                disabled={isLoading}
-                className={cn(errors.website && "border-destructive")}
-              />
-              <FieldError>{errors.website?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="website"
+              label="Website"
+              placeholder="https://example.com"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.facebook_url}>
-              <FieldLabel htmlFor="facebook_url">Facebook URL</FieldLabel>
-              <Input
-                id="facebook_url"
-                type="url"
-                placeholder="https://facebook.com/..."
-                {...register("facebook_url")}
-                disabled={isLoading}
-                className={cn(errors.facebook_url && "border-destructive")}
-              />
-              <FieldError>{errors.facebook_url?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="facebook_url"
+              label="Facebook URL"
+              placeholder="https://facebook.com/..."
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.twitter_handle}>
-              <FieldLabel htmlFor="twitter_handle">Twitter/X Handle</FieldLabel>
-              <Input
-                id="twitter_handle"
-                type="text"
-                placeholder="@username"
-                {...register("twitter_handle")}
-                disabled={isLoading}
-                className={cn(errors.twitter_handle && "border-destructive")}
-              />
-              <FieldError>{errors.twitter_handle?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="twitter_handle"
+              label="Twitter/X Handle"
+              placeholder="@username"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.linkedin_url}>
-              <FieldLabel htmlFor="linkedin_url">LinkedIn URL</FieldLabel>
-              <Input
-                id="linkedin_url"
-                type="url"
-                placeholder="https://linkedin.com/in/..."
-                {...register("linkedin_url")}
-                disabled={isLoading}
-                className={cn(errors.linkedin_url && "border-destructive")}
-              />
-              <FieldError>{errors.linkedin_url?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="linkedin_url"
+              label="LinkedIn URL"
+              placeholder="https://linkedin.com/in/..."
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.instagram_handle}>
-              <FieldLabel htmlFor="instagram_handle">
-                Instagram Handle
-              </FieldLabel>
-              <Input
-                id="instagram_handle"
-                type="text"
-                placeholder="@username"
-                {...register("instagram_handle")}
-                disabled={isLoading}
-                className={cn(errors.instagram_handle && "border-destructive")}
-              />
-              <FieldError>{errors.instagram_handle?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="instagram_handle"
+              label="Instagram Handle"
+              placeholder="@username"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -654,34 +442,27 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-4">
           <h3 className="text-base font-semibold">Tags & Classification</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.notes} className="md:col-span-2">
-              <FieldLabel htmlFor="notes">Internal Notes</FieldLabel>
-              <Textarea
-                id="notes"
+            <div className="md:col-span-2">
+              <TextareaInputField
+                control={control}
+                name="notes"
+                label="Internal Notes"
                 placeholder="Internal notes (staff only)"
-                {...register("notes")}
-                disabled={isLoading}
                 rows={4}
-                className={cn(errors.notes && "border-destructive")}
+                disabled={isLoading}
               />
-              <FieldError>{errors.notes?.message}</FieldError>
-            </Field>
+            </div>
 
-            <Field
-              data-invalid={!!errors.public_notes}
-              className="md:col-span-2"
-            >
-              <FieldLabel htmlFor="public_notes">Public Notes</FieldLabel>
-              <Textarea
-                id="public_notes"
+            <div className="md:col-span-2">
+              <TextareaInputField
+                control={control}
+                name="public_notes"
+                label="Public Notes"
                 placeholder="Public notes (visible to customer)"
-                {...register("public_notes")}
-                disabled={isLoading}
                 rows={4}
-                className={cn(errors.public_notes && "border-destructive")}
+                disabled={isLoading}
               />
-              <FieldError>{errors.public_notes?.message}</FieldError>
-            </Field>
+            </div>
           </div>
         </div>
       </form>
