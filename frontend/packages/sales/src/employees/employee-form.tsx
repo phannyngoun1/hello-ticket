@@ -40,7 +40,13 @@ const employeeFormSchema = z
     // Contact & Location
     work_phone: z.string().optional(),
     mobile_phone: z.string().optional(),
-    office_location: z.string().optional(),
+    // Address fields
+    street_address: z.string().optional(),
+    city: z.string().optional(),
+    state_province: z.string().optional(),
+    postal_code: z.string().optional(),
+    country: z.string().optional(),
+    office_location: z.string().optional(), // Legacy field for backward compatibility
     timezone: z.string().optional(),
     
     // Sales & Operational
@@ -89,6 +95,13 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         job_title: "",
         department: "",
         employment_type: "",
+        // Address defaults
+        street_address: "",
+        city: "",
+        state_province: "",
+        postal_code: "",
+        country: "",
+        office_location: "",
         timezone: "UTC",
         ...defaultValues,
       },
@@ -167,6 +180,133 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
               <FieldError>{errors.work_email?.message}</FieldError>
             </Field>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field data-invalid={!!errors.birthday}>
+              <FieldLabel htmlFor="birthday">Birthday (for celebrations)</FieldLabel>
+              <Input
+                id="birthday"
+                type="date"
+                {...register("birthday")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
+        </div>
+
+        
+
+        {/* Contact & Location */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Contact & Location</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field data-invalid={!!errors.work_phone}>
+              <FieldLabel htmlFor="work_phone">Work Phone</FieldLabel>
+              <Input
+                id="work_phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                {...register("work_phone")}
+                disabled={isLoading}
+              />
+            </Field>
+
+            <Field data-invalid={!!errors.mobile_phone}>
+              <FieldLabel htmlFor="mobile_phone">Mobile Phone</FieldLabel>
+              <Input
+                id="mobile_phone"
+                type="tel"
+                placeholder="+1 (555) 987-6543"
+                {...register("mobile_phone")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
+
+          {/* Address Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field data-invalid={!!errors.street_address} className="md:col-span-2">
+              <FieldLabel htmlFor="street_address">Street Address</FieldLabel>
+              <Input
+                id="street_address"
+                type="text"
+                placeholder="123 Main Street"
+                {...register("street_address")}
+                disabled={isLoading}
+              />
+            </Field>
+
+            <Field data-invalid={!!errors.city}>
+              <FieldLabel htmlFor="city">City</FieldLabel>
+              <Input
+                id="city"
+                type="text"
+                placeholder="New York"
+                {...register("city")}
+                disabled={isLoading}
+              />
+            </Field>
+
+            <Field data-invalid={!!errors.state_province}>
+              <FieldLabel htmlFor="state_province">State/Province</FieldLabel>
+              <Input
+                id="state_province"
+                type="text"
+                placeholder="NY"
+                {...register("state_province")}
+                disabled={isLoading}
+              />
+            </Field>
+
+            <Field data-invalid={!!errors.postal_code}>
+              <FieldLabel htmlFor="postal_code">Postal Code</FieldLabel>
+              <Input
+                id="postal_code"
+                type="text"
+                placeholder="10001"
+                {...register("postal_code")}
+                disabled={isLoading}
+              />
+            </Field>
+
+            <Field data-invalid={!!errors.country}>
+              <FieldLabel htmlFor="country">Country</FieldLabel>
+              <Input
+                id="country"
+                type="text"
+                placeholder="United States"
+                {...register("country")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
+
+          {/* Timezone */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field data-invalid={!!errors.timezone}>
+              <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
+              <Input
+                id="timezone"
+                type="text"
+                placeholder="UTC"
+                {...register("timezone")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
+
+          {/* Legacy Office Location (hidden for now) */}
+          <div className="hidden">
+            <Field data-invalid={!!errors.office_location}>
+              <FieldLabel htmlFor="office_location">Office Location</FieldLabel>
+              <Input
+                id="office_location"
+                type="text"
+                placeholder="e.g., New York HQ"
+                {...register("office_location")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
         </div>
 
         {/* Organizational Structure */}
@@ -228,56 +368,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
           </div>
         </div>
 
-        {/* Contact & Location */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Contact & Location</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.work_phone}>
-              <FieldLabel htmlFor="work_phone">Work Phone</FieldLabel>
-              <Input
-                id="work_phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                {...register("work_phone")}
-                disabled={isLoading}
-              />
-            </Field>
-
-            <Field data-invalid={!!errors.mobile_phone}>
-              <FieldLabel htmlFor="mobile_phone">Mobile Phone</FieldLabel>
-              <Input
-                id="mobile_phone"
-                type="tel"
-                placeholder="+1 (555) 987-6543"
-                {...register("mobile_phone")}
-                disabled={isLoading}
-              />
-            </Field>
-
-            <Field data-invalid={!!errors.office_location}>
-              <FieldLabel htmlFor="office_location">Office Location</FieldLabel>
-              <Input
-                id="office_location"
-                type="text"
-                placeholder="e.g., New York HQ"
-                {...register("office_location")}
-                disabled={isLoading}
-              />
-            </Field>
-
-            <Field data-invalid={!!errors.timezone}>
-              <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
-              <Input
-                id="timezone"
-                type="text"
-                placeholder="UTC"
-                {...register("timezone")}
-                disabled={isLoading}
-              />
-            </Field>
-          </div>
-        </div>
-
         {/* Sales & Operational */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Sales & Operations</h3>
@@ -313,22 +403,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
                 type="text"
                 placeholder="e.g., Tier 1"
                 {...register("commission_tier")}
-                disabled={isLoading}
-              />
-            </Field>
-          </div>
-        </div>
-
-        {/* Personal Information */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Personal Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.birthday}>
-              <FieldLabel htmlFor="birthday">Birthday (for celebrations)</FieldLabel>
-              <Input
-                id="birthday"
-                type="date"
-                {...register("birthday")}
                 disabled={isLoading}
               />
             </Field>
