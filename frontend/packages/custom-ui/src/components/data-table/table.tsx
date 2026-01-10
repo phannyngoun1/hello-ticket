@@ -106,8 +106,8 @@ export function TableContent<TData>({
                       "relative leading-tight",
                       "antialiased",
                       isResizing && "bg-muted/60",
-                      isLastColumn && "sticky right-0 bg-muted/40 z-20",
-                      isLastColumn && isActionsColumn && "opacity-0",
+                      isActionsColumn && "sticky right-0 bg-muted/40 z-20",
+                      isActionsColumn && "opacity-0",
                       enableColumnResizing &&
                         header.column.getCanResize() &&
                         isResizing &&
@@ -118,7 +118,7 @@ export function TableContent<TData>({
                         enableColumnResizing && !isActionsColumn
                           ? header.getSize()
                           : undefined,
-                      position: isLastColumn ? "sticky" : undefined,
+                      position: isActionsColumn ? "sticky" : undefined,
                     }}
                   >
                     {header.isPlaceholder ? null : (
@@ -239,6 +239,11 @@ export function TableContent<TData>({
                     const isFirstColumn = cellIndex === 0;
                     const isLastColumn =
                       cellIndex === row.getVisibleCells().length - 1;
+                    const isActionsColumn =
+                      cell.column.id === "actions" ||
+                      cell.column.id === "action" ||
+                      cell.column.columnDef.id === "actions" ||
+                      cell.column.columnDef.id === "action";
 
                     return (
                       <td
@@ -251,17 +256,16 @@ export function TableContent<TData>({
                           "leading-normal",
                           "font-normal",
                           "antialiased",
-                          isLastColumn &&
+                          isActionsColumn &&
                             cn(
                               "sticky right-0 z-10 transition-opacity",
                               index % 2 === 0 ? "bg-background" : "bg-muted/10"
                             ),
-                          isLastColumn &&
-                            isActionsColumn &&
+                          isActionsColumn &&
                             cn("opacity-0 group-hover:opacity-100")
                         )}
                         style={{
-                          position: isLastColumn ? "sticky" : undefined,
+                          position: isActionsColumn ? "sticky" : undefined,
                         }}
                       >
                         {enableRowSelection && isFirstColumn ? (
