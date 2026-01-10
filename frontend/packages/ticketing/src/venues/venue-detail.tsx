@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { Venue } from "./types";
 import { CreateLayoutDialog } from "./create-layout-dialog";
+import { EditLayoutDialog } from "./edit-layout-dialog";
 
 export interface VenueDetailProps {
   className?: string;
@@ -42,6 +43,7 @@ export interface VenueDetailProps {
   editable?: boolean;
   onEdit?: (data: Venue) => void;
   onNavigateToSeatDesigner?: (venueId: string, layoutId: string) => void;
+  onEditLayout?: (layout: import("../layouts").Layout) => void;
 
   profilePhotoComponent?: React.ReactNode;
 
@@ -58,12 +60,15 @@ export function VenueDetail({
   editable = true,
   onEdit,
   onNavigateToSeatDesigner,
+  onEditLayout,
 
   profilePhotoComponent,
 
   customActions,
 }: VenueDetailProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [layoutToEdit, setLayoutToEdit] = useState<import("../layouts").Layout | null>(null);
 
   const getVenueDisplayName = () => {
     return data?.name || data?.id || "";
@@ -87,6 +92,11 @@ export function VenueDetail({
   };
 
   const hasMetadata = showMetadata;
+
+  const handleEditLayout = (layout: import("../layouts").Layout) => {
+    setLayoutToEdit(layout);
+    setIsEditDialogOpen(true);
+  };
 
   // Build tabs configuration
   const tabs: ButtonTabItem[] = [
@@ -220,6 +230,7 @@ export function VenueDetail({
                         onNavigateToSeatDesigner(data.id, layoutId);
                       }
                     }}
+                    onEdit={handleEditLayout}
                   />
                 </div>
               )}
@@ -377,6 +388,16 @@ export function VenueDetail({
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         venue={data}
+      />
+
+      {/* Edit Layout Dialog */}
+      <EditLayoutDialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setLayoutToEdit(null);
+        }}
+        layout={layoutToEdit || undefined}
       />
     </Card>
   );
