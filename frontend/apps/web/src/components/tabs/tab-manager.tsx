@@ -529,120 +529,135 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
             )}
             ref={scrollViewportRef}
           >
-            {validTabs.map((tab) => (
-              <ContextMenu key={tab.id}>
-                <ContextMenuTrigger asChild>
-                  <div
-                    ref={activeTabId === tab.id ? activeTabRef : null}
-                    draggable={hoveredGripTabId === tab.id}
-                    onDragStart={(e) => handleDragStart(e, tab.id)}
-                    onDragOver={(e) => handleDragOver(e, tab.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, tab.id)}
-                    onDragEnd={handleDragEnd}
-                    onClick={() => handleTabClick(tab)}
-                    className={cn(
-                      "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
-                      "transition-all duration-200 whitespace-nowrap text-xs border",
-                      "flex-shrink-0 select-none",
-                      tab.pinned
-                        ? "w-8 px-0 justify-center min-w-[32px]"
-                        : cn(
-                            "min-w-0",
-                            inline
-                              ? "max-w-[140px] text-[11px]"
-                              : "max-w-[200px]"
-                          ),
-                      hoveredGripTabId === tab.id
-                        ? "cursor-grab"
-                        : "cursor-pointer",
-                      activeTabId === tab.id
-                        ? "bg-accent text-accent-foreground border-border shadow-sm"
-                        : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
-                      draggedTabId === tab.id ? "opacity-50 scale-95" : "",
-                      dragOverTabId === tab.id && draggedTabId !== tab.id
-                        ? "ring-2 ring-primary/50 bg-primary/10"
-                        : ""
-                    )}
-                    title={tab.pinned ? tab.title : undefined}
-                  >
-                    {!tab.pinned && (
-                      <GripVertical
-                        className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                        onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                        onMouseLeave={handleGripMouseLeave}
-                      />
-                    )}
-                    {(() => {
-                      const IconComponent = getIconComponent(tab.iconName);
-                      return IconComponent ? (
-                        <IconComponent
-                          className={cn(
-                            "h-3.5 w-3.5 flex-shrink-0",
-                            tab.pinned ? "mx-auto" : ""
-                          )}
+            {validTabs.map((tab) => {
+              const activeTab = validTabs.find((t) => t.id === activeTabId);
+              const activeTabModule = activeTab
+                ? getModuleInfo(activeTab.path)
+                : null;
+              const isInSameGroup =
+                activeTabModule &&
+                getModuleInfo(tab.path) === activeTabModule &&
+                tab.id !== activeTabId;
+
+              return (
+                <ContextMenu key={tab.id}>
+                  <ContextMenuTrigger asChild>
+                    <div
+                      ref={activeTabId === tab.id ? activeTabRef : null}
+                      draggable={hoveredGripTabId === tab.id}
+                      onDragStart={(e) => handleDragStart(e, tab.id)}
+                      onDragOver={(e) => handleDragOver(e, tab.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, tab.id)}
+                      onDragEnd={handleDragEnd}
+                      onClick={() => handleTabClick(tab)}
+                      className={cn(
+                        "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
+                        "transition-all duration-200 whitespace-nowrap text-xs border",
+                        "flex-shrink-0 select-none",
+                        tab.pinned
+                          ? "w-8 px-0 justify-center min-w-[32px]"
+                          : cn(
+                              "min-w-0",
+                              inline
+                                ? "max-w-[140px] text-[11px]"
+                                : "max-w-[200px]"
+                            ),
+                        hoveredGripTabId === tab.id
+                          ? "cursor-grab"
+                          : "cursor-pointer",
+                        activeTabId === tab.id
+                          ? "bg-accent text-accent-foreground border-border shadow-sm"
+                          : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
+                        draggedTabId === tab.id ? "opacity-50 scale-95" : "",
+                        dragOverTabId === tab.id && draggedTabId !== tab.id
+                          ? "ring-2 ring-primary/50 bg-primary/10"
+                          : "",
+                        // Group highlighting for tabs in the same module as active tab
+                        isInSameGroup ? "bg-accent/20 border-accent/30" : ""
+                      )}
+                      title={tab.pinned ? tab.title : undefined}
+                    >
+                      {!tab.pinned && (
+                        <GripVertical
+                          className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                          onMouseEnter={() => handleGripMouseEnter(tab.id)}
+                          onMouseLeave={handleGripMouseLeave}
                         />
-                      ) : null;
-                    })()}
-                    {!tab.pinned && (
-                      <span className="font-medium truncate">{tab.title}</span>
+                      )}
+                      {(() => {
+                        const IconComponent = getIconComponent(tab.iconName);
+                        return IconComponent ? (
+                          <IconComponent
+                            className={cn(
+                              "h-3.5 w-3.5 flex-shrink-0",
+                              tab.pinned ? "mx-auto" : ""
+                            )}
+                          />
+                        ) : null;
+                      })()}
+                      {!tab.pinned && (
+                        <span className="font-medium truncate">
+                          {tab.title}
+                        </span>
+                      )}
+                      {!tab.pinned && tabs.length > 1 && (
+                        <button
+                          onClick={(e) => handleTabClose(e, tab.id)}
+                          className={cn(
+                            "opacity-0 group-hover:opacity-100 transition-all duration-150",
+                            "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
+                            "shrink-0",
+                            activeTabId === tab.id ? "opacity-100" : ""
+                          )}
+                          aria-label={`Close ${tab.title}`}
+                          title={`Close ${tab.title}`}
+                        >
+                          <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
+                        </button>
+                      )}
+                    </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="min-w-[120px]">
+                    {tabs.length > 1 && (
+                      <>
+                        <ContextMenuItem
+                          onClick={() => handleTogglePin(tab)}
+                          className="text-xs"
+                        >
+                          {tab.pinned ? (
+                            <PinOff className="mr-2 h-3.5 w-3.5" />
+                          ) : (
+                            <Pin className="mr-2 h-3.5 w-3.5" />
+                          )}
+                          {tab.pinned ? "Unpin Tab" : "Pin Tab"}
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onClick={handleGroupTabs}
+                          className="text-xs"
+                        >
+                          <Layers className="mr-2 h-3.5 w-3.5" />
+                          Group Related Tabs
+                        </ContextMenuItem>
+                        <ContextMenuSeparator />
+                        <ContextMenuItem
+                          onClick={handleCloseOthers}
+                          className="text-xs"
+                        >
+                          Close Others
+                        </ContextMenuItem>
+                        <ContextMenuItem
+                          onClick={handleCloseAll}
+                          className="text-xs"
+                        >
+                          Close All
+                        </ContextMenuItem>
+                      </>
                     )}
-                    {!tab.pinned && tabs.length > 1 && (
-                      <button
-                        onClick={(e) => handleTabClose(e, tab.id)}
-                        className={cn(
-                          "opacity-0 group-hover:opacity-100 transition-all duration-150",
-                          "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
-                          "shrink-0",
-                          activeTabId === tab.id ? "opacity-100" : ""
-                        )}
-                        aria-label={`Close ${tab.title}`}
-                        title={`Close ${tab.title}`}
-                      >
-                        <X className="h-3 w-3 transition-all duration-150 hover:text-red-500 hover:scale-110 active:scale-95" />
-                      </button>
-                    )}
-                  </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent className="min-w-[120px]">
-                  {tabs.length > 1 && (
-                    <>
-                      <ContextMenuItem
-                        onClick={() => handleTogglePin(tab)}
-                        className="text-xs"
-                      >
-                        {tab.pinned ? (
-                          <PinOff className="mr-2 h-3.5 w-3.5" />
-                        ) : (
-                          <Pin className="mr-2 h-3.5 w-3.5" />
-                        )}
-                        {tab.pinned ? "Unpin Tab" : "Pin Tab"}
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        onClick={handleGroupTabs}
-                        className="text-xs"
-                      >
-                        <Layers className="mr-2 h-3.5 w-3.5" />
-                        Group Related Tabs
-                      </ContextMenuItem>
-                      <ContextMenuSeparator />
-                      <ContextMenuItem
-                        onClick={handleCloseOthers}
-                        className="text-xs"
-                      >
-                        Close Others
-                      </ContextMenuItem>
-                      <ContextMenuItem
-                        onClick={handleCloseAll}
-                        className="text-xs"
-                      >
-                        Close All
-                      </ContextMenuItem>
-                    </>
-                  )}
-                </ContextMenuContent>
-              </ContextMenu>
-            ))}
+                  </ContextMenuContent>
+                </ContextMenu>
+              );
+            })}
           </div>
         </div>
 
