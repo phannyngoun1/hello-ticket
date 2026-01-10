@@ -79,6 +79,7 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
       register,
       handleSubmit,
       control,
+      reset,
       formState: { errors, isSubmitted },
     } = useForm<EmployeeFormData>({
       resolver: zodResolver(employeeFormSchema),
@@ -94,6 +95,15 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
     });
 
     const firstErrorRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+      if (defaultValues) {
+        reset((formValues) => ({
+          ...formValues,
+          ...defaultValues,
+        }));
+      }
+    }, [defaultValues, reset]);
 
     useEffect(() => {
       if (isSubmitted && Object.keys(errors).length > 0) {
