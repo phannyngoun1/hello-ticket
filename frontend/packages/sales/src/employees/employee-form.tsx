@@ -5,20 +5,10 @@
  */
 
 import { forwardRef, useEffect, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import {
-  Input,
-  Field,
-  FieldLabel,
-  FieldError,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@truths/ui";
+import { TextInputField, DateInputField, SelectInputField } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
 
 // Form schema with all new employee fields
@@ -80,7 +70,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
     ref
   ) {
     const {
-      register,
       handleSubmit,
       control,
       reset,
@@ -150,44 +139,31 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Basic Information</h3>
           <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4")} ref={firstErrorRef}>
-            <Field data-invalid={!!errors.name}>
-              <FieldLabel htmlFor="name">
-                Name <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Enter full name"
-                {...register("name")}
-                disabled={isLoading}
-                className={cn(errors.name && "border-destructive")}
-              />
-              <FieldError>{errors.name?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="name"
+              label="Name"
+              placeholder="Enter full name"
+              required
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.work_email}>
-              <FieldLabel htmlFor="work_email">Work Email</FieldLabel>
-              <Input
-                id="work_email"
-                type="email"
-                placeholder="employee@company.com"
-                {...register("work_email")}
-                disabled={isLoading}
-                className={cn(errors.work_email && "border-destructive")}
-              />
-              <FieldError>{errors.work_email?.message}</FieldError>
-            </Field>
+            <TextInputField
+              control={control}
+              name="work_email"
+              label="Work Email"
+              type="email"
+              placeholder="employee@company.com"
+              disabled={isLoading}
+            />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.birthday}>
-              <FieldLabel htmlFor="birthday">Birthday (for celebrations)</FieldLabel>
-              <Input
-                id="birthday"
-                type="date"
-                {...register("birthday")}
-                disabled={isLoading}
-              />
-            </Field>
+            <DateInputField
+              control={control}
+              name="birthday"
+              label="Birthday (for celebrations)"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -197,113 +173,90 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Contact & Location</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.work_phone}>
-              <FieldLabel htmlFor="work_phone">Work Phone</FieldLabel>
-              <Input
-                id="work_phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                {...register("work_phone")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="work_phone"
+              label="Work Phone"
+              type="tel"
+              placeholder="+1 (555) 123-4567"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.mobile_phone}>
-              <FieldLabel htmlFor="mobile_phone">Mobile Phone</FieldLabel>
-              <Input
-                id="mobile_phone"
-                type="tel"
-                placeholder="+1 (555) 987-6543"
-                {...register("mobile_phone")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="mobile_phone"
+              label="Mobile Phone"
+              type="tel"
+              placeholder="+1 (555) 987-6543"
+              disabled={isLoading}
+            />
           </div>
 
           {/* Address Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.street_address} className="md:col-span-2">
-              <FieldLabel htmlFor="street_address">Street Address</FieldLabel>
-              <Input
-                id="street_address"
-                type="text"
+            <div className="md:col-span-2">
+              <TextInputField
+                control={control}
+                name="street_address"
+                label="Street Address"
                 placeholder="123 Main Street"
-                {...register("street_address")}
                 disabled={isLoading}
               />
-            </Field>
+            </div>
 
-            <Field data-invalid={!!errors.city}>
-              <FieldLabel htmlFor="city">City</FieldLabel>
-              <Input
-                id="city"
-                type="text"
-                placeholder="New York"
-                {...register("city")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="city"
+              label="City"
+              placeholder="New York"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.state_province}>
-              <FieldLabel htmlFor="state_province">State/Province</FieldLabel>
-              <Input
-                id="state_province"
-                type="text"
-                placeholder="NY"
-                {...register("state_province")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="state_province"
+              label="State/Province"
+              placeholder="NY"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.postal_code}>
-              <FieldLabel htmlFor="postal_code">Postal Code</FieldLabel>
-              <Input
-                id="postal_code"
-                type="text"
-                placeholder="10001"
-                {...register("postal_code")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="postal_code"
+              label="Postal Code"
+              placeholder="10001"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.country}>
-              <FieldLabel htmlFor="country">Country</FieldLabel>
-              <Input
-                id="country"
-                type="text"
-                placeholder="United States"
-                {...register("country")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="country"
+              label="Country"
+              placeholder="United States"
+              disabled={isLoading}
+            />
           </div>
 
           {/* Timezone */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.timezone}>
-              <FieldLabel htmlFor="timezone">Timezone</FieldLabel>
-              <Input
-                id="timezone"
-                type="text"
-                placeholder="UTC"
-                {...register("timezone")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="timezone"
+              label="Timezone"
+              placeholder="UTC"
+              disabled={isLoading}
+            />
           </div>
 
           {/* Legacy Office Location (hidden for now) */}
           <div className="hidden">
-            <Field data-invalid={!!errors.office_location}>
-              <FieldLabel htmlFor="office_location">Office Location</FieldLabel>
-              <Input
-                id="office_location"
-                type="text"
-                placeholder="e.g., New York HQ"
-                {...register("office_location")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="office_location"
+              label="Office Location"
+              placeholder="e.g., New York HQ"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -311,58 +264,42 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Organization</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.job_title}>
-              <FieldLabel htmlFor="job_title">Job Title</FieldLabel>
-              <Input
-                id="job_title"
-                type="text"
-                placeholder="e.g., Sales Manager"
-                {...register("job_title")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="job_title"
+              label="Job Title"
+              placeholder="e.g., Sales Manager"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.department}>
-              <FieldLabel htmlFor="department">Department</FieldLabel>
-              <Input
-                id="department"
-                type="text"
-                placeholder="e.g., Sales"
-                {...register("department")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="department"
+              label="Department"
+              placeholder="e.g., Sales"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.employment_type}>
-              <FieldLabel htmlFor="employment_type">Employment Type</FieldLabel>
-              <Controller
-                name="employment_type"
-                control={control}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Contractor">Contractor</SelectItem>
-                      <SelectItem value="Intern">Intern</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+            <SelectInputField
+              control={control}
+              name="employment_type"
+              label="Employment Type"
+              placeholder="Select type"
+              options={[
+                { value: "Full-time", label: "Full-time" },
+                { value: "Part-time", label: "Part-time" },
+                { value: "Contractor", label: "Contractor" },
+                { value: "Intern", label: "Intern" },
+              ]}
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.hire_date}>
-              <FieldLabel htmlFor="hire_date">Hire Date</FieldLabel>
-              <Input
-                id="hire_date"
-                type="date"
-                {...register("hire_date")}
-                disabled={isLoading}
-              />
-            </Field>
+            <DateInputField
+              control={control}
+              name="hire_date"
+              label="Hire Date"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -370,40 +307,31 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Sales & Operations</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field data-invalid={!!errors.skills}>
-              <FieldLabel htmlFor="skills">Skills</FieldLabel>
-              <Input
-                id="skills"
-                type="text"
-                placeholder="Comma-separated (e.g., Sales, Spanish)"
-                {...register("skills")}
-                disabled={isLoading}
-              />
-              <p className="text-sm text-muted-foreground">Separate skills with commas</p>
-            </Field>
+            <TextInputField
+              control={control}
+              name="skills"
+              label="Skills"
+              placeholder="Comma-separated (e.g., Sales, Spanish)"
+              helperText="Separate skills with commas"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.assigned_territories}>
-              <FieldLabel htmlFor="assigned_territories">Assigned Territories</FieldLabel>
-              <Input
-                id="assigned_territories"
-                type="text"
-                placeholder="Comma-separated (e.g., EMEA, APAC)"
-                {...register("assigned_territories")}
-                disabled={isLoading}
-              />
-              <p className="text-sm text-muted-foreground">Separate territories with commas</p>
-            </Field>
+            <TextInputField
+              control={control}
+              name="assigned_territories"
+              label="Assigned Territories"
+              placeholder="Comma-separated (e.g., EMEA, APAC)"
+              helperText="Separate territories with commas"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.commission_tier}>
-              <FieldLabel htmlFor="commission_tier">Commission Tier</FieldLabel>
-              <Input
-                id="commission_tier"
-                type="text"
-                placeholder="e.g., Tier 1"
-                {...register("commission_tier")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="commission_tier"
+              label="Commission Tier"
+              placeholder="e.g., Tier 1"
+              disabled={isLoading}
+            />
           </div>
         </div>
 
@@ -411,38 +339,30 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         <details className="space-y-4">
           <summary className="text-lg font-semibold cursor-pointer">Emergency Contact</summary>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <Field data-invalid={!!errors.emergency_contact_name}>
-              <FieldLabel htmlFor="emergency_contact_name">Contact Name</FieldLabel>
-              <Input
-                id="emergency_contact_name"
-                type="text"
-                placeholder="Full name"
-                {...register("emergency_contact_name")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_name"
+              label="Contact Name"
+              placeholder="Full name"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.emergency_contact_phone}>
-              <FieldLabel htmlFor="emergency_contact_phone">Contact Phone</FieldLabel>
-              <Input
-                id="emergency_contact_phone"
-                type="tel"
-                placeholder="+1 (555) 000-0000"
-                {...register("emergency_contact_phone")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_phone"
+              label="Contact Phone"
+              type="tel"
+              placeholder="+1 (555) 000-0000"
+              disabled={isLoading}
+            />
 
-            <Field data-invalid={!!errors.emergency_contact_relationship}>
-              <FieldLabel htmlFor="emergency_contact_relationship">Relationship</FieldLabel>
-              <Input
-                id="emergency_contact_relationship"
-                type="text"
-                placeholder="e.g., Spouse, Parent"
-                {...register("emergency_contact_relationship")}
-                disabled={isLoading}
-              />
-            </Field>
+            <TextInputField
+              control={control}
+              name="emergency_contact_relationship"
+              label="Relationship"
+              placeholder="e.g., Spouse, Parent"
+              disabled={isLoading}
+            />
           </div>
         </details>
       </form>
