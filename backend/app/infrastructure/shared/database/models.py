@@ -260,115 +260,11 @@ class PaymentModel(SQLModel, table=True):
 
 
 
-class TestBasicModel(SQLModel, table=True):
-    """TestBasic master data database model"""
-    __tablename__ = "test_basics"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_test_basics_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_test_basics_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_test_basics_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-    )
 
 
 
-class TestTreeModel(SQLModel, table=True):
-    """TestTree master data database model"""
-    __tablename__ = "test_trees"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    parent_test_tree_id: Optional[str] = Field(
-        default=None,
-        foreign_key="test_trees.id",
-        index=True,
-        description="Parent test tree reference for hierarchy"
-    )
-    level: int = Field(default=0, index=True)
-    sort_order: int = Field(default=0, description="Display ordering among siblings")
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_test_trees_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_test_trees_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_test_trees_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-        Index('ix_test_trees_parent', 'tenant_id', 'parent_test_tree_id'),
-    )
 
 
-
-class TestTreeBackendModel(SQLModel, table=True):
-    """TestTreeBackend master data database model"""
-    __tablename__ = "test_tree_backends"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    description: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_test_tree_backends_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_test_tree_backends_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_test_tree_backends_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-    )
 
 
 
@@ -415,69 +311,7 @@ class CustomerGroupModel(SQLModel, table=True):
 
 
 
-class TestEntityModel(SQLModel, table=True):
-    """TestEntity master data database model"""
-    __tablename__ = "test_entities"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    description: str
-    price: Decimal
-    is_active: bool = Field(default=True, index=True)
-    deactivated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_test_entities_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_test_entities_tenant_active', 'tenant_id', 'is_active'),
-    )
 
-
-
-class TestModel(SQLModel, table=True):
-    """Test master data database model"""
-    __tablename__ = "tests"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    deactivated_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_tests_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_tests_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_tests_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-    )
 
 
 

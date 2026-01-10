@@ -9,8 +9,8 @@ from sqlmodel import SQLModel, create_engine, Session
 from typing import Generator
 from app.infrastructure.shared.database.models import (
     # Sales master data
-    TestEntityModel, TestModel, CustomerTypeModel,
-    CustomerGroupModel, TestTreeBackendModel, TestTreeModel, TestBasicModel,
+    CustomerTypeModel,
+    CustomerGroupModel,
     # Ticketing master data
     VenueModel, LayoutModel, SectionModel, SeatModel,
     OrganizerModel, EventTypeModel,

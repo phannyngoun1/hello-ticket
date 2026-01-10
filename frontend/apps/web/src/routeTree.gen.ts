@@ -27,7 +27,6 @@ import { Route as SettingsLanguageRouteImport } from './routes/settings/language
 import { Route as SettingsCompanyAddressesRouteImport } from './routes/settings/company-addresses'
 import { Route as SettingsAppearanceRouteImport } from './routes/settings/appearance'
 import { Route as SettingsAccountRouteImport } from './routes/settings/account'
-import { Route as SalesTestsRouteImport } from './routes/sales/tests'
 import { Route as SalesPaymentsRouteImport } from './routes/sales/payments'
 import { Route as SalesExploreRouteImport } from './routes/sales/explore'
 import { Route as SalesEmployeesRouteImport } from './routes/sales/employees'
@@ -38,7 +37,6 @@ import { Route as authChangePasswordRouteImport } from './routes/(auth)/change-p
 import { Route as TicketingVenuesIndexRouteImport } from './routes/ticketing/venues/index'
 import { Route as TicketingShowsIndexRouteImport } from './routes/ticketing/shows/index'
 import { Route as TicketingOrganizersIndexRouteImport } from './routes/ticketing/organizers/index'
-import { Route as SalesTestsIndexRouteImport } from './routes/sales/tests/index'
 import { Route as SalesPaymentsIndexRouteImport } from './routes/sales/payments/index'
 import { Route as SalesExploreIndexRouteImport } from './routes/sales/explore/index'
 import { Route as SalesEmployeesIndexRouteImport } from './routes/sales/employees/index'
@@ -49,11 +47,8 @@ import { Route as TicketingShowsIdRouteImport } from './routes/ticketing/shows/$
 import { Route as TicketingOrganizersIdRouteImport } from './routes/ticketing/organizers/$id'
 import { Route as SettingsTicketingVenueTypesRouteImport } from './routes/settings/ticketing/venue-types'
 import { Route as SettingsTicketingEventTypesRouteImport } from './routes/settings/ticketing/event-types'
-import { Route as SettingsSalesTestTreesRouteImport } from './routes/settings/sales/test-trees'
-import { Route as SettingsSalesTestBasicsRouteImport } from './routes/settings/sales/test-basics'
 import { Route as SettingsSalesCustomerTypesRouteImport } from './routes/settings/sales/customer-types'
 import { Route as SettingsSalesCustomerGroupsRouteImport } from './routes/settings/sales/customer-groups'
-import { Route as SalesTestsIdRouteImport } from './routes/sales/tests/$id'
 import { Route as SalesPaymentsIdRouteImport } from './routes/sales/payments/$id'
 import { Route as SalesEmployeesIdRouteImport } from './routes/sales/employees/$id'
 import { Route as SalesCustomersIdRouteImport } from './routes/sales/customers/$id'
@@ -152,11 +147,6 @@ const SettingsAccountRoute = SettingsAccountRouteImport.update({
   path: '/settings/account',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SalesTestsRoute = SalesTestsRouteImport.update({
-  id: '/sales/tests',
-  path: '/sales/tests',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SalesPaymentsRoute = SalesPaymentsRouteImport.update({
   id: '/sales/payments',
   path: '/sales/payments',
@@ -208,11 +198,6 @@ const TicketingOrganizersIndexRoute =
     path: '/',
     getParentRoute: () => TicketingOrganizersRoute,
   } as any)
-const SalesTestsIndexRoute = SalesTestsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SalesTestsRoute,
-} as any)
 const SalesPaymentsIndexRoute = SalesPaymentsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -265,16 +250,6 @@ const SettingsTicketingEventTypesRoute =
     path: '/settings/ticketing/event-types',
     getParentRoute: () => rootRouteImport,
   } as any)
-const SettingsSalesTestTreesRoute = SettingsSalesTestTreesRouteImport.update({
-  id: '/settings/sales/test-trees',
-  path: '/settings/sales/test-trees',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsSalesTestBasicsRoute = SettingsSalesTestBasicsRouteImport.update({
-  id: '/settings/sales/test-basics',
-  path: '/settings/sales/test-basics',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SettingsSalesCustomerTypesRoute =
   SettingsSalesCustomerTypesRouteImport.update({
     id: '/settings/sales/customer-types',
@@ -287,11 +262,6 @@ const SettingsSalesCustomerGroupsRoute =
     path: '/settings/sales/customer-groups',
     getParentRoute: () => rootRouteImport,
   } as any)
-const SalesTestsIdRoute = SalesTestsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => SalesTestsRoute,
-} as any)
 const SalesPaymentsIdRoute = SalesPaymentsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -338,7 +308,6 @@ export interface FileRoutesByFullPath {
   '/sales/employees': typeof SalesEmployeesRouteWithChildren
   '/sales/explore': typeof SalesExploreRouteWithChildren
   '/sales/payments': typeof SalesPaymentsRouteWithChildren
-  '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/company-addresses': typeof SettingsCompanyAddressesRoute
@@ -356,11 +325,8 @@ export interface FileRoutesByFullPath {
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
-  '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
-  '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
-  '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
@@ -371,7 +337,6 @@ export interface FileRoutesByFullPath {
   '/sales/employees/': typeof SalesEmployeesIndexRoute
   '/sales/explore/': typeof SalesExploreIndexRoute
   '/sales/payments/': typeof SalesPaymentsIndexRoute
-  '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
@@ -399,11 +364,8 @@ export interface FileRoutesByTo {
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
-  '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
-  '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
-  '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
@@ -414,7 +376,6 @@ export interface FileRoutesByTo {
   '/sales/employees': typeof SalesEmployeesIndexRoute
   '/sales/explore': typeof SalesExploreIndexRoute
   '/sales/payments': typeof SalesPaymentsIndexRoute
-  '/sales/tests': typeof SalesTestsIndexRoute
   '/ticketing/organizers': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows': typeof TicketingShowsIndexRoute
   '/ticketing/venues': typeof TicketingVenuesIndexRoute
@@ -435,7 +396,6 @@ export interface FileRoutesById {
   '/sales/employees': typeof SalesEmployeesRouteWithChildren
   '/sales/explore': typeof SalesExploreRouteWithChildren
   '/sales/payments': typeof SalesPaymentsRouteWithChildren
-  '/sales/tests': typeof SalesTestsRouteWithChildren
   '/settings/account': typeof SettingsAccountRoute
   '/settings/appearance': typeof SettingsAppearanceRoute
   '/settings/company-addresses': typeof SettingsCompanyAddressesRoute
@@ -453,11 +413,8 @@ export interface FileRoutesById {
   '/sales/customers/$id': typeof SalesCustomersIdRoute
   '/sales/employees/$id': typeof SalesEmployeesIdRoute
   '/sales/payments/$id': typeof SalesPaymentsIdRoute
-  '/sales/tests/$id': typeof SalesTestsIdRoute
   '/settings/sales/customer-groups': typeof SettingsSalesCustomerGroupsRoute
   '/settings/sales/customer-types': typeof SettingsSalesCustomerTypesRoute
-  '/settings/sales/test-basics': typeof SettingsSalesTestBasicsRoute
-  '/settings/sales/test-trees': typeof SettingsSalesTestTreesRoute
   '/settings/ticketing/event-types': typeof SettingsTicketingEventTypesRoute
   '/settings/ticketing/venue-types': typeof SettingsTicketingVenueTypesRoute
   '/ticketing/organizers/$id': typeof TicketingOrganizersIdRoute
@@ -468,7 +425,6 @@ export interface FileRoutesById {
   '/sales/employees/': typeof SalesEmployeesIndexRoute
   '/sales/explore/': typeof SalesExploreIndexRoute
   '/sales/payments/': typeof SalesPaymentsIndexRoute
-  '/sales/tests/': typeof SalesTestsIndexRoute
   '/ticketing/organizers/': typeof TicketingOrganizersIndexRoute
   '/ticketing/shows/': typeof TicketingShowsIndexRoute
   '/ticketing/venues/': typeof TicketingVenuesIndexRoute
@@ -490,7 +446,6 @@ export interface FileRouteTypes {
     | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
-    | '/sales/tests'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/company-addresses'
@@ -508,11 +463,8 @@ export interface FileRouteTypes {
     | '/sales/customers/$id'
     | '/sales/employees/$id'
     | '/sales/payments/$id'
-    | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
-    | '/settings/sales/test-basics'
-    | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
@@ -523,7 +475,6 @@ export interface FileRouteTypes {
     | '/sales/employees/'
     | '/sales/explore/'
     | '/sales/payments/'
-    | '/sales/tests/'
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
     | '/ticketing/venues/'
@@ -551,11 +502,8 @@ export interface FileRouteTypes {
     | '/sales/customers/$id'
     | '/sales/employees/$id'
     | '/sales/payments/$id'
-    | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
-    | '/settings/sales/test-basics'
-    | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
@@ -566,7 +514,6 @@ export interface FileRouteTypes {
     | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
-    | '/sales/tests'
     | '/ticketing/organizers'
     | '/ticketing/shows'
     | '/ticketing/venues'
@@ -586,7 +533,6 @@ export interface FileRouteTypes {
     | '/sales/employees'
     | '/sales/explore'
     | '/sales/payments'
-    | '/sales/tests'
     | '/settings/account'
     | '/settings/appearance'
     | '/settings/company-addresses'
@@ -604,11 +550,8 @@ export interface FileRouteTypes {
     | '/sales/customers/$id'
     | '/sales/employees/$id'
     | '/sales/payments/$id'
-    | '/sales/tests/$id'
     | '/settings/sales/customer-groups'
     | '/settings/sales/customer-types'
-    | '/settings/sales/test-basics'
-    | '/settings/sales/test-trees'
     | '/settings/ticketing/event-types'
     | '/settings/ticketing/venue-types'
     | '/ticketing/organizers/$id'
@@ -619,7 +562,6 @@ export interface FileRouteTypes {
     | '/sales/employees/'
     | '/sales/explore/'
     | '/sales/payments/'
-    | '/sales/tests/'
     | '/ticketing/organizers/'
     | '/ticketing/shows/'
     | '/ticketing/venues/'
@@ -640,7 +582,6 @@ export interface RootRouteChildren {
   SalesEmployeesRoute: typeof SalesEmployeesRouteWithChildren
   SalesExploreRoute: typeof SalesExploreRouteWithChildren
   SalesPaymentsRoute: typeof SalesPaymentsRouteWithChildren
-  SalesTestsRoute: typeof SalesTestsRouteWithChildren
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAppearanceRoute: typeof SettingsAppearanceRoute
   SettingsCompanyAddressesRoute: typeof SettingsCompanyAddressesRoute
@@ -654,8 +595,6 @@ export interface RootRouteChildren {
   SettingsIndexRoute: typeof SettingsIndexRoute
   SettingsSalesCustomerGroupsRoute: typeof SettingsSalesCustomerGroupsRoute
   SettingsSalesCustomerTypesRoute: typeof SettingsSalesCustomerTypesRoute
-  SettingsSalesTestBasicsRoute: typeof SettingsSalesTestBasicsRoute
-  SettingsSalesTestTreesRoute: typeof SettingsSalesTestTreesRoute
   SettingsTicketingEventTypesRoute: typeof SettingsTicketingEventTypesRoute
   SettingsTicketingVenueTypesRoute: typeof SettingsTicketingVenueTypesRoute
   TicketingEventsEventIdInventoryRoute: typeof TicketingEventsEventIdInventoryRoute
@@ -789,13 +728,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sales/tests': {
-      id: '/sales/tests'
-      path: '/sales/tests'
-      fullPath: '/sales/tests'
-      preLoaderRoute: typeof SalesTestsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sales/payments': {
       id: '/sales/payments'
       path: '/sales/payments'
@@ -865,13 +797,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/ticketing/organizers/'
       preLoaderRoute: typeof TicketingOrganizersIndexRouteImport
       parentRoute: typeof TicketingOrganizersRoute
-    }
-    '/sales/tests/': {
-      id: '/sales/tests/'
-      path: '/'
-      fullPath: '/sales/tests/'
-      preLoaderRoute: typeof SalesTestsIndexRouteImport
-      parentRoute: typeof SalesTestsRoute
     }
     '/sales/payments/': {
       id: '/sales/payments/'
@@ -943,20 +868,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsTicketingEventTypesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings/sales/test-trees': {
-      id: '/settings/sales/test-trees'
-      path: '/settings/sales/test-trees'
-      fullPath: '/settings/sales/test-trees'
-      preLoaderRoute: typeof SettingsSalesTestTreesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings/sales/test-basics': {
-      id: '/settings/sales/test-basics'
-      path: '/settings/sales/test-basics'
-      fullPath: '/settings/sales/test-basics'
-      preLoaderRoute: typeof SettingsSalesTestBasicsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/settings/sales/customer-types': {
       id: '/settings/sales/customer-types'
       path: '/settings/sales/customer-types'
@@ -970,13 +881,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/sales/customer-groups'
       preLoaderRoute: typeof SettingsSalesCustomerGroupsRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/sales/tests/$id': {
-      id: '/sales/tests/$id'
-      path: '/$id'
-      fullPath: '/sales/tests/$id'
-      preLoaderRoute: typeof SalesTestsIdRouteImport
-      parentRoute: typeof SalesTestsRoute
     }
     '/sales/payments/$id': {
       id: '/sales/payments/$id'
@@ -1103,20 +1007,6 @@ const SalesPaymentsRouteWithChildren = SalesPaymentsRoute._addFileChildren(
   SalesPaymentsRouteChildren,
 )
 
-interface SalesTestsRouteChildren {
-  SalesTestsIdRoute: typeof SalesTestsIdRoute
-  SalesTestsIndexRoute: typeof SalesTestsIndexRoute
-}
-
-const SalesTestsRouteChildren: SalesTestsRouteChildren = {
-  SalesTestsIdRoute: SalesTestsIdRoute,
-  SalesTestsIndexRoute: SalesTestsIndexRoute,
-}
-
-const SalesTestsRouteWithChildren = SalesTestsRoute._addFileChildren(
-  SalesTestsRouteChildren,
-)
-
 interface TicketingOrganizersRouteChildren {
   TicketingOrganizersIdRoute: typeof TicketingOrganizersIdRoute
   TicketingOrganizersIndexRoute: typeof TicketingOrganizersIndexRoute
@@ -1182,7 +1072,6 @@ const rootRouteChildren: RootRouteChildren = {
   SalesEmployeesRoute: SalesEmployeesRouteWithChildren,
   SalesExploreRoute: SalesExploreRouteWithChildren,
   SalesPaymentsRoute: SalesPaymentsRouteWithChildren,
-  SalesTestsRoute: SalesTestsRouteWithChildren,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAppearanceRoute: SettingsAppearanceRoute,
   SettingsCompanyAddressesRoute: SettingsCompanyAddressesRoute,
@@ -1196,8 +1085,6 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsIndexRoute: SettingsIndexRoute,
   SettingsSalesCustomerGroupsRoute: SettingsSalesCustomerGroupsRoute,
   SettingsSalesCustomerTypesRoute: SettingsSalesCustomerTypesRoute,
-  SettingsSalesTestBasicsRoute: SettingsSalesTestBasicsRoute,
-  SettingsSalesTestTreesRoute: SettingsSalesTestTreesRoute,
   SettingsTicketingEventTypesRoute: SettingsTicketingEventTypesRoute,
   SettingsTicketingVenueTypesRoute: SettingsTicketingVenueTypesRoute,
   TicketingEventsEventIdInventoryRoute: TicketingEventsEventIdInventoryRoute,

@@ -61,21 +61,6 @@ class Permission(str, Enum):
     MANAGE_SALES_CUSTOMER_GROUP = "sales_customer_group:manage"
 
 
-    # Sales - Tests permissions
-    CREATE_SALES_TEST = "sales_test:create"
-    VIEW_SALES_TEST = "sales_test:view"
-    MANAGE_SALES_TEST = "sales_test:manage"
-
-
-    # Sales - Test Trees permissions
-    CREATE_SALES_TEST_TREE = "sales_test_tree:create"
-    VIEW_SALES_TEST_TREE = "sales_test_tree:view"
-    MANAGE_SALES_TEST_TREE = "sales_test_tree:manage"
-
-    # Sales - Test Basics permissions
-    CREATE_SALES_TEST_BASIC = "sales_test_basic:create"
-    VIEW_SALES_TEST_BASIC = "sales_test_basic:view"
-    MANAGE_SALES_TEST_BASIC = "sales_test_basic:manage"
 
     # Inventory - Goods Receipts permissions
     CREATE_INVENTORY_GOODS_RECEIPT = "inventory_goods_receipt:create"
@@ -201,19 +186,7 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.CREATE_SALES_CUSTOMER, Permission.VIEW_SALES_CUSTOMER,
         # Sales - Customer Types
         Permission.CREATE_SALES_CUSTOMER_TYPE, Permission.VIEW_SALES_CUSTOMER_TYPE, Permission.MANAGE_SALES_CUSTOMER_TYPE,
-        # Sales - Tests
-        Permission.CREATE_SALES_TEST, Permission.VIEW_SALES_TEST, Permission.MANAGE_SALES_TEST,
 
-        # Sales - Customer Types
-        Permission.CREATE_SALES_CUSTOMER_TYPE, Permission.VIEW_SALES_CUSTOMER_TYPE, Permission.MANAGE_SALES_CUSTOMER_TYPE,
-        # Sales - Customer Groups
-        Permission.CREATE_SALES_CUSTOMER_GROUP, Permission.VIEW_SALES_CUSTOMER_GROUP, Permission.MANAGE_SALES_CUSTOMER_GROUP,
-
-        # Sales - Test Trees
-        Permission.CREATE_SALES_TEST_TREE, Permission.VIEW_SALES_TEST_TREE, Permission.MANAGE_SALES_TEST_TREE,
-
-        # Sales - Test Basics
-        Permission.CREATE_SALES_TEST_BASIC, Permission.VIEW_SALES_TEST_BASIC, Permission.MANAGE_SALES_TEST_BASIC,
 
         # Inventory - Goods Receipts
         Permission.CREATE_INVENTORY_GOODS_RECEIPT, Permission.VIEW_INVENTORY_GOODS_RECEIPT, Permission.MANAGE_INVENTORY_GOODS_RECEIPT,
