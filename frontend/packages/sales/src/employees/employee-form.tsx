@@ -319,6 +319,22 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
           </div>
         </div>
 
+        {/* Personal Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Personal Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field data-invalid={!!errors.birthday}>
+              <FieldLabel htmlFor="birthday">Birthday (for celebrations)</FieldLabel>
+              <Input
+                id="birthday"
+                type="date"
+                {...register("birthday")}
+                disabled={isLoading}
+              />
+            </Field>
+          </div>
+        </div>
+
         {/* Emergency Contact */}
         <details className="space-y-4">
           <summary className="text-lg font-semibold cursor-pointer">Emergency Contact</summary>
@@ -352,16 +368,6 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
                 type="text"
                 placeholder="e.g., Spouse, Parent"
                 {...register("emergency_contact_relationship")}
-                disabled={isLoading}
-              />
-            </Field>
-
-            <Field data-invalid={!!errors.birthday}>
-              <FieldLabel htmlFor="birthday">Birthday (for celebrations)</FieldLabel>
-              <Input
-                id="birthday"
-                type="date"
-                {...register("birthday")}
                 disabled={isLoading}
               />
             </Field>
