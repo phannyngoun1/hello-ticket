@@ -51,6 +51,35 @@ export function CreateEmployeeDialog({
     setShowConfirmDialog(true);
   };
 
+  // Helper function to build formatted address string from individual address components
+  const buildAddressString = (data: EmployeeFormData): string | undefined => {
+    const addressParts = [
+      data.street_address?.trim(),
+      data.city?.trim(),
+      data.state_province?.trim(),
+      data.postal_code?.trim(),
+      data.country?.trim(),
+    ].filter(Boolean);
+
+    if (addressParts.length === 0) {
+      return data.office_location?.trim() || undefined;
+    }
+
+    // Format as multi-line address
+    const streetAddress = data.street_address?.trim();
+    const cityStateZip = [data.city?.trim(), data.state_province?.trim(), data.postal_code?.trim()]
+      .filter(Boolean)
+      .join(', ');
+    const country = data.country?.trim();
+
+    const formattedParts = [];
+    if (streetAddress) formattedParts.push(streetAddress);
+    if (cityStateZip) formattedParts.push(cityStateZip);
+    if (country) formattedParts.push(country);
+
+    return formattedParts.join('\n');
+  };
+
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   // createValue is null for timestamp fields, so they are automatically excluded
   const buildPayload = useMemo(() => {
@@ -70,7 +99,7 @@ export function CreateEmployeeDialog({
       // Contact & Location
       work_phone: data.work_phone || undefined,
       mobile_phone: data.mobile_phone || undefined,
-      office_location: data.office_location || undefined,
+      office_location: buildAddressString(data) || undefined,
       timezone: data.timezone || undefined,
       
       // Sales & Operational

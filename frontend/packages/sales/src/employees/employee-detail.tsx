@@ -336,6 +336,13 @@ export function EmployeeDetail({
                       render={(value) => formatDate(value as Date | string)}
                       hideIfEmpty={false}
                     />
+                    <DescriptionItem
+                      label="Birthday"
+                      value={data.birthday}
+                      icon={Cake}
+                      render={(value) => formatDate(value as Date | string)}
+                      hideIfEmpty={false}
+                    />
 
                     {/* HR / Personal */}
                     <DescriptionItem
@@ -358,13 +365,6 @@ export function EmployeeDetail({
                         ) : null
                       }
                       icon={AlertCircle}
-                      hideIfEmpty={false}
-                    />
-                    <DescriptionItem
-                      label="Birthday"
-                      value={data.birthday}
-                      icon={Cake}
-                      render={(value) => formatDate(value as Date | string)}
                       hideIfEmpty={false}
                     />
                   </DescriptionList>
@@ -448,7 +448,13 @@ export function EmployeeDetail({
                     />
                     <DescriptionItem
                       label="Address"
-                      value={data.office_location}
+                      value={
+                        data.office_location ? (
+                          <div className="whitespace-pre-line">
+                            {data.office_location}
+                          </div>
+                        ) : null
+                      }
                       icon={MapPin}
                       hideIfEmpty={false}
                     />

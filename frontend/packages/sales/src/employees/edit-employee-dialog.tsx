@@ -35,32 +35,99 @@ export function EditEmployeeDialog({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingFormData, setPendingFormData] = useState<EmployeeFormData | null>(null);
 
+  // Helper function to build formatted address string from individual address components
+  const buildAddressString = (data: EmployeeFormData): string | undefined => {
+    const addressParts = [
+      data.street_address?.trim(),
+      data.city?.trim(),
+      data.state_province?.trim(),
+      data.postal_code?.trim(),
+      data.country?.trim(),
+    ].filter(Boolean);
+
+    if (addressParts.length === 0) {
+      return data.office_location?.trim() || undefined;
+    }
+
+    // Format as multi-line address
+    const streetAddress = data.street_address?.trim();
+    const cityStateZip = [data.city?.trim(), data.state_province?.trim(), data.postal_code?.trim()]
+      .filter(Boolean)
+      .join(', ');
+    const country = data.country?.trim();
+
+    const formattedParts = [];
+    if (streetAddress) formattedParts.push(streetAddress);
+    if (cityStateZip) formattedParts.push(cityStateZip);
+    if (country) formattedParts.push(country);
+
+    return formattedParts.join('\n');
+  };
+
+  // Helper function to parse address string into components
+  const parseAddressString = (addressString: string | null | undefined) => {
+    if (!addressString) return { street_address: "", city: "", state_province: "", postal_code: "", country: "" };
+
+    const lines = addressString.split('\n').map(line => line.trim()).filter(Boolean);
+
+    // Simple parsing logic (can be improved based on your address format)
+    const result = {
+      street_address: lines[0] || "",
+      city: "",
+      state_province: "",
+      postal_code: "",
+      country: lines[lines.length - 1] || "" // Assume last line is country
+    };
+
+    // Try to parse city, state, zip from second line
+    if (lines[1]) {
+      const cityStateZip = lines[1].split(',').map(part => part.trim());
+      result.city = cityStateZip[0] || "";
+      if (cityStateZip[1]) {
+        const stateZip = cityStateZip[1].split(' ');
+        result.state_province = stateZip[0] || "";
+        result.postal_code = stateZip.slice(1).join(' ') || "";
+      }
+    }
+
+    return result;
+  };
+
   const defaultValues = useMemo(() => {
     if (!employee) return undefined;
+
+    const parsedAddress = parseAddressString(employee.office_location);
+
     return {
       name: employee.name ?? "",
-      
+
       // System Link
       work_email: employee.work_email ?? "",
-      
+
       // Organizational Structure
       job_title: employee.job_title ?? "",
       department: employee.department ?? "",
       manager_id: employee.manager_id ?? "",
       employment_type: employee.employment_type ?? "",
       hire_date: employee.hire_date ?? "",
-      
+
       // Contact & Location
       work_phone: employee.work_phone ?? "",
       mobile_phone: employee.mobile_phone ?? "",
+      // Address fields (parsed from office_location)
+      street_address: parsedAddress.street_address,
+      city: parsedAddress.city,
+      state_province: parsedAddress.state_province,
+      postal_code: parsedAddress.postal_code,
+      country: parsedAddress.country,
       office_location: employee.office_location ?? "",
       timezone: employee.timezone ?? "UTC",
-      
+
       // Sales & Operational
       skills: employee.skills?.join(", ") ?? "",
       assigned_territories: employee.assigned_territories?.join(", ") ?? "",
       commission_tier: employee.commission_tier ?? "",
-      
+
       // Personal (HR)
       birthday: employee.birthday ?? "",
       emergency_contact_name: employee.emergency_contact_name ?? "",
@@ -103,7 +170,7 @@ export function EditEmployeeDialog({
       // Contact & Location
       work_phone: data.work_phone || undefined,
       mobile_phone: data.mobile_phone || undefined,
-      office_location: data.office_location || undefined,
+      office_location: buildAddressString(data) || undefined,
       timezone: data.timezone || undefined,
       
       // Sales & Operational
