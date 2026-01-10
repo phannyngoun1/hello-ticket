@@ -35,9 +35,9 @@ import { cn } from "@truths/ui/lib/utils";
 import { tabConfiguration, moduleOrder } from "../../config/tab-config";
 import {
   getTitleAndIconFromConfig,
-  isListPageFromConfig,
-  isDetailPageFromConfig,
   getModuleFromConfig,
+  getTabMetadata,
+  type TabMetadata,
 } from "@truths/custom-ui";
 
 const TABS_STORAGE_KEY = "app_tabs";
@@ -214,6 +214,13 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const getTitleAndIconFromPath = useCallback(
     (path: string): { title: string; iconName: string } => {
       return getTitleAndIconFromConfig(tabConfiguration, path);
+    },
+    []
+  );
+
+  const getTabMetadataForPath = useCallback(
+    (path: string): TabMetadata | null => {
+      return getTabMetadata(tabConfiguration, path);
     },
     []
   );
@@ -395,14 +402,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     return getModuleFromConfig(tabConfiguration, path);
   }, []);
 
-  const isListPage = useCallback((path: string) => {
-    return isListPageFromConfig(tabConfiguration, path);
-  }, []);
-
-  const isDetailPage = useCallback((path: string) => {
-    return isDetailPageFromConfig(tabConfiguration, path);
-  }, []);
-
   const sortTabsWithPins = (tabsList: AppTab[]) => {
     const homePaths = ["/"];
     return [...tabsList].sort((a, b) => {
@@ -443,36 +442,41 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         const moduleA = getModuleInfo(a.path);
         const moduleB = getModuleInfo(b.path);
         if (moduleA === moduleB) {
-          // Within the same module, sort by page type: list pages first, then detail pages
-          const aIsList = isListPage(a.path);
-          const bIsList = isListPage(b.path);
-          const aIsDetail = isDetailPage(a.path);
-          const bIsDetail = isDetailPage(b.path);
+          // Within the same module, use configuration-based grouping and sequencing
+          const metadataA = getTabMetadataForPath(a.path);
+          const metadataB = getTabMetadataForPath(b.path);
 
-          // List pages come before detail pages
-          if (aIsList && bIsDetail) return -1;
-          if (aIsDetail && bIsList) return 1;
+          if (metadataA && metadataB) {
+            // Sort by group first (custom group names, with undefined groups at the end)
+            const groupA = metadataA.group;
+            const groupB = metadataB.group;
 
-          // If both are same type (both list or both detail), sort by title
-          // Keep home tab at top if same module
+            // If one has a group and the other doesn't, prioritize the one with a group
+            if (groupA && !groupB) return -1;
+            if (!groupA && groupB) return 1;
+
+            // If both have groups, sort alphabetically by group name
+            if (groupA && groupB && groupA !== groupB) {
+              return groupA.localeCompare(groupB);
+            }
+
+            // Within the same group (or both undefined), sort by sequence
+            const sequenceDiff = metadataA.sequence - metadataB.sequence;
+            if (sequenceDiff !== 0) return sequenceDiff;
+          }
+
+          // Fallback: sort by title, keep home tab at top
           if (a.path === "/") return -1;
           if (b.path === "/") return 1;
           return a.title.localeCompare(b.title);
         }
 
-        // Define module order
-        const order = [
-          "General",
-          "Sales & Bookings",
-          "Users",
-          "Settings",
-          "Other",
-        ];
-        return order.indexOf(moduleA) - order.indexOf(moduleB);
+        // Sort by module order
+        return moduleOrder.indexOf(moduleA) - moduleOrder.indexOf(moduleB);
       });
       return sorted;
     });
-  }, [isListPage, isDetailPage, getModuleInfo]);
+  }, [getModuleInfo, getTabMetadataForPath]);
 
   // Group tabs for the dropdown
   const groupedTabs = tabs.reduce(

@@ -37,7 +37,11 @@ export interface TabMetadata {
     pageType: 'list' | 'detail' | 'sub-detail';
     /** Module grouping for tab organization */
     module: string;
-    /** Priority for sorting within the same page type (lower = higher priority) */
+    /** Functional group within module for better organization */
+    group?: string;
+    /** Sequence number for ordering within group (lower = appears first) */
+    sequence: number;
+    /** Legacy priority field for backward compatibility */
     priority?: number;
 }
 
