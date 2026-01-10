@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import {
@@ -92,7 +92,7 @@ export function HomePage() {
     };
   };
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -116,11 +116,11 @@ export function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
 
   useEffect(() => {
     loadAnalytics();
-  }, [dateRange]);
+  }, [dateRange, loadAnalytics]);
 
   const formatActivityItems = (
     analytics: DashboardAnalytics
