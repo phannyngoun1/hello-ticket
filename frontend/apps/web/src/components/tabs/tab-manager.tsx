@@ -50,6 +50,7 @@ export interface AppTab {
   iconName?: string;
   data?: unknown;
   pinned?: boolean;
+  grouped?: boolean;
 }
 
 interface TabManagerProps {
@@ -77,6 +78,13 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     const saved = storage.get<"separate" | "inline">("tab_position");
     return saved ?? "separate";
   });
+
+  const getTabMetadataForPath = useCallback(
+    (path: string): TabMetadata | null => {
+      return getTabMetadata(tabConfiguration, path);
+    },
+    []
+  );
 
   // Clean up tabs on mount to remove any undefined/null entries (from corrupted localStorage)
   useEffect(() => {
@@ -125,48 +133,43 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       if (!currentTab) {
         // Create new tab for current route
         const { title, iconName } = getTitleAndIconFromPath(location.pathname);
+        const newTabMetadata = getTabMetadataForPath(currentPath);
         const newTab: AppTab = {
           id: generateTabId(),
           path: currentPath,
           title,
           iconName,
         };
+
+        // Check if there are any grouped tabs in the same group - if so, auto-group this new tab
+        if (newTabMetadata?.group) {
+          const hasGroupedTabsInSameGroup = prevTabs.some((tab) => {
+            if (tab.grouped) {
+              const tabMetadata = getTabMetadataForPath(tab.path);
+              return tabMetadata?.group === newTabMetadata.group;
+            }
+            return false;
+          });
+
+          if (hasGroupedTabsInSameGroup) {
+            newTab.grouped = true;
+          }
+        }
+
         setActiveTabId(newTab.id);
         if (onTabChange) {
           onTabChange(newTab);
         }
 
         const combined = [...prevTabs, newTab];
-        const pinnedPaths = ["/"];
-        const pinnedTabs = combined.filter((tab) =>
-          pinnedPaths.includes(tab.path)
-        );
-        const otherTabs = combined.filter(
-          (tab) => !pinnedPaths.includes(tab.path)
-        );
-        return [
-          ...pinnedTabs.sort(
-            (a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)
-          ),
-          ...otherTabs,
-        ];
+        return sortTabsWithPins(combined);
       } else {
         // Switch to existing tab
         setActiveTabId(currentTab.id);
         if (onTabChange) {
           onTabChange(currentTab);
         }
-        const pinnedPaths = ["/"];
-        const pinnedTabs = prevTabs.filter((tab) =>
-          pinnedPaths.includes(tab.path)
-        );
-        const otherTabs = prevTabs.filter((tab) => !pinnedTabs.includes(tab));
-        return [
-          ...pinnedTabs.sort(
-            (a, b) => pinnedPaths.indexOf(a.path) - pinnedPaths.indexOf(b.path)
-          ),
-          ...otherTabs,
-        ];
+        return prevTabs;
       }
     });
   }, [
@@ -174,6 +177,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     location.search,
     onTabChange,
     getTitleAndIconFromPath,
+    getTabMetadataForPath,
   ]);
 
   // Scroll active tab into view when it changes (except for user clicks)
@@ -222,13 +226,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
   const generateTabId = () =>
     `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  const getTabMetadataForPath = useCallback(
-    (path: string): TabMetadata | null => {
-      return getTabMetadata(tabConfiguration, path);
-    },
-    []
-  );
 
   const getIconComponent = (iconName?: string) => {
     const iconMap: Record<string, LucideIcon> = {
@@ -422,7 +419,11 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
 
-      // 3. Keep existing order
+      // 3. Then Grouped tabs
+      if (a.grouped && !b.grouped) return -1;
+      if (!a.grouped && b.grouped) return 1;
+
+      // 4. Keep existing order
       return 0;
     });
   };
@@ -435,6 +436,41 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       return sortTabsWithPins(updated);
     });
   }, []);
+
+  const handleToggleGroup = useCallback(
+    (tab: AppTab) => {
+      setTabs((prev) => {
+        // When toggling group mode on, apply it to all tabs in the same group
+        if (!tab.grouped) {
+          const tabMetadata = getTabMetadataForPath(tab.path);
+          if (tabMetadata?.group) {
+            // Group mode ON: Mark all tabs in the same group as grouped
+            const updated = prev.map((t) => {
+              const tMetadata = getTabMetadataForPath(t.path);
+              return tMetadata?.group === tabMetadata.group
+                ? { ...t, grouped: true }
+                : t;
+            });
+            return sortTabsWithPins(updated);
+          }
+        } else {
+          // Group mode OFF: Remove group mode from all tabs in the same group
+          const tabMetadata = getTabMetadataForPath(tab.path);
+          if (tabMetadata?.group) {
+            const updated = prev.map((t) => {
+              const tMetadata = getTabMetadataForPath(t.path);
+              return tMetadata?.group === tabMetadata.group
+                ? { ...t, grouped: false }
+                : t;
+            });
+            return sortTabsWithPins(updated);
+          }
+        }
+        return prev;
+      });
+    },
+    [getTabMetadataForPath]
+  );
 
   const handleGroupTabs = useCallback(() => {
     setTabs((prevTabs) => {
@@ -531,12 +567,14 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
           >
             {validTabs.map((tab) => {
               const activeTab = validTabs.find((t) => t.id === activeTabId);
-              const activeTabModule = activeTab
-                ? getModuleInfo(activeTab.path)
+              const activeTabMetadata = activeTab
+                ? getTabMetadataForPath(activeTab.path)
                 : null;
+              const currentTabMetadata = getTabMetadataForPath(tab.path);
               const isInSameGroup =
-                activeTabModule &&
-                getModuleInfo(tab.path) === activeTabModule &&
+                activeTabMetadata?.group &&
+                currentTabMetadata?.group &&
+                activeTabMetadata.group === currentTabMetadata.group &&
                 tab.id !== activeTabId;
 
               return (
@@ -567,14 +605,16 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           ? "cursor-grab"
                           : "cursor-pointer",
                         activeTabId === tab.id
-                          ? "bg-accent text-accent-foreground border-border shadow-sm"
+                          ? "bg-blue-100 text-blue-900 border-blue-300 shadow-sm ring-1 ring-blue-200"
                           : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
                         draggedTabId === tab.id ? "opacity-50 scale-95" : "",
                         dragOverTabId === tab.id && draggedTabId !== tab.id
                           ? "ring-2 ring-primary/50 bg-primary/10"
                           : "",
-                        // Group highlighting for tabs in the same module as active tab
-                        isInSameGroup ? "bg-accent/20 border-accent/30" : ""
+                        // Group highlighting for tabs in the same group as active tab
+                        isInSameGroup
+                          ? "bg-accent/90 text-accent-foreground border-border shadow-sm"
+                          : ""
                       )}
                       title={tab.pinned ? tab.title : undefined}
                     >
@@ -597,9 +637,14 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                         ) : null;
                       })()}
                       {!tab.pinned && (
-                        <span className="font-medium truncate">
-                          {tab.title}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium truncate">
+                            {tab.title}
+                          </span>
+                          {tab.grouped && (
+                            <Layers className="h-2.5 w-2.5 flex-shrink-0 text-muted-foreground opacity-60" />
+                          )}
+                        </div>
                       )}
                       {!tab.pinned && tabs.length > 1 && (
                         <button
@@ -633,11 +678,18 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           {tab.pinned ? "Unpin Tab" : "Pin Tab"}
                         </ContextMenuItem>
                         <ContextMenuItem
+                          onClick={() => handleToggleGroup(tab)}
+                          className="text-xs"
+                        >
+                          <Layers className="mr-2 h-3.5 w-3.5" />
+                          {tab.grouped ? "Ungroup Tab" : "Group Related Tabs"}
+                        </ContextMenuItem>
+                        <ContextMenuItem
                           onClick={handleGroupTabs}
                           className="text-xs"
                         >
                           <Layers className="mr-2 h-3.5 w-3.5" />
-                          Group Related Tabs
+                          Sort by Groups
                         </ContextMenuItem>
                         <ContextMenuSeparator />
                         <ContextMenuItem
@@ -705,6 +757,9 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           {tab.pinned && (
                             <Pin className="h-3 w-3 text-muted-foreground shrink-0 rotate-45" />
                           )}
+                          {tab.grouped && (
+                            <Layers className="h-3 w-3 text-muted-foreground shrink-0" />
+                          )}
                           {IconComponent && (
                             <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
                           )}
@@ -731,9 +786,21 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
             {tabs.length > 1 && (
               <>
+                <DropdownMenuItem
+                  onClick={() => {
+                    const activeTab = tabs.find((t) => t.id === activeTabId);
+                    if (activeTab) handleToggleGroup(activeTab);
+                  }}
+                  className="text-xs"
+                >
+                  <Layers className="mr-2 h-3.5 w-3.5" />
+                  {tabs.find((t) => t.id === activeTabId)?.grouped
+                    ? "Ungroup Tabs"
+                    : "Group Related Tabs"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleGroupTabs} className="text-xs">
                   <Layers className="mr-2 h-3.5 w-3.5" />
-                  Group Related Tabs
+                  Sort by Groups
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1" />
                 <DropdownMenuItem
