@@ -101,6 +101,13 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     storage.set(TABS_STORAGE_KEY, validTabs);
   }, [tabs]);
 
+  const getTitleAndIconFromPath = useCallback(
+    (path: string): { title: string; iconName: string } => {
+      return getTitleAndIconFromConfig(tabConfiguration, path);
+    },
+    []
+  );
+
   // Get or create tab for current route
   useEffect(() => {
     // For seat designer route, include layoutId in path to create separate tabs per layout
@@ -162,7 +169,12 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         ];
       }
     });
-  }, [location.pathname, location.search, onTabChange]);
+  }, [
+    location.pathname,
+    location.search,
+    onTabChange,
+    getTitleAndIconFromPath,
+  ]);
 
   // Scroll active tab into view when it changes (except for user clicks)
   useEffect(() => {
@@ -211,13 +223,6 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const generateTabId = () =>
     `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  const getTitleAndIconFromPath = useCallback(
-    (path: string): { title: string; iconName: string } => {
-      return getTitleAndIconFromConfig(tabConfiguration, path);
-    },
-    []
-  );
-
   const getTabMetadataForPath = useCallback(
     (path: string): TabMetadata | null => {
       return getTabMetadata(tabConfiguration, path);
@@ -246,7 +251,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       navigate({
         to: pathname,
         search: searchParams ? Object.fromEntries(searchParams) : undefined,
-      } as any);
+      });
     },
     [navigate]
   );
