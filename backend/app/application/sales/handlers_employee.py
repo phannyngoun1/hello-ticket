@@ -46,11 +46,50 @@ class EmployeeCommandHandler:
                 description="Employee code"
             )
 
+        # Convert string dates to date objects if provided
+        hire_date_obj = None
+        if command.hire_date:
+            from datetime import datetime
+            hire_date_obj = datetime.fromisoformat(command.hire_date).date()
+
+        birthday_obj = None
+        if command.birthday:
+            from datetime import datetime
+            birthday_obj = datetime.fromisoformat(command.birthday).date()
+
         employee = Employee(
             tenant_id=tenant_id,
             code=code_value,
             name=command.name,
 
+            # System Link
+            user_id=command.user_id,
+            work_email=command.work_email,
+
+            # Organizational Structure
+            job_title=command.job_title,
+            department=command.department,
+            manager_id=command.manager_id,
+            employment_type=command.employment_type,
+            hire_date=hire_date_obj,
+
+            # Contact & Location
+            work_phone=command.work_phone,
+            mobile_phone=command.mobile_phone,
+            office_location=command.office_location,
+            employee_timezone=command.timezone or "UTC",
+
+            # Sales & Operational
+            skills=command.skills,
+            assigned_territories=command.assigned_territories,
+            quota_config=command.quota_config,
+            commission_tier=command.commission_tier,
+
+            # Personal (HR)
+            birthday=birthday_obj,
+            emergency_contact_name=command.emergency_contact_name,
+            emergency_contact_phone=command.emergency_contact_phone,
+            emergency_contact_relationship=command.emergency_contact_relationship,
         )
 
         saved = await self._employee_repository.save(employee)
@@ -68,12 +107,72 @@ class EmployeeCommandHandler:
                 if duplicate and duplicate.id != employee.id:
                     raise BusinessRuleError(f"Employee code '{normalized_code}' already exists")
 
+        # Convert string dates to date objects if provided
+        hire_date_obj = None
+        if command.hire_date:
+            from datetime import datetime
+            hire_date_obj = datetime.fromisoformat(command.hire_date).date()
+
+        birthday_obj = None
+        if command.birthday:
+            from datetime import datetime
+            birthday_obj = datetime.fromisoformat(command.birthday).date()
+
         # Build update kwargs, only including fields that are explicitly provided
         update_kwargs = {}
         if command.code is not None:
             update_kwargs['code'] = command.code
         if command.name is not None:
             update_kwargs['name'] = command.name
+
+        # System Link
+        if command.user_id is not None:
+            update_kwargs['user_id'] = command.user_id
+        if command.work_email is not None:
+            update_kwargs['work_email'] = command.work_email
+
+        # Organizational Structure
+        if command.job_title is not None:
+            update_kwargs['job_title'] = command.job_title
+        if command.department is not None:
+            update_kwargs['department'] = command.department
+        if command.manager_id is not None:
+            update_kwargs['manager_id'] = command.manager_id
+        if command.employment_type is not None:
+            update_kwargs['employment_type'] = command.employment_type
+        if command.hire_date is not None:
+            update_kwargs['hire_date'] = hire_date_obj
+
+        # Contact & Location
+        if command.work_phone is not None:
+            update_kwargs['work_phone'] = command.work_phone
+        if command.mobile_phone is not None:
+            update_kwargs['mobile_phone'] = command.mobile_phone
+        if command.office_location is not None:
+            update_kwargs['office_location'] = command.office_location
+        if command.timezone is not None:
+            update_kwargs['employee_timezone'] = command.timezone
+
+        # Sales & Operational
+        if command.skills is not None:
+            update_kwargs['skills'] = command.skills
+        if command.assigned_territories is not None:
+            update_kwargs['assigned_territories'] = command.assigned_territories
+        if command.quota_config is not None:
+            update_kwargs['quota_config'] = command.quota_config
+        if command.commission_tier is not None:
+            update_kwargs['commission_tier'] = command.commission_tier
+
+        # Personal (HR)
+        if command.birthday is not None:
+            update_kwargs['birthday'] = birthday_obj
+        if command.emergency_contact_name is not None:
+            update_kwargs['emergency_contact_name'] = command.emergency_contact_name
+        if command.emergency_contact_phone is not None:
+            update_kwargs['emergency_contact_phone'] = command.emergency_contact_phone
+        if command.emergency_contact_relationship is not None:
+            update_kwargs['emergency_contact_relationship'] = command.emergency_contact_relationship
+
         employee.update_details(**update_kwargs)
 
         saved = await self._employee_repository.save(employee)

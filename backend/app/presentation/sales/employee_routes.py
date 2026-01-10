@@ -47,6 +47,34 @@ async def create_employee(
             code=request.code,
             name=request.name,
 
+            # System Link
+            user_id=request.user_id,
+            work_email=request.work_email,
+
+            # Organizational Structure
+            job_title=request.job_title,
+            department=request.department,
+            manager_id=request.manager_id,
+            employment_type=request.employment_type,
+            hire_date=request.hire_date,
+
+            # Contact & Location
+            work_phone=request.work_phone,
+            mobile_phone=request.mobile_phone,
+            office_location=request.office_location,
+            timezone=request.timezone,
+
+            # Sales & Operational
+            skills=request.skills,
+            assigned_territories=request.assigned_territories,
+            quota_config=request.quota_config,
+            commission_tier=request.commission_tier,
+
+            # Personal (HR)
+            birthday=request.birthday,
+            emergency_contact_name=request.emergency_contact_name,
+            emergency_contact_phone=request.emergency_contact_phone,
+            emergency_contact_relationship=request.emergency_contact_relationship,
         )
         employee = await mediator.send(command)
         return SalesApiMapper.employee_to_response(employee)
@@ -116,6 +144,34 @@ async def update_employee(
             code=request.code,
             name=request.name,
 
+            # System Link
+            user_id=request.user_id,
+            work_email=request.work_email,
+
+            # Organizational Structure
+            job_title=request.job_title,
+            department=request.department,
+            manager_id=request.manager_id,
+            employment_type=request.employment_type,
+            hire_date=request.hire_date,
+
+            # Contact & Location
+            work_phone=request.work_phone,
+            mobile_phone=request.mobile_phone,
+            office_location=request.office_location,
+            timezone=request.timezone,
+
+            # Sales & Operational
+            skills=request.skills,
+            assigned_territories=request.assigned_territories,
+            quota_config=request.quota_config,
+            commission_tier=request.commission_tier,
+
+            # Personal (HR)
+            birthday=request.birthday,
+            emergency_contact_name=request.emergency_contact_name,
+            emergency_contact_phone=request.emergency_contact_phone,
+            emergency_contact_relationship=request.emergency_contact_relationship,
         )
         employee = await mediator.send(command)
         return SalesApiMapper.employee_to_response(employee)

@@ -39,6 +39,33 @@ export function EditEmployeeDialog({
     if (!employee) return undefined;
     return {
       name: employee.name ?? "",
+      
+      // System Link
+      work_email: employee.work_email ?? "",
+      
+      // Organizational Structure
+      job_title: employee.job_title ?? "",
+      department: employee.department ?? "",
+      manager_id: employee.manager_id ?? "",
+      employment_type: employee.employment_type ?? "",
+      hire_date: employee.hire_date ?? "",
+      
+      // Contact & Location
+      work_phone: employee.work_phone ?? "",
+      mobile_phone: employee.mobile_phone ?? "",
+      office_location: employee.office_location ?? "",
+      timezone: employee.timezone ?? "UTC",
+      
+      // Sales & Operational
+      skills: employee.skills?.join(", ") ?? "",
+      assigned_territories: employee.assigned_territories?.join(", ") ?? "",
+      commission_tier: employee.commission_tier ?? "",
+      
+      // Personal (HR)
+      birthday: employee.birthday ?? "",
+      emergency_contact_name: employee.emergency_contact_name ?? "",
+      emergency_contact_phone: employee.emergency_contact_phone ?? "",
+      emergency_contact_relationship: employee.emergency_contact_relationship ?? "",
     };
   }, [employee]);
 
@@ -62,6 +89,33 @@ export function EditEmployeeDialog({
   const buildPayload = useMemo(() => {
     return (data: EmployeeFormData): UpdateEmployeeInput => ({
       name: data.name,
+      
+      // System Link
+      work_email: data.work_email || undefined,
+      
+      // Organizational Structure
+      job_title: data.job_title || undefined,
+      department: data.department || undefined,
+      manager_id: data.manager_id || undefined,
+      employment_type: data.employment_type || undefined,
+      hire_date: data.hire_date || undefined,
+      
+      // Contact & Location
+      work_phone: data.work_phone || undefined,
+      mobile_phone: data.mobile_phone || undefined,
+      office_location: data.office_location || undefined,
+      timezone: data.timezone || undefined,
+      
+      // Sales & Operational
+      skills: data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      assigned_territories: data.assigned_territories ? data.assigned_territories.split(",").map(s => s.trim()).filter(Boolean) : undefined,
+      commission_tier: data.commission_tier || undefined,
+      
+      // Personal (HR)
+      birthday: data.birthday || undefined,
+      emergency_contact_name: data.emergency_contact_name || undefined,
+      emergency_contact_phone: data.emergency_contact_phone || undefined,
+      emergency_contact_relationship: data.emergency_contact_relationship || undefined,
     });
   }, []);
 
