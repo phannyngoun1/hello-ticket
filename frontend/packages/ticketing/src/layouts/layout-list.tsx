@@ -16,7 +16,7 @@ import {
   ItemActions,
   Badge,
 } from "@truths/ui";
-import { Edit, Trash2, MapPin, LayoutGrid, Loader2 } from "lucide-react";
+import { Edit, Trash2, MapPin, LayoutGrid, Loader2, Settings } from "lucide-react";
 import { useLayoutsByVenue, useDeleteLayout } from "./use-layouts";
 import { useLayoutService } from "./layout-provider";
 import type { Layout } from "./types";
@@ -171,7 +171,7 @@ export function LayoutList({
                       size="sm"
                       variant="ghost"
                       className="h-8 w-8 p-0"
-                      title="Design layout"
+                      title="Open layout designer"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -182,9 +182,9 @@ export function LayoutList({
                       size="sm"
                       variant="ghost"
                       className="h-8 w-8 p-0"
-                      title="Edit layout"
+                      title="Edit layout info"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Settings className="h-4 w-4" />
                     </Button>
                   )}
                   <Button
