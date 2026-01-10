@@ -700,6 +700,8 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                             role="button"
                             onClick={(e) => handleTabClose(e, tab.id)}
                             className="opacity-50 hover:opacity-100 p-1 hover:bg-background/80 rounded"
+                            aria-label={`Close ${tab.title}`}
+                            title={`Close ${tab.title}`}
                           >
                             <X className="h-3 w-3" />
                           </div>
