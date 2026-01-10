@@ -429,7 +429,7 @@ export function ShowDetail({
                 {data.name || "Untitled Show"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {data.code}
+                Code: {data.code}
                 <CopyButton
                   value={data.code || ""}
                   variant="ghost"
@@ -480,6 +480,38 @@ export function ShowDetail({
               {/* Information Tab */}
               {activeTab === "profile" && (
                 <div className="space-y-6">
+                  {/* General Information */}
+                  <DescriptionSection showBorder>
+                    <DescriptionList
+                      columns={2}
+                      icon={Info}
+                      title="General Information"
+                      className="mt-0 mb-0"
+                    >
+                      <DescriptionItem
+                        label="Organizer"
+                        value={
+                          data.organizer
+                            ? `${data.organizer.name} (${data.organizer.code})`
+                            : data.organizer_id
+                        }
+                        hideIfEmpty={false}
+                      />
+                      <DescriptionItem
+                        label="Start Date"
+                        value={data.started_date}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                      <DescriptionItem
+                        label="End Date"
+                        value={data.ended_date}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                    </DescriptionList>
+                  </DescriptionSection>
+
                   {/* System Information */}
                   <DescriptionSection showBorder>
                     <DescriptionList
