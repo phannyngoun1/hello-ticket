@@ -71,14 +71,14 @@ export function EventFilters({
             placeholder="Search events..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 h-10"
+            className="pl-10 h-8"
           />
         </div>
 
         {/* Filter Popover */}
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline" className="h-10 gap-2 px-4 shadow-sm border-dashed">
+                <Button variant="outline" className="h-8 gap-2 px-4 shadow-sm border-dashed">
                     <ListFilter className="h-4 w-4" />
                     Filters
                     {hasActiveFilters && (
