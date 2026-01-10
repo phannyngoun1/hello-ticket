@@ -39,16 +39,13 @@ export function VenueList({
   className,
   venues = [],
   loading = false,
-  error = null,
   pagination,
   onVenueClick,
-  onEdit,
   onDelete,
   onCreate,
   onSearch,
   onPageChange,
   onPageSizeChange,
-  customActions,
 }: VenueListProps) {
   const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -56,7 +53,9 @@ export function VenueList({
 
   const getDisplayName = (venue: Venue) => {
     const value = venue.code;
-    return typeof value === "string" && value.trim().length > 0 ? value : String(venue.id);
+    return typeof value === "string" && value.trim().length > 0
+      ? value
+      : String(venue.id);
   };
 
   const getInitials = (value: string | undefined) => {
@@ -113,12 +112,9 @@ export function VenueList({
         return (
           <div className="flex items-center gap-2">
             {value ? (
-              <>
-                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className={cn("text-muted-foreground", density.textSize)}>
-                  {value}
-                </span>
-              </>
+              <span className={cn("text-muted-foreground", density.textSize)}>
+                {value}
+              </span>
             ) : (
               <span className={cn("text-muted-foreground", density.textSize)}>
                 -
@@ -138,7 +134,6 @@ export function VenueList({
           <div className="flex items-center gap-2">
             {value ? (
               <>
-                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className={cn("text-muted-foreground", density.textSize)}>
                   {value}
                 </span>
@@ -155,7 +150,7 @@ export function VenueList({
 
     createTextColumn<Venue>({
       accessorKey: "city",
-      header: "Location",
+      header: "Address",
       cell: (info) => {
         const venue = info.row.original;
         const city = venue.city;
@@ -166,7 +161,6 @@ export function VenueList({
           <div className="flex items-center gap-2">
             {location ? (
               <>
-                <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className={cn("text-muted-foreground", density.textSize)}>
                   {location}
                 </span>
@@ -183,10 +177,15 @@ export function VenueList({
 
     createDateTimeColumn<Venue>({
       accessorKey: "created_at",
-      header: "Created",
+      header: "Date Created",
       cell: (info) => {
         const value = info.getValue() as Date | string | null | undefined;
-        if (!value) return <span className={cn("text-muted-foreground", density.textSize)}>-</span>;
+        if (!value)
+          return (
+            <span className={cn("text-muted-foreground", density.textSize)}>
+              -
+            </span>
+          );
         const date = value instanceof Date ? value : new Date(value);
         return (
           <span className={cn("text-muted-foreground", density.textSize)}>
@@ -270,4 +269,3 @@ export function VenueList({
     </div>
   );
 }
-
