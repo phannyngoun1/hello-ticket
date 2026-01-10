@@ -275,11 +275,11 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
   const getStatusCounts = () => {
     const counts: Record<EventSeatStatus, number> = {
-      AVAILABLE: 0,
-      RESERVED: 0,
-      SOLD: 0,
-      HELD: 0,
-      BLOCKED: 0,
+      available: 0,
+      reserved: 0,
+      sold: 0,
+      held: 0,
+      blocked: 0,
     };
     eventSeats.forEach((seat) => {
       counts[seat.status] = (counts[seat.status] || 0) + 1;
@@ -363,31 +363,31 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#10b981", borderColor: "#059669" }}
                 >
-                  Available {statusCounts.AVAILABLE}
+                  Available {statusCounts.available}
                 </span>
                 <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#eab308", borderColor: "#ca8a04" }}
                 >
-                  Reserved {statusCounts.RESERVED}
+                  Reserved {statusCounts.reserved}
                 </span>
                 <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#3b82f6", borderColor: "#2563eb" }}
                 >
-                  Sold {statusCounts.SOLD}
+                  Sold {statusCounts.sold}
                 </span>
                 <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#a855f7", borderColor: "#9333ea" }}
                 >
-                  Held {statusCounts.HELD}
+                  Held {statusCounts.held}
                 </span>
                 <span
                   className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
                   style={{ backgroundColor: "#ef4444", borderColor: "#dc2626" }}
                 >
-                  Blocked {statusCounts.BLOCKED}
+                  Blocked {statusCounts.blocked}
                 </span>
               </div>
             )}
@@ -491,7 +491,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0 overflow-hidden"
           style={{ width: "600px", maxWidth: "740px" }}
         >
-          <SheetHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+          <SheetHeader className="px-6 pt-6 pb-4 ml-6 border-b flex-shrink-0">
             <SheetTitle>Seat List ({totalSeats})</SheetTitle>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-w-0">

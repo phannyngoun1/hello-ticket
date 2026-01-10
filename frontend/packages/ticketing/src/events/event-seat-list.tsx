@@ -474,7 +474,6 @@ export function EventSeatList({
     }
   };
 
-
   // Calculate allSelected - only consider selectable seats (available and not already booked)
   const selectableSeats = useMemo(() => {
     return filteredSeats.filter((seat) => {
@@ -521,185 +520,174 @@ export function EventSeatList({
   return (
     <div className={cn("space-y-4 min-w-0", className)}>
       {/* Search, Filter and Actions */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="relative flex-1 min-w-0 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-            <Input
-              placeholder="Search by section, row, or seat..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 min-w-0"
-            />
-          </div>
-          {onRefresh && (
+      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+        <div className="relative flex-1 min-w-0 max-w-xs">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none z-10" />
+          <Input
+            placeholder="Search seats..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 text-sm min-w-0"
+          />
+        </div>
+        <Popover>
+          <PopoverTrigger asChild>
             <Button
-              onClick={onRefresh}
               variant="outline"
               size="sm"
-              className="flex-shrink-0"
+              className="h-7 px-2 flex-shrink-0 justify-start gap-1"
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
+              <Filter className="h-3 w-3" />
+              <span className="text-[10px] whitespace-nowrap">
+                {sectionFilter.size === 0
+                  ? "Sections"
+                  : sectionFilter.size === 1
+                    ? Array.from(sectionFilter)[0].slice(0, 8)
+                    : `${sectionFilter.size}`}
+              </span>
+              {sectionFilter.size > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-sm px-0.5 py-0 text-[9px] font-normal h-3 ml-0.5"
+                >
+                  {sectionFilter.size}
+                </Badge>
+              )}
             </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-4 min-w-0 flex-wrap">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-2.5 flex-shrink-0 justify-start gap-1.5"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                <span className="text-xs whitespace-nowrap">
-                  {sectionFilter.size === 0
-                    ? "All Sections"
-                    : sectionFilter.size === 1
-                      ? Array.from(sectionFilter)[0]
-                      : `${sectionFilter.size} selected`}
-                </span>
+          </PopoverTrigger>
+          <PopoverContent className="w-[250px] p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Search sections..."
+                value={sectionSearchQuery}
+                onValueChange={setSectionSearchQuery}
+              />
+              <CommandList>
+                <CommandEmpty>No sections found.</CommandEmpty>
+                <CommandGroup>
+                  {filteredSections.map((section) => {
+                    const isSelected = sectionFilter.has(section);
+                    return (
+                      <CommandItem
+                        key={section}
+                        onSelect={() => handleSectionToggle(section)}
+                      >
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
+                        >
+                          <Check className="h-3 w-3" />
+                        </div>
+                        <span>{section}</span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
                 {sectionFilter.size > 0 && (
                   <>
-                    <Separator orientation="vertical" className="mx-1 h-3" />
-                    <Badge
-                      variant="secondary"
-                      className="rounded-sm px-1 py-0 text-[10px] font-normal h-4"
-                    >
-                      {sectionFilter.size}
-                    </Badge>
+                    <Separator />
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={handleClearSectionFilter}
+                        className="justify-center text-center"
+                      >
+                        Clear filters
+                      </CommandItem>
+                    </CommandGroup>
                   </>
                 )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
-              <Command>
-                <CommandInput
-                  placeholder="Search sections..."
-                  value={sectionSearchQuery}
-                  onValueChange={setSectionSearchQuery}
-                />
-                <CommandList>
-                  <CommandEmpty>No sections found.</CommandEmpty>
-                  <CommandGroup>
-                    {filteredSections.map((section) => {
-                      const isSelected = sectionFilter.has(section);
-                      return (
-                        <CommandItem
-                          key={section}
-                          onSelect={() => handleSectionToggle(section)}
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 flex-shrink-0 justify-start gap-1"
+            >
+              <Filter className="h-3 w-3" />
+              <span className="text-[10px] whitespace-nowrap">
+                {statusFilter.size === 0
+                  ? "Status"
+                  : statusFilter.size === 1
+                    ? Array.from(statusFilter)[0].slice(0, 6)
+                    : `${statusFilter.size}`}
+              </span>
+              {statusFilter.size > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="rounded-sm px-0.5 py-0 text-[9px] font-normal h-3 ml-0.5"
+                >
+                  {statusFilter.size}
+                </Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[250px] p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="Search statuses..."
+                value={statusSearchQuery}
+                onValueChange={setStatusSearchQuery}
+              />
+              <CommandList>
+                <CommandEmpty>No statuses found.</CommandEmpty>
+                <CommandGroup>
+                  {filteredStatusOptions.map((option) => {
+                    const isSelected = statusFilter.has(option.value);
+                    return (
+                      <CommandItem
+                        key={option.value}
+                        onSelect={() => handleStatusToggle(option.value)}
+                      >
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            isSelected
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
                         >
-                          <div
-                            className={cn(
-                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                              isSelected
-                                ? "bg-primary text-primary-foreground"
-                                : "opacity-50 [&_svg]:invisible"
-                            )}
-                          >
-                            <Check className="h-3 w-3" />
-                          </div>
-                          <span>{section}</span>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                  {sectionFilter.size > 0 && (
-                    <>
-                      <Separator />
-                      <CommandGroup>
-                        <CommandItem
-                          onSelect={handleClearSectionFilter}
-                          className="justify-center text-center"
-                        >
-                          Clear filters
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
-                  )}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-2.5 flex-shrink-0 justify-start gap-1.5"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                <span className="text-xs whitespace-nowrap">
-                  {statusFilter.size === 0
-                    ? "All Status"
-                    : statusFilter.size === 1
-                      ? Array.from(statusFilter)[0]
-                      : `${statusFilter.size} selected`}
-                </span>
+                          <Check className="h-3 w-3" />
+                        </div>
+                        <span>{option.label}</span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
                 {statusFilter.size > 0 && (
                   <>
-                    <Separator orientation="vertical" className="mx-1 h-3" />
-                    <Badge
-                      variant="secondary"
-                      className="rounded-sm px-1 py-0 text-[10px] font-normal h-4"
-                    >
-                      {statusFilter.size}
-                    </Badge>
+                    <Separator />
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={handleClearStatusFilter}
+                        className="justify-center text-center"
+                      >
+                        Clear filters
+                      </CommandItem>
+                    </CommandGroup>
                   </>
                 )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[250px] p-0" align="start">
-              <Command>
-                <CommandInput
-                  placeholder="Search statuses..."
-                  value={statusSearchQuery}
-                  onValueChange={setStatusSearchQuery}
-                />
-                <CommandList>
-                  <CommandEmpty>No statuses found.</CommandEmpty>
-                  <CommandGroup>
-                    {filteredStatusOptions.map((option) => {
-                      const isSelected = statusFilter.has(option.value);
-                      return (
-                        <CommandItem
-                          key={option.value}
-                          onSelect={() => handleStatusToggle(option.value)}
-                        >
-                          <div
-                            className={cn(
-                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                              isSelected
-                                ? "bg-primary text-primary-foreground"
-                                : "opacity-50 [&_svg]:invisible"
-                            )}
-                          >
-                            <Check className="h-3 w-3" />
-                          </div>
-                          <span>{option.label}</span>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                  {statusFilter.size > 0 && (
-                    <>
-                      <Separator />
-                      <CommandGroup>
-                        <CommandItem
-                          onSelect={handleClearStatusFilter}
-                          className="justify-center text-center"
-                        >
-                          Clear filters
-                        </CommandItem>
-                      </CommandGroup>
-                    </>
-                  )}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
-        </div>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {onRefresh && (
+          <Button
+            onClick={onRefresh}
+            variant="outline"
+            size="sm"
+            className="flex-shrink-0 h-7 px-2"
+          >
+            <RefreshCw className="h-3 w-3" />
+          </Button>
+        )}
       </div>
 
       {/* Selection Bars */}

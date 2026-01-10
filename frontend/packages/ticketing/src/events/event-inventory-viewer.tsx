@@ -470,15 +470,15 @@ function SectionMarker({
   // Priority: SOLD > RESERVED > HELD > BLOCKED > AVAILABLE
   let statusColor = { fill: "#9ca3af", stroke: "#6b7280" }; // gray (no event seats)
   if (eventSeatCount > 0) {
-    if (statusCounts["SOLD"] > 0) {
+    if (statusCounts["sold"] > 0) {
       statusColor = { fill: "#3b82f6", stroke: "#2563eb" }; // blue
-    } else if (statusCounts["RESERVED"] > 0) {
+    } else if (statusCounts["reserved"] > 0) {
       statusColor = { fill: "#f59e0b", stroke: "#d97706" }; // yellow
-    } else if (statusCounts["HELD"] > 0) {
+    } else if (statusCounts["held"] > 0) {
       statusColor = { fill: "#a855f7", stroke: "#9333ea" }; // purple
-    } else if (statusCounts["BLOCKED"] > 0) {
+    } else if (statusCounts["blocked"] > 0) {
       statusColor = { fill: "#ef4444", stroke: "#dc2626" }; // red
-    } else if (statusCounts["AVAILABLE"] > 0) {
+    } else if (statusCounts["available"] > 0) {
       statusColor = { fill: "#10b981", stroke: "#059669" }; // green
     }
   }
@@ -491,8 +491,6 @@ function SectionMarker({
   // Completely transparent by default, only visible on hover to show interactivity
   const baseOpacity = 0; // Completely transparent - invisible until hovered
   const hoverOpacity = 0.65; // Visible on hover to show it's interactive
-  const selectedOpacity = 0.75; // Most visible when selected
-  
   const currentOpacity = (isHovered || isHoveredState)
     ? hoverOpacity 
     : baseOpacity;
@@ -642,7 +640,6 @@ export function EventInventoryViewer({
   layout,
   layoutSeats,
   sections,
-  eventSeats,
   seatStatusMap,
   locationStatusMap,
   imageUrl,
@@ -745,6 +742,12 @@ export function EventInventoryViewer({
 
       // Count statuses
       const statusCounts: Record<string, number> = {};
+      
+      // Initialize all statuses to 0
+      Object.values(EventSeatStatusEnum).forEach((status) => {
+        statusCounts[status] = 0;
+      });
+
       sectionEventSeats.forEach((eventSeat) => {
         const status = eventSeat.status;
         statusCounts[status] = (statusCounts[status] || 0) + 1;
@@ -1451,6 +1454,7 @@ export function EventInventoryViewer({
 
       {/* Section Tooltip/Popover for section-level layouts */}
       {layout.design_mode === "section-level" &&
+        !selectedSectionId &&
         hoveredSectionId &&
         hoveredSeatPosition &&
         hoveredSectionData &&
@@ -1535,7 +1539,7 @@ export function EventInventoryViewer({
         )}
 
       {/* Seat Tooltip/Popover for seat-level layouts - Rendered via Portal */}
-      {layout.design_mode !== "section-level" &&
+      {(layout.design_mode !== "section-level" || selectedSectionId) &&
         hoveredSeatId &&
         hoveredSeatPosition &&
         hoveredSeatData &&

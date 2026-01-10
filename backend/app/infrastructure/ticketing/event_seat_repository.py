@@ -74,7 +74,8 @@ class SQLEventSeatRepository(EventSeatRepository):
             existing_statement = select(EventSeatModel).where(
                 and_(
                     EventSeatModel.id.in_(seat_ids),
-                    EventSeatModel.tenant_id == tenant_id
+                    EventSeatModel.tenant_id == tenant_id,
+                    EventSeatModel.is_deleted == False  # Only check non-deleted records
                 )
             )
             existing_models = {m.id: m for m in session.exec(existing_statement).all()}
@@ -108,7 +109,8 @@ class SQLEventSeatRepository(EventSeatRepository):
             statement = select(EventSeatModel).where(
                 and_(
                     EventSeatModel.id == event_seat_id,
-                    EventSeatModel.tenant_id == tenant_id
+                    EventSeatModel.tenant_id == tenant_id,
+                    EventSeatModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             model = session.exec(statement).first()
@@ -126,7 +128,8 @@ class SQLEventSeatRepository(EventSeatRepository):
             base_query = select(EventSeatModel).where(
                 and_(
                     EventSeatModel.tenant_id == tenant_id,
-                    EventSeatModel.event_id == event_id
+                    EventSeatModel.event_id == event_id,
+                    EventSeatModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             
@@ -202,7 +205,8 @@ class SQLEventSeatRepository(EventSeatRepository):
                 and_(
                     EventSeatModel.tenant_id == tenant_id,
                     EventSeatModel.event_id == event_id,
-                    EventSeatModel.id.in_(event_seat_ids)
+                    EventSeatModel.id.in_(event_seat_ids),
+                    EventSeatModel.is_deleted == False  # Only check non-deleted records
                 )
             )
             models = session.exec(statement).all()
@@ -257,7 +261,8 @@ class SQLEventSeatRepository(EventSeatRepository):
                     EventSeatModel.event_id == event_id,
                     EventSeatModel.section_name == section_name,
                     EventSeatModel.row_name == row_name,
-                    EventSeatModel.seat_number == seat_number
+                    EventSeatModel.seat_number == seat_number,
+                    EventSeatModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             model = session.exec(statement).first()
