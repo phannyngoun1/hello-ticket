@@ -106,9 +106,7 @@ export function EmployeeDetail({
   // All hooks must be called before any early returns
 
   const getEmployeeDisplayName = () => {
-    return data?.code || data?.name || data?.id || "";
-
-    return data?.id || "";
+    return data?.name || data?.code || data?.id || "";
   };
 
   const displayName = useMemo(
@@ -190,7 +188,7 @@ export function EmployeeDetail({
     },
     {
       value: "contact",
-      label: "Contact",
+      label: "Contact & Address",
       icon: Mail,
     },
     {
@@ -345,28 +343,6 @@ export function EmployeeDetail({
                     />
 
                     {/* HR / Personal */}
-                    <DescriptionItem
-                      label="Emergency Contact"
-                      value={
-                        data.emergency_contact_name ? (
-                          <span>
-                            {data.emergency_contact_name}
-                            {data.emergency_contact_phone && (
-                              <span className="text-muted-foreground ml-1">
-                                ({data.emergency_contact_phone})
-                              </span>
-                            )}
-                            {data.emergency_contact_relationship && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {data.emergency_contact_relationship}
-                              </div>
-                            )}
-                          </span>
-                        ) : null
-                      }
-                      icon={AlertCircle}
-                      hideIfEmpty={false}
-                    />
                   </DescriptionList>
 
                   {/* Tags */}
@@ -456,6 +432,30 @@ export function EmployeeDetail({
                         ) : null
                       }
                       icon={MapPin}
+                      hideIfEmpty={false}
+                    />
+
+                    {/* Emergency Contact */}
+                    <DescriptionItem
+                      label="Emergency Contact"
+                      value={
+                        data.emergency_contact_name ? (
+                          <span>
+                            {data.emergency_contact_name}
+                            {data.emergency_contact_phone && (
+                              <span className="text-muted-foreground ml-1">
+                                ({data.emergency_contact_phone})
+                              </span>
+                            )}
+                            {data.emergency_contact_relationship && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {data.emergency_contact_relationship}
+                              </div>
+                            )}
+                          </span>
+                        ) : null
+                      }
+                      icon={AlertCircle}
                       hideIfEmpty={false}
                     />
                   </DescriptionList>

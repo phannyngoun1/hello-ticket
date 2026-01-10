@@ -14,6 +14,9 @@ import {
   ImageGallery,
   CopyButton,
   ButtonTabs,
+  DescriptionList,
+  DescriptionSection,
+  DescriptionItem,
 } from "@truths/custom-ui";
 import type { ActionItem, ButtonTabItem } from "@truths/custom-ui";
 import {
@@ -341,7 +344,7 @@ export function ShowDetail({
     },
     {
       value: "profile",
-      label: "Information",
+      label: "Overview",
       icon: Info,
     },
     {
@@ -375,24 +378,22 @@ export function ShowDetail({
       label: "Add Event",
       icon: <Plus className="h-3.5 w-3.5" />,
       onClick: () => setShowCreateEventDialog(true),
-    
     });
 
-  // Add Edit action if editable
-  if (editable && data) {
-    actionItems.push({
-      id: "edit",
-      label: "Edit",
-      icon: <Edit className="h-3.5 w-3.5" />,
-      onClick: handleInternalEdit,
-    });
-  }
+    // Add Edit action if editable
+    if (editable && data) {
+      actionItems.push({
+        id: "edit",
+        label: "Edit",
+        icon: <Edit className="h-3.5 w-3.5" />,
+        onClick: handleInternalEdit,
+      });
+    }
     actionItems.push({
       id: "add-image",
       label: "Add Image",
       icon: <Upload className="h-3.5 w-3.5" />,
       onClick: handleInternalAddImage,
-  
     });
   }
 
@@ -428,15 +429,15 @@ export function ShowDetail({
                 {data.name || "Untitled Show"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                  {data.code}
-                  <CopyButton
-                    value={data.code || ''}
-                    variant="ghost"
-                    size="icon"
-                    className="h-4 w-4 ml-1"
-                    title="Copy code"
-                  />  
-                </p>
+                {data.code}
+                <CopyButton
+                  value={data.code || ""}
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 ml-1"
+                  title="Copy code"
+                />
+              </p>
             </div>
           </div>
 
@@ -454,7 +455,6 @@ export function ShowDetail({
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-
           {(activeTab) => (
             <div className="mt-0">
               {/* Events Tab */}
@@ -479,156 +479,153 @@ export function ShowDetail({
 
               {/* Information Tab */}
               {activeTab === "profile" && (
-              <div className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-3">
-                  <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-                      Timeline
-                    </h3>
-                    <dl className="space-y-3">
-                      {data.created_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Created</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.created_at)}
-                          </dd>
-                        </div>
-                      )}
-                      {data.updated_at && (
-                        <div>
-                          <dt className="text-sm font-medium">Last Updated</dt>
-                          <dd className="mt-1 text-sm text-muted-foreground">
-                            {formatDate(data.updated_at)}
-                          </dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
+                <div className="space-y-6">
+                  {/* System Information */}
+                  <DescriptionSection showBorder>
+                    <DescriptionList
+                      columns={2}
+                      icon={Database}
+                      title="System Information"
+                      className="mt-0 mb-0"
+                    >
+                      <DescriptionItem
+                        label="Created"
+                        value={data.created_at}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                      <DescriptionItem
+                        label="Last Updated"
+                        value={data.updated_at}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                    </DescriptionList>
+                  </DescriptionSection>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Images Tab */}
-            {activeTab === "images" && (
-              <ImageGallery
-                images={images.map((img) => ({
-                  id: img.id,
-                  url: img.file_url,
-                  name: img.name,
-                  isBanner: img.is_banner,
-                }))}
-                isLoading={isLoadingImages}
-                isUploading={isUploadingImage}
-                onUpload={handleImageUpload}
-                onDelete={(img) => handleDeleteImage(img.id)}
-                onToggleBanner={(img) =>
-                  handleToggleBanner(img.id, img.isBanner ?? false)
-                }
-                readOnly={!editable}
-                renderOverlay={(image, isHovered) => (
-                  <>
-                    {image.isBanner && (
-                      <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-md z-50 border border-primary/20">
-                        <Star className="h-3 w-3 fill-current" />
-                        <span>Banner</span>
-                      </div>
-                    )}
+              {/* Images Tab */}
+              {activeTab === "images" && (
+                <ImageGallery
+                  images={images.map((img) => ({
+                    id: img.id,
+                    url: img.file_url,
+                    name: img.name,
+                    isBanner: img.is_banner,
+                  }))}
+                  isLoading={isLoadingImages}
+                  isUploading={isUploadingImage}
+                  onUpload={handleImageUpload}
+                  onDelete={(img) => handleDeleteImage(img.id)}
+                  onToggleBanner={(img) =>
+                    handleToggleBanner(img.id, img.isBanner ?? false)
+                  }
+                  readOnly={!editable}
+                  renderOverlay={(image, isHovered) => (
+                    <>
+                      {image.isBanner && (
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-md z-50 border border-primary/20">
+                          <Star className="h-3 w-3 fill-current" />
+                          <span>Banner</span>
+                        </div>
+                      )}
 
-                    {!!editable && (
-                      <div
-                        className={cn(
-                          "absolute bottom-0 right-0 flex items-center justify-end gap-1 p-1 transition-opacity duration-200",
-                          isHovered
-                            ? "opacity-100"
-                            : "opacity-0 pointer-events-none"
-                        )}
-                      >
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleBanner(
-                              image.id,
-                              image.isBanner ?? false
-                            );
-                          }}
-                          className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
-                          title={
-                            image.isBanner ? "Unset Banner" : "Set as Banner"
-                          }
+                      {!!editable && (
+                        <div
+                          className={cn(
+                            "absolute bottom-0 right-0 flex items-center justify-end gap-1 p-1 transition-opacity duration-200",
+                            isHovered
+                              ? "opacity-100"
+                              : "opacity-0 pointer-events-none"
+                          )}
                         >
-                          <Star
-                            className={cn(
-                              "h-4 w-4",
-                              image.isBanner && "fill-current"
-                            )}
-                          />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteImage(image.id);
-                          }}
-                          className="h-8 w-8 p-0 bg-destructive hover:bg-destructive text-destructive-foreground opacity-100 hover:opacity-100 shadow-md pointer-events-auto"
-                          title="Delete Image"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              />
-            )}
-
-            {/* Note Tab */}
-            {activeTab === "note" && (
-              <div className="space-y-4">
-                <NoteEditor
-                  value={noteValue}
-                  onChange={setNoteValue}
-                  onSave={async () => {
-                    if (!data?.id) return;
-                    setIsSavingNote(true);
-                    try {
-                      await updateShowMutation.mutateAsync({
-                        id: data.id,
-                        input: { note: noteValue },
-                      });
-                    } catch (error) {
-                      console.error("Failed to save note:", error);
-                      alert("Failed to save note. Please try again.");
-                      setNoteValue(data?.note || "");
-                    } finally {
-                      setIsSavingNote(false);
-                    }
-                  }}
-                  isSaving={isSavingNote}
-                  disabled={isSavingNote}
-                  editable={editable}
-                  description="Add or edit notes about this show"
-                  maxLength={2000}
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleBanner(
+                                image.id,
+                                image.isBanner ?? false
+                              );
+                            }}
+                            className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
+                            title={
+                              image.isBanner ? "Unset Banner" : "Set as Banner"
+                            }
+                          >
+                            <Star
+                              className={cn(
+                                "h-4 w-4",
+                                image.isBanner && "fill-current"
+                              )}
+                            />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteImage(image.id);
+                            }}
+                            className="h-8 w-8 p-0 bg-destructive hover:bg-destructive text-destructive-foreground opacity-100 hover:opacity-100 shadow-md pointer-events-auto"
+                            title="Delete Image"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
                 />
-              </div>
-            )}
+              )}
 
-            {/* Metadata Tab */}
-            {activeTab === "metadata" && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <pre className="text-xs overflow-auto">
-                      {JSON.stringify(data, null, 2)}
-                    </pre>
-                  </div>
-                </Card>
-              </div>
-            )}
+              {/* Note Tab */}
+              {activeTab === "note" && (
+                <div className="space-y-4">
+                  <NoteEditor
+                    value={noteValue}
+                    onChange={setNoteValue}
+                    onSave={async () => {
+                      if (!data?.id) return;
+                      setIsSavingNote(true);
+                      try {
+                        await updateShowMutation.mutateAsync({
+                          id: data.id,
+                          input: { note: noteValue },
+                        });
+                      } catch (error) {
+                        console.error("Failed to save note:", error);
+                        alert("Failed to save note. Please try again.");
+                        setNoteValue(data?.note || "");
+                      } finally {
+                        setIsSavingNote(false);
+                      }
+                    }}
+                    isSaving={isSavingNote}
+                    disabled={isSavingNote}
+                    editable={editable}
+                    description="Add or edit notes about this show"
+                    maxLength={2000}
+                  />
+                </div>
+              )}
+
+              {/* Metadata Tab */}
+              {activeTab === "metadata" && (
+                <div className="space-y-6">
+                  <Card>
+                    <div className="p-4">
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </div>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </ButtonTabs>
