@@ -429,7 +429,7 @@ export function ExploreList() {
               variant={layoutMode === "show" ? "default" : "ghost"}
               size="icon"
               onClick={() => setLayoutMode("show")}
-              className="rounded-none rounded-l-md border-r h-10 w-10 px-0"
+              className="rounded-none rounded-l-md border-r h-8 w-8 px-0"
               title="Show Layout"
             >
               <Grid3x3 className="h-4 w-4" />
@@ -438,7 +438,7 @@ export function ExploreList() {
               variant={layoutMode === "event" ? "default" : "ghost"}
               size="icon"
               onClick={() => setLayoutMode("event")}
-              className="rounded-none border-r h-10 w-10 px-0"
+              className="rounded-none border-r h-8 w-8 px-0"
               title="Event Layout"
             >
               <List className="h-4 w-4" />
@@ -447,7 +447,7 @@ export function ExploreList() {
               variant={layoutMode === "calendar" ? "default" : "ghost"}
               size="icon"
               onClick={() => setLayoutMode("calendar")}
-              className="rounded-none rounded-r-md h-10 w-10 px-0"
+              className="rounded-none rounded-r-md h-8 w-8 px-0"
               title="Calendar Layout"
             >
               <Calendar className="h-4 w-4" />
