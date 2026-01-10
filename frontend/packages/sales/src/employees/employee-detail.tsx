@@ -25,9 +25,7 @@ import {
   MapPin,
   Calendar,
   Briefcase,
-  Clock,
   Smartphone,
-  Globe,
   Award,
   Map,
   AlertCircle,
@@ -35,8 +33,16 @@ import {
   TrendingUp,
   Tag,
   FileText,
+  Clock,
 } from "lucide-react";
-import { DescriptionList, DescriptionItem, DescriptionSection, DocumentList, CopyButton, ButtonTabs } from "@truths/custom-ui";
+import {
+  DescriptionList,
+  DescriptionItem,
+  DescriptionSection,
+  DocumentList,
+  CopyButton,
+  ButtonTabs,
+} from "@truths/custom-ui";
 import type { ButtonTabItem } from "@truths/custom-ui";
 import { Employee } from "./types";
 import { AttachmentService, FileUpload } from "@truths/shared";
@@ -51,7 +57,7 @@ export interface EmployeeDetailProps {
   showActivity?: boolean;
   showMetadata?: boolean;
   editable?: boolean;
-  
+
   attachmentService?: AttachmentService;
   onEdit?: (data: Employee) => void;
   onManageTags?: (data: Employee) => void;
@@ -69,7 +75,7 @@ export function EmployeeDetail({
 
   showMetadata = false,
   editable = true,
-  
+
   attachmentService,
   onEdit,
   onManageTags,
@@ -79,7 +85,7 @@ export function EmployeeDetail({
   customActions,
 }: EmployeeDetailProps) {
   const [activeTab, setActiveTab] = useState<
-    "profile" | "contact" | "sales" | "timeline" | "metadata" | "documents"
+    "profile" | "contact" | "sales" | "metadata" | "documents"
   >("profile");
   const [documents, setDocuments] = useState<FileUpload[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
@@ -179,7 +185,7 @@ export function EmployeeDetail({
   const tabs: ButtonTabItem[] = [
     {
       value: "profile",
-      label: "Profile",
+      label: "Overview",
       icon: Info,
     },
     {
@@ -191,11 +197,6 @@ export function EmployeeDetail({
       value: "sales",
       label: "Sales & Performance",
       icon: TrendingUp,
-    },
-    {
-      value: "timeline",
-      label: "Timeline",
-      icon: Clock,
     },
     {
       value: "documents",
@@ -237,7 +238,7 @@ export function EmployeeDetail({
                     size="icon"
                     className="h-4 w-4 ml-1"
                     title="Copy code"
-                  />  
+                  />
                 </p>
               )}
             </div>
@@ -262,7 +263,12 @@ export function EmployeeDetail({
             <div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className={cn("h-8 px-2 text-xs")} aria-label="Actions">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn("h-8 px-2 text-xs")}
+                    aria-label="Actions"
+                  >
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -291,242 +297,246 @@ export function EmployeeDetail({
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as any)}
         >
-
           {(activeTab) => (
             <div className="mt-0">
               {/* Basic Information Tab */}
               {activeTab === "profile" && (
-              <div className="space-y-8">
-                <DescriptionList columns={3}>
-                  <DescriptionItem
-                    label="Work Email"
-                    value={data.work_email}
-                    linkType="email"
-                    icon={Mail}
-                    hideIfEmpty={false}
-                  />
-
-                  {/* Organization */}
-                  <DescriptionItem
-                    label="Job Title"
-                    value={data.job_title}
-                    icon={Briefcase}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Department"
-                    value={data.department}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Employment Type"
-                    value={data.employment_type}
-                    icon={Clock}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Hire Date"
-                    value={data.hire_date}
-                    icon={Calendar}
-                    render={(value) => formatDate(value as Date | string)}
-                    hideIfEmpty={false}
-                  />
-
-                  {/* HR / Personal */}
-                  <DescriptionItem
-                    label="Emergency Contact"
-                    value={
-                      data.emergency_contact_name ? (
-                        <span>
-                          {data.emergency_contact_name}
-                          {data.emergency_contact_phone && (
-                            <span className="text-muted-foreground ml-1">
-                              ({data.emergency_contact_phone})
-                            </span>
-                          )}
-                          {data.emergency_contact_relationship && (
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {data.emergency_contact_relationship}
-                            </div>
-                          )}
-                        </span>
-                      ) : null
-                    }
-                    icon={AlertCircle}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Birthday"
-                    value={data.birthday}
-                    icon={Cake}
-                    render={(value) => formatDate(value as Date | string)}
-                    hideIfEmpty={false}
-                  />
-                </DescriptionList>
-
-                {/* Tags */}
-                <DescriptionSection  showBorder>
-                  <DescriptionList gridClassName="!grid-cols-1" className="mt-0 mb-0">
+                <div className="space-y-8">
+                  <DescriptionList columns={3}>
                     <DescriptionItem
-                      label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                      label="Work Email"
+                      value={data.work_email}
+                      linkType="email"
+                      icon={Mail}
+                      hideIfEmpty={false}
+                    />
+
+                    {/* Organization */}
+                    <DescriptionItem
+                      label="Job Title"
+                      value={data.job_title}
+                      icon={Briefcase}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Department"
+                      value={data.department}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Employment Type"
+                      value={data.employment_type}
+                      icon={Clock}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Hire Date"
+                      value={data.hire_date}
+                      icon={Calendar}
+                      render={(value) => formatDate(value as Date | string)}
+                      hideIfEmpty={false}
+                    />
+
+                    {/* HR / Personal */}
+                    <DescriptionItem
+                      label="Emergency Contact"
                       value={
-                        data.tags && data.tags.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {data.tags.map((tag, index) => (
-                              <Badge
-                                key={`tag-${index}-${tag}`}
-                                variant="secondary"
-                                className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
-                              >
-                                <Tag className="h-3 w-3" />
-                                <span>{tag}</span>
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground italic">No tags</span>
-                        )
+                        data.emergency_contact_name ? (
+                          <span>
+                            {data.emergency_contact_name}
+                            {data.emergency_contact_phone && (
+                              <span className="text-muted-foreground ml-1">
+                                ({data.emergency_contact_phone})
+                              </span>
+                            )}
+                            {data.emergency_contact_relationship && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {data.emergency_contact_relationship}
+                              </div>
+                            )}
+                          </span>
+                        ) : null
                       }
+                      icon={AlertCircle}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Birthday"
+                      value={data.birthday}
+                      icon={Cake}
+                      render={(value) => formatDate(value as Date | string)}
                       hideIfEmpty={false}
                     />
                   </DescriptionList>
-                </DescriptionSection>
-              </div>
-            )}
 
-            {/* Contact Tab */}
-            {activeTab === "contact" && (
-              <div className="space-y-8">
-                {/* Contact & Location */}
-                <DescriptionList columns={3}>
-                  <DescriptionItem
-                    label="Work Phone"
-                    value={data.work_phone}
-                    linkType="tel"
-                    icon={Phone}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Mobile Phone"
-                    value={data.mobile_phone}
-                    linkType="tel"
-                    icon={Smartphone}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Office Location"
-                    value={data.office_location}
-                    icon={MapPin}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Timezone"
-                    value={data.timezone || "UTC"}
-                    icon={Globe}
-                    hideIfEmpty={false}
-                  />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Sales Tab */}
-            {activeTab === "sales" && (
-              <div className="space-y-8">
-                {/* Sales & Operations */}
-                <DescriptionList columns={3}>
-                  <DescriptionItem
-                    label="Skills"
-                    value={
-                      data.skills && data.skills.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {data.skills.map((skill, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                            >
-                              {skill}
+                  {/* Tags */}
+                  <DescriptionSection showBorder>
+                    <DescriptionList
+                      gridClassName="!grid-cols-1"
+                      className="mt-0 mb-0"
+                    >
+                      <DescriptionItem
+                        label={`Tags${data.tags && data.tags.length > 0 ? ` (${data.tags.length})` : ""}`}
+                        value={
+                          data.tags && data.tags.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                              {data.tags.map((tag, index) => (
+                                <Badge
+                                  key={`tag-${index}-${tag}`}
+                                  variant="secondary"
+                                  className="text-xs flex items-center gap-1.5 pr-2 py-1.5 px-2.5 bg-primary/10 text-primary border-primary/20"
+                                >
+                                  <Tag className="h-3 w-3" />
+                                  <span>{tag}</span>
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground italic">
+                              No tags
                             </span>
-                          ))}
-                        </div>
-                      ) : null
+                          )
+                        }
+                        hideIfEmpty={false}
+                      />
+                    </DescriptionList>
+                  </DescriptionSection>
+
+                  {/* System Information */}
+                  <DescriptionSection showBorder>
+                    <DescriptionList
+                      columns={2}
+                      icon={Database}
+                      title="System Information"
+                      className="mt-0 mb-0"
+                    >
+                      <DescriptionItem
+                        label="Created"
+                        value={data.created_at}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                      <DescriptionItem
+                        label="Last Updated"
+                        value={data.updated_at}
+                        render={(value) => formatDate(value as Date | string)}
+                        hideIfEmpty={false}
+                      />
+                    </DescriptionList>
+                  </DescriptionSection>
+                </div>
+              )}
+
+              {/* Contact Tab */}
+              {activeTab === "contact" && (
+                <div className="space-y-8">
+                  {/* Contact & Location */}
+                  <DescriptionList columns={3}>
+                    <DescriptionItem
+                      label="Work Phone"
+                      value={data.work_phone}
+                      linkType="tel"
+                      icon={Phone}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Mobile Phone"
+                      value={data.mobile_phone}
+                      linkType="tel"
+                      icon={Smartphone}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Address"
+                      value={data.office_location}
+                      icon={MapPin}
+                      hideIfEmpty={false}
+                    />
+                  </DescriptionList>
+                </div>
+              )}
+
+              {/* Sales Tab */}
+              {activeTab === "sales" && (
+                <div className="space-y-8">
+                  {/* Sales & Operations */}
+                  <DescriptionList columns={3}>
+                    <DescriptionItem
+                      label="Skills"
+                      value={
+                        data.skills && data.skills.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {data.skills.map((skill, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null
+                      }
+                      icon={Award}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Territories"
+                      value={
+                        data.assigned_territories &&
+                        data.assigned_territories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {data.assigned_territories.map((territory, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground"
+                              >
+                                {territory}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null
+                      }
+                      icon={Map}
+                      hideIfEmpty={false}
+                    />
+                    <DescriptionItem
+                      label="Commission Tier"
+                      value={data.commission_tier}
+                      icon={TrendingUp}
+                      hideIfEmpty={false}
+                    />
+                  </DescriptionList>
+                </div>
+              )}
+
+              {/* Documents Tab */}
+              {activeTab === "documents" && (
+                <div className="space-y-6">
+                  <DocumentList
+                    documents={documents}
+                    isLoading={isLoadingDocuments}
+                    onManageAttachments={
+                      editable && onManageAttachments
+                        ? () => onManageAttachments(data)
+                        : undefined
                     }
-                    icon={Award}
-                    hideIfEmpty={false}
                   />
-                  <DescriptionItem
-                    label="Territories"
-                    value={
-                      data.assigned_territories &&
-                      data.assigned_territories.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {data.assigned_territories.map((territory, i) => (
-                            <span
-                              key={i}
-                              className="inline-flex items-center rounded-md bg-secondary/10 px-2 py-1 text-xs font-medium text-secondary-foreground"
-                            >
-                              {territory}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null
-                    }
-                    icon={Map}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Commission Tier"
-                    value={data.commission_tier}
-                    icon={TrendingUp}
-                    hideIfEmpty={false}
-                  />
-                </DescriptionList>
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Timeline Tab */}
-            {activeTab === "timeline" && (
-              <div className="space-y-8">
-                {/* Timeline */}
-                <DescriptionList columns={3}>
-                  <DescriptionItem
-                    label="Created"
-                    value={data.created_at}
-                    render={(value) => formatDate(value as Date | string)}
-                    hideIfEmpty={false}
-                  />
-                  <DescriptionItem
-                    label="Last Updated"
-                    value={data.updated_at}
-                    render={(value) => formatDate(value as Date | string)}
-                    hideIfEmpty={false}
-                  />
-                </DescriptionList>
-              </div>
-            )}
-
-            {/* Documents Tab */}
-            {activeTab === "documents" && (
-               <div className="space-y-6">
-                 <DocumentList
-                   documents={documents}
-                   isLoading={isLoadingDocuments}
-                   onManageAttachments={editable && onManageAttachments ? () => onManageAttachments(data) : undefined}
-                 />
-               </div>
-            )}
-
-            {/* Metadata Tab */}
-            {activeTab === "metadata" && (
-              <div className="space-y-6">
-                <Card>
-                  <div className="p-4">
-                    <pre className="text-xs overflow-auto">
-                      {JSON.stringify(data, null, 2)}
-                    </pre>
-                  </div>
-                </Card>
-              </div>
-            )}
+              {/* Metadata Tab */}
+              {activeTab === "metadata" && (
+                <div className="space-y-6">
+                  <Card>
+                    <div className="p-4">
+                      <pre className="text-xs overflow-auto">
+                        {JSON.stringify(data, null, 2)}
+                      </pre>
+                    </div>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
         </ButtonTabs>
@@ -534,4 +544,3 @@ export function EmployeeDetail({
     </Card>
   );
 }
-
