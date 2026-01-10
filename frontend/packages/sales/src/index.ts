@@ -16,10 +16,6 @@ export * from './customers';
 export * from './customer-types';
 
 export * from './customer-groups';
-export * from './test-trees';
-
-export * from './tests';
-export * from './test-basics';
 
 export * from './bookings';
 export * from './payments';

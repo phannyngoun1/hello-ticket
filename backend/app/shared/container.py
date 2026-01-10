@@ -18,9 +18,7 @@ from app.shared.container_registrations.code_generator import register_code_gene
 from app.shared.container_registrations.customer import register_customer_container, register_customer_mediator
 from app.shared.container_registrations.customer_type import register_customer_type_container, register_customer_type_mediator
 from app.shared.container_registrations.customer_group import register_customer_group_container, register_customer_group_mediator
-from app.shared.container_registrations.test_tree import register_test_tree_container, register_test_tree_mediator
-from app.shared.container_registrations.test import register_test_container, register_test_mediator
-from app.shared.container_registrations.test_basic import register_test_basic_container, register_test_basic_mediator
+
 from app.shared.container_registrations.venue import register_venue_container, register_venue_mediator
 from app.shared.container_registrations.layout import register_layout_container, register_layout_mediator
 from app.shared.container_registrations.seat import register_seat_container, register_seat_mediator
@@ -65,13 +63,7 @@ def setup_container() -> Container:
     register_customer_type_container(container)
     register_customer_group_container(container)
 
-    # Sales - Test Trees
-    register_test_tree_container(container)
 
-    # Sales - Tests
-    register_test_container(container)
-    # Sales - Test Basics
-    register_test_basic_container(container)    
 
     # Venues
     register_venue_container(container)
@@ -128,9 +120,7 @@ def setup_mediator(container: Container) -> Mediator:
     register_customer_mediator(mediator)
     register_customer_type_mediator(mediator)
     register_customer_group_mediator(mediator)
-    register_test_tree_mediator(mediator)
-    register_test_mediator(mediator)
-    register_test_basic_mediator(mediator)
+
     register_venue_mediator(mediator)
     register_layout_mediator(mediator)
     register_seat_mediator(mediator)

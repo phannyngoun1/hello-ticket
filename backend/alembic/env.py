@@ -28,8 +28,8 @@ load_dotenv()
 from app.infrastructure.shared.database.models import (
     operational_metadata,
     # Sales master data
-    TestEntityModel, TestModel, CustomerTypeModel,
-    CustomerGroupModel, TestTreeBackendModel, TestTreeModel, TestBasicModel,
+    CustomerTypeModel,
+    CustomerGroupModel,
     # Ticketing master data
     VenueModel, LayoutModel, SectionModel, SeatModel,
     OrganizerModel, EventTypeModel, EventModel, ShowModel,
