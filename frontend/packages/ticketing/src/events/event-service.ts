@@ -414,6 +414,36 @@ export class EventService {
     }
   }
 
+  async unholdEventSeats(eventId: string, seatIds: string[]): Promise<EventSeat[]> {
+    try {
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
+      const response = await this.apiClient.post<EventSeatDTO[]>(
+        `${baseEndpoint}/${eventId}/seats/unhold`,
+        { seat_ids: seatIds },
+        { requiresAuth: true }
+      );
+      return (response || []).map(transformEventSeat);
+    } catch (error) {
+      console.error(`Error unholding seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
+
+  async unblockEventSeats(eventId: string, seatIds: string[]): Promise<EventSeat[]> {
+    try {
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
+      const response = await this.apiClient.post<EventSeatDTO[]>(
+        `${baseEndpoint}/${eventId}/seats/unblock`,
+        { seat_ids: seatIds },
+        { requiresAuth: true }
+      );
+      return (response || []).map(transformEventSeat);
+    } catch (error) {
+      console.error(`Error unblocking seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
+
   async blockEventSeats(eventId: string, seatIds: string[], reason?: string): Promise<EventSeat[]> {
     try {
       const baseEndpoint = this.getEndpoint().replace(/\/$/, '');

@@ -85,12 +85,32 @@ class EventSeat(AggregateRoot):
             self.attributes["hold_timestamp"] = datetime.now(timezone.utc).isoformat()
         self._touch()
 
+    def unhold(self) -> None:
+        """Unhold seat, making it available again."""
+        if self.status != EventSeatStatusEnum.HELD:
+            raise BusinessRuleError(f"Seat cannot be unheld (current status: {self.status})")
+        self.status = EventSeatStatusEnum.AVAILABLE
+        # Clear hold-related attributes
+        self.attributes.pop("hold_reason", None)
+        self.attributes.pop("hold_timestamp", None)
+        self._touch()
+
     def block(self, reason: Optional[str] = None) -> None:
         """Block seat from sale."""
         self.status = EventSeatStatusEnum.BLOCKED
         if reason:
             self.attributes["block_reason"] = reason
             self.attributes["block_timestamp"] = datetime.now(timezone.utc).isoformat()
+        self._touch()
+
+    def unblock(self) -> None:
+        """Unblock seat, making it available again."""
+        if self.status != EventSeatStatusEnum.BLOCKED:
+            raise BusinessRuleError(f"Seat cannot be unblocked (current status: {self.status})")
+        self.status = EventSeatStatusEnum.AVAILABLE
+        # Clear block-related attributes
+        self.attributes.pop("block_reason", None)
+        self.attributes.pop("block_timestamp", None)
         self._touch()
 
     def get_hold_reason(self) -> Optional[str]:
