@@ -53,6 +53,7 @@ export interface ShowDetailProps {
   onEdit?: (data: Show) => void;
   onDelete?: (data: Show) => void;
   onAddImage?: (data: Show) => void;
+  onNavigateToInventory?: (eventId: string) => void;
 
   customActions?: (data: Show) => React.ReactNode;
 }
@@ -68,6 +69,7 @@ export function ShowDetail({
   onEdit,
   onDelete,
   onAddImage,
+  onNavigateToInventory,
 
   customActions,
 }: ShowDetailProps) {
@@ -460,7 +462,7 @@ export function ShowDetail({
               {/* Events Tab */}
               {activeTab === "events" && data?.id && (
                 <div className="space-y-6">
-                  <EventListContainer showId={data.id} />
+                  <EventListContainer showId={data.id} onNavigateToInventory={onNavigateToInventory} />
                 </div>
               )}
 

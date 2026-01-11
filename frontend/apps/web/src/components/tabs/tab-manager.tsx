@@ -134,10 +134,16 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         // Create new tab for current route
         const { title, iconName } = getTitleAndIconFromPath(location.pathname);
         const newTabMetadata = getTabMetadataForPath(currentPath);
+
+        // Use loading title if loadingOnAdded is true
+        const finalTitle = newTabMetadata?.loadingOnAdded
+          ? "Loading..."
+          : title;
+
         const newTab: AppTab = {
           id: generateTabId(),
           path: currentPath,
-          title,
+          title: finalTitle,
           iconName,
         };
 
@@ -590,7 +596,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                       onDragEnd={handleDragEnd}
                       onClick={() => handleTabClick(tab)}
                       className={cn(
-                        "group relative flex items-center justify-center gap-1.5 px-2 py-1 rounded-md",
+                        "group relative flex items-center justify-between gap-1.5 px-2 py-1 rounded-md",
                         "transition-all duration-200 whitespace-nowrap text-xs border",
                         "flex-shrink-0 select-none",
                         tab.pinned
@@ -616,43 +622,52 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           ? "bg-accent/90 text-accent-foreground border-border shadow-sm"
                           : ""
                       )}
-                      title={tab.pinned ? tab.title : undefined}
+                      title={tab.title}
                     >
-                      {!tab.pinned && (
-                        <GripVertical
-                          className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                          onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                          onMouseLeave={handleGripMouseLeave}
-                        />
-                      )}
-                      {(() => {
-                        const IconComponent = getIconComponent(tab.iconName);
-                        return IconComponent ? (
-                          <IconComponent
-                            className={cn(
-                              "h-3.5 w-3.5 flex-shrink-0",
-                              tab.pinned ? "mx-auto" : ""
-                            )}
+                      {/* Main content area */}
+                      {tab.pinned ? (
+                        // Pinned tabs: just centered icon
+                        (() => {
+                          const IconComponent = getIconComponent(tab.iconName);
+                          return IconComponent ? (
+                            <IconComponent className="h-3.5 w-3.5 flex-shrink-0 mx-auto" />
+                          ) : null;
+                        })()
+                      ) : (
+                        // Regular tabs: left side content with flexible layout
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <GripVertical
+                            className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+                            onMouseEnter={() => handleGripMouseEnter(tab.id)}
+                            onMouseLeave={handleGripMouseLeave}
                           />
-                        ) : null;
-                      })()}
-                      {!tab.pinned && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium truncate">
-                            {tab.title}
-                          </span>
-                          {tab.grouped && (
-                            <Layers className="h-2.5 w-2.5 flex-shrink-0 text-muted-foreground opacity-60" />
-                          )}
+                          {(() => {
+                            const IconComponent = getIconComponent(
+                              tab.iconName
+                            );
+                            return IconComponent ? (
+                              <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />
+                            ) : null;
+                          })()}
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <span className="font-medium truncate">
+                              {tab.title}
+                            </span>
+                            {tab.grouped && (
+                              <Layers className="h-2.5 w-2.5 flex-shrink-0 text-muted-foreground opacity-60" />
+                            )}
+                          </div>
                         </div>
                       )}
+
+                      {/* Right side - Close button */}
                       {!tab.pinned && tabs.length > 1 && (
                         <button
                           onClick={(e) => handleTabClose(e, tab.id)}
                           className={cn(
                             "opacity-0 group-hover:opacity-100 transition-all duration-150",
                             "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
-                            "shrink-0",
+                            "shrink-0 ml-1",
                             activeTabId === tab.id ? "opacity-100" : ""
                           )}
                           aria-label={`Close ${tab.title}`}
@@ -763,7 +778,9 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           {IconComponent && (
                             <IconComponent className="mr-2 h-3.5 w-3.5 shrink-0" />
                           )}
-                          <span className="truncate">{tab.title}</span>
+                          <span className="truncate" title={tab.title}>
+                            {tab.title}
+                          </span>
                         </div>
                         {!tab.pinned && tabs.length > 1 && (
                           <div
