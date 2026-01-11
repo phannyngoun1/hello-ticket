@@ -24,6 +24,7 @@ class SearchEventsQuery:
     search: Optional[str] = None
     is_active: Optional[bool] = None
     show_id: Optional[str] = None
+    layout_id: Optional[str] = None
     skip: int = 0
     limit: int = 50
 

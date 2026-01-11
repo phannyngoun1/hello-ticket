@@ -31,6 +31,7 @@ export function useEvents(service: EventService, params?: UseEventsParams) {
       filter?.search,
       filter?.is_active,
       filter?.show_id,
+      filter?.layout_id,
       pagination?.page,
       pagination?.pageSize,
     ],
@@ -44,6 +45,7 @@ export function useEvents(service: EventService, params?: UseEventsParams) {
         search: filter?.search,
         is_active: filter?.is_active,
         show_id: filter?.show_id,
+        layout_id: filter?.layout_id,
       });
     },
     staleTime: 5 * 60 * 1000,

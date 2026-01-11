@@ -23,6 +23,7 @@ import type { SeatFormData } from "../form-schemas";
 export interface DatasheetViewProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
   viewingSection: SectionMarker | null;
   venueType: "small" | "large";
   displayedSeats: SeatMarker[];
@@ -55,6 +56,7 @@ export interface DatasheetViewProps {
 export function DatasheetView({
   isOpen,
   onOpenChange,
+  readOnly = false,
   viewingSection,
   venueType,
   displayedSeats,
@@ -138,7 +140,7 @@ export function DatasheetView({
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isPlacingSeats && (
+                      {isPlacingSeats && !readOnly && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -161,7 +163,7 @@ export function DatasheetView({
                           <Edit className="h-3 w-3" />
                         </Button>
                       )}
-                      {isPlacingSeats && (
+                      {isPlacingSeats && !readOnly && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -183,7 +185,7 @@ export function DatasheetView({
           ) : venueType === "large" ? (
             // Large venue main view - show sections
             <div className="space-y-2">
-              {isSectionFormOpen && (
+              {isSectionFormOpen && !readOnly && (
                 <Card className="p-3 space-y-2 overflow-hidden">
                   <div className="flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
@@ -286,30 +288,34 @@ export function DatasheetView({
                       >
                         <FolderOpen className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditSectionFromSheet(section);
-                        }}
-                        className="h-7 w-7 p-0"
-                        title="Edit section"
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteSection(section);
-                        }}
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                        title="Delete section"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {!readOnly && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditSectionFromSheet(section);
+                          }}
+                          className="h-7 w-7 p-0"
+                          title="Edit section"
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      {!readOnly && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteSection(section);
+                          }}
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          title="Delete section"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -349,7 +355,7 @@ export function DatasheetView({
                       </div>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isPlacingSeats && (
+                      {isPlacingSeats && !readOnly && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -372,7 +378,7 @@ export function DatasheetView({
                           <Edit className="h-3 w-3" />
                         </Button>
                       )}
-                      {isPlacingSeats && (
+                      {isPlacingSeats && !readOnly && (
                         <Button
                           variant="ghost"
                           size="sm"

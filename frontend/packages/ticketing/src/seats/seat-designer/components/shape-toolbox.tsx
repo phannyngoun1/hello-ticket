@@ -34,6 +34,7 @@ export interface ShapeToolboxProps {
   onSeatDelete?: (seat: SeatMarker) => void;
   onSectionDelete?: (section: SectionMarker) => void;
   className?: string;
+  readOnly?: boolean;
 }
 
 export function ShapeToolbox({
@@ -48,6 +49,7 @@ export function ShapeToolbox({
   onSeatDelete,
   onSectionDelete,
   className,
+  readOnly = false,
 }: ShapeToolboxProps) {
   const shapes = [
     {
@@ -114,14 +116,15 @@ export function ShapeToolbox({
             {/* Pointer tool (deselect) */}
             <button
               type="button"
-              onClick={() => onShapeTypeSelect(null)}
+              onClick={() => onShapeTypeSelect?.(null)}
+              disabled={readOnly || !onShapeTypeSelect}
               className={cn(
                 "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
-                "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110",
-                "active:scale-95",
-                !selectedShapeType
+                !readOnly && "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
+                readOnly && "opacity-50 cursor-not-allowed",
+                !selectedShapeType && !readOnly
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background border-border hover:shadow-lg"
+                  : "bg-background border-border"
               )}
               title="Pointer (Select)"
             >
@@ -137,15 +140,16 @@ export function ShapeToolbox({
                   key={shape.type}
                   type="button"
                   onClick={() => {
-                    onShapeTypeSelect(shape.type);
+                    onShapeTypeSelect?.(shape.type);
                   }}
+                  disabled={readOnly || !onShapeTypeSelect}
                   className={cn(
                     "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
-                    "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110",
-                    "active:scale-95",
+                    !readOnly && "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
+                    readOnly && "opacity-50 cursor-not-allowed",
                     isSelected
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background border-border hover:shadow-lg"
+                      : "bg-background border-border"
                   )}
                   title={shape.label}
                 >
@@ -176,7 +180,7 @@ export function ShapeToolbox({
                 <Eye className="h-3 w-3 text-muted-foreground" />
               </button>
             )}
-            {handleEdit && (
+            {handleEdit && !readOnly && (
               <button
                 type="button"
                 onClick={handleEdit}
@@ -190,7 +194,7 @@ export function ShapeToolbox({
                 <Edit className="h-3 w-3 text-muted-foreground" />
               </button>
             )}
-            {handleDelete && (
+            {handleDelete && !readOnly && (
               <button
                 type="button"
                 onClick={(e) => {

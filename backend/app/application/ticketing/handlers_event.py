@@ -192,6 +192,7 @@ class EventQueryHandler(BaseApplicationHandler):
             search=query.search,
             is_active=query.is_active,
             show_id=query.show_id,
+            layout_id=query.layout_id,
             skip=query.skip,
             limit=query.limit,
         )
