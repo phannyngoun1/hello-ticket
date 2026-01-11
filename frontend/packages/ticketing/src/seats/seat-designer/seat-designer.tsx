@@ -2241,7 +2241,7 @@ export function SeatDesigner({
             </span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           {/* Datasheet Toggle Button */}
           {((venueType === "large" && sectionMarkers.length > 0) ||
             (venueType === "small" && seats.length > 0) ||
@@ -2250,10 +2250,10 @@ export function SeatDesigner({
               variant="outline"
               onClick={() => setIsDatasheetOpen(true)}
               size="sm"
+              className="h-7 w-7 p-0"
               title="View Datasheet"
             >
-              <List className="h-4 w-4 mr-2" />
-              Datasheet
+              <List className="h-3.5 w-3.5" />
             </Button>
           )}
           {!readOnly && (
@@ -2261,8 +2261,9 @@ export function SeatDesigner({
               onClick={handleSave}
               disabled={saveSeatsMutation.isPending}
               size="sm"
+              className="h-7 px-2"
             >
-              <Save className="h-4 w-4 mr-2" />
+              <Save className="h-3.5 w-3.5 mr-1" />
               Save
             </Button>
           )}
@@ -2270,12 +2271,13 @@ export function SeatDesigner({
             variant="outline"
             onClick={handleFullscreen}
             size="sm"
+            className="h-7 w-7 p-0"
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullscreen ? (
-              <Minimize className="h-4 w-4" />
+              <Minimize className="h-3.5 w-3.5" />
             ) : (
-              <Maximize className="h-4 w-4" />
+              <Maximize className="h-3.5 w-3.5" />
             )}
           </Button>
           {mainImageUrl &&
@@ -2284,8 +2286,8 @@ export function SeatDesigner({
               (venueType === "large" && isPlacingSections)) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <MoreVertical className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                    <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
