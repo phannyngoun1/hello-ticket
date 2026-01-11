@@ -241,6 +241,17 @@ export const tabConfiguration: TabConfiguration = {
             priority: 5,
         },
         {
+            path: "/ticketing/events/$eventId/inventory",
+            title: "Event Inventory",
+            iconName: "Package",
+            pageType: "sub-detail",
+            module: "Ticketing",
+            group: "events",
+            sequence: 6,
+            priority: 6,
+            loadingOnAdded: true,
+        },
+        {
             path: "/ticketing/shows",
             title: "Shows",
             iconName: "Play",

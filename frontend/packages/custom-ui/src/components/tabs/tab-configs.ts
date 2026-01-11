@@ -43,6 +43,8 @@ export interface TabMetadata {
     sequence: number;
     /** Legacy priority field for backward compatibility */
     priority?: number;
+
+    loadingOnAdded?: boolean;
 }
 
 /**

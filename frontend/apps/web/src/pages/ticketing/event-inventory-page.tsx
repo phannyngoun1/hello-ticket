@@ -14,17 +14,19 @@ function EventInventoryWithTitle({ eventId }: { eventId: string }) {
   const { data: event } = useEvent(eventService, eventId || null);
   const { data: show } = useShow(showService, event?.show_id || null);
 
+  // Update with actual event data when available
   useEffect(() => {
     if (!eventId) return;
     if (!event) return;
-    
-    const code = show?.code || event.id;
+    if (!show) return;
+
+    const code = show?.code || "";
     const title = `${code} - ${event.title}`;
     window.dispatchEvent(
       new CustomEvent("update-tab-title", {
         detail: {
           path: `/ticketing/events/${eventId}/inventory`,
-          title,
+          title: title,
           iconName: "Package",
         },
       })
@@ -35,7 +37,9 @@ function EventInventoryWithTitle({ eventId }: { eventId: string }) {
 }
 
 function EventInventoryContent() {
-  const { eventId } = useParams({ from: "/ticketing/events/$eventId/inventory" });
+  const { eventId } = useParams({
+    from: "/ticketing/events/$eventId/inventory",
+  });
 
   if (!eventId) {
     return <div className="p-4">Invalid event ID</div>;
@@ -78,4 +82,3 @@ function EventInventoryContent() {
 export function EventInventoryPage() {
   return <EventInventoryContent />;
 }
-

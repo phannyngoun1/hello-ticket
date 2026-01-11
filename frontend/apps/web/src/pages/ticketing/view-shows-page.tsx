@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import {
   ShowDetail,
   ShowProvider,
@@ -13,12 +13,20 @@ import {
 import { api } from "@truths/api";
 
 function ShowDetailContent({ id }: { id: string | undefined }) {
+  const navigate = useNavigate();
   const service = useShowService();
   const {
     data,
     isLoading,
     error,
   } = useShow(service, id ?? null);
+
+  const handleNavigateToInventory = (eventId: string) => {
+    navigate({
+      to: "/ticketing/events/$eventId/inventory",
+      params: { eventId },
+    });
+  };
 
   useEffect(() => {
     if (!data) return;
@@ -40,6 +48,7 @@ function ShowDetailContent({ id }: { id: string | undefined }) {
       loading={isLoading}
       error={error as Error | null}
       editable={true}
+      onNavigateToInventory={handleNavigateToInventory}
     />
   );
 }
