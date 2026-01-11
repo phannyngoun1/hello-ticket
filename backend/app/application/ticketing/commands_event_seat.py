@@ -84,3 +84,21 @@ class CreateEventSeatCommand:
     ticket_price: float = 0.0  # Price for ticket if create_ticket is True
     ticket_number: Optional[str] = None  # Optional ticket number if create_ticket is True
     attributes: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class HoldEventSeatsCommand:
+    """Command to hold event seats with a reason"""
+    event_id: str
+    tenant_id: str
+    event_seat_ids: List[str]
+    reason: Optional[str] = None
+
+
+@dataclass
+class BlockEventSeatsCommand:
+    """Command to block event seats with a reason"""
+    event_id: str
+    tenant_id: str
+    event_seat_ids: List[str]
+    reason: Optional[str] = None

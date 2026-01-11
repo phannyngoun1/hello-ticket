@@ -77,15 +77,37 @@ class EventSeat(AggregateRoot):
         self.status = EventSeatStatusEnum.SOLD
         self._touch()
 
-    def hold(self) -> None:
+    def hold(self, reason: Optional[str] = None) -> None:
         """Mark seat as held (internal)."""
         self.status = EventSeatStatusEnum.HELD
+        if reason:
+            self.attributes["hold_reason"] = reason
+            self.attributes["hold_timestamp"] = datetime.now(timezone.utc).isoformat()
         self._touch()
 
-    def block(self) -> None:
+    def block(self, reason: Optional[str] = None) -> None:
         """Block seat from sale."""
         self.status = EventSeatStatusEnum.BLOCKED
+        if reason:
+            self.attributes["block_reason"] = reason
+            self.attributes["block_timestamp"] = datetime.now(timezone.utc).isoformat()
         self._touch()
+
+    def get_hold_reason(self) -> Optional[str]:
+        """Get the reason why this seat is held."""
+        return self.attributes.get("hold_reason")
+
+    def get_block_reason(self) -> Optional[str]:
+        """Get the reason why this seat is blocked."""
+        return self.attributes.get("block_reason")
+
+    def get_hold_timestamp(self) -> Optional[str]:
+        """Get the timestamp when this seat was held."""
+        return self.attributes.get("hold_timestamp")
+
+    def get_block_timestamp(self) -> Optional[str]:
+        """Get the timestamp when this seat was blocked."""
+        return self.attributes.get("block_timestamp")
 
 
     def _validate(self) -> None:

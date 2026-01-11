@@ -250,3 +250,47 @@ export function useCreateEventSeat(service: EventService) {
     },
   });
 }
+
+export function useHoldEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat[],
+    Error,
+    {
+      eventId: string;
+      seatIds: string[];
+      reason?: string;
+    }
+  >({
+    mutationFn: ({ eventId, seatIds, reason }) =>
+      service.holdEventSeats(eventId, seatIds, reason),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}
+
+export function useBlockEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat[],
+    Error,
+    {
+      eventId: string;
+      seatIds: string[];
+      reason?: string;
+    }
+  >({
+    mutationFn: ({ eventId, seatIds, reason }) =>
+      service.blockEventSeats(eventId, seatIds, reason),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}

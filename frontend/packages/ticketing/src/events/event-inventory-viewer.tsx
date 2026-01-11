@@ -324,16 +324,19 @@ function SeatMarker({
   const fillColor = isSelected ? "#06b6d4" : statusColors.fill;
   const borderColor = isSelected ? "#0891b2" : statusColors.stroke;
 
+  // Check if seat is available for selection
+  const isAvailableForSelection = eventSeat?.status === "available";
+
   // Calculate opacity and stroke based on state
   // Completely transparent by default, only visible on hover/selection to show interactivity
   const baseOpacity = 0; // Completely transparent - invisible until hovered
-  const hoverOpacity = 0.8; // Visible on hover to show it's interactive
+  const hoverOpacity = isAvailableForSelection ? 0.8 : 0.4; // Available seats more visible on hover
   const selectedOpacity = 0.95; // Fully visible when selected
-  
-  const currentOpacity = isSelected 
-    ? selectedOpacity 
+
+  const currentOpacity = isSelected
+    ? selectedOpacity
     : (isHovered || isHoveredState)
-      ? hoverOpacity 
+      ? hoverOpacity
       : baseOpacity;
   
   const strokeWidth = isSelected 
@@ -398,7 +401,7 @@ function SeatMarker({
       onMouseEnter={(e) => {
         const container = e.target.getStage()?.container();
         if (container) {
-          container.style.cursor = "pointer";
+          container.style.cursor = isAvailableForSelection ? "pointer" : "not-allowed";
         }
         setIsHoveredState(true);
         onMouseEnter(e);
@@ -1361,12 +1364,16 @@ export function EventInventoryViewer({
                         setHoveredSeatData(null);
                       }}
                       onClick={() => {
-                        if (onSeatClick) {
-                          onSeatClick(seat.id, eventSeat);
-                        } else {
-                          // TODO: Open seat detail/edit dialog
-                          console.log("Seat clicked:", seat, eventSeat);
+                        // Only allow clicking on available seats for selection
+                        if (eventSeat?.status === "available") {
+                          if (onSeatClick) {
+                            onSeatClick(seat.id, eventSeat);
+                          } else {
+                            // TODO: Open seat detail/edit dialog
+                            console.log("Seat clicked:", seat, eventSeat);
+                          }
                         }
+                        // Non-available seats are not clickable for selection
                       }}
                     />
                   );
@@ -1612,6 +1619,24 @@ export function EventInventoryViewer({
                         {hoveredSeatData.eventSeat.status}
                       </span>
                     </div>
+                    {(hoveredSeatData.eventSeat.status === EventSeatStatusEnum.HELD ||
+                      hoveredSeatData.eventSeat.status === EventSeatStatusEnum.BLOCKED) &&
+                      hoveredSeatData.eventSeat.attributes && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">
+                          {hoveredSeatData.eventSeat.status === EventSeatStatusEnum.HELD ? "Hold" : "Block"} Reason:
+                        </span>
+                        <span className="font-medium text-gray-900 max-w-32 truncate" title={
+                          hoveredSeatData.eventSeat.status === EventSeatStatusEnum.HELD
+                            ? hoveredSeatData.eventSeat.attributes.hold_reason || "No reason provided"
+                            : hoveredSeatData.eventSeat.attributes.block_reason || "No reason provided"
+                        }>
+                          {hoveredSeatData.eventSeat.status === EventSeatStatusEnum.HELD
+                            ? hoveredSeatData.eventSeat.attributes.hold_reason || "No reason provided"
+                            : hoveredSeatData.eventSeat.attributes.block_reason || "No reason provided"}
+                        </span>
+                      </div>
+                    )}
                     {hoveredSeatData.eventSeat.ticket_number && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Ticket Number:</span>

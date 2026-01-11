@@ -77,6 +77,18 @@ class CreateEventSeatRequest(BaseModel):
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Additional attributes")
 
 
+class HoldEventSeatsRequest(BaseModel):
+    """Request to hold event seats with a reason"""
+    seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to hold")
+    reason: Optional[str] = Field(None, description="Reason for holding the seats")
+
+
+class BlockEventSeatsRequest(BaseModel):
+    """Request to block event seats with a reason"""
+    seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to block")
+    reason: Optional[str] = Field(None, description="Reason for blocking the seats")
+
+
 class EventSeatResponse(BaseModel):
     """Response model for an event seat"""
     id: str
