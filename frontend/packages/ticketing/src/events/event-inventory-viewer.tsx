@@ -10,7 +10,7 @@ import Konva from "konva";
 import { createPortal } from "react-dom";
 import { cn } from "@truths/ui/lib/utils";
 import { toast } from "@truths/ui";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock, Pause, Ban, CheckCircle, XCircle, DollarSign } from "lucide-react";
 import { ZoomControls } from "../seats/seat-designer/components/zoom-controls";
 import type { Layout } from "../layouts/types";
 import type { Section } from "../layouts/types";
@@ -84,6 +84,27 @@ function getSeatStatusColor(status: EventSeatStatus): {
       return { fill: "#ef4444", stroke: "#dc2626" }; // red
     default:
       return { fill: "#9ca3af", stroke: "#6b7280" }; // gray
+  }
+}
+
+// Get transparency overlay for seat status
+function getSeatStatusTransparency(status: EventSeatStatus): number {
+  // Normalize status to handle both enum values and string values
+  const statusUpper = String(status).toUpperCase().trim();
+
+  switch (statusUpper) {
+    case "AVAILABLE":
+      return 0.4; // Light transparency for available seats
+    case "SOLD":
+      return 0.7; // High transparency for sold seats
+    case "HELD":
+      return 0.6; // Medium-high transparency for held seats
+    case "BLOCKED":
+      return 0.8; // Very high transparency for blocked seats
+    case "RESERVED":
+      return 0.5; // Medium transparency for reserved seats
+    default:
+      return 0.3; // Default medium transparency
   }
 }
 
@@ -328,9 +349,9 @@ function SeatMarker({
   const isAvailableForSelection = eventSeat?.status === "available";
 
   // Calculate opacity and stroke based on state
-  // Completely transparent by default, only visible on hover/selection to show interactivity
-  const baseOpacity = 0; // Completely transparent - invisible until hovered
-  const hoverOpacity = isAvailableForSelection ? 0.8 : 0.4; // Available seats more visible on hover
+  // Always visible with thicker stroke, enhanced on hover/selection
+  const baseOpacity = 0.3; // Always visible with thicker stroke
+  const hoverOpacity = isAvailableForSelection ? 0.8 : 0.5; // Available seats more visible on hover
   const selectedOpacity = 0.95; // Fully visible when selected
 
   const currentOpacity = isSelected
@@ -338,12 +359,12 @@ function SeatMarker({
     : (isHovered || isHoveredState)
       ? hoverOpacity
       : baseOpacity;
-  
-  const strokeWidth = isSelected 
-    ? 3 
+
+  const strokeWidth = isSelected
+    ? 4
     : (isHovered || isHoveredState)
-      ? 2.5 
-      : 0; // No stroke by default when invisible
+      ? 3
+      : 2; // Always visible thicker stroke
 
   // Parse shape from seat
   const parsedShape = parseShape(seat.shape);
@@ -394,6 +415,9 @@ function SeatMarker({
     });
   }, [isClicked]);
 
+  // Get status transparency
+  const statusTransparency = eventSeat ? getSeatStatusTransparency(eventSeat.status) : 0;
+
   return (
     <Group
       x={x}
@@ -433,6 +457,20 @@ function SeatMarker({
         e.cancelBubble = true;
       }}
     >
+      {/* Status color overlay - shows when seat is visible */}
+      {(currentOpacity > 0 || isSelected) && eventSeat && (
+        <Group opacity={statusTransparency * currentOpacity}>
+          {renderShape(
+            parsedShape,
+            { fill: fillColor, stroke: "transparent" },
+            imageWidth,
+            imageHeight,
+            0, // No stroke width
+            1 // Group opacity handles overall transparency
+          )}
+        </Group>
+      )}
+
       <Group ref={shapeGroupRef} opacity={currentOpacity}>
         {renderShape(
           parsedShape,
@@ -443,6 +481,7 @@ function SeatMarker({
           1 // Group opacity handles overall transparency
         )}
       </Group>
+
       {/* Removed inline tooltip - using Popover instead */}
     </Group>
   );

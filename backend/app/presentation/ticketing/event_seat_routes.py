@@ -19,6 +19,7 @@ from app.application.ticketing.commands_event_seat import (
 )
 from app.application.ticketing.queries_event_seat import (
     GetEventSeatsQuery,
+    GetEventSeatStatisticsQuery,
 )
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
@@ -34,6 +35,7 @@ from app.presentation.api.ticketing.schemas_event_seat import (
     BlockEventSeatsRequest,
     EventSeatResponse,
     EventSeatListResponse,
+    EventSeatStatisticsResponse,
 )
 from app.presentation.api.ticketing.mapper_event_seat import EventSeatApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
@@ -250,6 +252,36 @@ async def list_event_seats(
             skip=skip,
             limit=limit,
             has_next=result.has_next
+        )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.get("/{event_id}/seats/statistics", response_model=EventSeatStatisticsResponse)
+async def get_event_seat_statistics(
+    event_id: str,
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
+    mediator: Mediator = Depends(get_mediator_dependency),
+):
+    """Get seat statistics for an event"""
+    try:
+        # Set tenant context for repository access
+        set_tenant_context(current_user.tenant_id)
+
+        result = await mediator.query(
+            GetEventSeatStatisticsQuery(
+                event_id=event_id,
+                tenant_id=current_user.tenant_id
+            )
+        )
+
+        return EventSeatStatisticsResponse(
+            total_seats=result.total_seats,
+            available_seats=result.available_seats,
+            reserved_seats=result.reserved_seats,
+            sold_seats=result.sold_seats,
+            held_seats=result.held_seats,
+            blocked_seats=result.blocked_seats
         )
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

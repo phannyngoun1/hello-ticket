@@ -30,7 +30,8 @@ class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketReposito
             statement = select(TicketModel).where(
                 and_(
                     TicketModel.ticket_number == ticket_number,
-                    TicketModel.tenant_id == tenant_id
+                    TicketModel.tenant_id == tenant_id,
+                    TicketModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             model = session.exec(statement).first()
@@ -42,7 +43,8 @@ class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketReposito
             statement = select(TicketModel).where(
                 and_(
                     TicketModel.event_seat_id == event_seat_id,
-                    TicketModel.tenant_id == tenant_id
+                    TicketModel.tenant_id == tenant_id,
+                    TicketModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             model = session.exec(statement).first()
@@ -54,7 +56,8 @@ class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketReposito
             base_statement = select(TicketModel).where(
                 and_(
                     TicketModel.tenant_id == tenant_id,
-                    TicketModel.event_id == event_id
+                    TicketModel.event_id == event_id,
+                    TicketModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             
@@ -74,7 +77,8 @@ class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketReposito
             statement = select(TicketModel).where(
                 and_(
                     TicketModel.tenant_id == tenant_id,
-                    TicketModel.booking_id == booking_id
+                    TicketModel.booking_id == booking_id,
+                    TicketModel.is_deleted == False  # Only return non-deleted records
                 )
             )
             models = session.exec(statement).all()

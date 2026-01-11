@@ -12,6 +12,7 @@ import {
   MapPin,
   ChevronDown,
   Package,
+  Users,
 } from "lucide-react";
 import {
   Badge,
@@ -33,6 +34,8 @@ import {
 import { Pagination } from "@truths/shared";
 import type { Event, EventStatus } from "./types";
 import { EventStatus as EventStatusEnum } from "./types";
+import { useEventSeatStatistics } from "./use-events";
+import { useEventService } from "./event-provider";
 
 export interface EventListProps {
   className?: string;
@@ -60,6 +63,53 @@ export interface EventListProps {
 
 interface EventListItem extends DataListItem {
   event: Event;
+}
+
+// Component to display event statistics
+function EventStatisticsDisplay({ eventId }: { eventId: string }) {
+  const { data: statistics, isLoading } = useEventSeatStatistics(
+    useEventService(),
+    eventId
+  );
+
+  if (isLoading || !statistics) {
+    return (
+      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Users className="h-3 w-3" />
+        <span>Loading...</span>
+      </div>
+    );
+  }
+
+  const { available_seats, reserved_seats, sold_seats, held_seats } =
+    statistics;
+
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <div className="flex items-center gap-1" title="Available seats">
+        <div className="w-2 h-2 rounded-full bg-green-500" />
+        <span className="text-green-700 font-medium">{available_seats}</span>
+        <span className="text-muted-foreground hidden sm:inline">
+          AVAILABLE
+        </span>
+      </div>
+      <div className="flex items-center gap-1" title="Reserved seats">
+        <div className="w-2 h-2 rounded-full bg-blue-500" />
+        <span className="text-blue-700 font-medium">{reserved_seats}</span>
+        <span className="text-muted-foreground hidden sm:inline">RESERVED</span>
+      </div>
+      <div className="flex items-center gap-1" title="Sold seats">
+        <div className="w-2 h-2 rounded-full bg-red-500" />
+        <span className="text-red-700 font-medium">{sold_seats}</span>
+        <span className="text-muted-foreground hidden sm:inline">SOLD</span>
+      </div>
+      <div className="flex items-center gap-1" title="Held seats">
+        <div className="w-2 h-2 rounded-full bg-yellow-500" />
+        <span className="text-yellow-700 font-medium">{held_seats}</span>
+        <span className="text-muted-foreground hidden sm:inline">HELD</span>
+      </div>
+    </div>
+  );
 }
 
 export function EventList({
@@ -319,26 +369,29 @@ export function EventList({
                 </div>
               </div>
 
-              {/* Time, Location, Duration, and Actions - Single Row */}
-              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground flex-wrap">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 flex-shrink-0" />
-                    <span className="font-medium text-foreground">
-                      {timeInfo.dayOfWeek}
-                    </span>
-                    <span>{timeInfo.time}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">
-                      {item.event.venue?.name || "Venue TBD"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span>{formatDuration(item.event.duration_minutes)}</span>
-                  </div>
+              {/* Time, Location, Duration - First Row */}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span className="font-medium text-foreground">
+                    {timeInfo.dayOfWeek}
+                  </span>
+                  <span>{timeInfo.time}</span>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">
+                    {item.event.venue?.name || "Venue TBD"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span>{formatDuration(item.event.duration_minutes)}</span>
+                </div>
+              </div>
+
+              {/* Statistics and Actions - Second Row */}
+              <div className="flex items-center justify-between gap-2">
+                <EventStatisticsDisplay eventId={item.event.id} />
                 <ActionButtonList
                   item={item}
                   actions={actionButtons}

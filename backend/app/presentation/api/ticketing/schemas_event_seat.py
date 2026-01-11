@@ -126,3 +126,13 @@ class EventSeatListResponse(BaseModel):
     skip: int
     limit: int
     has_next: bool
+
+
+class EventSeatStatisticsResponse(BaseModel):
+    """Response model for event seat statistics"""
+    total_seats: int = Field(..., description="Total number of seats for the event")
+    available_seats: int = Field(..., description="Number of available seats")
+    reserved_seats: int = Field(..., description="Number of reserved seats")
+    sold_seats: int = Field(..., description="Number of sold seats")
+    held_seats: int = Field(..., description="Number of held seats")
+    blocked_seats: int = Field(..., description="Number of blocked seats")

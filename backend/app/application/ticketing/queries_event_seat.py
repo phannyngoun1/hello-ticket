@@ -10,3 +10,9 @@ class GetEventSeatsQuery:
     tenant_id: str
     skip: int = 0
     limit: int = 100
+
+@dataclass
+class GetEventSeatStatisticsQuery:
+    """Query to get seat statistics for an event"""
+    event_id: str
+    tenant_id: str

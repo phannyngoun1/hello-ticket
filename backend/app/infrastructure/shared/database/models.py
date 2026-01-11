@@ -670,9 +670,11 @@ class TicketModel(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
     )
-    
+
     version: int = Field(default=0)
-    
+
+    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
@@ -687,6 +689,7 @@ class TicketModel(SQLModel, table=True):
         Index('ix_tickets_event_seat', 'event_id', 'event_seat_id'),
         Index('ix_tickets_booking', 'tenant_id', 'booking_id'),
         Index('ix_tickets_tenant_event', 'tenant_id', 'event_id'),
+        Index('ix_tickets_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
     )
 
 

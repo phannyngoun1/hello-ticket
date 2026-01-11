@@ -57,6 +57,15 @@ export interface BrokerSeatImportItem {
   attributes?: Record<string, any>;
 }
 
+export interface EventSeatStatistics {
+  total_seats: number;
+  available_seats: number;
+  reserved_seats: number;
+  sold_seats: number;
+  held_seats: number;
+  blocked_seats: number;
+}
+
 export interface Event {
   id: string;
   tenant_id: string;
@@ -82,6 +91,7 @@ export interface Event {
     state?: string;
     show?: string;
   };
+  statistics?: EventSeatStatistics;
 }
 
 export interface CreateEventInput {

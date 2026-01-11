@@ -23,7 +23,7 @@ from app.application.ticketing.commands_event_seat import (
     UnblockEventSeatsCommand,
     BlockEventSeatsCommand,
 )
-from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
+from app.application.ticketing.queries_event_seat import GetEventSeatsQuery, GetEventSeatStatisticsQuery
 from app.infrastructure.shared.database.connection import get_session_sync
 
 
@@ -83,3 +83,4 @@ def register_event_seat_mediator(mediator: Mediator) -> None:
     
     # Register query handlers
     mediator.register_query_handler(GetEventSeatsQuery, EventSeatQueryHandler)
+    mediator.register_query_handler(GetEventSeatStatisticsQuery, EventSeatQueryHandler)
