@@ -30,11 +30,9 @@ import {
   Clock,
   AlertCircle,
   List,
-  Hand,
   Ban,
   X,
   Pause,
-  Play,
 } from "lucide-react";
 import { useEventService } from "./event-provider";
 import { useLayoutService } from "../layouts";
@@ -49,6 +47,7 @@ import {
   useUnholdEventSeats,
   useUnblockEventSeats,
   useBlockEventSeats,
+  useEventSeatStatistics,
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat } from "./types";
@@ -163,6 +162,12 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     isLoading: seatsLoading,
     refetch: refetchSeats,
   } = useEventSeats(eventService, eventId, { skip: 0, limit: 1000 });
+
+  // Fetch event seat statistics
+  const { data: eventSeatStatistics } = useEventSeatStatistics(
+    eventService,
+    eventId
+  );
 
   const initializeSeatsMutation = useInitializeEventSeats(eventService);
   const deleteSeatsMutation = useDeleteEventSeats(eventService);
@@ -623,6 +628,18 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   };
 
   const getStatusCounts = () => {
+    // Use statistics from API if available, otherwise fall back to calculating from fetched seats
+    if (eventSeatStatistics) {
+      return {
+        available: eventSeatStatistics.available_seats,
+        reserved: eventSeatStatistics.reserved_seats,
+        sold: eventSeatStatistics.sold_seats,
+        held: eventSeatStatistics.held_seats,
+        blocked: eventSeatStatistics.blocked_seats,
+      };
+    }
+
+    // Fallback to calculating from fetched seats (for backward compatibility)
     const counts: Record<EventSeatStatus, number> = {
       available: 0,
       reserved: 0,

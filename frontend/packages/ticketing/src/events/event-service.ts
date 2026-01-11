@@ -4,7 +4,7 @@
  * Encapsulates all event API operations and data transformations.
  */
 
-import type { Event, CreateEventInput, UpdateEventInput, EventSeat, EventSeatStatus, BrokerSeatImportItem } from "./types";
+import type { Event, CreateEventInput, UpdateEventInput, EventSeat, EventSeatStatus, BrokerSeatImportItem, EventSeatStatistics } from "./types";
 import { ServiceConfig, PaginatedResponse, Pagination } from "@truths/shared";
 import { EventStatus, EventConfigurationType } from "./types";
 import { API_CONFIG } from "@truths/config";
@@ -455,6 +455,20 @@ export class EventService {
       return (response || []).map(transformEventSeat);
     } catch (error) {
       console.error(`Error blocking seats for Event ${eventId}:`, error);
+      throw error;
+    }
+  }
+
+  async fetchEventSeatStatistics(eventId: string): Promise<EventSeatStatistics> {
+    try {
+      const baseEndpoint = this.getEndpoint().replace(/\/$/, '');
+      const response = await this.apiClient.get<EventSeatStatistics>(
+        `${baseEndpoint}/${eventId}/seats/statistics`,
+        { requiresAuth: true }
+      );
+      return response;
+    } catch (error) {
+      console.error(`Error fetching seat statistics for Event ${eventId}:`, error);
       throw error;
     }
   }

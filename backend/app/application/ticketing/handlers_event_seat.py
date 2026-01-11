@@ -2,6 +2,7 @@
 Handlers for EventSeat module.
 """
 from typing import List, Dict, Any
+from dataclasses import dataclass
 from app.domain.ticketing.event_repositories import EventRepository
 from app.domain.ticketing.seat_repositories import SeatRepository
 from app.domain.ticketing.event_seat import EventSeat
@@ -20,13 +21,24 @@ from app.application.ticketing.commands_event_seat import (
     UnblockEventSeatsCommand,
     BlockEventSeatsCommand,
 )
-from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
+from app.application.ticketing.queries_event_seat import GetEventSeatsQuery, GetEventSeatStatisticsQuery
 from app.shared.exceptions import BusinessRuleError, NotFoundError
 from app.shared.enums import EventConfigurationTypeEnum, EventSeatStatusEnum, EventStatusEnum
 from app.infrastructure.shared.database.models import SectionModel
 from app.shared.tenant_context import require_tenant_context
 from app.shared.utils import generate_id
-from sqlmodel import select
+from sqlmodel import select, func
+
+
+@dataclass
+class EventSeatStatistics:
+    """Statistics for event seats"""
+    total_seats: int
+    available_seats: int
+    reserved_seats: int
+    sold_seats: int
+    held_seats: int
+    blocked_seats: int
 
 
 class EventSeatCommandHandler:
@@ -485,3 +497,60 @@ class EventSeatQueryHandler:
             skip=query.skip,
             limit=query.limit
         )
+
+    async def handle_get_event_seat_statistics(self, query: GetEventSeatStatisticsQuery) -> EventSeatStatistics:
+        """Get seat statistics for an event"""
+        tenant_id = require_tenant_context()
+
+        # Use the session factory to get direct database access for aggregation
+        with self.event_seat_repository._session_factory() as session:
+            from app.infrastructure.shared.database.models import EventSeatModel
+
+            # Build base query
+            base_query = select(EventSeatModel).where(
+                EventSeatModel.tenant_id == tenant_id,
+                EventSeatModel.event_id == query.event_id,
+                EventSeatModel.is_deleted == False
+            )
+
+            # Get total count
+            total_result = session.exec(select(func.count()).select_from(base_query.subquery())).first()
+            total_seats = total_result or 0
+
+            # Get counts by status
+            status_counts = session.exec(
+                select(
+                    EventSeatModel.status,
+                    func.count(EventSeatModel.id)
+                ).select_from(base_query.subquery())
+                .group_by(EventSeatModel.status)
+            ).all()
+
+            # Initialize counts
+            available_seats = 0
+            reserved_seats = 0
+            sold_seats = 0
+            held_seats = 0
+            blocked_seats = 0
+
+            # Map status counts
+            for status, count in status_counts:
+                if status == EventSeatStatusEnum.AVAILABLE:
+                    available_seats = count
+                elif status == EventSeatStatusEnum.RESERVED:
+                    reserved_seats = count
+                elif status == EventSeatStatusEnum.SOLD:
+                    sold_seats = count
+                elif status == EventSeatStatusEnum.HELD:
+                    held_seats = count
+                elif status == EventSeatStatusEnum.BLOCKED:
+                    blocked_seats = count
+
+            return EventSeatStatistics(
+                total_seats=total_seats,
+                available_seats=available_seats,
+                reserved_seats=reserved_seats,
+                sold_seats=sold_seats,
+                held_seats=held_seats,
+                blocked_seats=blocked_seats
+            )

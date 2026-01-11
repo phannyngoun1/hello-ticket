@@ -13,6 +13,7 @@ import type {
   EventFilter,
   EventSeat,
   BrokerSeatImportItem,
+  EventSeatStatistics,
 } from "./types";
 import type { Pagination, PaginatedResponse } from "@truths/shared";
 import type { EventService } from "./event-service";
@@ -59,6 +60,16 @@ export function useEvent(service: EventService, eventId: string | null) {
       eventId ? service.fetchEventById(eventId) : Promise.resolve(null as any),
     enabled: !!eventId,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useEventSeatStatistics(service: EventService, eventId: string | null) {
+  return useQuery<EventSeatStatistics>({
+    queryKey: ["events", eventId, "statistics"],
+    queryFn: () =>
+      eventId ? service.fetchEventSeatStatistics(eventId) : Promise.resolve(null as any),
+    enabled: !!eventId,
+    staleTime: 2 * 60 * 1000, // Shorter cache time for statistics
   });
 }
 
