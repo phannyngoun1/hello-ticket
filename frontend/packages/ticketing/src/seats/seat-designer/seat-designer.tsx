@@ -83,6 +83,7 @@ export function SeatDesigner({
   layoutName,
   imageUrl: initialImageUrl,
   designMode = "seat-level", // Design mode from layout (defaults to seat-level for backward compatibility)
+  readOnly = false,
   initialSeats,
   initialSections,
   onImageUpload,
@@ -2081,6 +2082,7 @@ export function SeatDesigner({
         <SectionDetailView
           viewingSection={viewingSection}
           className={className}
+          readOnly={readOnly}
           displayedSeats={displayedSeats}
           selectedSeat={selectedSeat}
           seatPlacementForm={seatPlacementForm}
@@ -2254,14 +2256,16 @@ export function SeatDesigner({
               Datasheet
             </Button>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={saveSeatsMutation.isPending}
-            size="sm"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
+          {!readOnly && (
+            <Button
+              onClick={handleSave}
+              disabled={saveSeatsMutation.isPending}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleFullscreen}
@@ -2275,6 +2279,7 @@ export function SeatDesigner({
             )}
           </Button>
           {mainImageUrl &&
+            !readOnly &&
             (isPlacingSeats ||
               (venueType === "large" && isPlacingSections)) && (
               <DropdownMenu>
@@ -2332,22 +2337,24 @@ export function SeatDesigner({
           {/* Seat Placement Controls Panel - On Top (Small Venue) */}
           {venueType === "small" && (
             <>
-              <SeatPlacementControls
-                form={seatPlacementForm}
-                uniqueSections={getUniqueSections()}
-                sectionsData={sectionsData}
-                sectionSelectValue={sectionSelectValue}
-                onSectionSelectValueChange={setSectionSelectValue}
-                onNewSection={() => {
-                  setIsSectionFormOpen(true);
-                  setEditingSectionId(null);
-                  sectionForm.reset({ name: "" });
-                }}
-                onManageSections={() => setIsManageSectionsOpen(true)}
-              />
+              {!readOnly && (
+                <SeatPlacementControls
+                  form={seatPlacementForm}
+                  uniqueSections={getUniqueSections()}
+                  sectionsData={sectionsData}
+                  sectionSelectValue={sectionSelectValue}
+                  onSectionSelectValueChange={setSectionSelectValue}
+                  onNewSection={() => {
+                    setIsSectionFormOpen(true);
+                    setEditingSectionId(null);
+                    sectionForm.reset({ name: "" });
+                  }}
+                  onManageSections={() => setIsManageSectionsOpen(true)}
+                />
+              )}
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={setSelectedShapeTool}
+                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
                 selectedSeat={selectedSeat}
                 selectedSection={
                   designMode === "section-level" ? selectedSectionMarker : null
@@ -2360,6 +2367,7 @@ export function SeatDesigner({
                 }
                 onSeatDelete={handleDeleteSeat}
                 onSectionDelete={handleDeleteSection}
+                readOnly={readOnly}
               />
             </>
           )}
@@ -2369,7 +2377,7 @@ export function SeatDesigner({
             <>
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={setSelectedShapeTool}
+                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
                 selectedSeat={null}
                 selectedSection={selectedSectionMarker}
                 onSeatEdit={handleSeatEdit}
@@ -2378,6 +2386,7 @@ export function SeatDesigner({
                 onSectionView={handleSectionView}
                 onSeatDelete={handleDeleteSeat}
                 onSectionDelete={handleDeleteSection}
+                readOnly={readOnly}
               />
             </>
           )}
@@ -2402,6 +2411,7 @@ export function SeatDesigner({
                 selectedSectionId={selectedSectionMarker?.id || null}
                 isPlacingSeats={venueType === "small" && isPlacingSeats}
                 isPlacingSections={venueType === "large" && isPlacingSections}
+                readOnly={readOnly}
                 zoomLevel={zoomLevel}
                 panOffset={panOffset}
                 onSeatClick={handleSeatClick}
@@ -2444,6 +2454,7 @@ export function SeatDesigner({
       <DatasheetView
         isOpen={isDatasheetOpen}
         onOpenChange={setIsDatasheetOpen}
+        readOnly={readOnly}
         viewingSection={viewingSection}
         venueType={venueType}
         displayedSeats={displayedSeats}

@@ -39,6 +39,7 @@ import { useState } from "react";
 export interface SectionDetailViewProps {
   viewingSection: SectionMarker;
   className?: string;
+  readOnly?: boolean;
   displayedSeats: SeatMarker[];
   selectedSeat: SeatMarker | null;
   seatPlacementForm: any; // UseFormReturn<SeatFormData>
@@ -92,6 +93,7 @@ export interface SectionDetailViewProps {
 export function SectionDetailView({
   viewingSection,
   className,
+  readOnly = false,
   displayedSeats,
   selectedSeat,
   seatPlacementForm,
@@ -163,58 +165,101 @@ export function SectionDetailView({
               <List className="h-4 w-4 mr-2" />
               Seat List ({displayedSeats.length})
             </Button>
-            <Button
-              onClick={onSave}
-              disabled={saveSeatsMutationPending}
-              size="sm"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onClearSectionSeats}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Seats
-                </DropdownMenuItem>
-                {viewingSection.imageUrl && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <Label
-                      htmlFor={`change-section-image-${viewingSection.id}`}
-                      className="cursor-pointer"
-                    >
-                      <DropdownMenuItem
-                        onSelect={(e) => e.preventDefault()}
-                        asChild
+            {!readOnly && (
+              <Button
+                onClick={onSave}
+                disabled={saveSeatsMutationPending}
+                size="sm"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            )}
+            {!readOnly && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onClearSectionSeats}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All Seats
+                  </DropdownMenuItem>
+                  {viewingSection.imageUrl && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <Label
+                        htmlFor={`change-section-image-${viewingSection.id}`}
+                        className="cursor-pointer"
                       >
-                        <div>
-                          <ImageIcon className="h-4 w-4 mr-2" />
-                          Change Image
-                          <Input
-                            id={`change-section-image-${viewingSection.id}`}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              onSectionImageSelect(viewingSection.id, e);
-                              e.target.value = ""; // Reset input
-                            }}
-                            className="hidden"
-                          />
-                        </div>
-                      </DropdownMenuItem>
-                    </Label>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          asChild
+                        >
+                          <div>
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Change Image
+                            <Input
+                              id={`change-section-image-${viewingSection.id}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                onSectionImageSelect(viewingSection.id, e);
+                                e.target.value = ""; // Reset input
+                              }}
+                              className="hidden"
+                            />
+                          </div>
+                        </DropdownMenuItem>
+                      </Label>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
+
+        {/* Seat Placement Controls Panel - On Top */}
+        {!readOnly && (
+          <SeatPlacementControls
+            form={seatPlacementForm}
+            uniqueSections={uniqueSections}
+            sectionsData={sectionsData}
+            sectionSelectValue={sectionSelectValue}
+            onSectionSelectValueChange={onSectionSelectValueChange}
+            viewingSection={viewingSection}
+            onNewSection={onNewSection}
+          />
+        )}
+
+        {/* Shape Toolbox - Always show when available */}
+        {onShapeToolSelect && (
+          <ShapeToolbox
+            selectedShapeType={selectedShapeTool || null}
+            onShapeTypeSelect={onShapeToolSelect}
+            selectedSeat={selectedSeat}
+            onSeatView={(seat) => {
+              onSetViewingSeat(seat);
+              onSetIsEditingViewingSeat(false);
+            }}
+            onSeatEdit={(seat) => {
+              onSetViewingSeat(seat);
+              onSetIsEditingViewingSeat(true);
+              seatEditFormReset({
+                section: seat.seat.section,
+                sectionId: seat.seat.sectionId,
+                row: seat.seat.row,
+                seatNumber: seat.seat.seatNumber,
+                seatType: seat.seat.seatType,
+              });
+            }}
+            onSeatDelete={onDeleteSeat}
+            readOnly={readOnly}
+          />
+        )}
 
         {/* Section Image Upload */}
         {!viewingSection.imageUrl && (
@@ -229,40 +274,6 @@ export function SectionDetailView({
         {/* Section Image with Seat Markers */}
         {viewingSection.imageUrl && (
           <div className="space-y-4">
-            {/* Seat Placement Controls Panel - On Top */}
-            <SeatPlacementControls
-              form={seatPlacementForm}
-              uniqueSections={uniqueSections}
-              sectionsData={sectionsData}
-              sectionSelectValue={sectionSelectValue}
-              onSectionSelectValueChange={onSectionSelectValueChange}
-              viewingSection={viewingSection}
-              onNewSection={onNewSection}
-            />
-            {onShapeToolSelect && (
-              <ShapeToolbox
-                selectedShapeType={selectedShapeTool || null}
-                onShapeTypeSelect={onShapeToolSelect}
-                selectedSeat={selectedSeat}
-                onSeatView={(seat) => {
-                  onSetViewingSeat(seat);
-                  onSetIsEditingViewingSeat(false);
-                }}
-                onSeatEdit={(seat) => {
-                  onSetViewingSeat(seat);
-                  onSetIsEditingViewingSeat(true);
-                  seatEditFormReset({
-                    section: seat.seat.section,
-                    sectionId: seat.seat.sectionId,
-                    row: seat.seat.row,
-                    seatNumber: seat.seat.seatNumber,
-                    seatType: seat.seat.seatType,
-                  });
-                }}
-                onSeatDelete={onDeleteSeat}
-              />
-            )}
-
             {/* Canvas Container */}
             <div
               ref={containerRef}
@@ -282,6 +293,7 @@ export function SectionDetailView({
                   selectedSeatId={selectedSeat?.id || null}
                   isPlacingSeats={isPlacingSeats}
                   isPlacingSections={false}
+                  readOnly={readOnly}
                   zoomLevel={zoomLevel}
                   panOffset={panOffset}
                   onSeatClick={onSeatClick}
@@ -322,6 +334,7 @@ export function SectionDetailView({
       <DatasheetView
         isOpen={isDatasheetOpen}
         onOpenChange={setIsDatasheetOpen}
+        readOnly={readOnly}
         viewingSection={viewingSection}
         venueType="small"
         displayedSeats={displayedSeats}

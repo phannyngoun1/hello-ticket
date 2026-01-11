@@ -181,6 +181,7 @@ interface LayoutCanvasProps {
   selectedSectionId?: string | null;
   isPlacingSeats: boolean;
   isPlacingSections: boolean;
+  readOnly?: boolean;
   zoomLevel: number;
   panOffset: { x: number; y: number };
   onSeatClick?: (seat: SeatMarker) => void;
@@ -426,6 +427,7 @@ interface SeatMarkerComponentProps {
   colors: { fill: string; stroke: string };
   imageWidth: number;
   imageHeight: number;
+  readOnly?: boolean;
 }
 
 function SeatMarkerComponent({
@@ -444,6 +446,7 @@ function SeatMarkerComponent({
   colors,
   imageWidth,
   imageHeight,
+  readOnly = false,
 }: SeatMarkerComponentProps) {
   const shapeRef = useRef<Konva.Shape>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -478,13 +481,18 @@ function SeatMarkerComponent({
 
   // Attach transformer when selected and update when shape changes
   useEffect(() => {
-    if (isSelected && groupRef.current && transformerRef.current) {
+    if (
+      !readOnly &&
+      isSelected &&
+      groupRef.current &&
+      transformerRef.current
+    ) {
       transformerRef.current.nodes([groupRef.current]);
       // Force all anchors to be visible
       transformerRef.current.forceUpdate();
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, shapeKey]);
+  }, [isSelected, shapeKey, readOnly]);
 
   // Calculate bounding box for transformer (if needed in the future)
   // const getBoundingBox = () => {
@@ -616,9 +624,9 @@ function SeatMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={isPlacingSeats || isSelected}
-        onDragEnd={(e) => onSeatDragEnd(seat.id, e)}
-        onTransformEnd={handleTransformEnd}
+        draggable={!readOnly && (isPlacingSeats || isSelected)}
+        onDragEnd={!readOnly ? (e) => onSeatDragEnd(seat.id, e) : undefined}
+        onTransformEnd={!readOnly ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
           // Allow clicks to pass through to Layer when polygon tool is selected
           if (selectedShapeTool === PlacementShapeType.FREEFORM) {
@@ -674,7 +682,7 @@ function SeatMarkerComponent({
           />
         </Group>
       </Group>
-      {isSelected && (
+      {isSelected && !readOnly && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {
@@ -811,6 +819,7 @@ interface SectionMarkerComponentProps {
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   imageWidth: number;
+  readOnly?: boolean;
   imageHeight: number;
 }
 
@@ -830,6 +839,7 @@ function SectionMarkerComponent({
   onShapeTransform,
   imageWidth,
   imageHeight,
+  readOnly = false,
 }: SectionMarkerComponentProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -868,6 +878,7 @@ function SectionMarkerComponent({
   // Attach transformer when selected and shape exists, update when shape changes
   useEffect(() => {
     if (
+      !readOnly &&
       isSelected &&
       section.shape &&
       groupRef.current &&
@@ -878,7 +889,7 @@ function SectionMarkerComponent({
       transformerRef.current.forceUpdate();
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [isSelected, shapeKey]);
+  }, [isSelected, shapeKey, readOnly]);
 
   // Handle transform end - convert back to percentage coordinates
   const handleTransformEnd = useCallback(() => {
@@ -995,14 +1006,14 @@ function SectionMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={isPlacingSections || isSelected}
-        onDragEnd={(e) => {
+        draggable={!readOnly && (isPlacingSections || isSelected)}
+        onDragEnd={!readOnly ? (e) => {
           if (!onSectionDragEnd) return;
           const node = e.target;
           // node.x() and node.y() are already in stage coordinates
           onSectionDragEnd(section.id, node.x(), node.y());
-        }}
-        onTransformEnd={section.shape ? handleTransformEnd : undefined}
+        } : undefined}
+        onTransformEnd={!readOnly && section.shape ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
           // Allow clicks to pass through to Layer when polygon tool is selected
           if (selectedShapeTool === PlacementShapeType.FREEFORM) {
@@ -1083,7 +1094,7 @@ function SectionMarkerComponent({
           />
         )}
       </Group>
-      {isSelected && section.shape && (
+      {isSelected && !readOnly && section.shape && (
         <Transformer
           ref={transformerRef}
           boundBoxFunc={(oldBox, newBox) => {
@@ -1245,6 +1256,7 @@ export function LayoutCanvas({
   selectedSectionId,
   isPlacingSeats,
   isPlacingSections,
+  readOnly = false,
   zoomLevel,
   panOffset,
   onSeatClick,
@@ -2248,6 +2260,7 @@ export function LayoutCanvas({
               colors={colors}
               imageWidth={displayedWidth}
               imageHeight={displayedHeight}
+              readOnly={readOnly}
             />
           );
         })}
@@ -2283,6 +2296,7 @@ export function LayoutCanvas({
                 onShapeTransform={onSectionShapeTransform}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
+                readOnly={readOnly}
               />
             );
           })}

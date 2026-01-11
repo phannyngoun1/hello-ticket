@@ -7,7 +7,8 @@ import {
   useLayoutService,
   useLayoutWithSeats,
 } from "@truths/ticketing";
-import { VenueProvider, LayoutProvider } from "@truths/ticketing";
+import { VenueProvider, LayoutProvider, EventProvider } from "@truths/ticketing";
+import { useEventService, useEvents, EventStatus } from "@truths/ticketing";
 import { api } from "@truths/api";
 
 function SeatDesignerContent({
@@ -19,6 +20,7 @@ function SeatDesignerContent({
 }) {
   const venueService = useVenueService();
   const layoutService = useLayoutService();
+  const eventService = useEventService();
   const { data: venue, isLoading: venueLoading } = useVenue(
     venueService,
     id ?? null
@@ -36,6 +38,25 @@ function SeatDesignerContent({
   // Use combined endpoint to fetch layout with seats in one request
   const { data: layoutWithSeats, isLoading: layoutLoading } =
     useLayoutWithSeats(layoutService, effectiveLayoutId ?? null);
+
+  // Check if layout is attached to any active events (not completed or cancelled)
+  const { data: eventsData } = useEvents(
+    eventService,
+    effectiveLayoutId
+      ? {
+          filter: {
+            layout_id: effectiveLayoutId,
+            is_active: true, // Only care about active events in general
+          },
+        }
+      : undefined
+  );
+
+  const isReadOnly = eventsData?.data.some(
+    (event) =>
+      event.status !== EventStatus.COMPLETED &&
+      event.status !== EventStatus.CANCELLED
+  );
 
   // Update tab title with layout name when available
   // Include layoutId in path to ensure each layout gets its own tab
@@ -93,6 +114,7 @@ function SeatDesignerContent({
         initialSeats={layoutWithSeats?.seats}
         initialSections={layoutWithSeats?.sections}
         fileId={layoutWithSeats?.layout.file_id}
+        readOnly={isReadOnly}
       />
     </div>
   );
@@ -114,6 +136,13 @@ export function SeatDesignerPage() {
     },
   };
 
+  const eventServiceConfig = {
+    apiClient: api,
+    endpoints: {
+      events: "/api/v1/ticketing/events",
+    },
+  };
+
   const layoutServiceConfig = {
     apiClient: api,
     endpoints: {
@@ -124,7 +153,9 @@ export function SeatDesignerPage() {
   return (
     <VenueProvider config={venueServiceConfig}>
       <LayoutProvider config={layoutServiceConfig}>
-        <SeatDesignerContent id={id} layoutId={layoutId} />
+        <EventProvider config={eventServiceConfig}>
+          <SeatDesignerContent id={id} layoutId={layoutId} />
+        </EventProvider>
       </LayoutProvider>
     </VenueProvider>
   );

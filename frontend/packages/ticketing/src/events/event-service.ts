@@ -107,6 +107,7 @@ export class EventService {
     search?: string;
     is_active?: boolean;
     show_id?: string;
+    layout_id?: string;
   }): Promise<PaginatedResponse<Event>> {
     try {
       const queryParams = new URLSearchParams();
@@ -125,6 +126,9 @@ export class EventService {
       }
       if (params?.show_id !== undefined) {
         queryParams.append('show_id', params.show_id);
+      }
+      if (params?.layout_id !== undefined) {
+        queryParams.append('layout_id', params.layout_id);
       }
 
       const baseEndpoint = this.getEndpoint().replace(/\/$/, '');

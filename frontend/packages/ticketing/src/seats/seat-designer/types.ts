@@ -38,6 +38,7 @@ export interface SeatDesignerProps {
   layoutName?: string;
   imageUrl?: string;
   designMode?: "seat-level" | "section-level";
+  readOnly?: boolean;
   initialSeats?: Array<{
     id: string;
     section_id: string;

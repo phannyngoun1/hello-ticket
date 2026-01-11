@@ -109,6 +109,7 @@ export interface EventFilter {
   search?: string;
   is_active?: boolean;
   show_id?: string;
+  layout_id?: string;
 }
 
 export interface SectionPricingConfig {
