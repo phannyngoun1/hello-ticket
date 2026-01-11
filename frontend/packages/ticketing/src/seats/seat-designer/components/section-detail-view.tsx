@@ -156,13 +156,14 @@ export function SectionDetailView({
               Section: {viewingSection.name}
             </h3>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button
               onClick={() => setIsDatasheetOpen(true)}
               variant="outline"
               size="sm"
+              className="h-7 px-2"
             >
-              <List className="h-4 w-4 mr-2" />
+              <List className="h-3.5 w-3.5 mr-1" />
               Seat List ({displayedSeats.length})
             </Button>
             {!readOnly && (
@@ -170,16 +171,17 @@ export function SectionDetailView({
                 onClick={onSave}
                 disabled={saveSeatsMutationPending}
                 size="sm"
+                className="h-7 px-2"
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-3.5 w-3.5 mr-1" />
                 Save
               </Button>
             )}
             {!readOnly && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <MoreVertical className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                    <MoreVertical className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
