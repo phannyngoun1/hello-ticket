@@ -30,6 +30,9 @@ import {
   Clock,
   AlertCircle,
   List,
+  Hand,
+  Ban,
+  X,
 } from "lucide-react";
 import { useEventService } from "./event-provider";
 import { useLayoutService } from "../layouts";
@@ -40,11 +43,15 @@ import {
   useDeleteEventSeats,
   useCreateTicketsFromSeats,
   useCreateEventSeat,
+  useHoldEventSeats,
+  useBlockEventSeats,
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
-import type { EventSeat, EventSeatStatus } from "./types";
+import type { EventSeat } from "./types";
+import { EventSeatStatus } from "./types";
 import { EventInventoryViewer } from "./event-inventory-viewer";
 import { EventSeatList } from "./event-seat-list";
+import { HoldBlockSeatsDialog } from "./hold-block-seats-dialog";
 
 export interface EventInventoryProps {
   eventId: string;
@@ -60,6 +67,13 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const [createSeatDialogOpen, setCreateSeatDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     null
+  );
+  const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [holdBlockDialogOpen, setHoldBlockDialogOpen] = useState(false);
+  const [holdBlockAction, setHoldBlockAction] = useState<"hold" | "block">(
+    "hold"
   );
 
   // Fetch event data
@@ -87,6 +101,8 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const deleteSeatsMutation = useDeleteEventSeats(eventService);
   const createTicketsMutation = useCreateTicketsFromSeats(eventService);
   const createSeatMutation = useCreateEventSeat(eventService);
+  const holdSeatsMutation = useHoldEventSeats(eventService);
+  const blockSeatsMutation = useBlockEventSeats(eventService);
 
   const eventSeats = eventSeatsData?.data || [];
   const totalSeats = eventSeatsData?.pagination.total || 0;
@@ -258,6 +274,109 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     }
   };
 
+  const handleHoldSeats = async (reason?: string) => {
+    if (!event?.id || selectedSeatIds.size === 0) return;
+
+    // Filter to only available seats
+    const availableSeatIds = Array.from(selectedSeatIds).filter((seatId) => {
+      const eventSeat = seatStatusMap.get(seatId);
+      return eventSeat?.status === EventSeatStatus.AVAILABLE;
+    });
+
+    if (availableSeatIds.length === 0) {
+      throw new Error(
+        "No available seats selected. Only available seats can be held."
+      );
+    }
+
+    try {
+      await holdSeatsMutation.mutateAsync({
+        eventId: event.id,
+        seatIds: availableSeatIds,
+        reason,
+      });
+      await refetchSeats();
+      // Keep selections for potential additional actions
+      // setSelectedSeatIds(new Set());
+      setHoldBlockDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to hold seats:", err);
+      throw err;
+    }
+  };
+
+  const handleBlockSeats = async (reason?: string) => {
+    if (!event?.id || selectedSeatIds.size === 0) return;
+
+    // Filter to only available seats
+    const availableSeatIds = Array.from(selectedSeatIds).filter((seatId) => {
+      const eventSeat = seatStatusMap.get(seatId);
+      return eventSeat?.status === EventSeatStatus.AVAILABLE;
+    });
+
+    if (availableSeatIds.length === 0) {
+      throw new Error(
+        "No available seats selected. Only available seats can be blocked."
+      );
+    }
+
+    try {
+      await blockSeatsMutation.mutateAsync({
+        eventId: event.id,
+        seatIds: availableSeatIds,
+        reason,
+      });
+      await refetchSeats();
+      // Keep selections for potential additional actions
+      // setSelectedSeatIds(new Set());
+      setHoldBlockDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to block seats:", err);
+      throw err;
+    }
+  };
+
+  const handleSeatClick = (seatId: string, eventSeat?: EventSeat) => {
+    // Only allow selecting seats that are available for hold/block operations
+    if (eventSeat && eventSeat.status !== EventSeatStatus.AVAILABLE) {
+      return; // Don't allow selecting non-available seats
+    }
+
+    // Toggle selection: if selected, deselect; if not selected, select
+    const isCurrentlySelected = selectedSeatIds.has(seatId);
+    const newSelected = new Set(selectedSeatIds);
+
+    if (isCurrentlySelected) {
+      newSelected.delete(seatId);
+    } else {
+      newSelected.add(seatId);
+    }
+
+    setSelectedSeatIds(newSelected);
+  };
+
+  const handleHoldBlockConfirm = (reason?: string) => {
+    if (holdBlockAction === "hold") {
+      handleHoldSeats(reason);
+    } else {
+      handleBlockSeats(reason);
+    }
+  };
+
+  const handleSeatListHold = (seatIds: string[]) => {
+    // Set the selected seat IDs and open the hold dialog
+    setSelectedSeatIds(new Set(seatIds));
+    setHoldBlockAction("hold");
+    setHoldBlockDialogOpen(true);
+  };
+
+  const handleSeatListBlock = (seatIds: string[]) => {
+    // Set the selected seat IDs and open the block dialog
+    setSelectedSeatIds(new Set(seatIds));
+    setHoldBlockAction("block");
+    setHoldBlockDialogOpen(true);
+  };
+
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
     const date = value instanceof Date ? value : new Date(value);
@@ -410,6 +529,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
             {hasSeats && (
               <Button
                 onClick={() => setSeatListSheetOpen(true)}
+                disabled={selectedSeatIds.size > 0}
                 variant="outline"
                 size="sm"
                 className="h-8 w-8 p-0"
@@ -420,6 +540,82 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
             )}
           </div>
         </div>
+
+        {/* Full Width Seat Selection Controls */}
+        {selectedSeatIds.size > 0 && (
+          <div className="w-full bg-blue-50 border-t border-blue-200 mt-2 px-4 py-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-blue-700">
+                    {(() => {
+                      const availableCount = Array.from(selectedSeatIds).filter(
+                        (seatId) => {
+                          const eventSeat = seatStatusMap.get(seatId);
+                          return (
+                            eventSeat?.status === EventSeatStatus.AVAILABLE
+                          );
+                        }
+                      ).length;
+                      const totalCount = selectedSeatIds.size;
+                      return availableCount === totalCount
+                        ? `${availableCount} seat${availableCount !== 1 ? "s" : ""} selected`
+                        : `${availableCount} of ${totalCount} seat${totalCount !== 1 ? "s" : ""} available`;
+                    })()}
+                  </span>
+                  <Button
+                    onClick={() => setSelectedSeatIds(new Set())}
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 text-blue-600 hover:text-blue-800 hover:bg-blue-100 ml-1"
+                    title="Clear selection"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  onClick={() => {
+                    setHoldBlockAction("hold");
+                    setHoldBlockDialogOpen(true);
+                  }}
+                  disabled={
+                    holdSeatsMutation.isPending ||
+                    Array.from(selectedSeatIds).every((seatId) => {
+                      const eventSeat = seatStatusMap.get(seatId);
+                      return eventSeat?.status !== EventSeatStatus.AVAILABLE;
+                    })
+                  }
+                  size="sm"
+                  className="gap-1 h-7 px-2 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all duration-200 border border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Hand className="h-3 w-3" />
+                  Hold
+                </Button>
+                <Button
+                  onClick={() => {
+                    setHoldBlockAction("block");
+                    setHoldBlockDialogOpen(true);
+                  }}
+                  disabled={
+                    blockSeatsMutation.isPending ||
+                    Array.from(selectedSeatIds).every((seatId) => {
+                      const eventSeat = seatStatusMap.get(seatId);
+                      return eventSeat?.status !== EventSeatStatus.AVAILABLE;
+                    })
+                  }
+                  size="sm"
+                  className="gap-1 h-7 px-2 bg-red-600 hover:bg-red-700 text-white font-medium text-xs shadow-sm hover:shadow-md transition-all duration-200 border border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Ban className="h-3 w-3" />
+                  Block
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Warnings */}
@@ -479,6 +675,8 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               isLoading={seatsLoading}
               selectedSectionId={selectedSectionId}
               onSelectedSectionIdChange={setSelectedSectionId}
+              selectedSeatIds={selectedSeatIds}
+              onSeatClick={handleSeatClick}
             />
           )}
         </Card>
@@ -500,6 +698,16 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               isLoading={seatsLoading}
               onDelete={handleDeleteSeats}
               onCreateTickets={handleCreateTickets}
+              // selectedSeatIds={selectedSeatIds}
+              // onSeatSelect={(seat, checked) => {
+              //   const newSelected = new Set(selectedSeatIds);
+              //   if (checked) {
+              //     newSelected.add(seat.id);
+              //   } else {
+              //     newSelected.delete(seat.id);
+              //   }
+              //   setSelectedSeatIds(newSelected);
+              // }}
             />
           </div>
         </SheetContent>
@@ -540,6 +748,23 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
         onOpenChange={setCreateSeatDialogOpen}
         onSubmit={handleCreateSeat}
         loading={createSeatMutation.isPending}
+      />
+
+      {/* Hold/Block Seats Dialog */}
+      <HoldBlockSeatsDialog
+        isOpen={holdBlockDialogOpen}
+        onOpenChange={setHoldBlockDialogOpen}
+        availableSeatIds={
+          new Set(
+            Array.from(selectedSeatIds).filter((seatId) => {
+              const eventSeat = seatStatusMap.get(seatId);
+              return eventSeat?.status === EventSeatStatus.AVAILABLE;
+            })
+          )
+        }
+        action={holdBlockAction}
+        onConfirm={handleHoldBlockConfirm}
+        isLoading={holdSeatsMutation.isPending || blockSeatsMutation.isPending}
       />
     </div>
   );

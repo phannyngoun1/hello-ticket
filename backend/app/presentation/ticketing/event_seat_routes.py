@@ -12,6 +12,8 @@ from app.application.ticketing.commands_event_seat import (
     DeleteEventSeatsCommand,
     CreateTicketsFromSeatsCommand,
     CreateEventSeatCommand,
+    HoldEventSeatsCommand,
+    BlockEventSeatsCommand,
 )
 from app.application.ticketing.queries_event_seat import (
     GetEventSeatsQuery,
@@ -24,6 +26,8 @@ from app.presentation.api.ticketing.schemas_event_seat import (
     DeleteEventSeatsRequest,
     CreateTicketsFromSeatsRequest,
     CreateEventSeatRequest,
+    HoldEventSeatsRequest,
+    BlockEventSeatsRequest,
     EventSeatResponse,
     EventSeatListResponse,
 )
@@ -243,5 +247,51 @@ async def list_event_seats(
             limit=limit,
             has_next=result.has_next
         )
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{event_id}/seats/hold", response_model=List[EventSeatResponse])
+async def hold_event_seats(
+    event_id: str,
+    request: HoldEventSeatsRequest,
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    mediator: Mediator = Depends(get_mediator_dependency),
+):
+    """Hold multiple event seats with a reason"""
+    try:
+        command = HoldEventSeatsCommand(
+            event_id=event_id,
+            tenant_id=current_user.tenant_id,
+            event_seat_ids=request.seat_ids,
+            reason=request.reason
+        )
+        seats = await mediator.send(command)
+        return [EventSeatApiMapper.to_response(s) for s in seats]
+    except (BusinessRuleError, ValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{event_id}/seats/block", response_model=List[EventSeatResponse])
+async def block_event_seats(
+    event_id: str,
+    request: BlockEventSeatsRequest,
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    mediator: Mediator = Depends(get_mediator_dependency),
+):
+    """Block multiple event seats with a reason"""
+    try:
+        command = BlockEventSeatsCommand(
+            event_id=event_id,
+            tenant_id=current_user.tenant_id,
+            event_seat_ids=request.seat_ids,
+            reason=request.reason
+        )
+        seats = await mediator.send(command)
+        return [EventSeatApiMapper.to_response(s) for s in seats]
+    except (BusinessRuleError, ValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
