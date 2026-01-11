@@ -18,6 +18,10 @@ from app.application.ticketing.commands_event_seat import (
     DeleteEventSeatsCommand,
     CreateTicketsFromSeatsCommand,
     CreateEventSeatCommand,
+    HoldEventSeatsCommand,
+    UnholdEventSeatsCommand,
+    UnblockEventSeatsCommand,
+    BlockEventSeatsCommand,
 )
 from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
 from app.infrastructure.shared.database.connection import get_session_sync
@@ -72,6 +76,10 @@ def register_event_seat_mediator(mediator: Mediator) -> None:
     mediator.register_command_handler(DeleteEventSeatsCommand, EventSeatCommandHandler)
     mediator.register_command_handler(CreateTicketsFromSeatsCommand, EventSeatCommandHandler)
     mediator.register_command_handler(CreateEventSeatCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(HoldEventSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(UnholdEventSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(UnblockEventSeatsCommand, EventSeatCommandHandler)
+    mediator.register_command_handler(BlockEventSeatsCommand, EventSeatCommandHandler)
     
     # Register query handlers
     mediator.register_query_handler(GetEventSeatsQuery, EventSeatQueryHandler)

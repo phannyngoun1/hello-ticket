@@ -15,7 +15,7 @@ export interface HoldBlockSeatsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   availableSeatIds: Set<string>;
-  action: "hold" | "block";
+  action: "hold" | "block" | "unhold" | "unblock";
   onConfirm: (reason?: string) => void;
   isLoading?: boolean;
 }
@@ -30,7 +30,14 @@ export function HoldBlockSeatsDialog({
 }: HoldBlockSeatsDialogProps) {
   const [reason, setReason] = useState("");
 
-  const actionLabel = action === "hold" ? "Hold" : "Block";
+  const actionLabel =
+    action === "hold"
+      ? "Hold"
+      : action === "unhold"
+        ? "Unhold"
+        : action === "unblock"
+          ? "Unblock"
+          : "Block";
 
   const handleConfirm = () => {
     const trimmedReason = reason.trim();
@@ -46,24 +53,26 @@ export function HoldBlockSeatsDialog({
   // Custom footer with reason textarea and buttons
   const customFooter = (
     <div className="space-y-4">
-      {/* Reason textarea */}
-      <div className="space-y-2">
-        <Label htmlFor="reason" className="text-sm font-medium">
-          Reason (Optional)
-        </Label>
-        <Textarea
-          id="reason"
-          placeholder={`Enter reason for ${action.toLowerCase()}ing seats...`}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          className="min-h-[80px] resize-none"
-          disabled={isLoading}
-        />
-        <p className="text-xs text-muted-foreground">
-          This reason will be visible to administrators and can help track why
-          seats were {action.toLowerCase()}ed.
-        </p>
-      </div>
+      {/* Reason textarea - only show for hold and block */}
+      {action !== "unhold" && (
+        <div className="space-y-2">
+          <Label htmlFor="reason" className="text-sm font-medium">
+            Reason (Optional)
+          </Label>
+          <Textarea
+            id="reason"
+            placeholder={`Enter reason for ${action.toLowerCase()}ing seats...`}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="min-h-[80px] resize-none"
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground">
+            This reason will be visible to administrators and can help track why
+            seats were {action.toLowerCase()}ed.
+          </p>
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
@@ -98,7 +107,11 @@ export function HoldBlockSeatsDialog({
       description={
         action === "hold"
           ? `These ${availableSeatIds.size} available seat${availableSeatIds.size !== 1 ? "s" : ""} will be temporarily held and cannot be sold. You can provide an optional reason for the hold.`
-          : `These ${availableSeatIds.size} available seat${availableSeatIds.size !== 1 ? "s" : ""} will be blocked and permanently unavailable for sale. You can provide an optional reason for the block.`
+          : action === "unhold"
+            ? `These ${availableSeatIds.size} held seat${availableSeatIds.size !== 1 ? "s" : ""} will be released and become available for sale again.`
+            : action === "unblock"
+              ? `These ${availableSeatIds.size} blocked seat${availableSeatIds.size !== 1 ? "s" : ""} will be unblocked and become available for sale again.`
+              : `These ${availableSeatIds.size} available seat${availableSeatIds.size !== 1 ? "s" : ""} will be blocked and permanently unavailable for sale. You can provide an optional reason for the block.`
       }
       footer={customFooter}
       className="sm:max-w-[500px]"

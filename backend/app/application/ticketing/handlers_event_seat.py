@@ -16,11 +16,13 @@ from app.application.ticketing.commands_event_seat import (
     CreateTicketsFromSeatsCommand,
     CreateEventSeatCommand,
     HoldEventSeatsCommand,
+    UnholdEventSeatsCommand,
+    UnblockEventSeatsCommand,
     BlockEventSeatsCommand,
 )
 from app.application.ticketing.queries_event_seat import GetEventSeatsQuery
 from app.shared.exceptions import BusinessRuleError, NotFoundError
-from app.shared.enums import EventConfigurationTypeEnum, EventSeatStatusEnum
+from app.shared.enums import EventConfigurationTypeEnum, EventSeatStatusEnum, EventStatusEnum
 from app.infrastructure.shared.database.models import SectionModel
 from app.shared.tenant_context import require_tenant_context
 from app.shared.utils import generate_id
@@ -258,7 +260,11 @@ class EventSeatCommandHandler:
         event = await self.event_repository.get_by_id(tenant_id, command.event_id)
         if not event:
             raise NotFoundError(f"Event {command.event_id} not found")
-        
+
+        # Validate that event is in ON_SALE status for ticket creation
+        if event.status != EventStatusEnum.ON_SALE:
+            raise BusinessRuleError(f"Cannot create tickets for event {command.event_id} with status '{event.status}'. Tickets can only be created when event status is 'on_sale'.")
+
         if not command.event_seat_ids:
             return []
         
@@ -378,6 +384,60 @@ class EventSeatCommandHandler:
         # Hold each seat with reason
         for seat in event_seats:
             seat.hold(command.reason)
+
+        # Save updated seats
+        return await self.event_seat_repository.save_all(event_seats)
+
+    async def handle_unhold_event_seats(self, command: UnholdEventSeatsCommand) -> List[EventSeat]:
+        """Unhold multiple event seats"""
+        tenant_id = require_tenant_context()
+        event = await self.event_repository.get_by_id(tenant_id, command.event_id)
+        if not event:
+            raise NotFoundError(f"Event {command.event_id} not found")
+
+        if not command.event_seat_ids:
+            return []
+
+        # Get all event seats to unhold
+        event_seats = []
+        for seat_id in command.event_seat_ids:
+            seat = await self.event_seat_repository.get_by_id(tenant_id, seat_id)
+            if not seat:
+                raise NotFoundError(f"Event seat {seat_id} not found")
+            if seat.event_id != command.event_id:
+                raise BusinessRuleError(f"Event seat {seat_id} does not belong to event {command.event_id}")
+            event_seats.append(seat)
+
+        # Unhold each seat
+        for seat in event_seats:
+            seat.unhold()
+
+        # Save updated seats
+        return await self.event_seat_repository.save_all(event_seats)
+
+    async def handle_unblock_event_seats(self, command: UnblockEventSeatsCommand) -> List[EventSeat]:
+        """Unblock multiple event seats"""
+        tenant_id = require_tenant_context()
+        event = await self.event_repository.get_by_id(tenant_id, command.event_id)
+        if not event:
+            raise NotFoundError(f"Event {command.event_id} not found")
+
+        if not command.event_seat_ids:
+            return []
+
+        # Get all event seats to unblock
+        event_seats = []
+        for seat_id in command.event_seat_ids:
+            seat = await self.event_seat_repository.get_by_id(tenant_id, seat_id)
+            if not seat:
+                raise NotFoundError(f"Event seat {seat_id} not found")
+            if seat.event_id != command.event_id:
+                raise BusinessRuleError(f"Event seat {seat_id} does not belong to event {command.event_id}")
+            event_seats.append(seat)
+
+        # Unblock each seat
+        for seat in event_seats:
+            seat.unblock()
 
         # Save updated seats
         return await self.event_seat_repository.save_all(event_seats)

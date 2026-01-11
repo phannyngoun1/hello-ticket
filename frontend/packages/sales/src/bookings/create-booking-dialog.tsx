@@ -28,7 +28,7 @@ import {
 } from "@truths/ui";
 import { LayoutGrid, List } from "lucide-react";
 import { ShowService } from "@truths/ticketing/shows";
-import { EventService } from "@truths/ticketing/events";
+import { EventService, EventStatus } from "@truths/ticketing/events";
 import { useShows, useEvents } from "@truths/ticketing";
 import { useEvent } from "@truths/ticketing/events";
 import { LayoutService, useLayoutWithSeats } from "@truths/ticketing/layouts";
@@ -201,7 +201,10 @@ export function CreateBookingDialog({
     filter: selectedShowId ? { show_id: selectedShowId } : undefined,
     pagination: { page: 1, pageSize: 200 },
   });
-  const events = eventsData?.data || [];
+  // Filter to only show events that are on sale
+  const events = (eventsData?.data || []).filter(
+    (event) => event.status === EventStatus.ON_SALE
+  );
 
   // Fetch event data
   const { data: event } = useEvent(eventService, selectedEventId);
@@ -478,6 +481,13 @@ export function CreateBookingDialog({
       return;
     }
 
+    // Validate that the selected event is still on sale
+    const selectedEvent = events.find((e) => e.id === selectedEventId);
+    if (!selectedEvent || selectedEvent.status !== EventStatus.ON_SALE) {
+      alert("The selected event is no longer available for booking. Please select a different event.");
+      return;
+    }
+
     const data: CreateBookingTransactionData = {
       customerId: selectedCustomerId || undefined,
       salespersonId: selectedSalespersonId || undefined,
@@ -665,7 +675,7 @@ export function CreateBookingDialog({
                                   ).toLocaleDateString()}`
                                 : "Select an event";
                             })()
-                          : "Select an event"}
+                          : "Select an on-sale event"}
                       </span>
                       <svg
                         className="ml-2 h-4 w-4 shrink-0 opacity-50"
@@ -684,11 +694,11 @@ export function CreateBookingDialog({
                   <PopoverContent className="w-[400px] p-0" align="start">
                     <Command>
                       <CommandInput
-                        placeholder="Search events..."
+                        placeholder="Search on-sale events..."
                         className="h-9"
                       />
                       <CommandList>
-                        <CommandEmpty>No events found.</CommandEmpty>
+                        <CommandEmpty>No on-sale events found.</CommandEmpty>
                         <CommandGroup>
                           {events.map((event) => (
                             <CommandItem

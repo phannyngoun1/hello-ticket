@@ -96,6 +96,22 @@ class HoldEventSeatsCommand:
 
 
 @dataclass
+class UnholdEventSeatsCommand:
+    """Command to unhold event seats"""
+    event_id: str
+    tenant_id: str
+    event_seat_ids: List[str]
+
+
+@dataclass
+class UnblockEventSeatsCommand:
+    """Command to unblock event seats"""
+    event_id: str
+    tenant_id: str
+    event_seat_ids: List[str]
+
+
+@dataclass
 class BlockEventSeatsCommand:
     """Command to block event seats with a reason"""
     event_id: str

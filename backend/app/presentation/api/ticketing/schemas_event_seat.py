@@ -83,6 +83,16 @@ class HoldEventSeatsRequest(BaseModel):
     reason: Optional[str] = Field(None, description="Reason for holding the seats")
 
 
+class UnholdEventSeatsRequest(BaseModel):
+    """Request to unhold event seats"""
+    seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to unhold")
+
+
+class UnblockEventSeatsRequest(BaseModel):
+    """Request to unblock event seats"""
+    seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to unblock")
+
+
 class BlockEventSeatsRequest(BaseModel):
     """Request to block event seats with a reason"""
     seat_ids: List[str] = Field(..., min_items=1, description="List of event seat IDs to block")

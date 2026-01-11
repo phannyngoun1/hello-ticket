@@ -273,6 +273,48 @@ export function useHoldEventSeats(service: EventService) {
   });
 }
 
+export function useUnholdEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat[],
+    Error,
+    {
+      eventId: string;
+      seatIds: string[];
+    }
+  >({
+    mutationFn: ({ eventId, seatIds }) =>
+      service.unholdEventSeats(eventId, seatIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}
+
+export function useUnblockEventSeats(service: EventService) {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    EventSeat[],
+    Error,
+    {
+      eventId: string;
+      seatIds: string[];
+    }
+  >({
+    mutationFn: ({ eventId, seatIds }) =>
+      service.unblockEventSeats(eventId, seatIds),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["events", variables.eventId, "seats"],
+      });
+    },
+  });
+}
+
 export function useBlockEventSeats(service: EventService) {
   const queryClient = useQueryClient();
 

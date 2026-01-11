@@ -4,7 +4,7 @@
  * Displays event seats using Item components for management
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Button,
   Badge,
@@ -26,15 +26,19 @@ import {
   RefreshCw,
   Search,
   Trash2,
-  X,
   Filter,
   Ticket,
   Check,
   Plus,
   ShoppingCart,
+  Ban,
+  Pause,
+  Play,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
-import { ConfirmationDialog } from "@truths/custom-ui";
+import { ConfirmationDialog, ButtonTabs } from "@truths/custom-ui";
+import { HoldBlockSeatsDialog } from "./hold-block-seats-dialog";
 import {
   Item,
   ItemActions,
@@ -43,7 +47,6 @@ import {
   ItemTitle,
 } from "@truths/ui";
 import type { EventSeat, EventSeatStatus } from "./types";
-import { EventSeatStatus as EventSeatStatusEnum } from "./types";
 
 export interface EventSeatListProps {
   eventSeats: EventSeat[];
@@ -52,6 +55,10 @@ export interface EventSeatListProps {
   onDelete?: (seatIds: string[]) => void;
   onDeleteSeat?: (seatId: string) => void;
   onCreateTickets?: (seatIds: string[], ticketPrice: number) => void;
+  onHoldSeats?: (seatIds: string[], reason?: string) => void;
+  onUnholdSeats?: (seatIds: string[]) => void;
+  onUnblockSeats?: (seatIds: string[]) => void;
+  onBlockSeats?: (seatIds: string[], reason?: string) => void;
   className?: string;
   onSeatSelect?: (eventSeat: EventSeat, checked: boolean) => void;
   selectedSeatIds?: Set<string>;
@@ -68,6 +75,10 @@ export function EventSeatList({
   onDelete,
   onDeleteSeat,
   onCreateTickets,
+  onHoldSeats,
+  onUnholdSeats,
+  onUnblockSeats,
+  onBlockSeats,
   className,
   onSeatSelect,
   selectedSeatIds: externalSelectedSeatIds,
@@ -77,12 +88,20 @@ export function EventSeatList({
   bookedSeatIds = new Set(),
 }: EventSeatListProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Set<EventSeatStatus>>(
-    new Set()
+  const [activeTab, setActiveTab] = useState<EventSeatStatus>(
+    "available" as EventSeatStatus
   );
   const [sectionFilter, setSectionFilter] = useState<Set<string>>(new Set());
+
+  // Tab configuration for each status
+  const statusTabs = [
+    { value: "available" as EventSeatStatus, label: "Available", icon: Check },
+    { value: "reserved" as EventSeatStatus, label: "Reserved", icon: Calendar },
+    { value: "held" as EventSeatStatus, label: "Held", icon: Pause },
+    { value: "blocked" as EventSeatStatus, label: "Blocked", icon: Ban },
+    { value: "sold" as EventSeatStatus, label: "Sold", icon: Ticket },
+  ];
   const [sectionSearchQuery, setSectionSearchQuery] = useState("");
-  const [statusSearchQuery, setStatusSearchQuery] = useState("");
   const [internalSelectedSeatIds, setInternalSelectedSeatIds] = useState<
     Set<string>
   >(new Set());
@@ -94,6 +113,21 @@ export function EventSeatList({
     : externalSelectedSeatIds !== undefined
       ? externalSelectedSeatIds
       : internalSelectedSeatIds;
+
+  // Clear selection when tab changes
+  useEffect(() => {
+    if (externalSelectedSeatIds === undefined) {
+      setInternalSelectedSeatIds(new Set());
+    } else if (onSeatSelect) {
+      // Clear all selections by unchecking all currently selected seats
+      eventSeats.forEach((seat) => {
+        if (selectedSeatIds.has(seat.id)) {
+          onSeatSelect(seat, false);
+        }
+      });
+    }
+  }, [activeTab]);
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreatingTickets, setIsCreatingTickets] = useState(false);
@@ -102,6 +136,11 @@ export function EventSeatList({
   const [seatsForTicketCreation, setSeatsForTicketCreation] = useState<
     string[]
   >([]);
+  const [holdBlockDialogOpen, setHoldBlockDialogOpen] = useState(false);
+  const [holdBlockAction, setHoldBlockAction] = useState<
+    "hold" | "unhold" | "unblock" | "block"
+  >("hold");
+  const [isHoldingBlocking, setIsHoldingBlocking] = useState(false);
 
   // Get unique sections from event seats
   const sections = useMemo(() => {
@@ -114,27 +153,6 @@ export function EventSeatList({
     return Array.from(sectionSet).sort();
   }, [eventSeats]);
 
-  // Status options for multi-select (constant, defined outside useMemo)
-  const statusOptions: { label: string; value: EventSeatStatus }[] = useMemo(
-    () => [
-      {
-        label: EventSeatStatusEnum.AVAILABLE,
-        value: EventSeatStatusEnum.AVAILABLE,
-      },
-      {
-        label: EventSeatStatusEnum.RESERVED,
-        value: EventSeatStatusEnum.RESERVED,
-      },
-      { label: EventSeatStatusEnum.SOLD, value: EventSeatStatusEnum.SOLD },
-      { label: EventSeatStatusEnum.HELD, value: EventSeatStatusEnum.HELD },
-      {
-        label: EventSeatStatusEnum.BLOCKED,
-        value: EventSeatStatusEnum.BLOCKED,
-      },
-    ],
-    []
-  );
-
   // Filter sections by search query
   const filteredSections = useMemo(() => {
     if (!sectionSearchQuery.trim()) {
@@ -144,22 +162,11 @@ export function EventSeatList({
     return sections.filter((section) => section.toLowerCase().includes(query));
   }, [sections, sectionSearchQuery]);
 
-  // Filter status options by search query
-  const filteredStatusOptions = useMemo(() => {
-    if (!statusSearchQuery.trim()) {
-      return statusOptions;
-    }
-    const query = statusSearchQuery.toLowerCase();
-    return statusOptions.filter((option) =>
-      option.label.toLowerCase().includes(query)
-    );
-  }, [statusOptions, statusSearchQuery]);
-
   // Filter seats by status, section, and search query
   const filteredSeats = useMemo(() => {
     return eventSeats.filter((seat) => {
-      // Filter by status (if any statuses are selected)
-      if (statusFilter.size > 0 && !statusFilter.has(seat.status)) {
+      // Filter by active tab status
+      if (seat.status !== activeTab) {
         return false;
       }
 
@@ -183,21 +190,7 @@ export function EventSeatList({
         false
       );
     });
-  }, [eventSeats, statusFilter, sectionFilter, searchQuery]);
-
-  const handleStatusToggle = (status: EventSeatStatus) => {
-    const newFilter = new Set(statusFilter);
-    if (newFilter.has(status)) {
-      newFilter.delete(status);
-    } else {
-      newFilter.add(status);
-    }
-    setStatusFilter(newFilter);
-  };
-
-  const handleClearStatusFilter = () => {
-    setStatusFilter(new Set());
-  };
+  }, [eventSeats, activeTab, sectionFilter, searchQuery]);
 
   const handleSectionToggle = (section: string) => {
     const newFilter = new Set(sectionFilter);
@@ -284,9 +277,31 @@ export function EventSeatList({
     return statusUpper === "AVAILABLE";
   };
 
+  // Check if seat can be held/blocked (must be available and not already held/blocked)
+  const canSeatBeHeldOrBlocked = (seat: EventSeat): boolean => {
+    // Check seat status first - if already held or blocked, cannot be held/blocked again
+    const seatStatusUpper = String(seat.status).toUpperCase().trim();
+    if (seatStatusUpper === "HELD" || seatStatusUpper === "BLOCKED") {
+      return false;
+    }
+
+    // Check ticket status - seat must be available
+    if (seat.ticket_status) {
+      const ticketStatusUpper = String(seat.ticket_status).toUpperCase().trim();
+      return ticketStatusUpper === "AVAILABLE";
+    }
+
+    // Fall back to event-seat status
+    return seatStatusUpper === "AVAILABLE";
+  };
+
   const getStatusBadge = (status: EventSeatStatus, ticketStatus?: string) => {
-    // Use ticket status if available, otherwise use event-seat status
-    const displayStatus = ticketStatus || status;
+    // For held or blocked seats, always show the seat status (takes precedence over ticket status)
+    // For other seats, use ticket status if available, otherwise use event-seat status
+    const displayStatus =
+      status === "held" || status === "blocked"
+        ? status
+        : ticketStatus || status;
     const statusUpper = String(displayStatus).toUpperCase().trim();
 
     const variants: Record<
@@ -331,10 +346,12 @@ export function EventSeatList({
   const handleSelectAll = (checked: boolean) => {
     if (showAddToBooking) {
       // When in booking mode, use internal selection
-      // Only select seats that are not already booked
+      // Only select seats that are available and not already booked
       if (checked) {
         const selectableSeats = filteredSeats
-          .filter((seat) => !bookedSeatIds.has(seat.id))
+          .filter(
+            (seat) => isSeatAvailable(seat) && !bookedSeatIds.has(seat.id)
+          )
           .map((seat) => seat.id);
         setInternalSelectedSeatIds(new Set(selectableSeats));
       } else {
@@ -343,8 +360,12 @@ export function EventSeatList({
     } else if (externalSelectedSeatIds !== undefined) {
       // External control - notify parent
       filteredSeats.forEach((seat) => {
-        // Only select seats that are not already booked
-        if (!bookedSeatIds.has(seat.id) && onSeatSelect) {
+        // Only select seats that are available and not already booked
+        if (
+          isSeatAvailable(seat) &&
+          !bookedSeatIds.has(seat.id) &&
+          onSeatSelect
+        ) {
           onSeatSelect(seat, checked);
         }
       });
@@ -352,7 +373,9 @@ export function EventSeatList({
       // Internal control
       if (checked) {
         const selectableSeats = filteredSeats
-          .filter((seat) => !bookedSeatIds.has(seat.id))
+          .filter(
+            (seat) => isSeatAvailable(seat) && !bookedSeatIds.has(seat.id)
+          )
           .map((seat) => seat.id);
         setInternalSelectedSeatIds(new Set(selectableSeats));
       } else {
@@ -391,9 +414,36 @@ export function EventSeatList({
   };
 
   const handleDeleteSelected = () => {
-    if (selectedSeatIds.size > 0) {
-      setDeleteConfirmOpen(true);
+    if (selectedSeatIds.size === 0) return;
+
+    // Filter to only available seats that can be deleted
+    const availableSeatIds = Array.from(selectedSeatIds).filter((seatId) => {
+      const seat = eventSeats.find((s) => s.id === seatId);
+      return seat && seat.status === "available";
+    });
+
+    if (availableSeatIds.length === 0) {
+      // No available seats selected, show error or do nothing
+      return;
     }
+
+    // Update selection to only include available seats
+    if (externalSelectedSeatIds === undefined) {
+      setInternalSelectedSeatIds(new Set(availableSeatIds));
+    } else if (onSeatSelect) {
+      // Clear selections for non-available seats
+      selectedSeatIds.forEach((seatId) => {
+        const seat = eventSeats.find((s) => s.id === seatId);
+        if (!seat || seat.status !== "available") {
+          const seatObj = eventSeats.find((s) => s.id === seatId);
+          if (seatObj) {
+            onSeatSelect(seatObj, false);
+          }
+        }
+      });
+    }
+
+    setDeleteConfirmOpen(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -474,6 +524,64 @@ export function EventSeatList({
     }
   };
 
+  const handleHoldSeatsClick = () => {
+    if (selectedSeatIds.size === 0 || !onHoldSeats) return;
+    setHoldBlockAction("hold");
+    setHoldBlockDialogOpen(true);
+  };
+
+  const handleUnholdSeatsClick = () => {
+    if (selectedSeatIds.size === 0 || !onUnholdSeats) return;
+    setHoldBlockAction("unhold");
+    setHoldBlockDialogOpen(true);
+  };
+
+  const handleUnblockSeatsClick = () => {
+    if (selectedSeatIds.size === 0 || !onUnblockSeats) return;
+    setHoldBlockAction("unblock");
+    setHoldBlockDialogOpen(true);
+  };
+
+  const handleBlockSeatsClick = () => {
+    if (selectedSeatIds.size === 0 || !onBlockSeats) return;
+    setHoldBlockAction("block");
+    setHoldBlockDialogOpen(true);
+  };
+
+  const handleHoldBlockConfirm = async (reason?: string) => {
+    if (selectedSeatIds.size === 0) return;
+
+    setIsHoldingBlocking(true);
+    setHoldBlockDialogOpen(false);
+    try {
+      const seatIds = Array.from(selectedSeatIds);
+      if (holdBlockAction === "hold" && onHoldSeats) {
+        await onHoldSeats(seatIds, reason);
+      } else if (holdBlockAction === "unhold" && onUnholdSeats) {
+        await onUnholdSeats(seatIds);
+      } else if (holdBlockAction === "unblock" && onUnblockSeats) {
+        await onUnblockSeats(seatIds);
+      } else if (holdBlockAction === "block" && onBlockSeats) {
+        await onBlockSeats(seatIds, reason);
+      }
+      // Clear selection after hold/block
+      if (externalSelectedSeatIds === undefined) {
+        setInternalSelectedSeatIds(new Set());
+      } else if (onSeatSelect) {
+        // Clear all selections by unchecking all
+        eventSeats.forEach((seat) => {
+          if (selectedSeatIds.has(seat.id)) {
+            onSeatSelect(seat, false);
+          }
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to ${holdBlockAction} seats:`, error);
+    } finally {
+      setIsHoldingBlocking(false);
+    }
+  };
+
   // Calculate allSelected - only consider selectable seats (available and not already booked)
   const selectableSeats = useMemo(() => {
     return filteredSeats.filter((seat) => {
@@ -519,6 +627,14 @@ export function EventSeatList({
 
   return (
     <div className={cn("space-y-4 min-w-0", className)}>
+      {/* Status Tabs */}
+      <ButtonTabs
+        tabs={statusTabs}
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as EventSeatStatus)}
+        className="mb-4"
+      />
+
       {/* Search, Filter and Actions */}
       <div className="flex items-center gap-2 min-w-0 flex-wrap">
         <div className="relative flex-1 min-w-0 max-w-xs">
@@ -604,80 +720,6 @@ export function EventSeatList({
             </Command>
           </PopoverContent>
         </Popover>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 flex-shrink-0 justify-start gap-1"
-            >
-              <Filter className="h-3 w-3" />
-              <span className="text-[10px] whitespace-nowrap">
-                {statusFilter.size === 0
-                  ? "Status"
-                  : statusFilter.size === 1
-                    ? Array.from(statusFilter)[0].slice(0, 6)
-                    : `${statusFilter.size}`}
-              </span>
-              {statusFilter.size > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="rounded-sm px-0.5 py-0 text-[9px] font-normal h-3 ml-0.5"
-                >
-                  {statusFilter.size}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0" align="start">
-            <Command>
-              <CommandInput
-                placeholder="Search statuses..."
-                value={statusSearchQuery}
-                onValueChange={setStatusSearchQuery}
-              />
-              <CommandList>
-                <CommandEmpty>No statuses found.</CommandEmpty>
-                <CommandGroup>
-                  {filteredStatusOptions.map((option) => {
-                    const isSelected = statusFilter.has(option.value);
-                    return (
-                      <CommandItem
-                        key={option.value}
-                        onSelect={() => handleStatusToggle(option.value)}
-                      >
-                        <div
-                          className={cn(
-                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                            isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "opacity-50 [&_svg]:invisible"
-                          )}
-                        >
-                          <Check className="h-3 w-3" />
-                        </div>
-                        <span>{option.label}</span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-                {statusFilter.size > 0 && (
-                  <>
-                    <Separator />
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={handleClearStatusFilter}
-                        className="justify-center text-center"
-                      >
-                        Clear filters
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
         {onRefresh && (
           <Button
             onClick={onRefresh}
@@ -693,37 +735,71 @@ export function EventSeatList({
       {/* Selection Bars */}
       {selectedSeatIds.size > 0 &&
         (() => {
-          // Find selected seats without tickets
-          const selectedSeatsWithoutTickets = Array.from(
-            selectedSeatIds
-          ).filter((seatId) => {
+          // Calculate all available actions for selected seats
+          const selectedSeatsArray = Array.from(selectedSeatIds);
+
+          // Count different types of seats
+          const availableSeats = selectedSeatsArray.filter((seatId) => {
+            const seat = eventSeats.find((s) => s.id === seatId);
+            return seat && seat.status === "available";
+          });
+
+          const seatsWithoutTickets = selectedSeatsArray.filter((seatId) => {
             const seat = eventSeats.find((s) => s.id === seatId);
             return seat && !seat.ticket_number;
           });
-          const seatsWithoutTicketsCount = selectedSeatsWithoutTickets.length;
-          const hasSeatsWithoutTickets = seatsWithoutTicketsCount > 0;
+
+          const heldSeats = selectedSeatsArray.filter((seatId) => {
+            const seat = eventSeats.find((s) => s.id === seatId);
+            return seat && seat.status === "held";
+          });
+
+          const blockedSeats = selectedSeatsArray.filter((seatId) => {
+            const seat = eventSeats.find((s) => s.id === seatId);
+            return seat && seat.status === "blocked";
+          });
+
+          const holdableSeats = selectedSeatsArray.filter((seatId) => {
+            const seat = eventSeats.find((s) => s.id === seatId);
+            return seat && canSeatBeHeldOrBlocked(seat);
+          });
+
+          // Determine which actions are available
+          const canAddToBooking =
+            showAddToBooking && onAddToBooking && selectedSeatIds.size > 0;
+          const canCreateTickets =
+            onCreateTickets && seatsWithoutTickets.length > 0;
+          const canHold = onHoldSeats && holdableSeats.length > 0;
+          const canBlock = onBlockSeats && holdableSeats.length > 0;
+          const canUnhold = onUnholdSeats && heldSeats.length > 0;
+          const canUnblock = onUnblockSeats && blockedSeats.length > 0;
+          const canDelete =
+            (onDelete || onDeleteSeat) && availableSeats.length > 0;
+
+          // If no actions are available, return null
+          if (
+            !canAddToBooking &&
+            !canCreateTickets &&
+            !canHold &&
+            !canBlock &&
+            !canUnhold &&
+            !canUnblock &&
+            !canDelete
+          ) {
+            return null;
+          }
 
           return (
             <div className="space-y-2">
-              {/* Add to Booking Bar - Show when showAddToBooking is true */}
-              {showAddToBooking && onAddToBooking && (
-                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
-                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                    {selectedSeatIds.size} seat
-                    {selectedSeatIds.size !== 1 ? "s" : ""} selected
-                  </span>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setInternalSelectedSeatIds(new Set());
-                      }}
-                      className="h-7 px-2 text-xs"
-                      title="Clear selection"
-                    >
-                      Clear
-                    </Button>
+              {/* Merged Action Bar - Shows all applicable actions in one line */}
+              <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
+                <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
+                  {selectedSeatIds.size} seat
+                  {selectedSeatIds.size !== 1 ? "s" : ""} selected
+                </span>
+                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+                  {/* Add to Booking */}
+                  {canAddToBooking && (
                     <Button
                       variant="default"
                       size="sm"
@@ -740,8 +816,8 @@ export function EventSeatList({
                           }
                         }
                       }}
-                      className="h-7 px-3 gap-1.5"
-                      title="Add selected seats to booking"
+                      className="h-7 w-7 p-0"
+                      title={`Add ${selectedSeatIds.size} seat${selectedSeatIds.size !== 1 ? "s" : ""} to booking`}
                       disabled={
                         selectedSeatIds.size === 0 ||
                         Array.from(selectedSeatIds).every((seatId) =>
@@ -749,84 +825,99 @@ export function EventSeatList({
                         )
                       }
                     >
-                      <ShoppingCart className="h-3.5 w-3.5" />
-                      <span className="text-xs">Add to Booking</span>
+                      <ShoppingCart className="h-4 w-4" />
                     </Button>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Create Tickets Bar - Only for seats without tickets */}
-              {hasSeatsWithoutTickets && onCreateTickets && (
-                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20 min-w-0">
-                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                    {seatsWithoutTicketsCount} seat
-                    {seatsWithoutTicketsCount !== 1 ? "s" : ""} without ticket
-                    {seatsWithoutTicketsCount !== 1 ? "s" : ""} selected
-                  </span>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Create Tickets */}
+                  {canCreateTickets && (
                     <Button
-                      variant="default"
+                      variant="outline"
                       size="sm"
                       onClick={handleCreateTicketsClick}
                       disabled={isCreatingTickets}
-                      className="h-7 px-3 gap-1.5"
-                      title="Create tickets for selected seats without tickets"
+                      className="h-7 w-7 p-0"
+                      title={`Create tickets for ${seatsWithoutTickets.length} seat${seatsWithoutTickets.length !== 1 ? "s" : ""} without tickets`}
                     >
                       <Ticket
                         className={cn(
-                          "h-3.5 w-3.5",
+                          "h-4 w-4",
                           isCreatingTickets && "animate-spin"
                         )}
                       />
-                      <span className="text-xs">Create Tickets</span>
                     </Button>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* Delete Action Bar - For all selected seats */}
-              {!showAddToBooking && (
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border min-w-0">
-                  <span className="text-sm font-medium truncate flex-shrink-0 min-w-0">
-                    {selectedSeatIds.size} seat
-                    {selectedSeatIds.size !== 1 ? "s" : ""} selected
-                  </span>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (externalSelectedSeatIds === undefined) {
-                          setInternalSelectedSeatIds(new Set());
-                        } else if (onSeatSelect) {
-                          // Clear all selections by unchecking all
-                          eventSeats.forEach((seat) => {
-                            if (selectedSeatIds.has(seat.id)) {
-                              onSeatSelect(seat, false);
-                            }
-                          });
-                        }
-                      }}
-                      className="h-7 w-7 p-0 rounded-r-none border-r-0"
-                      title="Clear all selection"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                    {(onDelete || onDeleteSeat) && (
+                  {/* Hold/Block Actions */}
+                  <div className="flex items-center gap-1">
+                    {canHold && (
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
-                        onClick={handleDeleteSelected}
-                        className="h-7 w-7 p-0 rounded-l-none"
-                        title="Delete selected"
+                        onClick={handleHoldSeatsClick}
+                        disabled={isHoldingBlocking}
+                        className="h-7 w-7 p-0 border-orange-300 text-orange-700 hover:bg-orange-100"
+                        title={`Hold ${holdableSeats.length} seat${holdableSeats.length !== 1 ? "s" : ""}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Pause className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canBlock && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBlockSeatsClick}
+                        disabled={isHoldingBlocking}
+                        className="h-7 w-7 p-0 border-orange-300 text-orange-700 hover:bg-orange-100"
+                        title={`Block ${holdableSeats.length} seat${holdableSeats.length !== 1 ? "s" : ""}`}
+                      >
+                        <Ban className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
+
+                  {/* Unhold/Unblock Actions */}
+                  <div className="flex items-center gap-1">
+                    {canUnhold && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUnholdSeatsClick}
+                        disabled={isHoldingBlocking}
+                        className="h-7 w-7 p-0 border-green-300 text-green-700 hover:bg-green-100"
+                        title={`Unhold ${heldSeats.length} seat${heldSeats.length !== 1 ? "s" : ""}`}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canUnblock && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUnblockSeatsClick}
+                        disabled={isHoldingBlocking}
+                        className="h-7 w-7 p-0 border-blue-300 text-blue-700 hover:bg-blue-100"
+                        title={`Unblock ${blockedSeats.length} seat${blockedSeats.length !== 1 ? "s" : ""}`}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Delete Action */}
+                  {canDelete && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleDeleteSelected}
+                      className="h-7 w-7 p-0"
+                      title={`Delete ${availableSeats.length} available seat${availableSeats.length !== 1 ? "s" : ""}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           );
         })()}
@@ -946,8 +1037,9 @@ export function EventSeatList({
                             </ItemDescription>
                           )}
                         </div>
-                        {showAddToBooking && (
-                          <ItemActions className="flex-shrink-0">
+                        {/* Individual seat actions */}
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {showAddToBooking && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -971,8 +1063,180 @@ export function EventSeatList({
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
-                          </ItemActions>
-                        )}
+                          )}
+
+                          {/* Individual hold action */}
+                          {!showAddToBooking &&
+                            onHoldSeats &&
+                            canSeatBeHeldOrBlocked(seat) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Hold this individual seat
+                                  setHoldBlockAction("hold");
+                                  setHoldBlockDialogOpen(true);
+                                  // Set selection to just this seat for the dialog
+                                  if (externalSelectedSeatIds === undefined) {
+                                    setInternalSelectedSeatIds(
+                                      new Set([seat.id])
+                                    );
+                                  } else if (onSeatSelect) {
+                                    // Clear current selection and select only this seat
+                                    eventSeats.forEach((s) => {
+                                      if (
+                                        s.id !== seat.id &&
+                                        selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(s, false);
+                                      } else if (
+                                        s.id === seat.id &&
+                                        !selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(seat, true);
+                                      }
+                                    });
+                                  }
+                                }}
+                                className="h-7 w-7 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                aria-label="Hold seat"
+                                title="Temporarily hold this seat"
+                                disabled={isHoldingBlocking}
+                              >
+                                <Pause className="h-4 w-4" />
+                              </Button>
+                            )}
+
+                          {/* Individual unhold action */}
+                          {!showAddToBooking &&
+                            onUnholdSeats &&
+                            seat.status === "held" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Unhold this individual seat
+                                  setHoldBlockAction("unhold");
+                                  setHoldBlockDialogOpen(true);
+                                  // Set selection to just this seat for the dialog
+                                  if (externalSelectedSeatIds === undefined) {
+                                    setInternalSelectedSeatIds(
+                                      new Set([seat.id])
+                                    );
+                                  } else if (onSeatSelect) {
+                                    // Clear current selection and select only this seat
+                                    eventSeats.forEach((s) => {
+                                      if (
+                                        s.id !== seat.id &&
+                                        selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(s, false);
+                                      } else if (
+                                        s.id === seat.id &&
+                                        !selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(seat, true);
+                                      }
+                                    });
+                                  }
+                                }}
+                                className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                aria-label="Unhold seat"
+                                title="Release this held seat"
+                                disabled={isHoldingBlocking}
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            )}
+
+                          {/* Individual unblock action */}
+                          {!showAddToBooking &&
+                            onUnblockSeats &&
+                            seat.status === "blocked" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Unblock this individual seat
+                                  setHoldBlockAction("unblock");
+                                  setHoldBlockDialogOpen(true);
+                                  // Set selection to just this seat for the dialog
+                                  if (externalSelectedSeatIds === undefined) {
+                                    setInternalSelectedSeatIds(
+                                      new Set([seat.id])
+                                    );
+                                  } else if (onSeatSelect) {
+                                    // Clear current selection and select only this seat
+                                    eventSeats.forEach((s) => {
+                                      if (
+                                        s.id !== seat.id &&
+                                        selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(s, false);
+                                      } else if (
+                                        s.id === seat.id &&
+                                        !selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(seat, true);
+                                      }
+                                    });
+                                  }
+                                }}
+                                className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                aria-label="Unblock seat"
+                                title="Unblock this blocked seat"
+                                disabled={isHoldingBlocking}
+                              >
+                                <Play className="h-4 w-4" />
+                              </Button>
+                            )}
+
+                          {/* Individual block action */}
+                          {!showAddToBooking &&
+                            onBlockSeats &&
+                            canSeatBeHeldOrBlocked(seat) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Block this individual seat
+                                  setHoldBlockAction("block");
+                                  setHoldBlockDialogOpen(true);
+                                  // Set selection to just this seat for the dialog
+                                  if (externalSelectedSeatIds === undefined) {
+                                    setInternalSelectedSeatIds(
+                                      new Set([seat.id])
+                                    );
+                                  } else if (onSeatSelect) {
+                                    // Clear current selection and select only this seat
+                                    eventSeats.forEach((s) => {
+                                      if (
+                                        s.id !== seat.id &&
+                                        selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(s, false);
+                                      } else if (
+                                        s.id === seat.id &&
+                                        !selectedSeatIds.has(s.id)
+                                      ) {
+                                        onSeatSelect(seat, true);
+                                      }
+                                    });
+                                  }
+                                }}
+                                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                aria-label="Block seat"
+                                title="Permanently block this seat"
+                                disabled={isHoldingBlocking}
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            )}
+                        </div>
                       </div>
                     </ItemContent>
                   </Item>
@@ -991,9 +1255,10 @@ export function EventSeatList({
         description={
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete {selectedSeatIds.size} seat
-              {selectedSeatIds.size !== 1 ? "s" : ""}? This action cannot be
-              undone.
+              Are you sure you want to delete {selectedSeatIds.size} available
+              seat
+              {selectedSeatIds.size !== 1 ? "s" : ""}? Only available seats can
+              be deleted. This action cannot be undone.
             </p>
             {selectedSeatIds.size <= 5 && (
               <div className="text-xs text-muted-foreground mt-2">
@@ -1087,6 +1352,16 @@ export function EventSeatList({
           },
           disabled: isCreatingTickets,
         }}
+      />
+
+      {/* Hold/Block Seats Dialog */}
+      <HoldBlockSeatsDialog
+        isOpen={holdBlockDialogOpen}
+        onOpenChange={setHoldBlockDialogOpen}
+        availableSeatIds={selectedSeatIds}
+        action={holdBlockAction}
+        onConfirm={handleHoldBlockConfirm}
+        isLoading={isHoldingBlocking}
       />
     </div>
   );
