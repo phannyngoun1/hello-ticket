@@ -24,7 +24,7 @@ export function EventDetailSheet({
         className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0"
         style={{ width: "600px", maxWidth: "740px" }}
       >
-        <SheetHeader className="px-6 py-4 ml-6 border-b">
+        <SheetHeader className="px-6 py-2 ml-6 border-b">
           <SheetTitle>{data?.title || "Event Details"}</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto pl-6 pr-8">
