@@ -13,14 +13,21 @@ import {
   Settings,
   Info,
   Package,
+  Eye,
 } from "lucide-react";
 import type { Event, EventConfigurationType } from "./types";
 import { EventConfigurationType as EventConfigurationTypeEnum } from "./types";
 import { useShow, useShowService } from "../shows";
 import { useLayout, useLayoutService } from "../layouts";
 import { useState } from "react";
-import { EventInventoryList } from "./event-inventory-list";
-import { ButtonTabs } from "@truths/custom-ui";
+import { EventSeatListViewOnly } from "./event-seat-list-view-only";
+import { useEventSeats } from "./use-events";
+import { useEventService } from "./event-provider";
+import {
+  ButtonTabs,
+  DescriptionList,
+  DescriptionItem,
+} from "@truths/custom-ui";
 import type { ButtonTabItem } from "@truths/custom-ui";
 
 export interface EventDetailProps {
@@ -36,11 +43,12 @@ export function EventDetail({
   loading = false,
   error = null,
 }: EventDetailProps) {
-  const [activeTab, setActiveTab] = useState<"information" | "inventory">(
-    "information"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "information" | "inventory" | "inventory-view"
+  >("information");
   const showService = useShowService();
   const layoutService = useLayoutService();
+  const eventService = useEventService();
 
   // Fetch show and layout data
   const { data: showData } = useShow(showService, data?.show_id || null);
@@ -48,6 +56,14 @@ export function EventDetail({
     layoutService,
     data?.layout_id || null
   );
+
+  // Fetch event seats for view-only tab
+  const {
+    data: eventSeatsData,
+    isLoading: seatsLoading,
+    refetch: refetchSeats,
+  } = useEventSeats(eventService, data?.id, { skip: 0, limit: 1000 });
+  const eventSeats = eventSeatsData?.data || [];
 
   const formatDate = (value?: Date | string) => {
     if (!value) return "N/A";
@@ -136,17 +152,17 @@ export function EventDetail({
       label: "Information",
       icon: Info,
     },
+
     {
-      value: "inventory",
+      value: "inventory-view",
       label: "Inventory",
-      icon: Package,
+      icon: Eye,
     },
   ];
 
   return (
     <Card className={cn("p-6", className)}>
       <div>
-
         <ButtonTabs
           tabs={tabs}
           value={activeTab}
@@ -156,123 +172,91 @@ export function EventDetail({
             <div className="mt-0">
               {/* Profile Tab - Keep mounted but hide when inactive */}
               <div
-                className={cn("space-y-6", activeTab !== "information" && "hidden")}
+                className={cn(
+                  "space-y-6",
+                  activeTab !== "information" && "hidden"
+                )}
               >
-                <div className="pb-6 border-b">
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Event Information
-                  </h3>
-                  <dl className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                        <Calendar className="h-4 w-4 text-primary" />
-                        Start Date & Time
-                      </dt>
-                      <dd className="text-sm text-muted-foreground">
-                        {formatDate(data.start_dt)}
-                      </dd>
-                    </div>
+                <DescriptionList
+                  title="Event Information"
+                  columns={2}
+                  className="pb-6 border-b"
+                >
+                  <DescriptionItem
+                    label="Start Date & Time"
+                    value={formatDate(data.start_dt)}
+                    icon={Calendar}
+                  />
+                  <DescriptionItem
+                    label="Duration"
+                    value={formatDuration(data.duration_minutes)}
+                    icon={Clock}
+                  />
+                </DescriptionList>
 
-                    <div className="flex items-center gap-2">
-                      <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                        <Clock className="h-4 w-4 text-primary" />
-                        Duration
-                      </dt>
-                      <dd className="text-sm text-muted-foreground">
-                        {formatDuration(data.duration_minutes)}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
+                <DescriptionList
+                  title="Location & Configuration"
+                  columns={2}
+                  className="pb-6 border-b"
+                >
+                  <DescriptionItem
+                    label="Layout"
+                    value={
+                      layoutData?.name ||
+                      (data.layout_id ? formatFieldValue(data.layout_id) : null)
+                    }
+                  />
+                  <DescriptionItem
+                    label="Show"
+                    value={
+                      showData?.name ||
+                      showData?.code ||
+                      formatFieldValue(data.show_id)
+                    }
+                  />
+                  <DescriptionItem
+                    label="Configuration Type"
+                    value={formatConfigurationType(data.configuration_type)}
+                    icon={Settings}
+                  />
+                </DescriptionList>
 
-                <div className="pb-6 border-b">
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Location & Configuration
-                  </h3>
-                  <dl className="space-y-3">
-                    {data.layout_id && (
-                      <div className="flex items-center gap-2">
-                        <dt className="text-sm font-medium min-w-[140px]">
-                          Layout
-                        </dt>
-                        <dd className="text-sm text-muted-foreground">
-                          {layoutData?.name || formatFieldValue(data.layout_id)}
-                        </dd>
-                      </div>
-                    )}
+                <DescriptionList
+                  title="Timeline"
+                  columns={2}
+                  className="pb-6 border-b"
+                >
+                  <DescriptionItem
+                    label="Created"
+                    value={data.created_at ? formatDate(data.created_at) : null}
+                  />
+                  <DescriptionItem
+                    label="Last Updated"
+                    value={data.updated_at ? formatDate(data.updated_at) : null}
+                  />
+                </DescriptionList>
 
-                    <div className="flex items-center gap-2">
-                      <dt className="text-sm font-medium min-w-[140px]">Show</dt>
-                      <dd className="text-sm text-muted-foreground">
-                        {showData?.name ||
-                          showData?.code ||
-                          formatFieldValue(data.show_id)}
-                      </dd>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <dt className="text-sm font-medium flex items-center gap-2 min-w-[140px]">
-                        <Settings className="h-4 w-4 text-primary" />
-                        Configuration Type
-                      </dt>
-                      <dd className="text-sm text-muted-foreground">
-                        {formatConfigurationType(data.configuration_type)}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="pb-6 border-b">
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                    Timeline
-                  </h3>
-                  <dl className="space-y-3">
-                    {data.created_at && (
-                      <div className="flex items-center gap-2">
-                        <dt className="text-sm font-medium min-w-[140px]">
-                          Created
-                        </dt>
-                        <dd className="text-sm text-muted-foreground">
-                          {formatDate(data.created_at)}
-                        </dd>
-                      </div>
-                    )}
-                    {data.updated_at && (
-                      <div className="flex items-center gap-2">
-                        <dt className="text-sm font-medium min-w-[140px]">
-                          Last Updated
-                        </dt>
-                        <dd className="text-sm text-muted-foreground">
-                          {formatDate(data.updated_at)}
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
-
-                <div className="pt-6 border-t mt-6">
-                  <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
-                    <Database className="h-4 w-4 text-primary" />
-                    System Metadata
-                  </h3>
-                  <dl className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <dt className="text-sm font-medium min-w-[140px]">
-                        Tenant ID
-                      </dt>
-                      <dd className="text-sm text-muted-foreground font-mono">
-                        {formatFieldValue(data.tenant_id)}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
+                <DescriptionList
+                  title="System Metadata"
+                  icon={Database}
+                  columns={2}
+                  className="pt-6 border-t mt-6"
+                >
+                  <DescriptionItem
+                    label="Tenant ID"
+                    value={formatFieldValue(data.tenant_id)}
+                    valueClassName="font-mono"
+                  />
+                </DescriptionList>
               </div>
 
-              {/* Inventory Tab - Keep mounted but hide when inactive */}
-              <div className={cn(activeTab !== "inventory" && "hidden")}>
-                {data?.id && (
-                  <EventInventoryList eventId={data.id} className="border-0 shadow-none" />
-                )}
+              {/* Inventory View Tab - View only mode without status tabs */}
+              <div className={cn(activeTab !== "inventory-view" && "hidden")}>
+                <EventSeatListViewOnly
+                  eventSeats={eventSeats}
+                  isLoading={seatsLoading}
+                  onRefresh={refetchSeats}
+                />
               </div>
             </div>
           )}
