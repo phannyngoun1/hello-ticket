@@ -536,11 +536,10 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     {} as Record<string, AppTab[]>
   );
 
-  // Hide tabs if disabled by user preference or if there's only one tab (but not in inline mode)
+  // Hide tabs if disabled by user preference
   // Also hide if inline mode is requested but tab position is separate
   if (
     !tabsEnabled ||
-    (tabs.length <= 1 && !inline) ||
     (inline && tabPosition !== "inline")
   ) {
     return null;
