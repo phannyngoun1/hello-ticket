@@ -18,7 +18,7 @@ export function EventDetailSheet({
   error,
 }: EventDetailSheetProps) {
   return (
-    <Sheet open={open}  onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
         className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0"
@@ -27,7 +27,7 @@ export function EventDetailSheet({
         <SheetHeader className="px-6 py-4 ml-6 border-b">
           <SheetTitle>{data?.title || "Event Details"}</SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto pl-6 pr-8">
           <EventDetail
             data={data}
             loading={loading}

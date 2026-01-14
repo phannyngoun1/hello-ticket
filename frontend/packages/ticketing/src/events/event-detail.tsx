@@ -6,15 +6,7 @@
 
 import { Card } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import {
-  Calendar,
-  Clock,
-  Database,
-  Settings,
-  Info,
-  Package,
-  Eye,
-} from "lucide-react";
+import { Calendar, Clock, Database, Settings, Info, Eye } from "lucide-react";
 import type { Event, EventConfigurationType } from "./types";
 import { EventConfigurationType as EventConfigurationTypeEnum } from "./types";
 import { useShow, useShowService } from "../shows";
