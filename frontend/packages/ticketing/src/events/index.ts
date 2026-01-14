@@ -13,6 +13,7 @@ export * from "./event-detail";
 export * from "./event-inventory";
 export * from "./event-inventory-viewer";
 export * from "./event-seat-list";
+export * from "./event-seat-list-view-only";
 export * from "./create-event-dialog";
 export * from "./edit-event-dialog";
 
