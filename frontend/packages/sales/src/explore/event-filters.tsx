@@ -1,4 +1,5 @@
-import { Search, X, ListFilter } from "lucide-react";
+import { useState } from "react";
+import { Search, X, ListFilter, Play, CalendarClock } from "lucide-react";
 import {
   Input,
   Button,
@@ -11,13 +12,20 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from "@truths/ui";
-import { type EventStatus, EventStatus as EventStatusEnum } from "@truths/ticketing";
+import { type EventStatus, EventStatus as EventStatusEnum, type Event } from "@truths/ticketing";
+import { cn } from "@truths/ui/lib/utils";
 
 export interface DateFilter {
   startDate: string | null;
   endDate: string | null;
 }
+
+const NOW_SHOWING_DAYS = 21;
 
 interface EventFiltersProps {
   search: string;
@@ -29,6 +37,10 @@ interface EventFiltersProps {
   showPastEvents: boolean;
   onShowPastEventsChange: (value: boolean) => void;
   onClearFilters: () => void;
+  /** Events used to build Now Showing (days) and Coming Soon (months) timeline options. */
+  events?: Event[];
+  /** Called when the user selects from the timeline (Now Showing / Coming Soon) or clears it. Used to apply status: on_sale for Now Showing, published for Coming Soon. */
+  onTimelineSourceChange?: (source: "now-showing" | "coming-soon" | null) => void;
 }
 
 export function EventFilters({
@@ -41,6 +53,8 @@ export function EventFilters({
   showPastEvents,
   onShowPastEventsChange,
   onClearFilters,
+  events = [],
+  onTimelineSourceChange,
 }: EventFiltersProps) {
   const hasActiveFilters =
     search ||
@@ -60,6 +74,82 @@ export function EventFilters({
   const formatStatus = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " ");
   };
+
+  const toYMD = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  // Now Showing: distinct days with ON_SALE events from today through the next NOW_SHOWING_DAYS
+  const nowShowingDays = (() => {
+    const onSale = events.filter((e) => e.status === EventStatusEnum.ON_SALE);
+    if (!onSale.length) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setDate(end.getDate() + NOW_SHOWING_DAYS);
+    const set = new Set<string>();
+    for (const e of onSale) {
+      const d = new Date(e.start_dt);
+      d.setHours(0, 0, 0, 0);
+      if (d >= today && d <= end) set.add(toYMD(d));
+    }
+    return Array.from(set).sort();
+  })();
+
+  // Coming Soon: distinct (year, month) with PUBLISHED events where the month is current or future
+  const comingSoonMonths = (() => {
+    const published = events.filter((e) => e.status === EventStatusEnum.PUBLISHED);
+    if (!published.length) return [];
+    const today = new Date();
+    const curYear = today.getFullYear();
+    const curMonth = today.getMonth();
+    const set = new Set<string>();
+    for (const e of published) {
+      const d = new Date(e.start_dt);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      if (y > curYear || (y === curYear && m >= curMonth))
+        set.add(`${y}-${m}`);
+    }
+    return Array.from(set).sort();
+  })();
+
+  const isToday = (dateStr: string) => dateStr === toYMD(new Date());
+
+  const isDaySelected = (dayStr: string) =>
+    !!dateFilter.startDate &&
+    dateFilter.startDate === dayStr &&
+    dateFilter.endDate === dayStr;
+
+  const isMonthSelected = (ym: string) => {
+    const [y, m] = ym.split("-").map(Number);
+    const first = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    const last = new Date(y, m + 1, 0).getDate();
+    const lastStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+    return dateFilter.startDate === first && dateFilter.endDate === lastStr;
+  };
+
+  const onDaySelect = (dayStr: string) => {
+    onDateFilterChange({ startDate: dayStr, endDate: dayStr });
+    onTimelineSourceChange?.("now-showing");
+  };
+  const onMonthSelect = (ym: string) => {
+    const [y, m] = ym.split("-").map(Number);
+    const first = `${y}-${String(m + 1).padStart(2, "0")}-01`;
+    const last = new Date(y, m + 1, 0).getDate();
+    const lastStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(last).padStart(2, "0")}`;
+    onDateFilterChange({ startDate: first, endDate: lastStr });
+    onTimelineSourceChange?.("coming-soon");
+  };
+  const clearTimeline = (tab: "now-showing" | "coming-soon") => {
+    onDateFilterChange({ ...dateFilter, startDate: null, endDate: null });
+    onTimelineSourceChange?.(tab);
+  };
+
+  const hasTimelineSelection =
+    dateFilter.startDate != null && dateFilter.endDate != null;
+
+  const [timelineTab, setTimelineTab] = useState<"now-showing" | "coming-soon">("now-showing");
+  const hasBoth = nowShowingDays.length > 0 && comingSoonMonths.length > 0;
 
   return (
     <div className="space-y-3">
@@ -118,12 +208,13 @@ export function EventFilters({
                                 <Input
                                     type="date"
                                     value={dateFilter.startDate || ""}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                         onDateFilterChange({
                                             ...dateFilter,
                                             startDate: e.target.value || null,
-                                        })
-                                    }
+                                        });
+                                        onTimelineSourceChange?.(null);
+                                    }}
                                     className="w-full"
                                 />
                             </div>
@@ -132,12 +223,13 @@ export function EventFilters({
                                 <Input
                                     type="date"
                                     value={dateFilter.endDate || ""}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                         onDateFilterChange({
                                             ...dateFilter,
                                             endDate: e.target.value || null,
-                                        })
-                                    }
+                                        });
+                                        onTimelineSourceChange?.(null);
+                                    }}
                                     min={dateFilter.startDate || undefined}
                                     className="w-full"
                                 />
@@ -176,6 +268,125 @@ export function EventFilters({
         </Popover>
       </div>
 
+      {/* Timeline filters: Now Showing (days) + Coming Soon (months) as tab list */}
+      {events.length > 0 && (nowShowingDays.length > 0 || comingSoonMonths.length > 0) && (
+        <div
+          className="rounded-lg border border-l-[3px] border-l-primary/40 bg-muted/30 px-4 py-3"
+          aria-label="Timeline filters"
+        >
+          {hasBoth ? (
+            <Tabs
+              value={timelineTab}
+              onValueChange={(v) => {
+                const src = v as "now-showing" | "coming-soon";
+                setTimelineTab(src);
+                onTimelineSourceChange?.(src);
+                onDateFilterChange({ ...dateFilter, startDate: null, endDate: null });
+              }}
+            >
+              <TabsList className="h-9 w-auto inline-flex mb-2">
+              <TabsTrigger value="now-showing" className="gap-1.5 text-xs px-3">
+                <Play className="h-3.5 w-3.5" />
+                Now Showing
+              </TabsTrigger>
+              <TabsTrigger value="coming-soon" className="gap-1.5 text-xs px-3">
+                <CalendarClock className="h-3.5 w-3.5" />
+                Coming Soon
+              </TabsTrigger>
+            </TabsList>
+              <TabsContent value="now-showing" className="mt-0">
+                <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1">
+                  <button type="button" onClick={() => clearTimeline("now-showing")}
+                    className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      !hasTimelineSelection ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                  >All</button>
+                  {nowShowingDays.map((dayStr) => {
+                    const d = new Date(dayStr + "T12:00:00");
+                    const label = isToday(dayStr) ? "Today" : d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+                    const selected = isDaySelected(dayStr);
+                    return (
+                      <button key={dayStr} type="button" onClick={() => onDaySelect(dayStr)}
+                        className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                          selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                      >{label}</button>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+              <TabsContent value="coming-soon" className="mt-0">
+                <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1">
+                  <button type="button" onClick={() => clearTimeline("coming-soon")}
+                    className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      !hasTimelineSelection ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                  >All</button>
+                  {comingSoonMonths.map((ym) => {
+                    const [y, m] = ym.split("-").map(Number);
+                    const d = new Date(y, m, 1);
+                    const label = d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+                    const selected = isMonthSelected(ym);
+                    return (
+                      <button key={ym} type="button" onClick={() => onMonthSelect(ym)}
+                        className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                          selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                      >{label}</button>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : nowShowingDays.length > 0 ? (
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                <Play className="h-3.5 w-3.5 text-primary" />
+                <span>Now Showing</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1">
+                <button type="button" onClick={() => clearTimeline("now-showing")}
+                  className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    !hasTimelineSelection ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                >All</button>
+                {nowShowingDays.map((dayStr) => {
+                  const d = new Date(dayStr + "T12:00:00");
+                  const label = isToday(dayStr) ? "Today" : d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+                  const selected = isDaySelected(dayStr);
+                  return (
+                    <button key={dayStr} type="button" onClick={() => onDaySelect(dayStr)}
+                      className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                        selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                    >{label}</button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                <CalendarClock className="h-3.5 w-3.5 text-primary" />
+                <span>Coming Soon</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1">
+                <button type="button" onClick={() => clearTimeline("coming-soon")}
+                  className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    !hasTimelineSelection ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                >All</button>
+                {comingSoonMonths.map((ym) => {
+                  const [y, m] = ym.split("-").map(Number);
+                  const d = new Date(y, m, 1);
+                  const label = d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+                  const selected = isMonthSelected(ym);
+                  return (
+                    <button key={ym} type="button" onClick={() => onMonthSelect(ym)}
+                      className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                        selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background hover:bg-accent hover:border-primary/50")}
+                    >{label}</button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Active Filters Badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap gap-2 items-center">
@@ -212,7 +423,10 @@ export function EventFilters({
               From: {formatDate(dateFilter.startDate)}
               <button
                 type="button"
-                onClick={() => onDateFilterChange({ ...dateFilter, startDate: null })}
+                onClick={() => {
+                  onDateFilterChange({ ...dateFilter, startDate: null });
+                  onTimelineSourceChange?.(null);
+                }}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                 aria-label="Clear start date filter"
                 title="Clear start date filter"
@@ -226,7 +440,10 @@ export function EventFilters({
               To: {formatDate(dateFilter.endDate)}
               <button
                 type="button"
-                onClick={() => onDateFilterChange({ ...dateFilter, endDate: null })}
+                onClick={() => {
+                  onDateFilterChange({ ...dateFilter, endDate: null });
+                  onTimelineSourceChange?.(null);
+                }}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
                 aria-label="Clear end date filter"
                 title="Clear end date filter"
