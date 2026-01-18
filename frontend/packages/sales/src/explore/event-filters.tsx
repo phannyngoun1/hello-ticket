@@ -183,8 +183,11 @@ export function EventFilters({
             <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               Search: <span className="font-medium">{search}</span>
               <button
+                type="button"
                 onClick={() => onSearchChange("")}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                aria-label="Clear search filter"
+                title="Clear search filter"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -194,8 +197,11 @@ export function EventFilters({
             <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               {formatStatus(statusFilter)}
               <button
+                type="button"
                 onClick={() => onStatusFilterChange("all")}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                aria-label="Clear status filter"
+                title="Clear status filter"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -205,8 +211,11 @@ export function EventFilters({
             <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               From: {formatDate(dateFilter.startDate)}
               <button
+                type="button"
                 onClick={() => onDateFilterChange({ ...dateFilter, startDate: null })}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                aria-label="Clear start date filter"
+                title="Clear start date filter"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -216,8 +225,11 @@ export function EventFilters({
             <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               To: {formatDate(dateFilter.endDate)}
               <button
+                type="button"
                 onClick={() => onDateFilterChange({ ...dateFilter, endDate: null })}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                aria-label="Clear end date filter"
+                title="Clear end date filter"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -227,8 +239,11 @@ export function EventFilters({
             <Badge variant="secondary" className="gap-1 rounded-sm px-2 py-1">
               Past events
               <button
+                type="button"
                 onClick={() => onShowPastEventsChange(false)}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                aria-label="Clear past events filter"
+                title="Clear past events filter"
               >
                 <X className="h-3 w-3" />
               </button>
