@@ -91,15 +91,21 @@ class AsyncAuditLogger(AuditLogger):
                     if event.user_email:
                         user_email_str = str(event.user_email)
                     
+                    # Ensure event_timestamp is set (use current time if not provided)
+                    from datetime import datetime, timezone
+                    event_ts = event.event_timestamp if event.event_timestamp else datetime.now(timezone.utc)
+                    
                     model = AuditLogModel(
                         id=log_id,
                         tenant_id=tenant_id,
                         event_id=event.event_id,
-                        event_timestamp=event.event_timestamp,
+                        event_timestamp=event_ts,
                         event_type=event.event_type.value,
                         severity=event.severity.value,
                         entity_type=event.entity_type,
                         entity_id=event.entity_id,
+                        parent_entity_type=event.parent_entity_type,
+                        parent_entity_id=event.parent_entity_id,
                         user_id=event.user_id,
                         user_email=user_email_str,
                         session_id=event.session_id,
@@ -189,6 +195,8 @@ class AsyncAuditLogger(AuditLogger):
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
                         entity_id=model.entity_id,
+                        parent_entity_type=model.parent_entity_type,
+                        parent_entity_id=model.parent_entity_id,
                         user_id=model.user_id,
                         user_email=model.user_email,
                         session_id=model.session_id,

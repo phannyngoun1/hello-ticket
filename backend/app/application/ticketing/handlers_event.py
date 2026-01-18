@@ -89,7 +89,9 @@ class EventCommandHandler(BaseApplicationHandler):
                 entity_id=saved.id,
                 description=f"Event created: {saved.title}",
                 new_values=new_values,
-                severity=AuditSeverity.MEDIUM
+                severity=AuditSeverity.MEDIUM,
+                parent_entity_type="show",
+                parent_entity_id=saved.show_id
             )
 
             await log_audit_event(audit_event)
@@ -169,7 +171,9 @@ class EventCommandHandler(BaseApplicationHandler):
                     old_values=old_values,
                     new_values=new_values,
                     severity=AuditSeverity.MEDIUM,
-                    changed_fields=changed_fields
+                    changed_fields=changed_fields,
+                    parent_entity_type="show",
+                    parent_entity_id=saved.show_id
                 )
 
                 await log_audit_event(audit_event)
@@ -214,7 +218,9 @@ class EventCommandHandler(BaseApplicationHandler):
                 entity_id=event.id,
                 description=f"Event deleted: {event.title}",
                 old_values=old_values,
-                severity=AuditSeverity.HIGH
+                severity=AuditSeverity.HIGH,
+                parent_entity_type="show",
+                parent_entity_id=event.show_id
             )
 
             await log_audit_event(audit_event)
@@ -297,7 +303,9 @@ class EventQueryHandler(BaseApplicationHandler):
                 entity_type="event",
                 entity_id=event.id,
                 description=f"Event viewed: {event.title}",
-                severity=AuditSeverity.LOW
+                severity=AuditSeverity.LOW,
+                parent_entity_type="show",
+                parent_entity_id=event.show_id
             )
 
             await log_audit_event(audit_event)

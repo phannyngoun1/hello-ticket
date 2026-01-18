@@ -153,6 +153,8 @@ class UserActivityService:
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
                         entity_id=model.entity_id,
+                        parent_entity_type=model.parent_entity_type,
+                        parent_entity_id=model.parent_entity_id,
                         user_id=model.user_id,
                         user_email=model.user_email,
                         session_id=model.session_id,
@@ -342,38 +344,57 @@ class UserActivityService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         sort_by: str = "event_timestamp",
-        sort_order: str = "desc"
+        sort_order: str = "desc",
+        include_child_entities: bool = True
     ) -> List[AuditLogEvent]:
         """
-        Get activity logs for a specific entity (e.g., all activities for a user)
+        Get activity logs for a specific entity (e.g., all activities for a user or show)
         
-        This is useful for viewing all activities related to a user, including:
-        - Login/logout events (where entity_type="user" and entity_id=userId)
-        - Account changes (activation, deactivation, lock, unlock)
-        - Any other activities performed on that user
+        This is useful for viewing all activities related to an entity, including:
+        - Direct entity events (where entity_type and entity_id match)
+        - Child entity events (where parent_entity_type and parent_entity_id match)
+          For example, when viewing a "show", this also includes "event" audit logs
+          that have the show as their parent entity.
         
         Args:
-            entity_type: Type of entity (e.g., "user")
+            entity_type: Type of entity (e.g., "user", "show")
             entity_id: ID of the entity
             limit: Maximum number of events to return
-            event_types: Filter by specific event types (default: all user activity types)
+            event_types: Filter by specific event types (default: all user activity types for users)
             start_date: Start date filter
             end_date: End date filter
+            sort_by: Field to sort by
+            sort_order: Sort direction (asc/desc)
+            include_child_entities: Whether to include logs from child entities (default: True)
             
         Returns:
-            List of audit events for the entity
+            List of audit events for the entity and its children
         """
         try:
             session = await get_async_session()
             
             try:
-                # Build query filtering by entity_type and entity_id
-                query = select(AuditLogModel).where(
-                    and_(
+                # Build query filtering by entity_id
+                # Also include child entities where this entity is the parent
+                if include_child_entities:
+                    # Match either:
+                    # 1. Direct entity match (entity_type and entity_id)
+                    # 2. Parent entity match (parent_entity_id = entity_id)
+                    entity_filter = or_(
+                        and_(
+                            AuditLogModel.entity_type == entity_type,
+                            AuditLogModel.entity_id == entity_id
+                        ),
+                        AuditLogModel.parent_entity_id == entity_id
+                    )
+                else:
+                    # Only match direct entity
+                    entity_filter = and_(
                         AuditLogModel.entity_type == entity_type,
                         AuditLogModel.entity_id == entity_id
                     )
-                )
+                
+                query = select(AuditLogModel).where(entity_filter)
                 
                 # Apply tenant filter
                 tenant_id = get_tenant_context()
@@ -420,6 +441,8 @@ class UserActivityService:
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
                         entity_id=model.entity_id,
+                        parent_entity_type=model.parent_entity_type,
+                        parent_entity_id=model.parent_entity_id,
                         user_id=model.user_id,
                         user_email=model.user_email,
                         session_id=model.session_id,
@@ -493,6 +516,8 @@ class UserActivityService:
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
                         entity_id=model.entity_id,
+                        parent_entity_type=model.parent_entity_type,
+                        parent_entity_id=model.parent_entity_id,
                         user_id=model.user_id,
                         user_email=model.user_email,
                         session_id=model.session_id,

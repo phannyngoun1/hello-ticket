@@ -44,6 +44,12 @@ export interface AuditLogEntry {
   /** ID of the entity being audited */
   entity_id: string;
 
+  /** Type of parent entity (e.g., "show" for events) - for hierarchical relationships */
+  parent_entity_type?: string;
+
+  /** ID of parent entity (e.g., show_id for events) - for hierarchical relationships */
+  parent_entity_id?: string;
+
   /** ID of the user who performed the action */
   user_id?: string;
 
