@@ -27,6 +27,8 @@ interface ShowFiltersProps {
   showPastEvents: boolean;
   onShowPastEventsChange: (value: boolean) => void;
   onClearFilters: () => void;
+  pastEventsLabel?: string;
+  pastEventsClearLabel?: string;
 }
 
 export function ShowFilters({
@@ -39,6 +41,8 @@ export function ShowFilters({
   showPastEvents,
   onShowPastEventsChange,
   onClearFilters,
+  pastEventsLabel = "Include past events",
+  pastEventsClearLabel = "Clear past events filter",
 }: ShowFiltersProps) {
   const hasActiveFilters =
     search ||
@@ -159,7 +163,7 @@ export function ShowFilters({
                 htmlFor="showPastEvents"
                 className="text-sm font-medium cursor-pointer flex-1"
               >
-                Include past events
+                {pastEventsLabel}
               </label>
             </div>
 
@@ -245,8 +249,8 @@ export function ShowFilters({
                 type="button"
                 onClick={() => onShowPastEventsChange(false)}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                aria-label="Clear past events filter"
-                title="Clear past events filter"
+                aria-label={pastEventsClearLabel}
+                title={pastEventsClearLabel}
               >
                 <X className="h-3 w-3" />
               </button>
