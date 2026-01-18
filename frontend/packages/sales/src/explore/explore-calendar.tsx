@@ -347,7 +347,7 @@ export function ExploreCalendar({
           </Button>
 
           {/* Month Tabs */}
-          <ul className="flex items-center justify-center gap-2 flex-1 overflow-x-auto scrollbar-hide">
+          <div role="tablist" className="flex items-center justify-center gap-2 flex-1 overflow-x-auto scrollbar-hide">
             {monthTabs.map((tab, index) => {
               const isActive =
                 tab.date.getFullYear() === currentMonth.getFullYear() &&
@@ -357,20 +357,22 @@ export function ExploreCalendar({
                 tab.date.getMonth() === currentMonth.getMonth();
 
               return (
-                <li key={`${tab.date.getTime()}-${index}`} className="shrink-0">
-                  <button
-                    onClick={() => !tab.isDisabled && goToMonth(tab.date)}
-                    disabled={tab.isDisabled}
-                    aria-selected={isActive}
-                    className={cn(
-                      "px-4 py-2.5 min-w-[100px]",
-                      "text-sm font-medium transition-all duration-200",
-                      "whitespace-nowrap rounded-lg",
-                      "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                      isActive && "bg-primary text-primary-foreground shadow-md scale-105",
-                      !isActive && !tab.isDisabled && "hover:bg-accent hover:scale-102",
-                      tab.isDisabled && "opacity-40 cursor-not-allowed"
-                    )}
+                <button
+                  key={`${tab.date.getTime()}-${index}`}
+                  role="tab"
+                  {...(isActive ? { "aria-selected": "true" as const } : { "aria-selected": "false" as const })}
+                  onClick={() => !tab.isDisabled && goToMonth(tab.date)}
+                  disabled={tab.isDisabled}
+                  className={cn(
+                    "shrink-0",
+                    "px-4 py-2.5 min-w-[100px]",
+                    "text-sm font-medium transition-all duration-200",
+                    "whitespace-nowrap rounded-lg",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    isActive && "bg-primary text-primary-foreground shadow-md scale-105",
+                    !isActive && !tab.isDisabled && "hover:bg-accent hover:scale-102",
+                    tab.isDisabled && "opacity-40 cursor-not-allowed"
+                  )}
                   >
                     <span className="flex flex-col items-center gap-1">
                       <span className={cn(
@@ -398,10 +400,9 @@ export function ExploreCalendar({
                       </span>
                     </span>
                   </button>
-                </li>
               );
             })}
-          </ul>
+          </div>
           
           {/* Month Switcher - Next Month */}
           <Button
@@ -492,7 +493,7 @@ export function ExploreCalendar({
                         <div className="flex items-start justify-between mb-2">
                           <button
                             disabled={isDisabled}
-                            aria-expanded={expanded}
+                            {...(expanded ? { "aria-expanded": "true" as const } : { "aria-expanded": "false" as const })}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (hasEvents) toggleDayExpansion(day.date);
