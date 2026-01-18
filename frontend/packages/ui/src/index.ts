@@ -30,6 +30,7 @@ export { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuC
 export { Popover, PopoverTrigger, PopoverContent } from './components/popover'
 export { Sheet, SheetPortal, SheetOverlay, SheetTrigger, SheetClose, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription } from './components/sheet'
 export { Item, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, type ItemProps, type ItemMediaProps, type ItemContentProps, type ItemTitleProps, type ItemDescriptionProps, type ItemActionsProps } from './components/item'
+export { FilterPopover, type FilterPopoverProps } from './components/filter-popover'
 
 // Export utilities
 export { cn } from './lib/utils'
