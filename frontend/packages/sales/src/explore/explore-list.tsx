@@ -120,7 +120,7 @@ export function ExploreList() {
     return () => clearTimeout(timer);
   }, [calendarSearch]);
 
-  // Show mode data - fetch shows and events when in show mode
+  // Show mode data - fetch shows for both show mode and event mode (needed for event search)
   const { data: showsData, isLoading: showsLoading } = useShows(showService, {
     filter: {
       search: debouncedShowSearch || undefined,
@@ -131,7 +131,7 @@ export function ExploreList() {
       total: 0,
       totalPages: 0,
     },
-    enabled: layoutMode === "show",
+    enabled: layoutMode === "show" || layoutMode === "event",
     disableCache: true,
   });
 
@@ -160,6 +160,7 @@ export function ExploreList() {
       return [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT];
     }
   }, [timelineSource]);
+
 
   // Event mode data - only fetch when in event mode
   const { data: eventModeEventsData, isLoading: eventModeEventsLoading } = useEvents(eventService, {
@@ -393,7 +394,22 @@ export function ExploreList() {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    return eventModeEventsData.data.filter((event) => {
+    // First attach show information to all events, then filter
+    const eventsWithShows = eventModeEventsData.data.map(event => {
+      const show = showsMap.get(event.show_id);
+      if (show) {
+        return {
+          ...event,
+          show: {
+            id: show.id,
+            name: show.name
+          }
+        };
+      }
+      return event;
+    });
+
+    return eventsWithShows.filter((event) => {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
@@ -419,33 +435,13 @@ export function ExploreList() {
         if (eventDate > endDate) return false;
       }
 
-      // Filter by search
-      if (debouncedEventSearch) {
-        const searchLower = debouncedEventSearch.toLowerCase();
-        if (!event.title.toLowerCase().includes(searchLower)) return false;
-      }
-
       return true;
-    }).map(event => {
-      // Attach show information if available
-      const show = showsMap.get(event.show_id);
-      if (show) {
-        return {
-          ...event,
-          show: {
-            id: show.id,
-            name: show.name
-          }
-        };
-      }
-      return event;
     }).sort((a, b) =>
       new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
     );
   }, [
     eventModeEventsData?.data,
     showsData?.data,
-    debouncedEventSearch,
     eventStatusFilter,
     eventDateFilter,
     eventPastEvents,
