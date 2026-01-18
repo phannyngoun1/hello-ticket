@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { List, Grid3x3, Ticket, Calendar } from "lucide-react";
 import {
@@ -55,14 +55,6 @@ export function ExploreList() {
   const [eventPastEvents, setEventPastEvents] = useState(false);
   const [timelineSource, setTimelineSource] = useState<"now-showing" | "coming-soon" | null>("now-showing");
 
-  // Calendar mode filter states
-  const [calendarSearch, setCalendarSearch] = useState("");
-  const [calendarStatusFilter, setCalendarStatusFilter] = useState<EventStatus | "all">("all");
-  const [calendarDateFilter, setCalendarDateFilter] = useState<DateFilter>({
-    startDate: null,
-    endDate: null,
-  });
-  const [calendarPastEvents, setCalendarPastEvents] = useState(false);
 
   // UI state
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
@@ -93,10 +85,24 @@ export function ExploreList() {
   const eventService = useEventService();
   const showService = useShowService();
 
+  // Memoize pagination objects to prevent unnecessary re-renders
+  const showPagination = useMemo(() => ({
+    page: 1,
+    pageSize: 100,
+    total: 0,
+    totalPages: 0,
+  }), []);
+
+  const eventPagination = useMemo(() => ({
+    page: 1,
+    pageSize: 200,
+    total: 0,
+    totalPages: 0,
+  }), []);
+
   // Debounced search values to prevent excessive API calls
   const [debouncedShowSearch, setDebouncedShowSearch] = useState("");
   const [debouncedEventSearch, setDebouncedEventSearch] = useState("");
-  const [debouncedCalendarSearch, setDebouncedCalendarSearch] = useState("");
 
   // Debounce search inputs - wait 300ms after user stops typing before triggering API call
   useEffect(() => {
@@ -113,24 +119,13 @@ export function ExploreList() {
     return () => clearTimeout(timer);
   }, [eventSearch]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedCalendarSearch(calendarSearch);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [calendarSearch]);
 
   // Show mode data - fetch shows for both show mode and event mode (needed for event search)
   const { data: showsData, isLoading: showsLoading } = useShows(showService, {
     filter: {
       search: debouncedShowSearch || undefined,
     },
-    pagination: {
-      page: 1,
-      pageSize: 100,
-      total: 0,
-      totalPages: 0,
-    },
+    pagination: showPagination,
     enabled: layoutMode === "show" || layoutMode === "event",
     disableCache: true,
   });
@@ -140,12 +135,7 @@ export function ExploreList() {
     filter: {
       status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
     },
-    pagination: {
-      page: 1,
-      pageSize: 200, // API maximum limit
-      total: 0,
-      totalPages: 0,
-    },
+    pagination: eventPagination,
     enabled: layoutMode === "show",
     disableCache: true,
   });
@@ -168,12 +158,7 @@ export function ExploreList() {
       search: debouncedEventSearch || undefined,
       status: eventModeStatusFilter,
     },
-    pagination: {
-      page: 1,
-      pageSize: 200, // API maximum limit
-      total: 0,
-      totalPages: 0,
-    },
+    pagination: eventPagination,
     enabled: layoutMode === "event",
     disableCache: true,
   });
@@ -181,15 +166,9 @@ export function ExploreList() {
   // Calendar mode data - only fetch when in calendar mode
   const { data: calendarModeEventsData, isLoading: calendarModeEventsLoading } = useEvents(eventService, {
     filter: {
-      search: debouncedCalendarSearch || undefined,
       status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
     },
-    pagination: {
-      page: 1,
-      pageSize: 200, // API maximum limit
-      total: 0,
-      totalPages: 0,
-    },
+    pagination: eventPagination,
     enabled: layoutMode === "calendar",
     disableCache: true,
   });
@@ -199,12 +178,7 @@ export function ExploreList() {
     filter: {
       status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
     },
-    pagination: {
-      page: 1,
-      pageSize: 200, // API maximum limit
-      total: 0,
-      totalPages: 0,
-    },
+    pagination: eventPagination,
     enabled: layoutMode === "event",
     disableCache: true,
   });
@@ -462,31 +436,11 @@ export function ExploreList() {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
-      // Filter out past events unless calendarPastEvents is true
-      if (!calendarPastEvents && eventDate < now) return false;
+      // Filter out past events (calendar mode shows past events by default for now)
+      if (eventDate < now) return false;
 
       // Filter out inactive events
       if (event.is_active === false) return false;
-
-      // Filter by status
-      if (calendarStatusFilter !== "all" && event.status !== calendarStatusFilter) return false;
-
-      // Filter by date range (parse as local date to avoid UTC boundary issues)
-      if (calendarDateFilter.startDate) {
-        const startDate = new Date(calendarDateFilter.startDate + "T00:00:00");
-        if (eventDate < startDate) return false;
-      }
-
-      if (calendarDateFilter.endDate) {
-        const endDate = new Date(calendarDateFilter.endDate + "T23:59:59.999");
-        if (eventDate > endDate) return false;
-      }
-
-      // Filter by search
-      if (debouncedCalendarSearch) {
-        const searchLower = debouncedCalendarSearch.toLowerCase();
-        if (!event.title.toLowerCase().includes(searchLower)) return false;
-      }
 
       return true;
     }).map(event => {
@@ -508,10 +462,6 @@ export function ExploreList() {
   }, [
     calendarModeEventsData?.data,
     showsData?.data,
-    debouncedCalendarSearch,
-    calendarStatusFilter,
-    calendarDateFilter,
-    calendarPastEvents,
   ]);
 
   const isLoading = layoutMode === "show"
