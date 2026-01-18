@@ -51,6 +51,10 @@ class AuditLogEvent:
     entity_type: str = ""
     entity_id: str = ""
     
+    # Parent entity information (for hierarchical relationships like event -> show)
+    parent_entity_type: Optional[str] = None
+    parent_entity_id: Optional[str] = None
+    
     # User information
     user_id: Optional[str] = None
     user_email: Optional[str] = None
@@ -84,6 +88,8 @@ class AuditLogEvent:
             "severity": self.severity.value,
             "entity_type": self.entity_type,
             "entity_id": self.entity_id,
+            "parent_entity_type": self.parent_entity_type,
+            "parent_entity_id": self.parent_entity_id,
             "user_id": self.user_id,
             "user_email": self.user_email,
             "session_id": self.session_id,
@@ -180,7 +186,9 @@ class AuditContext:
         description: str = "",
         old_values: Optional[Dict[str, Any]] = None,
         new_values: Optional[Dict[str, Any]] = None,
-        severity: AuditSeverity = AuditSeverity.LOW
+        severity: AuditSeverity = AuditSeverity.LOW,
+        parent_entity_type: Optional[str] = None,
+        parent_entity_id: Optional[str] = None
     ) -> AuditLogEvent:
         """Create audit event with context"""
         event = AuditLogEvent(
@@ -188,6 +196,8 @@ class AuditContext:
             severity=severity,
             entity_type=entity_type,
             entity_id=entity_id,
+            parent_entity_type=parent_entity_type,
+            parent_entity_id=parent_entity_id,
             user_id=self.user_id,
             user_email=self.user_email,
             session_id=self.session_id,
@@ -240,13 +250,27 @@ async def create_audit_event(
     old_values: Optional[Dict[str, Any]] = None,
     new_values: Optional[Dict[str, Any]] = None,
     severity: AuditSeverity = AuditSeverity.LOW,
-    changed_fields: Optional[List[str]] = None
+    changed_fields: Optional[List[str]] = None,
+    parent_entity_type: Optional[str] = None,
+    parent_entity_id: Optional[str] = None
 ) -> AuditLogEvent:
     """
     Create audit event with automatic context detection.
 
     Automatically uses request context when available (HTTP requests),
     or falls back to system-generated values for background operations.
+    
+    Args:
+        event_type: Type of audit event (CREATE, UPDATE, DELETE, etc.)
+        entity_type: Type of entity being audited (e.g., "event", "show", "user")
+        entity_id: ID of the entity being audited
+        description: Human-readable description of the action
+        old_values: Previous values before the change
+        new_values: New values after the change
+        severity: Severity level of the event
+        changed_fields: List of fields that were changed
+        parent_entity_type: Type of parent entity (e.g., "show" for events)
+        parent_entity_id: ID of parent entity (e.g., show_id for events)
     """
     from datetime import datetime, timezone
     context = get_audit_context()
@@ -260,7 +284,9 @@ async def create_audit_event(
             description=description,
             old_values=old_values,
             new_values=new_values,
-            severity=severity
+            severity=severity,
+            parent_entity_type=parent_entity_type,
+            parent_entity_id=parent_entity_id
         )
         # Override changed_fields if provided
         if changed_fields is not None:
@@ -278,6 +304,8 @@ async def create_audit_event(
             severity=severity,
             entity_type=entity_type,
             entity_id=entity_id,
+            parent_entity_type=parent_entity_type,
+            parent_entity_id=parent_entity_id,
             description=description,
             old_values=old_values or {},
             new_values=new_values or {},

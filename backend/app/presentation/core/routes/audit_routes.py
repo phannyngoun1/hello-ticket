@@ -25,6 +25,8 @@ class AuditEventResponse(BaseModel):
     severity: str
     entity_type: str
     entity_id: str
+    parent_entity_type: Optional[str] = None
+    parent_entity_id: Optional[str] = None
     user_id: Optional[str]
     user_email: Optional[str]
     session_id: Optional[str]
@@ -33,6 +35,10 @@ class AuditEventResponse(BaseModel):
     user_agent: Optional[str]
     description: str
     metadata: dict
+    # Change tracking fields
+    old_values: Optional[dict] = None
+    new_values: Optional[dict] = None
+    changed_fields: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
@@ -171,6 +177,8 @@ async def get_user_activity(
             severity=event.severity.value,
             entity_type=event.entity_type,
             entity_id=event.entity_id,
+            parent_entity_type=event.parent_entity_type,
+            parent_entity_id=event.parent_entity_id,
             user_id=event.user_id,
             user_email=event.user_email,
             session_id=event.session_id,
@@ -178,7 +186,10 @@ async def get_user_activity(
             ip_address=str(event.ip_address) if event.ip_address else None,
             user_agent=event.user_agent,
             description=event.description,
-            metadata=event.metadata
+            metadata=event.metadata,
+            old_values=event.old_values if event.old_values else None,
+            new_values=event.new_values if event.new_values else None,
+            changed_fields=event.changed_fields if event.changed_fields else None
         )
         for event in paginated_events
     ]
@@ -219,6 +230,8 @@ async def get_login_history(
             severity=event.severity.value,
             entity_type=event.entity_type,
             entity_id=event.entity_id,
+            parent_entity_type=event.parent_entity_type,
+            parent_entity_id=event.parent_entity_id,
             user_id=event.user_id,
             user_email=event.user_email,
             session_id=event.session_id,
@@ -226,7 +239,10 @@ async def get_login_history(
             ip_address=str(event.ip_address) if event.ip_address else None,
             user_agent=event.user_agent,
             description=event.description,
-            metadata=event.metadata
+            metadata=event.metadata,
+            old_values=event.old_values if event.old_values else None,
+            new_values=event.new_values if event.new_values else None,
+            changed_fields=event.changed_fields if event.changed_fields else None
         )
         for event in events
     ]
@@ -284,6 +300,8 @@ async def get_session_activity(
             severity=event.severity.value,
             entity_type=event.entity_type,
             entity_id=event.entity_id,
+            parent_entity_type=event.parent_entity_type,
+            parent_entity_id=event.parent_entity_id,
             user_id=event.user_id,
             user_email=event.user_email,
             session_id=event.session_id,
@@ -291,7 +309,10 @@ async def get_session_activity(
             ip_address=str(event.ip_address) if event.ip_address else None,
             user_agent=event.user_agent,
             description=event.description,
-            metadata=event.metadata
+            metadata=event.metadata,
+            old_values=event.old_values if event.old_values else None,
+            new_values=event.new_values if event.new_values else None,
+            changed_fields=event.changed_fields if event.changed_fields else None
         )
         for event in events
     ]

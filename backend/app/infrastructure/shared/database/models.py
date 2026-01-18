@@ -1188,6 +1188,10 @@ class AuditLogModel(SQLModel, table=True):
     entity_type: str = Field(max_length=100)
     entity_id: str = Field(index=True)
     
+    # Parent Entity Information (for hierarchical relationships like event -> show)
+    parent_entity_type: Optional[str] = Field(default=None, max_length=100)
+    parent_entity_id: Optional[str] = Field(default=None, index=True)
+    
     # User Context
     user_id: Optional[str] = Field(default=None, index=True)
     user_email: Optional[str] = None
@@ -1229,6 +1233,7 @@ class AuditLogModel(SQLModel, table=True):
         Index('ix_audit_logs_entity', 'entity_type', 'entity_id', 'event_timestamp'),
         Index('ix_audit_logs_user', 'user_id', 'event_timestamp'),
         Index('ix_audit_logs_event_type', 'event_type', 'event_timestamp'),
+        Index('ix_audit_logs_parent_entity', 'parent_entity_type', 'parent_entity_id', 'event_timestamp'),
     )
 
 

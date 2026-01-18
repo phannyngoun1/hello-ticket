@@ -14,7 +14,7 @@
  * - Responsive design
  */
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -158,7 +158,8 @@ export function AuditLogs({
 }: AuditLogsProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [localFilters, setLocalFilters] = useState(filters || {});
+  const [localFilters, setLocalFilters] = useState(filters || {}); // Applied filters
+  const [pendingFilters, setPendingFilters] = useState(filters || {}); // Filters being edited
   const [localSorting, setLocalSorting] = useState<AuditLogSorting>(sorting || { field: 'event_timestamp', direction: 'desc' });
 
   // Use API service when no logs prop provided
@@ -168,7 +169,8 @@ export function AuditLogs({
     hasMore: apiHasMore,
     loadMore: apiLoadMore,
     refresh: apiRefresh,
-  } = useAuditLogs(entityType, entityId, {}, { // Start with empty filters
+    loadLogs: apiLoadLogs,
+  } = useAuditLogs(entityType, entityId, localFilters, {
     autoLoad: !propLogs, // Only auto-load if no logs prop provided
     limit,
     sortBy: localSorting.field,
@@ -181,44 +183,8 @@ export function AuditLogs({
 
   const displayHasMore = hasMore !== undefined ? hasMore : apiHasMore;
 
-  // Sort logs based on current sorting configuration
-  const displayLogs = useMemo(() => {
-    if (!rawLogs.length) return [];
-
-    return [...rawLogs].sort((a, b) => {
-      const { field, direction } = localSorting;
-      let comparison = 0;
-
-      switch (field) {
-        case 'event_timestamp':
-          const aEventTime = a.event_timestamp ? new Date(a.event_timestamp).getTime() : 0;
-          const bEventTime = b.event_timestamp ? new Date(b.event_timestamp).getTime() : 0;
-          comparison = aEventTime - bEventTime;
-          break;
-        case 'event_type':
-          comparison = a.event_type.localeCompare(b.event_type);
-          break;
-        case 'severity':
-          // Define severity order: critical > high > medium > low
-          const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-          comparison = (severityOrder[a.severity as keyof typeof severityOrder] || 0) -
-                      (severityOrder[b.severity as keyof typeof severityOrder] || 0);
-          break;
-        case 'user_email':
-          const aEmail = a.user_email || '';
-          const bEmail = b.user_email || '';
-          comparison = aEmail.localeCompare(bEmail);
-          break;
-        case 'description':
-          comparison = a.description.localeCompare(b.description);
-          break;
-        default:
-          comparison = 0;
-      }
-
-      return direction === 'desc' ? -comparison : comparison;
-    });
-  }, [rawLogs, localSorting]);
+  // Use raw logs directly - sorting is done server-side
+  const displayLogs = rawLogs;
 
   const toggleRowExpansion = useCallback((eventId: string) => {
     setExpandedRows(prev => {
@@ -240,42 +206,54 @@ export function AuditLogs({
     }
   }, [onRefresh, propLogs, apiRefresh]);
 
-  const updateFilters = useCallback((newFilters: any) => {
-    const updatedFilters = { ...localFilters, ...newFilters };
-    setLocalFilters(updatedFilters);
+  // Update pending filters (doesn't trigger API call)
+  const updatePendingFilters = useCallback((newFilters: any) => {
+    setPendingFilters(prev => ({ ...prev, ...newFilters }));
+  }, []);
+
+  // Apply pending filters and trigger API call
+  const applyFilters = useCallback(() => {
+    setLocalFilters(pendingFilters);
+    setShowFilterPanel(false);
 
     if (onFiltersChange) {
-      onFiltersChange(updatedFilters);
+      onFiltersChange(pendingFilters);
     }
 
-    // Trigger API reload when using service and no custom filter handler
-    if (!propLogs && !onFiltersChange) {
-      // Reset pagination and reload with new filters
-      // The useAuditLogs hook will automatically reload when filters change
+    // Trigger API reload with new filters
+    if (!propLogs && apiLoadLogs) {
+      apiLoadLogs(pendingFilters, true);
     }
-  }, [localFilters, onFiltersChange, propLogs]);
+  }, [pendingFilters, onFiltersChange, propLogs, apiLoadLogs]);
 
+  // Track previous sorting to detect actual changes
+  const prevSortingRef = React.useRef(localSorting);
 
-  // Track previous filters to detect actual changes
-  const prevFiltersRef = React.useRef(localFilters);
-
-  // Reload API data when filters change (only when using API service)
+  // Reload API data when sorting changes (server-side sorting)
   React.useEffect(() => {
-    const filtersChanged = JSON.stringify(prevFiltersRef.current) !== JSON.stringify(localFilters);
+    const sortingChanged = 
+      prevSortingRef.current.field !== localSorting.field ||
+      prevSortingRef.current.direction !== localSorting.direction;
 
-    if (!propLogs && filtersChanged && Object.keys(localFilters).length > 0) {
-      prevFiltersRef.current = localFilters;
+    if (!propLogs && sortingChanged) {
+      prevSortingRef.current = localSorting;
       apiRefresh();
     }
-  }, [localFilters, propLogs, apiRefresh]);
+  }, [localSorting, propLogs, apiRefresh]);
 
   const clearFilters = useCallback(() => {
     const emptyFilters = {};
+    setPendingFilters(emptyFilters);
     setLocalFilters(emptyFilters);
+    setShowFilterPanel(false);
     if (onFiltersChange) {
       onFiltersChange(emptyFilters);
     }
-  }, [onFiltersChange]);
+    // Trigger API reload with cleared filters
+    if (!propLogs && apiLoadLogs) {
+      apiLoadLogs(emptyFilters, true);
+    }
+  }, [onFiltersChange, propLogs, apiLoadLogs]);
 
   const hasActiveFilters = Object.values(localFilters).some(value =>
     Array.isArray(value) ? value.length > 0 : Boolean(value)
@@ -295,7 +273,16 @@ export function AuditLogs({
           </div>
           <div className="flex items-center gap-2">
             {showFilters && (
-              <Popover open={showFilterPanel} onOpenChange={setShowFilterPanel}>
+              <Popover 
+                open={showFilterPanel} 
+                onOpenChange={(open) => {
+                  setShowFilterPanel(open);
+                  // Reset pending filters to current applied filters when opening
+                  if (open) {
+                    setPendingFilters(localFilters);
+                  }
+                }}
+              >
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-8">
                     <Filter className="h-4 w-4 mr-1" />
@@ -309,23 +296,37 @@ export function AuditLogs({
                 </PopoverTrigger>
                 <PopoverContent className="w-80" align="end">
                   <div className="space-y-4">
+                    {/* Header with Apply and Clear buttons */}
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">Filter Audit Logs</h4>
-                      {hasActiveFilters && (
-                        <Button variant="ghost" size="sm" onClick={clearFilters}>
-                          Clear All
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Clear
                         </Button>
-                      )}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={applyFilters}
+                          className="h-7 px-3 text-xs"
+                        >
+                          Apply
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Event Type Filter */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Event Types</label>
                       <Select
-                        value={localFilters.eventTypes && localFilters.eventTypes.length > 0 ? localFilters.eventTypes.join(',') : 'all-types'}
+                        value={pendingFilters.eventTypes && pendingFilters.eventTypes.length > 0 ? pendingFilters.eventTypes.join(',') : 'all-types'}
                         onValueChange={(value) => {
                           if (value && value !== '') {
-                            updateFilters({ eventTypes: value === 'all-types' ? [] : value.split(',') });
+                            updatePendingFilters({ eventTypes: value === 'all-types' ? [] : value.split(',') });
                           }
                         }}
                       >
@@ -346,10 +347,10 @@ export function AuditLogs({
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Severity</label>
                       <Select
-                        value={localFilters.severities && localFilters.severities.length > 0 ? localFilters.severities.join(',') : 'all-severities'}
+                        value={pendingFilters.severities && pendingFilters.severities.length > 0 ? pendingFilters.severities.join(',') : 'all-severities'}
                         onValueChange={(value) => {
                           if (value && value !== '') {
-                            updateFilters({ severities: value === 'all-severities' ? [] : value.split(',') });
+                            updatePendingFilters({ severities: value === 'all-severities' ? [] : value.split(',') });
                           }
                         }}
                       >
@@ -371,8 +372,8 @@ export function AuditLogs({
                       <label className="text-sm font-medium">User Email</label>
                       <Input
                         placeholder="Filter by user email..."
-                        value={localFilters.userEmail || ''}
-                        onChange={(e) => updateFilters({ userEmail: e.target.value })}
+                        value={pendingFilters.userEmail || ''}
+                        onChange={(e) => updatePendingFilters({ userEmail: e.target.value })}
                         className="h-8"
                       />
                     </div>
@@ -383,8 +384,8 @@ export function AuditLogs({
                         <label className="text-sm font-medium">From Date</label>
                         <Input
                           type="date"
-                          value={localFilters.dateFrom || ''}
-                          onChange={(e) => updateFilters({ dateFrom: e.target.value })}
+                          value={pendingFilters.dateFrom || ''}
+                          onChange={(e) => updatePendingFilters({ dateFrom: e.target.value })}
                           className="h-8"
                         />
                       </div>
@@ -392,8 +393,8 @@ export function AuditLogs({
                         <label className="text-sm font-medium">To Date</label>
                         <Input
                           type="date"
-                          value={localFilters.dateTo || ''}
-                          onChange={(e) => updateFilters({ dateTo: e.target.value })}
+                          value={pendingFilters.dateTo || ''}
+                          onChange={(e) => updatePendingFilters({ dateTo: e.target.value })}
                           className="h-8"
                         />
                       </div>
@@ -404,8 +405,8 @@ export function AuditLogs({
                       <label className="text-sm font-medium">Search Description</label>
                       <Input
                         placeholder="Search in descriptions..."
-                        value={localFilters.search || ''}
-                        onChange={(e) => updateFilters({ search: e.target.value })}
+                        value={pendingFilters.search || ''}
+                        onChange={(e) => updatePendingFilters({ search: e.target.value })}
                         className="h-8"
                       />
                     </div>
