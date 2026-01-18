@@ -6,6 +6,8 @@
  * @author Phanny
  */
 
+// @refresh reset
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { X, Search } from "lucide-react";
 import { Button } from "@truths/ui";
@@ -786,14 +788,12 @@ export function CreateRoleDialog({
   );
 }
 
-export function createRoleDialogMetadata(): AccountComponentMetadata {
-  return {
-    name: "Create Role Dialog",
-    description:
-      "Full-screen dialog for creating new custom roles with permissions",
-    category: "roles",
-    tags: ["roles", "create", "permissions", "dialog", "fullscreen"],
-    version: "1.0.0",
-    dependencies: ["@truths/ui"],
-  };
-}
+export const createRoleDialogMetadata: AccountComponentMetadata = {
+  name: "Create Role Dialog",
+  description:
+    "Full-screen dialog for creating new custom roles with permissions",
+  category: "roles",
+  tags: ["roles", "create", "permissions", "dialog", "fullscreen"],
+  version: "1.0.0",
+  dependencies: ["@truths/ui"],
+};

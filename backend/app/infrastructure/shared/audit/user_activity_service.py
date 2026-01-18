@@ -19,6 +19,30 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _apply_sorting(query, sort_by: str, sort_order: str):
+    """Apply sorting to a SQLAlchemy query based on sort_by and sort_order parameters"""
+
+    # Define sort field mappings
+    sort_fields = {
+        "event_timestamp": AuditLogModel.event_timestamp,
+        "event_type": AuditLogModel.event_type,
+        "severity": AuditLogModel.severity,
+        "user_email": AuditLogModel.user_email,
+        "description": AuditLogModel.description,
+    }
+
+    # Get the sort column
+    sort_column = sort_fields.get(sort_by, AuditLogModel.event_timestamp)
+
+    # Apply ordering
+    if sort_order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+
+    return query
+
+
 # Common user activity event types
 USER_ACTIVITY_EVENT_TYPES = [
     AuditEventType.LOGIN.value,
@@ -56,7 +80,9 @@ class UserActivityService:
         limit: int = 100,
         event_types: Optional[List[str]] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
+        sort_by: str = "event_timestamp",
+        sort_order: str = "desc"
     ) -> List[AuditLogEvent]:
         """
         Get user activity logs with optimized querying
@@ -101,18 +127,16 @@ class UserActivityService:
                     start_date_tz = start_date
                     if start_date_tz.tzinfo is None:
                         start_date_tz = start_date_tz.replace(tzinfo=timezone.utc)
-                    query = query.where(AuditLogModel.timestamp >= start_date_tz)
+                    query = query.where(AuditLogModel.event_timestamp >= start_date_tz)
                 if end_date:
                     # Ensure timezone-aware - don't modify original parameter
                     end_date_tz = end_date
                     if end_date_tz.tzinfo is None:
                         end_date_tz = end_date_tz.replace(tzinfo=timezone.utc)
-                    query = query.where(AuditLogModel.timestamp <= end_date_tz)
+                    query = query.where(AuditLogModel.event_timestamp <= end_date_tz)
                 
-                # Order by timestamp (most recent first)
-                query = query.order_by(
-                    AuditLogModel.timestamp.desc()
-                ).limit(limit)
+                # Apply dynamic sorting
+                query = _apply_sorting(query, sort_by, sort_order).limit(limit)
                 
                 result = await session.execute(query)
                 models = result.scalars().all()
@@ -124,7 +148,6 @@ class UserActivityService:
                 for model in models:
                     event = AuditLogEvent(
                         event_id=model.event_id,
-                        timestamp=model.timestamp,
                         event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
@@ -182,7 +205,9 @@ class UserActivityService:
         self,
         user_id: str,
         hours: int = 24,
-        limit: int = 100
+        limit: int = 100,
+        sort_by: str = "event_timestamp",
+        sort_order: str = "desc"
     ) -> List[AuditLogEvent]:
         """
         Get user's recent activity (last N hours)
@@ -199,7 +224,9 @@ class UserActivityService:
         return await self.get_user_activity(
             user_id=user_id,
             limit=limit,
-            start_date=start_date
+            start_date=start_date,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
     
     async def get_activity_by_date_range(
@@ -259,11 +286,11 @@ class UserActivityService:
                 query = select(
                     AuditLogModel.event_type,
                     func.count(AuditLogModel.id).label('count'),
-                    func.max(AuditLogModel.timestamp).label('last_occurrence')
+                    func.max(AuditLogModel.event_timestamp).label('last_occurrence')
                 ).where(
                     and_(
                         AuditLogModel.user_id == user_id,
-                        AuditLogModel.timestamp >= start_date_tz,
+                        AuditLogModel.event_timestamp >= start_date_tz,
                         AuditLogModel.event_type.in_(USER_ACTIVITY_EVENT_TYPES)
                     )
                 )
@@ -313,7 +340,9 @@ class UserActivityService:
         limit: int = 100,
         event_types: Optional[List[str]] = None,
         start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        end_date: Optional[datetime] = None,
+        sort_by: str = "event_timestamp",
+        sort_order: str = "desc"
     ) -> List[AuditLogEvent]:
         """
         Get activity logs for a specific entity (e.g., all activities for a user)
@@ -366,17 +395,15 @@ class UserActivityService:
                     start_date_tz = start_date
                     if start_date_tz.tzinfo is None:
                         start_date_tz = start_date_tz.replace(tzinfo=timezone.utc)
-                    query = query.where(AuditLogModel.timestamp >= start_date_tz)
+                    query = query.where(AuditLogModel.event_timestamp >= start_date_tz)
                 if end_date:
                     end_date_tz = end_date
                     if end_date_tz.tzinfo is None:
                         end_date_tz = end_date_tz.replace(tzinfo=timezone.utc)
-                    query = query.where(AuditLogModel.timestamp <= end_date_tz)
+                    query = query.where(AuditLogModel.event_timestamp <= end_date_tz)
                 
-                # Order by timestamp (most recent first)
-                query = query.order_by(
-                    AuditLogModel.timestamp.desc()
-                ).limit(limit)
+                # Apply dynamic sorting
+                query = _apply_sorting(query, sort_by, sort_order).limit(limit)
                 
                 result = await session.execute(query)
                 models = result.scalars().all()
@@ -388,7 +415,6 @@ class UserActivityService:
                 for model in models:
                     event = AuditLogEvent(
                         event_id=model.event_id,
-                        timestamp=model.timestamp,
                         event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
@@ -449,7 +475,7 @@ class UserActivityService:
                     query = query.where(AuditLogModel.tenant_id == tenant_id)
                 
                 query = query.order_by(
-                    AuditLogModel.timestamp.asc()  # Chronological order for session
+                    AuditLogModel.event_timestamp.asc()  # Chronological order for session
                 ).limit(limit)
                 
                 result = await session.execute(query)
@@ -462,7 +488,6 @@ class UserActivityService:
                 for model in models:
                     event = AuditLogEvent(
                         event_id=model.event_id,
-                        timestamp=model.timestamp,
                         event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),

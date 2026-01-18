@@ -26,6 +26,9 @@ export * from './tags/tag-service';
 export * from './attachments/attachment-service';
 export * from './attachments/types';
 
+// Audit
+export * from './audit';
+
 // Filter Strategy Utilities
 export * from './filter-strategy';
 

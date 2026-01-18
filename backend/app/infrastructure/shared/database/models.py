@@ -1175,10 +1175,6 @@ class AuditLogModel(SQLModel, table=True):
     id: str = Field(primary_key=True, default_factory=generate_id)
     tenant_id: str = Field(index=True)
     event_id: str = Field(unique=True, index=True)
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True), server_default="NOW()", index=True)
-    )
     event_timestamp: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True)
@@ -1229,10 +1225,10 @@ class AuditLogModel(SQLModel, table=True):
     is_sensitive: bool = Field(default=False, index=True)
     
     __table_args__ = (
-        Index('ix_audit_logs_tenant_timestamp', 'tenant_id', 'timestamp'),
-        Index('ix_audit_logs_entity', 'entity_type', 'entity_id', 'timestamp'),
-        Index('ix_audit_logs_user', 'user_id', 'timestamp'),
-        Index('ix_audit_logs_event_type', 'event_type', 'timestamp'),
+        Index('ix_audit_logs_tenant_event_timestamp', 'tenant_id', 'event_timestamp'),
+        Index('ix_audit_logs_entity', 'entity_type', 'entity_id', 'event_timestamp'),
+        Index('ix_audit_logs_user', 'user_id', 'event_timestamp'),
+        Index('ix_audit_logs_event_type', 'event_type', 'event_timestamp'),
     )
 
 

@@ -10,6 +10,7 @@ import {
   useShow,
   useShowService,
 } from "@truths/ticketing";
+import { AuditProvider } from "@truths/shared";
 import { api } from "@truths/api";
 
 function ShowDetailContent({ id }: { id: string | undefined }) {
@@ -97,7 +98,14 @@ export function ViewShowPage() {
                 },
               }}
             >
-              <ShowDetailContent id={id} />
+              <AuditProvider
+                config={{
+                  apiClient: api,
+                  baseUrl: "/api/v1",
+                }}
+              >
+                <ShowDetailContent id={id} />
+              </AuditProvider>
             </LayoutProvider>
           </VenueProvider>
         </EventProvider>

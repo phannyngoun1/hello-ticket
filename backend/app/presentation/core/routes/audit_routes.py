@@ -20,7 +20,7 @@ router = APIRouter(prefix="/audit", tags=["audit"])
 class AuditEventResponse(BaseModel):
     """Audit event response model"""
     event_id: str
-    timestamp: datetime
+    event_timestamp: Optional[datetime]
     event_type: str
     severity: str
     entity_type: str
@@ -33,9 +33,18 @@ class AuditEventResponse(BaseModel):
     user_agent: Optional[str]
     description: str
     metadata: dict
-    
+
     class Config:
         from_attributes = True
+
+
+class AuditEventListResponse(BaseModel):
+    """Audit events list response model"""
+    items: List[AuditEventResponse]
+    total: int
+    has_next: bool
+    skip: int
+    limit: int
 
 
 class ActivitySummaryResponse(BaseModel):
@@ -46,40 +55,55 @@ class ActivitySummaryResponse(BaseModel):
     by_event_type: dict
 
 
-@router.get("/user-activity", response_model=List[AuditEventResponse])
+@router.get("/user-activity", response_model=AuditEventListResponse)
 async def get_user_activity(
     user_id: Optional[str] = Query(None, description="User ID (default: current user)"),
     entity_id: Optional[str] = Query(None, description="Entity ID to query activities for (e.g., user ID for login/logout events)"),
     entity_type: Optional[str] = Query("user", description="Entity type to query (default: 'user')"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of events"),
+    skip: int = Query(0, ge=0, description="Number of events to skip"),
     event_types: Optional[str] = Query(None, description="Comma-separated event types"),
     hours: Optional[int] = Query(None, ge=1, le=8760, description="Last N hours"),
     start_date: Optional[datetime] = Query(None, description="Start date"),
     end_date: Optional[datetime] = Query(None, description="End date"),
+    sort_by: str = Query("event_timestamp", description="Field to sort by (event_timestamp, event_type, severity, user_email, description)"),
+    sort_order: str = Query("desc", description="Sort order (asc, desc)"),
     current_user: AuthenticatedUser = Depends(get_current_active_user),
     activity_service: UserActivityService = Depends(lambda: container.resolve(UserActivityService))
 ):
     """
     Get user activity logs
-    
+
     Query modes:
-    1. By entity_id (recommended for viewing user activities): 
+    1. By entity_id (recommended for viewing user activities):
        - Query activities by entity_id and entity_type (e.g., all login/logout events for a user)
        - Use entity_id and entity_type parameters
        - Returns all activities related to that entity (login, logout, account changes, etc.)
-    
+
     2. By user_id (activities performed BY a user):
        - Query activities performed BY the viewing user (current logged-in user)
        - Returns activities done BY the user, not activities done ON the user
        - Supports filtering by event types, date range, or hours
-    
+
     If both entity_id and user_id are provided, entity_id takes precedence.
+
+    Sorting:
+    - sort_by: event_timestamp, event_type, severity, user_email, description
+    - sort_order: asc, desc
     """
+    # Validate sort parameters
+    valid_sort_fields = ["event_timestamp", "event_type", "severity", "user_email", "description"]
+    if sort_by not in valid_sort_fields:
+        sort_by = "event_timestamp"
+
+    if sort_order not in ["asc", "desc"]:
+        sort_order = "desc"
+
     # Parse event types
     event_types_list = None
     if event_types:
         event_types_list = [e.strip() for e in event_types.split(",")]
-    
+
     # Query by entity_id if provided (preferred for viewing user activities)
     if entity_id:
         # Calculate start_date from hours if provided
@@ -87,37 +111,43 @@ async def get_user_activity(
         if hours and not start_date:
             from datetime import timedelta, timezone
             calculated_start_date = datetime.now(timezone.utc) - timedelta(hours=hours)
-        
+
         # Query activities for the entity
         events = await activity_service.get_entity_activity(
             entity_type=entity_type,
             entity_id=entity_id,
-            limit=limit,
+            limit=limit + skip,  # Get extra to handle skip
             event_types=event_types_list,
             start_date=calculated_start_date,
-            end_date=end_date
+            end_date=end_date,
+            sort_by=sort_by,
+            sort_order=sort_order
         )
     else:
         # Fall back to querying by user_id (activities performed BY the user)
         actor_user_id = user_id or current_user.id
-        
+
         if hours:
             # Use recent activity method
             events = await activity_service.get_recent_activity(
                 user_id=actor_user_id,
                 hours=hours,
-                limit=limit
+                limit=limit + skip,  # Get extra to handle skip
+                sort_by=sort_by,
+                sort_order=sort_order
             )
         else:
             # Use general activity method
             events = await activity_service.get_user_activity(
                 user_id=actor_user_id,
-                limit=limit,
+                limit=limit + skip,  # Get extra to handle skip
                 event_types=event_types_list,
                 start_date=start_date,
-                end_date=end_date
+                end_date=end_date,
+                sort_by=sort_by,
+                sort_order=sort_order
             )
-        
+
         # If user_id is provided and different from current user, filter to show only activities related to that user
         if user_id and user_id != current_user.id:
             # Filter events where entity_type is "user" and entity_id matches the specified user_id
@@ -127,12 +157,16 @@ async def get_user_activity(
                 if (event.entity_type == "user" and event.entity_id == user_id)
                 or event.user_id == user_id  # Also include direct actions on that user
             ]
-    
+
+    # Apply skip and limit after fetching
+    total_events = len(events)
+    paginated_events = events[skip:skip + limit] if skip < total_events else []
+
     # Convert to response models
-    return [
+    items = [
         AuditEventResponse(
             event_id=event.event_id,
-            timestamp=event.timestamp,
+            event_timestamp=event.event_timestamp,
             event_type=event.event_type.value,
             severity=event.severity.value,
             entity_type=event.entity_type,
@@ -146,8 +180,16 @@ async def get_user_activity(
             description=event.description,
             metadata=event.metadata
         )
-        for event in events
+        for event in paginated_events
     ]
+
+    return AuditEventListResponse(
+        items=items,
+        total=total_events,
+        has_next=(skip + limit) < total_events,
+        skip=skip,
+        limit=limit
+    )
 
 
 @router.get("/login-history", response_model=List[AuditEventResponse])
@@ -172,7 +214,7 @@ async def get_login_history(
     return [
         AuditEventResponse(
             event_id=event.event_id,
-            timestamp=event.timestamp,
+            event_timestamp=event.event_timestamp,
             event_type=event.event_type.value,
             severity=event.severity.value,
             entity_type=event.entity_type,
@@ -237,7 +279,7 @@ async def get_session_activity(
     return [
         AuditEventResponse(
             event_id=event.event_id,
-            timestamp=event.timestamp,
+            event_timestamp=event.event_timestamp,
             event_type=event.event_type.value,
             severity=event.severity.value,
             entity_type=event.entity_type,

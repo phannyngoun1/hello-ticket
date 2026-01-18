@@ -330,20 +330,6 @@ class ShowQueryHandler:
         if not show:
             raise NotFoundError(f"Show {query.show_id} not found")
 
-        # Log audit event for show read
-        try:
-            audit_event = await create_audit_event(
-                event_type=AuditEventType.READ,
-                entity_type="show",
-                entity_id=show.id,
-                description=f"Show viewed: {show.name}",
-                severity=AuditSeverity.LOW
-            )
-
-            await log_audit_event(audit_event)
-        except Exception as e:
-            logger.warning(f"Failed to log audit event for show read {show.id}: {e}")
-
         return show
 
     async def handle_get_show_by_code(self, query: GetShowByCodeQuery) -> Show:
@@ -351,20 +337,6 @@ class ShowQueryHandler:
         show = await self._show_repository.get_by_code(tenant_id, query.code)
         if not show:
             raise NotFoundError(f"Show code {query.code} not found")
-
-        # Log audit event for show read
-        try:
-            audit_event = await create_audit_event(
-                event_type=AuditEventType.READ,
-                entity_type="show",
-                entity_id=show.id,
-                description=f"Show viewed by code: {show.name}",
-                severity=AuditSeverity.LOW
-            )
-
-            await log_audit_event(audit_event)
-        except Exception as e:
-            logger.warning(f"Failed to log audit event for show read {show.id}: {e}")
 
         return show
 

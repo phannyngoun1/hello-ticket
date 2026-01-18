@@ -14,7 +14,7 @@
  * - Responsive design
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -41,7 +41,6 @@ import {
   Plus,
   Edit3,
   Trash2,
-  Shield,
   User,
   Clock,
   BarChart3,
@@ -54,14 +53,14 @@ import {
   Filter,
 } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
-import { useAuditLogs } from "./audit-service";
+import { useAuditLogs } from "@truths/shared";
+import type { AuditLogSorting } from "@truths/shared";
 import type {
   AuditLogsProps,
   AuditLogsTableProps,
   AuditLogRowProps,
   EventTypeConfig,
   SeverityConfig,
-  AuditLogSorting,
 } from "./types";
 
 /**
@@ -160,7 +159,7 @@ export function AuditLogs({
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters || {});
-  const [localSorting, setLocalSorting] = useState<AuditLogSorting>(sorting || { field: 'timestamp', direction: 'desc' });
+  const [localSorting, setLocalSorting] = useState<AuditLogSorting>(sorting || { field: 'event_timestamp', direction: 'desc' });
 
   // Use API service when no logs prop provided
   const {
@@ -172,13 +171,54 @@ export function AuditLogs({
   } = useAuditLogs(entityType, entityId, {}, { // Start with empty filters
     autoLoad: !propLogs, // Only auto-load if no logs prop provided
     limit,
+    sortBy: localSorting.field,
+    sortOrder: localSorting.direction,
   });
 
   // Determine which data source to use
-  const displayLogs = propLogs || apiLogs;
+  const rawLogs = propLogs || apiLogs || [];
   const displayLoading = loading !== undefined ? loading : apiLoading;
-  
+
   const displayHasMore = hasMore !== undefined ? hasMore : apiHasMore;
+
+  // Sort logs based on current sorting configuration
+  const displayLogs = useMemo(() => {
+    if (!rawLogs.length) return [];
+
+    return [...rawLogs].sort((a, b) => {
+      const { field, direction } = localSorting;
+      let comparison = 0;
+
+      switch (field) {
+        case 'event_timestamp':
+          const aEventTime = a.event_timestamp ? new Date(a.event_timestamp).getTime() : 0;
+          const bEventTime = b.event_timestamp ? new Date(b.event_timestamp).getTime() : 0;
+          comparison = aEventTime - bEventTime;
+          break;
+        case 'event_type':
+          comparison = a.event_type.localeCompare(b.event_type);
+          break;
+        case 'severity':
+          // Define severity order: critical > high > medium > low
+          const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+          comparison = (severityOrder[a.severity as keyof typeof severityOrder] || 0) -
+                      (severityOrder[b.severity as keyof typeof severityOrder] || 0);
+          break;
+        case 'user_email':
+          const aEmail = a.user_email || '';
+          const bEmail = b.user_email || '';
+          comparison = aEmail.localeCompare(bEmail);
+          break;
+        case 'description':
+          comparison = a.description.localeCompare(b.description);
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === 'desc' ? -comparison : comparison;
+    });
+  }, [rawLogs, localSorting]);
 
   const toggleRowExpansion = useCallback((eventId: string) => {
     setExpandedRows(prev => {
@@ -215,21 +255,16 @@ export function AuditLogs({
     }
   }, [localFilters, onFiltersChange, propLogs]);
 
-  const updateSorting = useCallback((field: string) => {
-    const newSorting: AuditLogSorting = {
-      field: field as AuditLogSorting['field'],
-      direction: localSorting.field === field && localSorting.direction === 'desc' ? 'asc' : 'desc'
-    };
-    setLocalSorting(newSorting);
-    if (onSortingChange) {
-      onSortingChange(newSorting);
-    }
-  }, [localSorting, onSortingChange]);
+
+  // Track previous filters to detect actual changes
+  const prevFiltersRef = React.useRef(localFilters);
 
   // Reload API data when filters change (only when using API service)
   React.useEffect(() => {
-    if (!propLogs && Object.keys(localFilters).length > 0) {
-      // Trigger reload with new filters
+    const filtersChanged = JSON.stringify(prevFiltersRef.current) !== JSON.stringify(localFilters);
+
+    if (!propLogs && filtersChanged && Object.keys(localFilters).length > 0) {
+      prevFiltersRef.current = localFilters;
       apiRefresh();
     }
   }, [localFilters, propLogs, apiRefresh]);
@@ -383,16 +418,21 @@ export function AuditLogs({
               <Select
                 value={`${localSorting.field}-${localSorting.direction}`}
                 onValueChange={(value) => {
-                  const [field] = value.split('-') as [AuditLogSorting['field']];
-                  updateSorting(field);
+                  const [field, direction] = value.split('-') as [AuditLogSorting['field'], 'asc' | 'desc'];
+                  const newSorting: AuditLogSorting = {
+                    field,
+                    direction
+                  };
+                  setLocalSorting(newSorting);
+                  if (onSortingChange) {
+                    onSortingChange(newSorting);
+                  }
                 }}
               >
                 <SelectTrigger className="w-48 h-8">
                   <SelectValue placeholder="Sort by..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="timestamp-desc">Newest First</SelectItem>
-                  <SelectItem value="timestamp-asc">Oldest First</SelectItem>
                   <SelectItem value="event_timestamp-desc">Event Time (Newest)</SelectItem>
                   <SelectItem value="event_timestamp-asc">Event Time (Oldest)</SelectItem>
                   <SelectItem value="event_type-asc">Event Type (A-Z)</SelectItem>
@@ -472,6 +512,9 @@ function AuditLogsTable({
   expandedRows: Set<string>;
   onToggleRowExpansion: (eventId: string) => void;
 }) {
+  // Safety check for undefined logs
+  const safeLogs = logs || [];
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -489,7 +532,7 @@ function AuditLogsTable({
     );
   }
 
-  if (logs.length === 0) {
+  if (safeLogs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
@@ -504,7 +547,7 @@ function AuditLogsTable({
   return (
     <div className="h-[600px] overflow-y-auto">
       <div className="space-y-2">
-        {logs.map((log) => (
+        {safeLogs.map((log) => (
           <AuditLogRow
             key={log.event_id}
             log={log}
@@ -596,7 +639,7 @@ function AuditLogRow({
           <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              {formatTimestamp(log.timestamp)}
+              {log.event_timestamp ? formatTimestamp(log.event_timestamp) : 'Unknown time'}
             </div>
             {log.ip_address && (
               <span className="truncate">IP: {log.ip_address}</span>
@@ -661,22 +704,20 @@ function AuditLogRow({
             </div>
           )}
 
-          {log.event_timestamp && log.event_timestamp !== log.timestamp && (
-            <div className="mt-4 p-2 bg-blue-50 rounded border border-blue-200">
-              <div className="flex items-center gap-2 text-xs text-blue-700">
-                <Shield className="h-3 w-3" />
-                <span>
-                  Event occurred: {formatTimestamp(log.event_timestamp)}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
   );
 }
 
+// Re-export types and hooks from shared package
 export type { AuditLogsProps, AuditLogEntry } from "./types";
-export { useAuditLogs, AuditLogsService } from "./audit-service";
-export type { AuditLogParams, AuditLogResponse } from "./audit-service";
+export {
+  useAuditLogs,
+  AuditService,
+  AuditProvider,
+  useAuditService,
+  type AuditLogParams,
+  type AuditLogResponse,
+  type AuditServiceConfig,
+} from "@truths/shared";

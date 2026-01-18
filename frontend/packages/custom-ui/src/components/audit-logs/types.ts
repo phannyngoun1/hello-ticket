@@ -1,64 +1,17 @@
 /**
  * Audit Logs Component Types
  *
- * Defines TypeScript interfaces for audit log display components.
+ * Re-exports shared types and defines component-specific interfaces.
  */
 
-export interface AuditLogEntry {
-  /** Unique identifier for the audit event */
-  event_id: string;
+// Re-export shared types for convenience
+export type {
+  AuditLogEntry,
+  AuditLogFilters,
+  AuditLogSorting,
+} from "@truths/shared";
 
-  /** When the audit log was created/recorded */
-  timestamp: string;
-
-  /** When the actual business event occurred (if available) */
-  event_timestamp?: string;
-
-  /** Type of audit event (create, update, delete, read, etc.) */
-  event_type: string;
-
-  /** Severity level of the event */
-  severity: "low" | "medium" | "high" | "critical";
-
-  /** Type of entity being audited (user, event, booking, etc.) */
-  entity_type: string;
-
-  /** ID of the entity being audited */
-  entity_id: string;
-
-  /** ID of the user who performed the action */
-  user_id?: string;
-
-  /** Email of the user who performed the action */
-  user_email?: string;
-
-  /** Session ID associated with the action */
-  session_id?: string;
-
-  /** Request ID for tracking the HTTP request */
-  request_id?: string;
-
-  /** IP address of the user who performed the action */
-  ip_address?: string;
-
-  /** User agent string from the browser/client */
-  user_agent?: string;
-
-  /** Human-readable description of the action */
-  description: string;
-
-  /** Additional metadata associated with the event */
-  metadata: Record<string, any>;
-
-  /** Old values before the change (for update/delete events) */
-  old_values?: Record<string, any>;
-
-  /** New values after the change (for create/update events) */
-  new_values?: Record<string, any>;
-
-  /** Fields that were changed (for update events) */
-  changed_fields?: string[];
-}
+import type { AuditLogEntry, AuditLogFilters, AuditLogSorting } from "@truths/shared";
 
 export interface AuditLogsProps {
   /** The entity type to filter logs by (e.g., "event", "user", "booking") */
@@ -120,34 +73,6 @@ export interface AuditLogsProps {
 
   /** Callback when sorting changes */
   onSortingChange?: (sorting: AuditLogSorting) => void;
-}
-
-export interface AuditLogFilters {
-  /** Filter by event types */
-  eventTypes?: string[];
-
-  /** Filter by severity levels */
-  severities?: string[];
-
-  /** Filter by user email */
-  userEmail?: string;
-
-  /** Filter by date range */
-  dateFrom?: string;
-
-  /** Filter by date range */
-  dateTo?: string;
-
-  /** Search in description */
-  search?: string;
-}
-
-export interface AuditLogSorting {
-  /** Field to sort by */
-  field: 'timestamp' | 'event_timestamp' | 'event_type' | 'severity' | 'user_email' | 'description';
-
-  /** Sort direction */
-  direction: 'asc' | 'desc';
 }
 
 export interface AuditLogsTableProps {

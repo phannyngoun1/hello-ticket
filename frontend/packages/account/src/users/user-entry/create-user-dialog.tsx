@@ -6,6 +6,8 @@
  * @author Phanny
  */
 
+// @refresh reset
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@truths/ui";
 import {
@@ -720,14 +722,12 @@ export function CreateUserDialog({
   );
 }
 
-export function createUserDialogMetadata(): AccountComponentMetadata {
-  return {
-    name: "Create User Dialog",
-    description:
-      "Full-screen dialog for creating new users with form validation",
-    category: "users",
-    tags: ["users", "create", "dialog", "form", "validation", "fullscreen"],
-    version: "1.0.0",
-    dependencies: ["@truths/ui"],
-  };
-}
+export const createUserDialogMetadata: AccountComponentMetadata = {
+  name: "Create User Dialog",
+  description:
+    "Full-screen dialog for creating new users with form validation",
+  category: "users",
+  tags: ["users", "create", "dialog", "form", "validation", "fullscreen"],
+  version: "1.0.0",
+  dependencies: ["@truths/ui"],
+};
