@@ -53,6 +53,7 @@ export function ExploreList() {
     endDate: null,
   });
   const [eventPastEvents, setEventPastEvents] = useState(false);
+  const [timelineSource, setTimelineSource] = useState<"now-showing" | "coming-soon" | null>("now-showing");
 
   // UI state
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
@@ -270,6 +271,7 @@ export function ExploreList() {
     setEventStatusFilter("all");
     setEventDateFilter({ startDate: null, endDate: null });
     setEventPastEvents(false);
+    setTimelineSource(null);
   }, []);
 
   const hasShowFilters = !!(showSearch ||
@@ -281,6 +283,30 @@ export function ExploreList() {
 
 
 
+
+  // Events for timeline options (Now Showing / Coming Soon): same as filtered but without date range
+  const eventsForTimelineOptions = useMemo(() => {
+    if (!eventsData?.data) return [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return eventsData.data.filter((event) => {
+      const eventDate = new Date(event.start_dt);
+      eventDate.setHours(0, 0, 0, 0);
+      if (!eventPastEvents && eventDate < now) return false;
+      if (event.is_active === false) return false;
+      if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
+      if (eventSearch) {
+        const searchLower = eventSearch.toLowerCase();
+        if (!event.title.toLowerCase().includes(searchLower)) return false;
+      }
+      return true;
+    });
+  }, [
+    eventsData?.data,
+    eventSearch,
+    eventStatusFilter,
+    eventPastEvents,
+  ]);
 
   // Filter events for event-based view
   const filteredEvents = useMemo(() => {
@@ -302,19 +328,23 @@ export function ExploreList() {
       // Filter out inactive events
       if (event.is_active === false) return false;
 
-      // Filter by status
-      if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
+      // Filter by status: when a timeline tab choice is active, use on_sale (Now Showing) or published (Coming Soon); otherwise use the Status filter
+      if (timelineSource === "now-showing") {
+        if (event.status !== EventStatusEnum.ON_SALE) return false;
+      } else if (timelineSource === "coming-soon") {
+        if (event.status !== EventStatusEnum.PUBLISHED) return false;
+      } else {
+        if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
+      }
 
-      // Filter by date range
+      // Filter by date range (parse as local date to avoid UTC boundary issues)
       if (eventDateFilter.startDate) {
-        const startDate = new Date(eventDateFilter.startDate);
-        startDate.setHours(0, 0, 0, 0);
+        const startDate = new Date(eventDateFilter.startDate + "T00:00:00");
         if (eventDate < startDate) return false;
       }
 
       if (eventDateFilter.endDate) {
-        const endDate = new Date(eventDateFilter.endDate);
-        endDate.setHours(23, 59, 59, 999);
+        const endDate = new Date(eventDateFilter.endDate + "T23:59:59.999");
         if (eventDate > endDate) return false;
       }
 
@@ -348,6 +378,7 @@ export function ExploreList() {
     eventStatusFilter,
     eventDateFilter,
     eventPastEvents,
+    timelineSource,
   ]);
 
   const isLoading = showsLoading || eventsLoading;
@@ -417,6 +448,8 @@ export function ExploreList() {
               showPastEvents={eventPastEvents}
               onShowPastEventsChange={setEventPastEvents}
               onClearFilters={clearEventFilters}
+              events={eventsForTimelineOptions}
+              onTimelineSourceChange={setTimelineSource}
             />
           ) : (
              <h1 className="text-2xl font-bold tracking-tight h-10 flex items-center">Explore Calendar</h1>
