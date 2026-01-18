@@ -6,22 +6,8 @@
  */
 
 import { useState, useMemo } from "react";
-import {
-  Button,
-  Badge,
-  Input,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Separator,
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@truths/ui";
-import { RefreshCw, Search, Filter, Check } from "lucide-react";
+import { Button, Badge, Input, FilterPopover } from "@truths/ui";
+import { RefreshCw, Search } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
 import { Item, ItemContent, ItemDescription, ItemTitle } from "@truths/ui";
 import type { EventSeat, EventSeatStatus } from "./types";
@@ -42,6 +28,8 @@ export function EventSeatListViewOnly({
   const [searchQuery, setSearchQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState<Set<string>>(new Set());
   const [sectionSearchQuery, setSectionSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set());
+  const [statusSearchQuery, setStatusSearchQuery] = useState("");
 
   // Get unique sections from event seats
   const sections = useMemo(() => {
@@ -63,6 +51,34 @@ export function EventSeatListViewOnly({
     return sections.filter((section) => section.toLowerCase().includes(query));
   }, [sections, sectionSearchQuery]);
 
+  const getDisplayStatus = (
+    status: EventSeatStatus,
+    ticketStatus?: string
+  ): string => {
+    return status === "held" || status === "blocked"
+      ? status
+      : ticketStatus || status;
+  };
+
+  const statuses = useMemo(() => {
+    const statusSet = new Set<string>();
+    eventSeats.forEach((seat) => {
+      const displayStatus = getDisplayStatus(seat.status, seat.ticket_status);
+      if (displayStatus) {
+        statusSet.add(String(displayStatus));
+      }
+    });
+    return Array.from(statusSet).sort((a, b) => a.localeCompare(b));
+  }, [eventSeats]);
+
+  const filteredStatuses = useMemo(() => {
+    if (!statusSearchQuery.trim()) {
+      return statuses;
+    }
+    const query = statusSearchQuery.toLowerCase();
+    return statuses.filter((status) => status.toLowerCase().includes(query));
+  }, [statuses, statusSearchQuery]);
+
   // Filter seats by section and search query (no status filtering)
   const filteredSeats = useMemo(() => {
     return eventSeats.filter((seat) => {
@@ -73,6 +89,13 @@ export function EventSeatListViewOnly({
         !sectionFilter.has(seat.section_name)
       ) {
         return false;
+      }
+
+      if (statusFilter.size > 0) {
+        const displayStatus = getDisplayStatus(seat.status, seat.ticket_status);
+        if (!displayStatus || !statusFilter.has(String(displayStatus))) {
+          return false;
+        }
       }
 
       // Filter by search query
@@ -86,7 +109,7 @@ export function EventSeatListViewOnly({
         false
       );
     });
-  }, [eventSeats, sectionFilter, searchQuery]);
+  }, [eventSeats, sectionFilter, statusFilter, searchQuery]);
 
   const handleSectionToggle = (section: string) => {
     const newFilter = new Set(sectionFilter);
@@ -100,6 +123,20 @@ export function EventSeatListViewOnly({
 
   const handleClearSectionFilter = () => {
     setSectionFilter(new Set());
+  };
+
+  const handleStatusToggle = (status: string) => {
+    const newFilter = new Set(statusFilter);
+    if (newFilter.has(status)) {
+      newFilter.delete(status);
+    } else {
+      newFilter.add(status);
+    }
+    setStatusFilter(newFilter);
+  };
+
+  const handleClearStatusFilter = () => {
+    setStatusFilter(new Set());
   };
 
   // Group filtered seats by section
@@ -159,10 +196,7 @@ export function EventSeatListViewOnly({
   };
 
   const getStatusBadge = (status: EventSeatStatus, ticketStatus?: string) => {
-    const displayStatus =
-      status === "held" || status === "blocked"
-        ? status
-        : ticketStatus || status;
+    const displayStatus = getDisplayStatus(status, ticketStatus);
     const statusUpper = String(displayStatus).toUpperCase().trim();
 
     const variants: Record<
@@ -239,80 +273,28 @@ export function EventSeatListViewOnly({
             className="pl-8 h-8 text-sm min-w-0"
           />
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 px-2 flex-shrink-0 justify-start gap-1"
-            >
-              <Filter className="h-3 w-3" />
-              <span className="text-[10px] whitespace-nowrap">
-                {sectionFilter.size === 0
-                  ? "Sections"
-                  : sectionFilter.size === 1
-                    ? Array.from(sectionFilter)[0].slice(0, 8)
-                    : `${sectionFilter.size}`}
-              </span>
-              {sectionFilter.size > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="rounded-sm px-0.5 py-0 text-[9px] font-normal h-3 ml-0.5"
-                >
-                  {sectionFilter.size}
-                </Badge>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0" align="start">
-            <Command>
-              <CommandInput
-                placeholder="Search sections..."
-                value={sectionSearchQuery}
-                onValueChange={setSectionSearchQuery}
-              />
-              <CommandList>
-                <CommandEmpty>No sections found.</CommandEmpty>
-                <CommandGroup>
-                  {filteredSections.map((section) => {
-                    const isSelected = sectionFilter.has(section);
-                    return (
-                      <CommandItem
-                        key={section}
-                        onSelect={() => handleSectionToggle(section)}
-                      >
-                        <div
-                          className={cn(
-                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                            isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "opacity-50 [&_svg]:invisible"
-                          )}
-                        >
-                          <Check className="h-3 w-3" />
-                        </div>
-                        <span>{section}</span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-                {sectionFilter.size > 0 && (
-                  <>
-                    <Separator />
-                    <CommandGroup>
-                      <CommandItem
-                        onSelect={handleClearSectionFilter}
-                        className="justify-center text-center"
-                      >
-                        Clear filters
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <FilterPopover
+          items={filteredSections}
+          selectedItems={sectionFilter}
+          searchQuery={sectionSearchQuery}
+          onSearchQueryChange={setSectionSearchQuery}
+          onToggleItem={handleSectionToggle}
+          onClear={handleClearSectionFilter}
+          label="Sections"
+          searchPlaceholder="Search sections..."
+          emptyText="No sections found."
+        />
+        <FilterPopover
+          items={filteredStatuses}
+          selectedItems={statusFilter}
+          searchQuery={statusSearchQuery}
+          onSearchQueryChange={setStatusSearchQuery}
+          onToggleItem={handleStatusToggle}
+          onClear={handleClearStatusFilter}
+          label="Status"
+          searchPlaceholder="Search status..."
+          emptyText="No status found."
+        />
         {onRefresh && (
           <Button
             onClick={onRefresh}
