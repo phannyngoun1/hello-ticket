@@ -1,7 +1,5 @@
-import * as React from "react";
-import { Check, Filter } from "lucide-react";
-
-import { Badge } from "./badge";
+import { type ReactNode } from "react";
+import { Check, ListFilter } from "lucide-react";
 import { Button } from "./button";
 import {
   Command,
@@ -16,12 +14,12 @@ import { Separator } from "./separator";
 import { cn } from "../lib/utils";
 
 export interface FilterPopoverProps {
-  items: string[];
-  selectedItems: Set<string>;
-  searchQuery: string;
-  onSearchQueryChange: (value: string) => void;
-  onToggleItem: (item: string) => void;
-  onClear: () => void;
+  items?: string[];
+  selectedItems?: Set<string>;
+  searchQuery?: string;
+  onSearchQueryChange?: (value: string) => void;
+  onToggleItem?: (item: string) => void;
+  onClear?: () => void;
   label?: string;
   searchPlaceholder?: string;
   emptyText?: string;
@@ -29,6 +27,9 @@ export interface FilterPopoverProps {
   buttonClassName?: string;
   popoverContentClassName?: string;
   maxLabelLength?: number;
+  badgeCount?: number;
+  children?: ReactNode;
+  align?: "start" | "center" | "end";
 }
 
 export function FilterPopover({
@@ -45,14 +46,18 @@ export function FilterPopover({
   buttonClassName,
   popoverContentClassName,
   maxLabelLength = 8,
+  badgeCount,
+  children,
+  align = "start",
 }: FilterPopoverProps) {
-  const selectedCount = selectedItems.size;
+  const hasCustomContent = !!children;
+  const selectedCount = badgeCount ?? selectedItems?.size ?? 0;
   const triggerLabel =
-    selectedCount === 0
+    hasCustomContent || selectedCount === 0
       ? label
       : selectedCount === 1
         ? (() => {
-            const selected = Array.from(selectedItems)[0] ?? "";
+            const selected = Array.from(selectedItems ?? [])[0] ?? "";
             return maxLabelLength > 0
               ? selected.slice(0, maxLabelLength)
               : selected;
@@ -64,71 +69,77 @@ export function FilterPopover({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
           className={cn(
-            "h-7 px-2 flex-shrink-0 justify-start gap-1",
+            "h-8 gap-2 px-4 shadow-sm border-dashed",
             buttonClassName
           )}
         >
-          <Filter className="h-3 w-3" />
-          <span className="text-[10px] whitespace-nowrap">{triggerLabel}</span>
+          <ListFilter className="h-4 w-4" />
+          {triggerLabel}
           {selectedCount > 0 && (
-            <Badge
-              variant="secondary"
-              className="rounded-sm px-0.5 py-0 text-[9px] font-normal h-3 ml-0.5"
-            >
+            <div className="bg-primary text-primary-foreground text-[10px] rounded-full h-4 w-4 grid place-items-center ml-1 font-bold">
               {selectedCount}
-            </Badge>
+            </div>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn("w-[250px] p-0", popoverContentClassName)}
-        align="start"
+        className={cn(
+          hasCustomContent ? "p-0" : "w-[250px] p-0",
+          popoverContentClassName
+        )}
+        align={align}
       >
-        <Command>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onValueChange={onSearchQueryChange}
-          />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              {items.map((item) => {
-                const isSelected = selectedItems.has(item);
-                return (
-                  <CommandItem key={item} onSelect={() => onToggleItem(item)}>
-                    <div
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50 [&_svg]:invisible"
-                      )}
+        {hasCustomContent ? (
+          children
+        ) : (
+          <Command>
+            <CommandInput
+              placeholder={searchPlaceholder}
+              value={searchQuery ?? ""}
+              onValueChange={onSearchQueryChange ?? (() => {})}
+            />
+            <CommandList>
+              <CommandEmpty>{emptyText}</CommandEmpty>
+              <CommandGroup>
+                {(items ?? []).map((item) => {
+                  const isSelected = selectedItems?.has(item) ?? false;
+                  return (
+                    <CommandItem
+                      key={item}
+                      onSelect={() => onToggleItem?.(item)}
                     >
-                      <Check className="h-3 w-3" />
-                    </div>
-                    <span>{item}</span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-            {selectedCount > 0 && (
-              <>
-                <Separator />
-                <CommandGroup>
-                  <CommandItem
-                    onSelect={onClear}
-                    className="justify-center text-center"
-                  >
-                    {clearLabel}
-                  </CommandItem>
-                </CommandGroup>
-              </>
-            )}
-          </CommandList>
-        </Command>
+                      <div
+                        className={cn(
+                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "opacity-50 [&_svg]:invisible"
+                        )}
+                      >
+                        <Check className="h-3 w-3" />
+                      </div>
+                      <span>{item}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              {selectedCount > 0 && onClear && (
+                <>
+                  <Separator />
+                  <CommandGroup>
+                    <CommandItem
+                      onSelect={onClear}
+                      className="justify-center text-center"
+                    >
+                      {clearLabel}
+                    </CommandItem>
+                  </CommandGroup>
+                </>
+              )}
+            </CommandList>
+          </Command>
+        )}
       </PopoverContent>
     </Popover>
   );
