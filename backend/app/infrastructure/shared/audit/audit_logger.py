@@ -40,10 +40,11 @@ class AuditSeverity(Enum):
 
 
 @dataclass
-class AuditEvent:
+class AuditLogEvent:
     """Audit event record"""
     event_id: str = field(default_factory=generate_id)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))  # When audit log was created
+    event_timestamp: Optional[datetime] = None  # When the actual event occurred
     event_type: AuditEventType = AuditEventType.READ
     severity: AuditSeverity = AuditSeverity.LOW
     
@@ -80,6 +81,7 @@ class AuditEvent:
         return {
             "event_id": self.event_id,
             "timestamp": self.timestamp.isoformat(),
+            "event_timestamp": self.event_timestamp.isoformat() if self.event_timestamp else None,
             "event_type": self.event_type.value,
             "severity": self.severity.value,
             "entity_type": self.entity_type,
@@ -105,7 +107,7 @@ class AuditLogger(ABC):
     """Abstract audit logger"""
     
     @abstractmethod
-    async def log_event(self, event: AuditEvent) -> None:
+    async def log_event(self, event: AuditLogEvent) -> None:
         """Log an audit event"""
         pass
     
@@ -118,7 +120,7 @@ class AuditLogger(ABC):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 100
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """Retrieve audit events"""
         pass
 
@@ -129,7 +131,7 @@ class DatabaseAuditLogger(AuditLogger):
     def __init__(self, session):
         self.session = session
     
-    async def log_event(self, event: AuditEvent) -> None:
+    async def log_event(self, event: AuditLogEvent) -> None:
         """Log audit event to database"""
         # In a real implementation, this would save to a dedicated audit table
         logger.info(f"Audit Log: {event.event_type.value} - {event.entity_type}:{event.entity_id}")
@@ -147,7 +149,7 @@ class DatabaseAuditLogger(AuditLogger):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 100
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """Retrieve audit events from database"""
         # In a real implementation, this would query the audit table
         return []
@@ -181,9 +183,9 @@ class AuditContext:
         old_values: Optional[Dict[str, Any]] = None,
         new_values: Optional[Dict[str, Any]] = None,
         severity: AuditSeverity = AuditSeverity.LOW
-    ) -> AuditEvent:
+    ) -> AuditLogEvent:
         """Create audit event with context"""
-        event = AuditEvent(
+        event = AuditLogEvent(
             event_type=event_type,
             severity=severity,
             entity_type=entity_type,
@@ -232,7 +234,64 @@ def set_audit_logger(logger: AuditLogger) -> None:
     _audit_logger_var.set(logger)
 
 
-async def log_audit_event(event: AuditEvent) -> None:
+async def create_audit_event(
+    event_type: AuditEventType,
+    entity_type: str,
+    entity_id: str,
+    description: str = "",
+    old_values: Optional[Dict[str, Any]] = None,
+    new_values: Optional[Dict[str, Any]] = None,
+    severity: AuditSeverity = AuditSeverity.LOW,
+    changed_fields: Optional[List[str]] = None
+) -> AuditLogEvent:
+    """
+    Create audit event with automatic context detection.
+
+    Automatically uses request context when available (HTTP requests),
+    or falls back to system-generated values for background operations.
+    """
+    context = get_audit_context()
+
+    if context:
+        # Use request context for rich audit data
+        audit_event = context.create_event(
+            event_type=event_type,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            description=description,
+            old_values=old_values,
+            new_values=new_values,
+            severity=severity
+        )
+        # Override changed_fields if provided
+        if changed_fields is not None:
+            audit_event.changed_fields = changed_fields
+        # Set event_timestamp to when the business event occurred
+        audit_event.event_timestamp = datetime.now(timezone.utc)
+    else:
+        # Fallback for non-HTTP contexts (background jobs, system operations)
+        from datetime import datetime, timezone
+        from app.shared.utils import generate_id
+
+        audit_event = AuditLogEvent(
+            event_id=generate_id(),
+            timestamp=datetime.now(timezone.utc),
+            event_timestamp=datetime.now(timezone.utc),  # When business event occurred
+            event_type=event_type,
+            severity=severity,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            description=description,
+            old_values=old_values or {},
+            new_values=new_values or {},
+            changed_fields=changed_fields or [],
+            metadata={"logged_without_request_context": True}
+        )
+
+    return audit_event
+
+
+async def log_audit_event(event: AuditLogEvent) -> None:
     """Log audit event using logger from context"""
     logger = _audit_logger_var.get()
     if logger:

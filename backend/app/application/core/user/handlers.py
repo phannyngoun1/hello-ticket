@@ -25,7 +25,7 @@ from app.domain.core.user.repository import UserRepository
 from app.shared.exceptions import NotFoundError, BusinessRuleError
 from app.shared.tenant_context import require_tenant_context
 from app.infrastructure.shared.audit.audit_logger import (
-    AuditEvent,
+    AuditLogEvent,
     AuditEventType,
     AuditSeverity,
     AuditLogger,
@@ -114,7 +114,7 @@ class UserCommandHandler:
                 from datetime import datetime, timezone
                 from app.shared.utils import generate_id
                 
-                audit_event = AuditEvent(
+                audit_event = AuditLogEvent(
                     event_id=generate_id(),
                     timestamp=datetime.now(timezone.utc),
                     event_type=AuditEventType.CREATE,
@@ -249,7 +249,7 @@ class UserCommandHandler:
                 from app.shared.utils import generate_id
                 from app.shared.tenant_context import get_tenant_context
                 
-                audit_event = AuditEvent(
+                audit_event = AuditLogEvent(
                     event_id=generate_id(),
                     timestamp=datetime.now(timezone.utc),
                     event_type=AuditEventType.UPDATE,
@@ -323,7 +323,7 @@ class UserCommandHandler:
                 from datetime import datetime, timezone
                 from app.shared.utils import generate_id
                 
-                audit_event = AuditEvent(
+                audit_event = AuditLogEvent(
                     event_id=generate_id(),
                     timestamp=datetime.now(timezone.utc),
                     event_type=AuditEventType.DELETE,
@@ -430,7 +430,7 @@ class UserCommandHandler:
                 from datetime import datetime, timezone
                 from app.shared.utils import generate_id
                 
-                audit_event = AuditEvent(
+                audit_event = AuditLogEvent(
                     event_id=generate_id(),
                     timestamp=datetime.now(timezone.utc),
                     event_type=event_type,

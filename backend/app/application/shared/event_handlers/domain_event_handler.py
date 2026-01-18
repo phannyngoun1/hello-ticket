@@ -50,7 +50,7 @@ class AuditEventHandler(DomainEventHandler):
             return
         
         from app.infrastructure.shared.audit.audit_logger import (
-            AuditEvent,
+            AuditLogEvent,
             AuditEventType,
             AuditSeverity,
             get_audit_context
@@ -63,7 +63,7 @@ class AuditEventHandler(DomainEventHandler):
             from app.shared.tenant_context import get_tenant_context
             tenant_id = get_tenant_context() or 'unknown'
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_type=AuditEventType.UPDATE,
                 entity_type=event.__class__.__name__.replace("Event", "").lower(),
                 entity_id=getattr(event, 'user_id', None) or getattr(event, 'order_id', None) or 'unknown',

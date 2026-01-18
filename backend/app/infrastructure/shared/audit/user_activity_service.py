@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 
-from app.infrastructure.shared.audit.audit_logger import AuditEvent, AuditEventType
+from app.infrastructure.shared.audit.audit_logger import AuditLogEvent, AuditEventType
 from app.infrastructure.shared.audit.async_audit_logger import AsyncAuditLogger
 from app.infrastructure.shared.database.models import AuditLogModel
 from app.infrastructure.shared.database.connection import get_async_session
@@ -57,7 +57,7 @@ class UserActivityService:
         event_types: Optional[List[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get user activity logs with optimized querying
         
@@ -122,9 +122,10 @@ class UserActivityService:
                 
                 events = []
                 for model in models:
-                    event = AuditEvent(
+                    event = AuditLogEvent(
                         event_id=model.event_id,
                         timestamp=model.timestamp,
+                        event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
@@ -156,10 +157,11 @@ class UserActivityService:
             return []
     
     async def get_login_history(
+        
         self,
         user_id: str,
         limit: int = 50
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get user login history
         
@@ -181,7 +183,7 @@ class UserActivityService:
         user_id: str,
         hours: int = 24,
         limit: int = 100
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get user's recent activity (last N hours)
         
@@ -206,7 +208,7 @@ class UserActivityService:
         start_date: datetime,
         end_date: datetime,
         limit: int = 500
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get user activity within a date range
         
@@ -312,7 +314,7 @@ class UserActivityService:
         event_types: Optional[List[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get activity logs for a specific entity (e.g., all activities for a user)
         
@@ -384,9 +386,10 @@ class UserActivityService:
                 
                 events = []
                 for model in models:
-                    event = AuditEvent(
+                    event = AuditLogEvent(
                         event_id=model.event_id,
                         timestamp=model.timestamp,
+                        event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
@@ -421,7 +424,7 @@ class UserActivityService:
         self,
         session_id: str,
         limit: int = 200
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """
         Get all activity for a specific session
         
@@ -457,9 +460,10 @@ class UserActivityService:
                 
                 events = []
                 for model in models:
-                    event = AuditEvent(
+                    event = AuditLogEvent(
                         event_id=model.event_id,
                         timestamp=model.timestamp,
+                        event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,

@@ -1,6 +1,13 @@
 """Handlers for event commands and queries."""
 import logging
 
+from app.infrastructure.shared.audit.audit_logger import (
+    AuditEventType,
+    AuditSeverity,
+    create_audit_event,
+    log_audit_event
+)
+
 from app.application.ticketing.commands_event import (
     CreateEventCommand,
     UpdateEventCommand,
@@ -63,6 +70,32 @@ class EventCommandHandler(BaseApplicationHandler):
 
         saved = await self._event_repository.save(event)
         logger.info("Created event %s for tenant=%s", saved.id, tenant_id)
+
+        # Log audit event for event creation
+        try:
+            new_values = {
+                "title": saved.title,
+                "show_id": saved.show_id,
+                "start_dt": saved.start_dt.isoformat(),
+                "duration_minutes": saved.duration_minutes,
+                "venue_id": saved.venue_id,
+                "layout_id": saved.layout_id,
+                "status": saved.status.value if hasattr(saved.status, 'value') else str(saved.status)
+            }
+
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.CREATE,
+                entity_type="event",
+                entity_id=saved.id,
+                description=f"Event created: {saved.title}",
+                new_values=new_values,
+                severity=AuditSeverity.MEDIUM
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for event creation {saved.id}: {e}")
+
         return saved
 
     async def handle_update_event(self, command: UpdateEventCommand) -> Event:
@@ -74,9 +107,19 @@ class EventCommandHandler(BaseApplicationHandler):
             tenant_id
         )
 
+        # Capture old values before update for audit logging
+        old_values = {
+            "title": event.title,
+            "start_dt": event.start_dt.isoformat(),
+            "duration_minutes": event.duration_minutes,
+            "venue_id": event.venue_id,
+            "layout_id": event.layout_id,
+            "status": event.status.value if hasattr(event.status, 'value') else str(event.status)
+        }
+
         # Validate venue if provided
         venue_id_to_validate = command.venue_id if command.venue_id is not None else event.venue_id
-        
+
         # Validate layout if provided (must belong to the venue)
         if command.layout_id is not None:
             await self._validate_layout(tenant_id, command.layout_id, venue_id_to_validate)
@@ -99,16 +142,85 @@ class EventCommandHandler(BaseApplicationHandler):
 
         saved = await self._event_repository.save(event)
         logger.info("Updated event %s for tenant=%s", saved.id, tenant_id)
+
+        # Log audit event for event update
+        try:
+            new_values = {
+                "title": saved.title,
+                "start_dt": saved.start_dt.isoformat(),
+                "duration_minutes": saved.duration_minutes,
+                "venue_id": saved.venue_id,
+                "layout_id": saved.layout_id,
+                "status": saved.status.value if hasattr(saved.status, 'value') else str(saved.status)
+            }
+
+            # Only log if there were actual changes
+            if old_values != new_values:
+                changed_fields = [
+                    field for field in new_values.keys()
+                    if field in old_values and old_values[field] != new_values[field]
+                ]
+
+                audit_event = await create_audit_event(
+                    event_type=AuditEventType.UPDATE,
+                    entity_type="event",
+                    entity_id=saved.id,
+                    description=f"Event updated: {saved.title}",
+                    old_values=old_values,
+                    new_values=new_values,
+                    severity=AuditSeverity.MEDIUM,
+                    changed_fields=changed_fields
+                )
+
+                await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for event update {saved.id}: {e}")
+
         return saved
 
     async def handle_delete_event(self, command: DeleteEventCommand) -> bool:
         tenant_id = self.get_tenant_id()
+
+        # Get event details before deletion for audit logging
+        event = await self.get_entity_or_404(
+            self._event_repository,
+            command.event_id,
+            "Event",
+            tenant_id
+        )
+
         deleted = await self._event_repository.delete(tenant_id, command.event_id)
 
         if not deleted:
             raise NotFoundError(f"Event {command.event_id} not found")
 
         logger.info("Soft deleted event %s for tenant=%s", command.event_id, tenant_id)
+
+        # Log audit event for event deletion
+        try:
+            old_values = {
+                "title": event.title,
+                "show_id": event.show_id,
+                "start_dt": event.start_dt.isoformat(),
+                "duration_minutes": event.duration_minutes,
+                "venue_id": event.venue_id,
+                "layout_id": event.layout_id,
+                "status": event.status.value if hasattr(event.status, 'value') else str(event.status)
+            }
+
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.DELETE,
+                entity_type="event",
+                entity_id=event.id,
+                description=f"Event deleted: {event.title}",
+                old_values=old_values,
+                severity=AuditSeverity.HIGH
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for event deletion {event.id}: {e}")
+
         return True
 
 
@@ -172,11 +284,27 @@ class EventQueryHandler(BaseApplicationHandler):
         self._event_repository = event_repository
 
     async def handle_get_event_by_id(self, query: GetEventByIdQuery) -> Event:
-        return await self.get_entity_or_404(
+        event = await self.get_entity_or_404(
             self._event_repository,
             query.event_id,
             "Event"
         )
+
+        # Log audit event for event read
+        try:
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.READ,
+                entity_type="event",
+                entity_id=event.id,
+                description=f"Event viewed: {event.title}",
+                severity=AuditSeverity.LOW
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for event read {event.id}: {e}")
+
+        return event
 
 
     async def handle_search_events(self, query: SearchEventsQuery) -> EventSearchResult:

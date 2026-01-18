@@ -1,6 +1,13 @@
 """Handlers for show commands and queries."""
 import logging
 
+from app.infrastructure.shared.audit.audit_logger import (
+    AuditEventType,
+    AuditSeverity,
+    create_audit_event,
+    log_audit_event
+)
+
 from app.application.ticketing.commands_show import (
     CreateShowCommand,
     UpdateShowCommand,
@@ -96,13 +103,48 @@ class ShowCommandHandler:
                     )
                     session.add(image)
                 session.commit()
-        
+
         logger.info("Created show %s for tenant=%s", saved.id, tenant_id)
+
+        # Log audit event for show creation
+        try:
+            new_values = {
+                "code": saved.code,
+                "name": saved.name,
+                "organizer_id": saved.organizer_id,
+                "started_date": saved.started_date.isoformat() if saved.started_date else None,
+                "ended_date": saved.ended_date.isoformat() if saved.ended_date else None,
+                "note": saved.note
+            }
+
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.CREATE,
+                entity_type="show",
+                entity_id=saved.id,
+                description=f"Show created: {saved.name}",
+                new_values=new_values,
+                severity=AuditSeverity.MEDIUM
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for show creation {saved.id}: {e}")
+
         return saved
 
     async def handle_update_show(self, command: UpdateShowCommand) -> Show:
         tenant_id = require_tenant_context()
         show = await self._get_show_or_raise(tenant_id, command.show_id)
+
+        # Capture old values before update for audit logging
+        old_values = {
+            "code": show.code,
+            "name": show.name,
+            "organizer_id": show.organizer_id,
+            "started_date": show.started_date.isoformat() if show.started_date else None,
+            "ended_date": show.ended_date.isoformat() if show.ended_date else None,
+            "note": show.note
+        }
 
         if command.code:
             normalized_code = command.code.strip().upper()
@@ -172,18 +214,81 @@ class ShowCommandHandler:
                         )
                         session.add(image)
                 session.commit()
-        
+
         logger.info("Updated show %s for tenant=%s", saved.id, tenant_id)
+
+        # Log audit event for show update
+        try:
+            new_values = {
+                "code": saved.code,
+                "name": saved.name,
+                "organizer_id": saved.organizer_id,
+                "started_date": saved.started_date.isoformat() if saved.started_date else None,
+                "ended_date": saved.ended_date.isoformat() if saved.ended_date else None,
+                "note": saved.note
+            }
+
+            # Only log if there were actual changes
+            if old_values != new_values:
+                changed_fields = [
+                    field for field in new_values.keys()
+                    if field in old_values and old_values[field] != new_values[field]
+                ]
+
+                audit_event = await create_audit_event(
+                    event_type=AuditEventType.UPDATE,
+                    entity_type="show",
+                    entity_id=saved.id,
+                    description=f"Show updated: {saved.name}",
+                    old_values=old_values,
+                    new_values=new_values,
+                    severity=AuditSeverity.MEDIUM,
+                    changed_fields=changed_fields
+                )
+
+                await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for show update {saved.id}: {e}")
+
         return saved
 
     async def handle_delete_show(self, command: DeleteShowCommand) -> bool:
         tenant_id = require_tenant_context()
+
+        # Get show details before deletion for audit logging
+        show = await self._get_show_or_raise(tenant_id, command.show_id)
+
         deleted = await self._show_repository.delete(tenant_id, command.show_id)
 
         if not deleted:
             raise NotFoundError(f"Show {command.show_id} not found")
 
         logger.info("Soft deleted show %s for tenant=%s", command.show_id, tenant_id)
+
+        # Log audit event for show deletion
+        try:
+            old_values = {
+                "code": show.code,
+                "name": show.name,
+                "organizer_id": show.organizer_id,
+                "started_date": show.started_date.isoformat() if show.started_date else None,
+                "ended_date": show.ended_date.isoformat() if show.ended_date else None,
+                "note": show.note
+            }
+
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.DELETE,
+                entity_type="show",
+                entity_id=show.id,
+                description=f"Show deleted: {show.name}",
+                old_values=old_values,
+                severity=AuditSeverity.HIGH
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for show deletion {show.id}: {e}")
+
         return True
 
 
@@ -224,6 +329,21 @@ class ShowQueryHandler:
         show = await self._show_repository.get_by_id(tenant_id, query.show_id)
         if not show:
             raise NotFoundError(f"Show {query.show_id} not found")
+
+        # Log audit event for show read
+        try:
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.READ,
+                entity_type="show",
+                entity_id=show.id,
+                description=f"Show viewed: {show.name}",
+                severity=AuditSeverity.LOW
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for show read {show.id}: {e}")
+
         return show
 
     async def handle_get_show_by_code(self, query: GetShowByCodeQuery) -> Show:
@@ -231,6 +351,21 @@ class ShowQueryHandler:
         show = await self._show_repository.get_by_code(tenant_id, query.code)
         if not show:
             raise NotFoundError(f"Show code {query.code} not found")
+
+        # Log audit event for show read
+        try:
+            audit_event = await create_audit_event(
+                event_type=AuditEventType.READ,
+                entity_type="show",
+                entity_id=show.id,
+                description=f"Show viewed by code: {show.name}",
+                severity=AuditSeverity.LOW
+            )
+
+            await log_audit_event(audit_event)
+        except Exception as e:
+            logger.warning(f"Failed to log audit event for show read {show.id}: {e}")
+
         return show
 
     async def handle_search_shows(self, query: SearchShowsQuery) -> ShowSearchResult:

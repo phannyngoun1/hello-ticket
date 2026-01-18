@@ -17,6 +17,7 @@ import {
   DescriptionList,
   DescriptionSection,
   DescriptionItem,
+  AuditLogs,
 } from "@truths/custom-ui";
 import type { ActionItem, ButtonTabItem } from "@truths/custom-ui";
 import {
@@ -370,6 +371,13 @@ export function ShowDetail({
     });
   }
 
+  // Add audit logs tab
+  tabs.push({
+    value: "audit",
+    label: "Activity Log",
+    icon: Database, // Could use a different icon for audit logs
+  });
+
   // Build action list
   const actionItems: ActionItem[] = [];
 
@@ -658,6 +666,18 @@ export function ShowDetail({
                       </pre>
                     </div>
                   </Card>
+                </div>
+              )}
+
+              {/* Audit Logs Tab */}
+              {activeTab === "audit" && data?.id && (
+                <div className="space-y-6">
+                  <AuditLogs
+                    entityType="show"
+                    entityId={data.id}
+                    title="Show Activity"
+                    description="Complete audit trail for this show including all changes, access, and system events"
+                  />
                 </div>
               )}
             </div>

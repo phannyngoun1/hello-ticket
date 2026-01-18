@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import INET
 from datetime import datetime
 import logging
 
-from app.infrastructure.shared.audit.audit_logger import AuditLogger, AuditEvent
+from app.infrastructure.shared.audit.audit_logger import AuditLogger, AuditLogEvent
 from app.infrastructure.shared.audit.event_buffer import AuditEventBuffer
 from app.infrastructure.shared.database.models import AuditLogModel
 from app.infrastructure.shared.database.connection import get_async_session
@@ -45,7 +45,7 @@ class AsyncAuditLogger(AuditLogger):
         # Wire up buffer flush callback
         self._buffer.set_flush_callback(self._persist_batch)
     
-    async def log_event(self, event: AuditEvent) -> None:
+    async def log_event(self, event: AuditLogEvent) -> None:
         """
         Log event asynchronously (non-blocking)
         
@@ -54,7 +54,7 @@ class AsyncAuditLogger(AuditLogger):
         """
         await self._buffer.append(event)
     
-    async def _persist_batch(self, batch: List[AuditEvent]) -> None:
+    async def _persist_batch(self, batch: List[AuditLogEvent]) -> None:
         """
         Persist batch of events to database
         
@@ -96,6 +96,7 @@ class AsyncAuditLogger(AuditLogger):
                         tenant_id=tenant_id,
                         event_id=event.event_id,
                         timestamp=event.timestamp,
+                        event_timestamp=event.event_timestamp,
                         event_type=event.event_type.value,
                         severity=event.severity.value,
                         entity_type=event.entity_type,
@@ -142,7 +143,7 @@ class AsyncAuditLogger(AuditLogger):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         limit: int = 100
-    ) -> List[AuditEvent]:
+    ) -> List[AuditLogEvent]:
         """Query audit events from database"""
         try:
             session = await get_async_session()
@@ -182,9 +183,10 @@ class AsyncAuditLogger(AuditLogger):
                     # Handle IP address (might be string or None)
                     ip_address = str(model.ip_address) if model.ip_address else None
                     
-                    event = AuditEvent(
+                    event = AuditLogEvent(
                         event_id=model.event_id,
                         timestamp=model.timestamp,
+                        event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
                         entity_type=model.entity_type,
