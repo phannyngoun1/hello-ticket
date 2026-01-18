@@ -512,20 +512,17 @@ class EventSeatQueryHandler:
                 EventSeatModel.event_id == query.event_id,
                 EventSeatModel.is_deleted == False
             )
-
             # Get total count
             total_result = session.exec(select(func.count()).select_from(base_query.subquery())).first()
             total_seats = total_result or 0
-
             # Get counts by status
-            status_counts = session.exec(
-                select(
-                    EventSeatModel.status,
-                    func.count(EventSeatModel.id)
-                ).select_from(base_query.subquery())
-                .group_by(EventSeatModel.status)
-            ).all()
+            subquery_alias = base_query.subquery().alias()
+            staticstics_query = select(
+                    subquery_alias.c.status,
+                    func.count(subquery_alias.c.id)
+                ).select_from(subquery_alias).group_by(subquery_alias.c.status)
 
+            status_counts = session.exec(staticstics_query).all()
             # Initialize counts
             available_seats = 0
             reserved_seats = 0
@@ -533,8 +530,8 @@ class EventSeatQueryHandler:
             held_seats = 0
             blocked_seats = 0
 
-            # Map status counts
             for status, count in status_counts:
+                print(f"DEBUG: Processing status={status}, count={count}, type={type(status)}")
                 if status == EventSeatStatusEnum.AVAILABLE:
                     available_seats = count
                 elif status == EventSeatStatusEnum.RESERVED:
@@ -545,6 +542,8 @@ class EventSeatQueryHandler:
                     held_seats = count
                 elif status == EventSeatStatusEnum.BLOCKED:
                     blocked_seats = count
+                else:
+                    print(f"WARNING: Unhandled status: {status} (type: {type(status)})")
 
             return EventSeatStatistics(
                 total_seats=total_seats,

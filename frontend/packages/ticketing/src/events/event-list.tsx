@@ -81,8 +81,13 @@ function EventStatisticsDisplay({ eventId }: { eventId: string }) {
     );
   }
 
-  const { available_seats, reserved_seats, sold_seats, held_seats } =
-    statistics;
+  const {
+    available_seats,
+    reserved_seats,
+    sold_seats,
+    held_seats,
+    blocked_seats,
+  } = statistics;
 
   return (
     <div className="flex items-center gap-3 text-xs">
@@ -94,19 +99,24 @@ function EventStatisticsDisplay({ eventId }: { eventId: string }) {
         </span>
       </div>
       <div className="flex items-center gap-1" title="Reserved seats">
-        <div className="w-2 h-2 rounded-full bg-blue-500" />
-        <span className="text-blue-700 font-medium">{reserved_seats}</span>
+        <div className="w-2 h-2 rounded-full bg-yellow-500" />
+        <span className="text-yellow-700 font-medium">{reserved_seats}</span>
         <span className="text-muted-foreground hidden sm:inline">RESERVED</span>
       </div>
       <div className="flex items-center gap-1" title="Sold seats">
-        <div className="w-2 h-2 rounded-full bg-red-500" />
-        <span className="text-red-700 font-medium">{sold_seats}</span>
+        <div className="w-2 h-2 rounded-full bg-blue-500" />
+        <span className="text-blue-700 font-medium">{sold_seats}</span>
         <span className="text-muted-foreground hidden sm:inline">SOLD</span>
       </div>
       <div className="flex items-center gap-1" title="Held seats">
-        <div className="w-2 h-2 rounded-full bg-yellow-500" />
-        <span className="text-yellow-700 font-medium">{held_seats}</span>
+        <div className="w-2 h-2 rounded-full bg-purple-500" />
+        <span className="text-purple-700 font-medium">{held_seats}</span>
         <span className="text-muted-foreground hidden sm:inline">HELD</span>
+      </div>
+      <div className="flex items-center gap-1" title="Blocked seats">
+        <div className="w-2 h-2 rounded-full bg-red-500" />
+        <span className="text-red-700 font-medium">{blocked_seats}</span>
+        <span className="text-muted-foreground hidden sm:inline">BLOCKED</span>
       </div>
     </div>
   );
@@ -400,6 +410,7 @@ export function EventList({
                       ? (item) => customActions(item.event)
                       : undefined
                   }
+                  
                 />
               </div>
             </div>
