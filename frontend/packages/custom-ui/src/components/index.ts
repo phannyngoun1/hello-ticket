@@ -6,8 +6,8 @@ export type { DataRow, DataTableProps, ColumnTextHeaderProps, CreateTextColumnOp
 export { DataList } from './data-list';
 
 // Audit Logs
-export { AuditLogs, useAuditLogs, AuditLogsService } from './audit-logs';
-export type { AuditLogsProps, AuditLogEntry, AuditLogParams, AuditLogResponse } from './audit-logs';
+export { AuditLogs, useAuditLogs, AuditService, AuditProvider, useAuditService } from './audit-logs';
+export type { AuditLogsProps, AuditLogEntry, AuditLogParams, AuditLogResponse, AuditServiceConfig } from './audit-logs';
 
 // Tree Select
 export { TreeSelect } from './tree-select';

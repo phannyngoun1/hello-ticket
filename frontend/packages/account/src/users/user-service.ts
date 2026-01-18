@@ -423,7 +423,7 @@ export class UserService {
 
             const response = await this.apiClient.get<Array<{
                 event_id: string;
-                timestamp: string;
+                event_timestamp: string;
                 event_type: string;
                 severity: string;
                 entity_type: string;
@@ -443,27 +443,27 @@ export class UserService {
 
             // Transform API response to UserActivity format
             return response.map((event) => {
-                // Parse timestamp - API returns as ISO string
+                // Parse event_timestamp - API returns as ISO string
                 let timestamp: Date;
                 try {
-                    // Debug: log the raw timestamp value
-                    if (typeof event.timestamp !== 'string' && event.timestamp) {
-                        console.warn('Unexpected timestamp type:', typeof event.timestamp, event.timestamp);
+                    // Debug: log the raw event_timestamp value
+                    if (typeof event.event_timestamp !== 'string' && event.event_timestamp) {
+                        console.warn('Unexpected event_timestamp type:', typeof event.event_timestamp, event.event_timestamp);
                     }
 
-                    const timestampStr = typeof event.timestamp === 'string'
-                        ? event.timestamp
-                        : (event.timestamp as string)?.toString() || '';
+                    const timestampStr = typeof event.event_timestamp === 'string'
+                        ? event.event_timestamp
+                        : (event.event_timestamp as string)?.toString() || '';
 
                     timestamp = new Date(timestampStr);
 
                     // Validate the date is valid
                     if (isNaN(timestamp.getTime())) {
-                        console.warn('Invalid timestamp from API:', event.timestamp, 'parsed as:', timestampStr);
+                        console.warn('Invalid event_timestamp from API:', event.event_timestamp, 'parsed as:', timestampStr);
                         timestamp = new Date();
                     }
                 } catch (error) {
-                    console.warn('Error parsing timestamp:', event.timestamp, error);
+                    console.warn('Error parsing event_timestamp:', event.event_timestamp, error);
                     timestamp = new Date();
                 }
 

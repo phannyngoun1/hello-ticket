@@ -6,6 +6,8 @@
  * @author Phanny
  */
 
+// @refresh reset
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { Button, Badge } from "@truths/ui";
@@ -716,13 +718,11 @@ export function CreateGroupDialog({
   );
 }
 
-export function createGroupDialogMetadata(): AccountComponentMetadata {
-  return {
-    name: "Create Group Dialog",
-    description: "Dialog for creating new groups",
-    category: "groups",
-    tags: ["groups", "create", "dialog"],
-    version: "1.0.0",
-    dependencies: ["@truths/ui"],
-  };
-}
+export const createGroupDialogMetadata: AccountComponentMetadata = {
+  name: "Create Group Dialog",
+  description: "Dialog for creating new groups",
+  category: "groups",
+  tags: ["groups", "create", "dialog"],
+  version: "1.0.0",
+  dependencies: ["@truths/ui"],
+};

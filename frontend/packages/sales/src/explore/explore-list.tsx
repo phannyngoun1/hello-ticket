@@ -148,7 +148,6 @@ export function ExploreList() {
     },
     pagination: showPagination,
     enabled: layoutMode === "show" || layoutMode === "event",
-    disableCache: true,
   });
 
   // Shared events data for show mode (to group events by shows) - fetch when in show mode
@@ -158,7 +157,6 @@ export function ExploreList() {
     },
     pagination: eventPagination,
     enabled: layoutMode === "show",
-    disableCache: true,
   });
 
   // Determine status filter based on timeline source for API call
@@ -181,7 +179,6 @@ export function ExploreList() {
     },
     pagination: eventPagination,
     enabled: layoutMode === "event",
-    disableCache: true,
   });
 
   // Calendar mode data - only fetch when in calendar mode
@@ -191,17 +188,15 @@ export function ExploreList() {
     },
     pagination: eventPagination,
     enabled: layoutMode === "calendar",
-    disableCache: true,
   });
 
-  // Timeline options data - always fetch all events for timeline calculation
+  // Timeline options data - fetch events for timeline calculation in event mode
   const { data: timelineEventsData } = useEvents(eventService, {
     filter: {
       status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
     },
     pagination: eventPagination,
     enabled: layoutMode === "event",
-    disableCache: true,
   });
 
   // Fetch banner images for shows (with rate limiting protection) - only when in show mode

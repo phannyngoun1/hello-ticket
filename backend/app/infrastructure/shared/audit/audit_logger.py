@@ -43,7 +43,6 @@ class AuditSeverity(Enum):
 class AuditLogEvent:
     """Audit event record"""
     event_id: str = field(default_factory=generate_id)
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))  # When audit log was created
     event_timestamp: Optional[datetime] = None  # When the actual event occurred
     event_type: AuditEventType = AuditEventType.READ
     severity: AuditSeverity = AuditSeverity.LOW
@@ -80,7 +79,6 @@ class AuditLogEvent:
         """Convert to dictionary for storage"""
         return {
             "event_id": self.event_id,
-            "timestamp": self.timestamp.isoformat(),
             "event_timestamp": self.event_timestamp.isoformat() if self.event_timestamp else None,
             "event_type": self.event_type.value,
             "severity": self.severity.value,
@@ -136,7 +134,7 @@ class DatabaseAuditLogger(AuditLogger):
         # In a real implementation, this would save to a dedicated audit table
         logger.info(f"Audit Log: {event.event_type.value} - {event.entity_type}:{event.entity_id}")
         logger.info(f"  User: {event.user_email} ({event.user_id})")
-        logger.info(f"  Timestamp: {event.timestamp}")
+        logger.info(f"  Event Timestamp: {event.event_timestamp}")
         logger.info(f"  Description: {event.description}")
         if event.changed_fields:
             logger.info(f"  Changed fields: {', '.join(event.changed_fields)}")
@@ -250,6 +248,7 @@ async def create_audit_event(
     Automatically uses request context when available (HTTP requests),
     or falls back to system-generated values for background operations.
     """
+    from datetime import datetime, timezone
     context = get_audit_context()
 
     if context:
@@ -270,12 +269,10 @@ async def create_audit_event(
         audit_event.event_timestamp = datetime.now(timezone.utc)
     else:
         # Fallback for non-HTTP contexts (background jobs, system operations)
-        from datetime import datetime, timezone
         from app.shared.utils import generate_id
 
         audit_event = AuditLogEvent(
             event_id=generate_id(),
-            timestamp=datetime.now(timezone.utc),
             event_timestamp=datetime.now(timezone.utc),  # When business event occurred
             event_type=event_type,
             severity=severity,

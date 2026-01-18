@@ -339,7 +339,7 @@ Sorting is controlled via a dropdown in the header that shows current sort field
 
 ```tsx
 const [sorting, setSorting] = useState<AuditLogSorting>({
-  field: 'timestamp',
+  field: 'event_timestamp',
   direction: 'desc'
 });
 
@@ -452,7 +452,6 @@ The component expects audit log data in this format:
 ```typescript
 interface AuditLogEntry {
   event_id: string;
-  timestamp: string;
   event_timestamp?: string;
   event_type: string;
   severity: "low" | "medium" | "high" | "critical";
@@ -472,7 +471,7 @@ interface AuditLogEntry {
 }
 
 interface AuditLogSorting {
-  field: 'timestamp' | 'event_timestamp' | 'event_type' | 'severity' | 'user_email' | 'description';
+  field: 'event_timestamp' | 'event_type' | 'severity' | 'user_email' | 'description';
   direction: 'asc' | 'desc';
 }
 ```

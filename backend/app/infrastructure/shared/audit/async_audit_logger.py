@@ -95,7 +95,6 @@ class AsyncAuditLogger(AuditLogger):
                         id=log_id,
                         tenant_id=tenant_id,
                         event_id=event.event_id,
-                        timestamp=event.timestamp,
                         event_timestamp=event.event_timestamp,
                         event_type=event.event_type.value,
                         severity=event.severity.value,
@@ -165,12 +164,12 @@ class AsyncAuditLogger(AuditLogger):
                 if user_id:
                     query = query.where(AuditLogModel.user_id == user_id)
                 if start_date:
-                    query = query.where(AuditLogModel.timestamp >= start_date)
+                    query = query.where(AuditLogModel.event_timestamp >= start_date)
                 if end_date:
-                    query = query.where(AuditLogModel.timestamp <= end_date)
+                    query = query.where(AuditLogModel.event_timestamp <= end_date)
                 
                 # Order and limit
-                query = query.order_by(AuditLogModel.timestamp.desc()).limit(limit)
+                query = query.order_by(AuditLogModel.event_timestamp.desc()).limit(limit)
                 
                 result = await session.execute(query)
                 models = result.scalars().all()
@@ -185,7 +184,6 @@ class AsyncAuditLogger(AuditLogger):
                     
                     event = AuditLogEvent(
                         event_id=model.event_id,
-                        timestamp=model.timestamp,
                         event_timestamp=model.event_timestamp,
                         event_type=AuditEventType(model.event_type),
                         severity=AuditSeverity(model.severity),
