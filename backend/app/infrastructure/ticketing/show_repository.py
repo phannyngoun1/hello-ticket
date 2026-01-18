@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy import text
 from app.domain.ticketing.show import Show
 from app.domain.ticketing.show_repositories import ShowRepository, ShowSearchResult
-from app.infrastructure.shared.database.models import ShowModel
+from app.infrastructure.shared.database.models import ShowModel, OrganizerModel, EventModel
 from app.infrastructure.shared.database.connection import get_session_sync
 from app.infrastructure.ticketing.mapper_show import ShowMapper
 from app.shared.tenant_context import get_tenant_context
@@ -180,24 +180,39 @@ class SQLShowRepository(ShowRepository):
                 
                 if search:
                     search_term = f"%{search}%"
-                    conditions.append(
-                        or_(
-                            ShowModel.code.ilike(search_term),
-                            ShowModel.name.ilike(search_term)
-                        )
-                    )
+                    # Fuzzy search across multiple fields using OR conditions
+                    search_conditions = [
+                        ShowModel.code.ilike(search_term),     # Show code
+                        ShowModel.name.ilike(search_term),     # Show name
+                        ShowModel.note.ilike(search_term),     # Show notes
+                        OrganizerModel.name.ilike(search_term), # Organizer name
+                        OrganizerModel.code.ilike(search_term), # Organizer code
+                        # Check if any related events match the search
+                        select(EventModel.id).where(
+                            and_(
+                                EventModel.show_id == ShowModel.id,
+                                EventModel.title.ilike(search_term)  # Event name
+                            )
+                        ).exists()
+                    ]
+                    conditions.append(or_(*search_conditions))
                 
                 if is_active is not None:
                     conditions.append(ShowModel.is_active == is_active)
                 
-                # Count total
-                count_statement = select(ShowModel).where(and_(*conditions))
+                # Count total with JOINs for search
+                count_statement = (
+                    select(ShowModel)
+                    .join(OrganizerModel, ShowModel.organizer_id == OrganizerModel.id, isouter=True)
+                    .where(and_(*conditions))
+                )
                 all_models = session.exec(count_statement).all()
                 total = len(all_models)
-                
-                # Get paginated results
+
+                # Get paginated results with JOINs
                 statement = (
                     select(ShowModel)
+                    .join(OrganizerModel, ShowModel.organizer_id == OrganizerModel.id, isouter=True)
                     .where(and_(*conditions))
                     .offset(skip)
                     .limit(limit)
