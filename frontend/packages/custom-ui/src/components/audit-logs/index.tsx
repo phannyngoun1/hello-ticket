@@ -620,30 +620,35 @@ function AuditLogRow({
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Badge variant={eventConfig.variant} className="text-xs">
-              {eventConfig.label}
-            </Badge>
-            <Badge variant={severityConfig.variant} className="text-xs">
-              {SeverityIcon && <SeverityIcon className="h-3 w-3 mr-1" />}
-              {severityConfig.label}
-            </Badge>
-            {log.user_email && (
-              <span className="text-xs text-muted-foreground truncate">
-                by {log.user_email}
-              </span>
-            )}
+          {/* Title row with badges on the right */}
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-medium">{log.description}</p>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Badge variant={eventConfig.variant} className="text-xs">
+                {eventConfig.label}
+              </Badge>
+              <Badge variant={severityConfig.variant} className="text-xs">
+                {SeverityIcon && <SeverityIcon className="h-3 w-3 mr-1" />}
+                {severityConfig.label}
+              </Badge>
+            </div>
           </div>
 
-          <p className="text-sm font-medium">{log.description}</p>
-
-          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {log.event_timestamp ? formatTimestamp(log.event_timestamp) : 'Unknown time'}
+          {/* Second row with timestamp on left, user on right */}
+          <div className="flex items-center justify-between mt-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {log.event_timestamp ? formatTimestamp(log.event_timestamp) : 'Unknown time'}
+              </div>
+              {log.ip_address && (
+                <span className="truncate">IP: {log.ip_address}</span>
+              )}
             </div>
-            {log.ip_address && (
-              <span className="truncate">IP: {log.ip_address}</span>
+            {log.user_email && (
+              <span className="truncate">
+                by {log.user_email}
+              </span>
             )}
           </div>
         </div>
