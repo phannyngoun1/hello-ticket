@@ -1,6 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { List, Grid3x3, Ticket, Calendar } from "lucide-react";
+
+// Number of days back to show past events when enabled
+const PAST_EVENTS_DAYS_BACK = 90;
+
+// UI text for past events filter
+const PAST_EVENTS_LABEL = `Include past events (${PAST_EVENTS_DAYS_BACK} days back)`;
+const PAST_EVENTS_CLEAR_LABEL = `Clear past events filter (${PAST_EVENTS_DAYS_BACK} days back)`;
 import {
   Button,
 } from "@truths/ui";
@@ -99,6 +106,20 @@ export function ExploreList() {
     total: 0,
     totalPages: 0,
   }), []);
+
+  // Calculate date thresholds for past events
+  const pastEventsThreshold = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    return now;
+  }, []);
+
+  const pastEventsExtendedThreshold = useMemo(() => {
+    const threshold = new Date();
+    threshold.setHours(0, 0, 0, 0);
+    threshold.setDate(threshold.getDate() - PAST_EVENTS_DAYS_BACK);
+    return threshold;
+  }, []);
 
   // Debounced search values to prevent excessive API calls
   const [debouncedShowSearch, setDebouncedShowSearch] = useState("");
@@ -231,8 +252,9 @@ export function ExploreList() {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
-      // Filter out past events unless showPastEvents is true
-      if (!showPastEvents && eventDate < now) return false;
+      // Filter past events based on showPastEvents setting
+      const threshold = showPastEvents ? pastEventsExtendedThreshold : pastEventsThreshold;
+      if (eventDate < threshold) return false;
 
       // Filter out inactive events
       if (event.is_active === false) return false;
@@ -324,6 +346,8 @@ export function ExploreList() {
     showStatusFilter,
     showDateFilter,
     showPastEvents,
+    pastEventsThreshold,
+    pastEventsExtendedThreshold,
   ]);
 
   const handleEventClick = useCallback((event: Event) => {
@@ -387,8 +411,9 @@ export function ExploreList() {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
-      // Filter out past events unless eventPastEvents is true
-      if (!eventPastEvents && eventDate < now) return false;
+      // Filter past events based on eventPastEvents setting
+      const threshold = eventPastEvents ? pastEventsExtendedThreshold : pastEventsThreshold;
+      if (eventDate < threshold) return false;
 
       // Filter out inactive events
       if (event.is_active === false) return false;
@@ -436,8 +461,8 @@ export function ExploreList() {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
-      // Filter out past events (calendar mode shows past events by default for now)
-      if (eventDate < now) return false;
+      // Filter past events (calendar mode shows events from extended past threshold)
+      if (eventDate < pastEventsExtendedThreshold) return false;
 
       // Filter out inactive events
       if (event.is_active === false) return false;
@@ -462,6 +487,7 @@ export function ExploreList() {
   }, [
     calendarModeEventsData?.data,
     showsData?.data,
+    pastEventsExtendedThreshold,
   ]);
 
   const isLoading = layoutMode === "show"
@@ -523,6 +549,8 @@ export function ExploreList() {
               showPastEvents={showPastEvents}
               onShowPastEventsChange={setShowPastEvents}
               onClearFilters={clearShowFilters}
+              pastEventsLabel={PAST_EVENTS_LABEL}
+              pastEventsClearLabel={PAST_EVENTS_CLEAR_LABEL}
             />
           ) : layoutMode === "event" ? (
             <EventFilters
@@ -537,6 +565,8 @@ export function ExploreList() {
               onClearFilters={clearEventFilters}
               events={timelineEventsData?.data || []}
               onTimelineSourceChange={setTimelineSource}
+              pastEventsLabel={PAST_EVENTS_LABEL}
+              pastEventsClearLabel={PAST_EVENTS_CLEAR_LABEL}
             />
           ) : (
              <h1 className="text-2xl font-bold tracking-tight h-10 flex items-center">Explore Calendar</h1>

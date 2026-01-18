@@ -41,6 +41,8 @@ interface EventFiltersProps {
   events?: Event[];
   /** Called when the user selects from the timeline (Now Showing / Coming Soon) or clears it. Used to apply status: on_sale for Now Showing, published for Coming Soon. */
   onTimelineSourceChange?: (source: "now-showing" | "coming-soon" | null) => void;
+  pastEventsLabel?: string;
+  pastEventsClearLabel?: string;
 }
 
 export function EventFilters({
@@ -55,6 +57,8 @@ export function EventFilters({
   onClearFilters,
   events = [],
   onTimelineSourceChange,
+  pastEventsLabel = "Include past events",
+  pastEventsClearLabel = "Clear past events filter",
 }: EventFiltersProps) {
   const hasActiveFilters =
     search ||
@@ -246,7 +250,7 @@ export function EventFilters({
                             className="h-4 w-4 rounded border-gray-300 accent-primary"
                         />
                         <label htmlFor="eventShowPastEvents" className="text-sm font-medium cursor-pointer flex-1">
-                            Include past events
+                            {pastEventsLabel}
                         </label>
                     </div>
 
@@ -459,8 +463,8 @@ export function EventFilters({
                 type="button"
                 onClick={() => onShowPastEventsChange(false)}
                 className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                aria-label="Clear past events filter"
-                title="Clear past events filter"
+                aria-label={pastEventsClearLabel}
+                title={pastEventsClearLabel}
               >
                 <X className="h-3 w-3" />
               </button>
