@@ -11,7 +11,7 @@ from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import UserRole
 from app.shared.container import container
 from app.infrastructure.shared.audit.user_activity_service import UserActivityService
-from app.infrastructure.shared.audit.audit_logger import AuditEvent
+from app.infrastructure.shared.audit.audit_logger import AuditLogEvent
 from app.infrastructure.shared.audit.async_audit_logger import AsyncAuditLogger
 
 router = APIRouter(prefix="/audit", tags=["audit"])

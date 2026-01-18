@@ -22,7 +22,7 @@ from app.infrastructure.shared.security.jwt_handler import JWTHandler
 from app.shared.utils import log_error
 from app.infrastructure.shared.cache.cache_service import cache_service
 from app.infrastructure.shared.audit.audit_logger import (
-    AuditEvent,
+    AuditLogEvent,
     AuditEventType,
     AuditSeverity,
     get_audit_context,
@@ -66,7 +66,7 @@ async def _log_login_event(user: AuthenticatedUser, request: Request, session_id
             from datetime import datetime, timezone
             from app.shared.utils import generate_id
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_id=generate_id(),
                 timestamp=datetime.now(timezone.utc),
                 event_type=AuditEventType.LOGIN,
@@ -120,7 +120,7 @@ async def _log_logout_event(user_id: str, session_id: Optional[str], request: Re
             from datetime import datetime, timezone
             from app.shared.utils import generate_id
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_id=generate_id(),
                 timestamp=datetime.now(timezone.utc),
                 event_type=AuditEventType.LOGOUT,
@@ -170,7 +170,7 @@ async def _log_password_change_event(user: AuthenticatedUser, request: Request) 
             from datetime import datetime, timezone
             from app.shared.utils import generate_id
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_id=generate_id(),
                 timestamp=datetime.now(timezone.utc),
                 event_type=AuditEventType.PASSWORD_CHANGE,

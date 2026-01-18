@@ -1179,7 +1179,11 @@ class AuditLogModel(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), server_default="NOW()", index=True)
     )
-    
+    event_timestamp: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True)
+    )
+
     # Event Classification
     event_type: str = Field(index=True, max_length=50)
     severity: str = Field(index=True, max_length=20)

@@ -41,7 +41,7 @@ from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
 from fastapi import Request
 from app.infrastructure.shared.audit.audit_logger import (
-    AuditEvent,
+    AuditLogEvent,
     AuditEventType,
     AuditSeverity,
     get_audit_context,
@@ -82,7 +82,7 @@ async def _log_account_lock_event(user_id: str, lockout_minutes: int, locked_unt
             from datetime import datetime, timezone
             from app.shared.utils import generate_id
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_id=generate_id(),
                 timestamp=datetime.now(timezone.utc),
                 event_type=AuditEventType.ACCOUNT_LOCK,
@@ -135,7 +135,7 @@ async def _log_account_unlock_event(user_id: str, request: Request) -> None:
             from datetime import datetime, timezone
             from app.shared.utils import generate_id
             
-            audit_event = AuditEvent(
+            audit_event = AuditLogEvent(
                 event_id=generate_id(),
                 timestamp=datetime.now(timezone.utc),
                 event_type=AuditEventType.ACCOUNT_UNLOCK,
