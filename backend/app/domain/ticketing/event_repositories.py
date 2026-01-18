@@ -38,6 +38,7 @@ class EventRepository(ABC):
         is_active: Optional[bool] = None,
         show_id: Optional[str] = None,
         layout_id: Optional[str] = None,
+        status: Optional[List[str]] = None,
         skip: int = 0,
         limit: int = 50,
     ) -> EventSearchResult:

@@ -18,10 +18,12 @@ import type { ShowService } from "./show-service";
 export interface UseShowsParams {
   filter?: ShowFilter;
   pagination?: Pagination;
+  enabled?: boolean;
+  disableCache?: boolean;
 }
 
 export function useShows(service: ShowService, params?: UseShowsParams) {
-  const { filter, pagination } = params || {};
+  const { filter, pagination, enabled = true, disableCache = false } = params || {};
 
   return useQuery<PaginatedResponse<Show>>({
     queryKey: [
@@ -42,7 +44,8 @@ export function useShows(service: ShowService, params?: UseShowsParams) {
 
       });
     },
-    staleTime: 5 * 60 * 1000,
+    enabled,
+    staleTime: disableCache ? 0 : 5 * 60 * 1000,
   });
 }
 

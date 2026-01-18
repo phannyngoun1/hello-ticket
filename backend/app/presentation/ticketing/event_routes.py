@@ -1,5 +1,5 @@
 """FastAPI routes for Ticketing events"""
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -64,6 +64,7 @@ async def list_events(
     is_active: Optional[bool] = Query(None, description="Filter by active status"),
     show_id: Optional[str] = Query(None, description="Filter by show ID"),
     layout_id: Optional[str] = Query(None, description="Filter by layout ID"),
+    status: Optional[List[str]] = Query(None, description="Filter by event status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
@@ -78,10 +79,24 @@ async def list_events(
                 is_active=is_active,
                 show_id=show_id,
                 layout_id=layout_id,
+                status=status,
                 skip=skip,
                 limit=limit,
             )
         )
+
+
+        print("result *****************************")
+
+        print(status)
+        print(layout_id)
+        print(show_id)
+        print(search)
+        print(is_active)
+        print(skip)
+        print(limit)
+        print(result)
+        print("*****************************")
         presenter = EventPresenter()
         items = presenter.from_domain_list(result.items)
         return EventListResponse(
