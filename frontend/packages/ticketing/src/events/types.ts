@@ -120,6 +120,7 @@ export interface EventFilter {
   is_active?: boolean;
   show_id?: string;
   layout_id?: string;
+  status?: EventStatus | EventStatus[];
 }
 
 export interface SectionPricingConfig {

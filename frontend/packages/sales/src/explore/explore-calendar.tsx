@@ -3,6 +3,47 @@ import { MapPin, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import type { Event } from "@truths/ticketing";
+import { EventStatus } from "@truths/ticketing";
+
+// Function to get color classes based on event status
+const getEventStatusColor = (status: EventStatus): string => {
+  switch (status) {
+    case EventStatus.PUBLISHED:
+      return "border-l-blue-500 bg-blue-50/50 hover:bg-blue-50";
+    case EventStatus.ON_SALE:
+      return "border-l-green-500 bg-green-50/50 hover:bg-green-50";
+    case EventStatus.SOLD_OUT:
+      return "border-l-red-500 bg-red-50/50 hover:bg-red-50";
+    case EventStatus.CANCELLED:
+      return "border-l-gray-500 bg-gray-50/50 hover:bg-gray-50";
+    case EventStatus.COMPLETED:
+      return "border-l-purple-500 bg-purple-50/50 hover:bg-purple-50";
+    case EventStatus.DRAFT:
+      return "border-l-yellow-500 bg-yellow-50/50 hover:bg-yellow-50";
+    default:
+      return "border-l-gray-400 bg-gray-50/50 hover:bg-gray-50";
+  }
+};
+
+// Function to get status indicator color
+const getStatusIndicatorColor = (status: EventStatus): string => {
+  switch (status) {
+    case EventStatus.PUBLISHED:
+      return "bg-blue-500";
+    case EventStatus.ON_SALE:
+      return "bg-green-500";
+    case EventStatus.SOLD_OUT:
+      return "bg-red-500";
+    case EventStatus.CANCELLED:
+      return "bg-gray-500";
+    case EventStatus.COMPLETED:
+      return "bg-purple-500";
+    case EventStatus.DRAFT:
+      return "bg-yellow-500";
+    default:
+      return "bg-gray-400";
+  }
+};
 
 export interface ExploreCalendarProps {
   events: Event[];
@@ -523,16 +564,41 @@ export function ExploreCalendar({
                             <span className="flex items-center gap-1 shrink-0 ml-2">
                               {day.events.length === 1 ? (
                                 <span data-testid="availability-pill">
-                                  <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-sm" />
-                                  <span className="sr-only"></span>
+                                  <div className={cn(
+                                    "h-2.5 w-2.5 rounded-full shadow-sm",
+                                    getStatusIndicatorColor(day.events[0].status)
+                                  )} />
+                                  <span className="sr-only">{day.events[0].status}</span>
                                 </span>
                               ) : (
-                                <span
-                                  aria-hidden="true"
-                                  className="text-xs font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded"
-                                >
-                                  +{day.events.length}
-                                </span>
+                                (() => {
+                                  // Get unique statuses for this day (max 3 to avoid clutter)
+                                  const uniqueStatuses = Array.from(
+                                    new Set(day.events.map(event => event.status))
+                                  ).slice(0, 3);
+
+                                  return uniqueStatuses.length <= 3 ? (
+                                    <span className="flex gap-0.5">
+                                      {uniqueStatuses.map((status, index) => (
+                                        <div
+                                          key={index}
+                                          className={cn(
+                                            "h-2 w-2 rounded-full shadow-sm",
+                                            getStatusIndicatorColor(status)
+                                          )}
+                                          title={status}
+                                        />
+                                      ))}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      aria-hidden="true"
+                                      className="text-xs font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded"
+                                    >
+                                      +{day.events.length}
+                                    </span>
+                                  );
+                                })()
                               )}
                             </span>
                           )}
@@ -601,10 +667,10 @@ export function ExploreCalendar({
                                     onEventClick(event);
                                   }}
                                   className={cn(
-                                    "w-full text-left p-2 rounded-md",
-                                    "bg-accent/30 hover:bg-accent transition-all duration-150",
-                                    "group border border-transparent hover:border-border",
-                                    "focus:outline-none focus:ring-2 focus:ring-ring"
+                                    "w-full text-left p-2 rounded-md border-l-4",
+                                    "transition-all duration-150 group",
+                                    "focus:outline-none focus:ring-2 focus:ring-ring",
+                                    getEventStatusColor(event.status)
                                   )}
                                 >
                                   <div className="flex items-start justify-between gap-2 mb-1">

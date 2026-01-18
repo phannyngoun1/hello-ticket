@@ -1,6 +1,6 @@
 """Ticketing queries for CQRS pattern."""
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
@@ -25,6 +25,7 @@ class SearchEventsQuery:
     is_active: Optional[bool] = None
     show_id: Optional[str] = None
     layout_id: Optional[str] = None
+    status: Optional[List[str]] = None
     skip: int = 0
     limit: int = 50
 

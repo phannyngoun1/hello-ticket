@@ -34,6 +34,7 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
         is_active: Optional[bool] = None,
         show_id: Optional[str] = None,
         layout_id: Optional[str] = None,
+        status: Optional[List[str]] = None,
         include_deleted: bool = False,
         skip: int = 0,
         limit: int = 50,
@@ -60,6 +61,12 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
 
             if layout_id:
                 conditions.append(EventModel.layout_id == layout_id)
+
+            if status:
+                if len(status) == 1:
+                    conditions.append(EventModel.status == status[0])
+                else:
+                    conditions.append(EventModel.status.in_(status))
             
             # Count total
             count_statement = select(EventModel).where(and_(*conditions))

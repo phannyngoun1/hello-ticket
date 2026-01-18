@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { List, Grid3x3, Ticket, Calendar } from "lucide-react";
 import {
@@ -55,6 +55,15 @@ export function ExploreList() {
   const [eventPastEvents, setEventPastEvents] = useState(false);
   const [timelineSource, setTimelineSource] = useState<"now-showing" | "coming-soon" | null>("now-showing");
 
+  // Calendar mode filter states
+  const [calendarSearch, setCalendarSearch] = useState("");
+  const [calendarStatusFilter, setCalendarStatusFilter] = useState<EventStatus | "all">("all");
+  const [calendarDateFilter, setCalendarDateFilter] = useState<DateFilter>({
+    startDate: null,
+    endDate: null,
+  });
+  const [calendarPastEvents, setCalendarPastEvents] = useState(false);
+
   // UI state
   const [showImages, setShowImages] = useState<Record<string, ShowImage[]>>({});
   const [selectedShowForSheet, setSelectedShowForSheet] = useState<ShowWithEvents | null>(null);
@@ -83,21 +92,53 @@ export function ExploreList() {
 
   const eventService = useEventService();
   const showService = useShowService();
-  
-  // Fetch all shows
+
+  // Debounced search values to prevent excessive API calls
+  const [debouncedShowSearch, setDebouncedShowSearch] = useState("");
+  const [debouncedEventSearch, setDebouncedEventSearch] = useState("");
+  const [debouncedCalendarSearch, setDebouncedCalendarSearch] = useState("");
+
+  // Debounce search inputs - wait 300ms after user stops typing before triggering API call
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedShowSearch(showSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [showSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEventSearch(eventSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [eventSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCalendarSearch(calendarSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [calendarSearch]);
+
+  // Show mode data - fetch shows and events when in show mode
   const { data: showsData, isLoading: showsLoading } = useShows(showService, {
+    filter: {
+      search: debouncedShowSearch || undefined,
+    },
     pagination: {
       page: 1,
       pageSize: 100,
       total: 0,
       totalPages: 0,
     },
+    enabled: layoutMode === "show",
+    disableCache: true,
   });
 
-  // Fetch all events (using max allowed limit of 200)
-  const { data: eventsData, isLoading: eventsLoading } = useEvents(eventService, {
+  // Shared events data for show mode (to group events by shows) - fetch when in show mode
+  const { data: showModeEventsData, isLoading: showModeEventsLoading } = useEvents(eventService, {
     filter: {
-      search: eventSearch || undefined,
+      status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
     },
     pagination: {
       page: 1,
@@ -105,15 +146,75 @@ export function ExploreList() {
       total: 0,
       totalPages: 0,
     },
+    enabled: layoutMode === "show",
+    disableCache: true,
   });
 
-  // Fetch banner images for shows (with rate limiting protection)
+  // Determine status filter based on timeline source for API call
+  const eventModeStatusFilter = useMemo(() => {
+    if (timelineSource === "now-showing") {
+      return [EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT];
+    } else if (timelineSource === "coming-soon") {
+      return [EventStatusEnum.PUBLISHED];
+    } else {
+      return [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT];
+    }
+  }, [timelineSource]);
+
+  // Event mode data - only fetch when in event mode
+  const { data: eventModeEventsData, isLoading: eventModeEventsLoading } = useEvents(eventService, {
+    filter: {
+      search: debouncedEventSearch || undefined,
+      status: eventModeStatusFilter,
+    },
+    pagination: {
+      page: 1,
+      pageSize: 200, // API maximum limit
+      total: 0,
+      totalPages: 0,
+    },
+    enabled: layoutMode === "event",
+    disableCache: true,
+  });
+
+  // Calendar mode data - only fetch when in calendar mode
+  const { data: calendarModeEventsData, isLoading: calendarModeEventsLoading } = useEvents(eventService, {
+    filter: {
+      search: debouncedCalendarSearch || undefined,
+      status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
+    },
+    pagination: {
+      page: 1,
+      pageSize: 200, // API maximum limit
+      total: 0,
+      totalPages: 0,
+    },
+    enabled: layoutMode === "calendar",
+    disableCache: true,
+  });
+
+  // Timeline options data - always fetch all events for timeline calculation
+  const { data: timelineEventsData } = useEvents(eventService, {
+    filter: {
+      status: [EventStatusEnum.PUBLISHED, EventStatusEnum.ON_SALE, EventStatusEnum.SOLD_OUT],
+    },
+    pagination: {
+      page: 1,
+      pageSize: 200, // API maximum limit
+      total: 0,
+      totalPages: 0,
+    },
+    enabled: layoutMode === "event",
+    disableCache: true,
+  });
+
+  // Fetch banner images for shows (with rate limiting protection) - only when in show mode
   useEffect(() => {
-    if (showsData?.data && showsData.data.length > 0) {
+    if (layoutMode === "show" && showsData?.data && showsData.data.length > 0) {
       const fetchImagesWithDelay = async () => {
         for (let i = 0; i < showsData.data.length; i++) {
           const show = showsData.data[i];
-          
+
           try {
             const images = await showService.fetchShowImages(show.id);
             setShowImages((prev) => {
@@ -137,21 +238,21 @@ export function ExploreList() {
           }
         }
       };
-      
+
       fetchImagesWithDelay();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showsData?.data, showService]);
+  }, [layoutMode, showsData?.data, showService]);
 
   // Group events by show and filter
   const showsWithEvents = useMemo(() => {
-    if (!showsData?.data || !eventsData?.data) return [];
+    if (!showsData?.data || !showModeEventsData?.data) return [];
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
     // Filter events
-    const filteredEvents = eventsData.data.filter((event) => {
+    const filteredEvents = showModeEventsData.data.filter((event) => {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
@@ -195,8 +296,8 @@ export function ExploreList() {
         let shouldInclude = false;
         
         // Filter logic
-        if (showSearch) {
-          const searchLower = showSearch.toLowerCase();
+        if (debouncedShowSearch) {
+          const searchLower = debouncedShowSearch.toLowerCase();
           const showMatches = show.name.toLowerCase().includes(searchLower);
           const eventMatches = events.some((e) =>
             e.title.toLowerCase().includes(searchLower)
@@ -242,9 +343,9 @@ export function ExploreList() {
     return result;
   }, [
     showsData?.data,
-    eventsData?.data,
+    showModeEventsData?.data,
     showImages,
-    showSearch,
+    debouncedShowSearch,
     showStatusFilter,
     showDateFilter,
     showPastEvents,
@@ -271,8 +372,9 @@ export function ExploreList() {
     setEventStatusFilter("all");
     setEventDateFilter({ startDate: null, endDate: null });
     setEventPastEvents(false);
-    setTimelineSource(null);
+    // setTimelineSource(null);
   }, []);
+
 
   const hasShowFilters = !!(showSearch ||
     showStatusFilter !== "all" ||
@@ -281,36 +383,9 @@ export function ExploreList() {
     showPastEvents);
 
 
-
-
-
-  // Events for timeline options (Now Showing / Coming Soon): same as filtered but without date range
-  const eventsForTimelineOptions = useMemo(() => {
-    if (!eventsData?.data) return [];
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return eventsData.data.filter((event) => {
-      const eventDate = new Date(event.start_dt);
-      eventDate.setHours(0, 0, 0, 0);
-      if (!eventPastEvents && eventDate < now) return false;
-      if (event.is_active === false) return false;
-      if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
-      if (eventSearch) {
-        const searchLower = eventSearch.toLowerCase();
-        if (!event.title.toLowerCase().includes(searchLower)) return false;
-      }
-      return true;
-    });
-  }, [
-    eventsData?.data,
-    eventSearch,
-    eventStatusFilter,
-    eventPastEvents,
-  ]);
-
-  // Filter events for event-based view
-  const filteredEvents = useMemo(() => {
-    if (!eventsData?.data) return [];
+  // Filter events for event mode
+  const eventModeFilteredEvents = useMemo(() => {
+    if (!eventModeEventsData?.data) return [];
 
     // Create a lookup map for shows to efficiently attach show details
     const showsMap = new Map(showsData?.data?.map(s => [s.id, s]));
@@ -318,7 +393,7 @@ export function ExploreList() {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    return eventsData.data.filter((event) => {
+    return eventModeEventsData.data.filter((event) => {
       const eventDate = new Date(event.start_dt);
       eventDate.setHours(0, 0, 0, 0);
 
@@ -328,13 +403,9 @@ export function ExploreList() {
       // Filter out inactive events
       if (event.is_active === false) return false;
 
-      // Filter by status: when a timeline tab choice is active, use on_sale (Now Showing) or published (Coming Soon); otherwise use the Status filter
-      if (timelineSource === "now-showing") {
-        if (event.status !== EventStatusEnum.ON_SALE) return false;
-      } else if (timelineSource === "coming-soon") {
-        if (event.status !== EventStatusEnum.PUBLISHED) return false;
-      } else {
-        if (eventStatusFilter !== "all" && event.status !== eventStatusFilter) return false;
+      // Filter by status dropdown when no timeline source is selected (timeline source filtering is done at API level)
+      if (timelineSource === null && eventStatusFilter !== "all" && event.status !== eventStatusFilter) {
+        return false;
       }
 
       // Filter by date range (parse as local date to avoid UTC boundary issues)
@@ -349,8 +420,8 @@ export function ExploreList() {
       }
 
       // Filter by search
-      if (eventSearch) {
-        const searchLower = eventSearch.toLowerCase();
+      if (debouncedEventSearch) {
+        const searchLower = debouncedEventSearch.toLowerCase();
         if (!event.title.toLowerCase().includes(searchLower)) return false;
       }
 
@@ -368,20 +439,90 @@ export function ExploreList() {
         };
       }
       return event;
-    }).sort((a, b) => 
+    }).sort((a, b) =>
       new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
     );
   }, [
-    eventsData?.data,
+    eventModeEventsData?.data,
     showsData?.data,
-    eventSearch,
+    debouncedEventSearch,
     eventStatusFilter,
     eventDateFilter,
     eventPastEvents,
     timelineSource,
   ]);
 
-  const isLoading = showsLoading || eventsLoading;
+  // Filter events for calendar mode
+  const calendarModeFilteredEvents = useMemo(() => {
+    if (!calendarModeEventsData?.data) return [];
+
+    // Create a lookup map for shows to efficiently attach show details
+    const showsMap = new Map(showsData?.data?.map(s => [s.id, s]));
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    return calendarModeEventsData.data.filter((event) => {
+      const eventDate = new Date(event.start_dt);
+      eventDate.setHours(0, 0, 0, 0);
+
+      // Filter out past events unless calendarPastEvents is true
+      if (!calendarPastEvents && eventDate < now) return false;
+
+      // Filter out inactive events
+      if (event.is_active === false) return false;
+
+      // Filter by status
+      if (calendarStatusFilter !== "all" && event.status !== calendarStatusFilter) return false;
+
+      // Filter by date range (parse as local date to avoid UTC boundary issues)
+      if (calendarDateFilter.startDate) {
+        const startDate = new Date(calendarDateFilter.startDate + "T00:00:00");
+        if (eventDate < startDate) return false;
+      }
+
+      if (calendarDateFilter.endDate) {
+        const endDate = new Date(calendarDateFilter.endDate + "T23:59:59.999");
+        if (eventDate > endDate) return false;
+      }
+
+      // Filter by search
+      if (debouncedCalendarSearch) {
+        const searchLower = debouncedCalendarSearch.toLowerCase();
+        if (!event.title.toLowerCase().includes(searchLower)) return false;
+      }
+
+      return true;
+    }).map(event => {
+      // Attach show information if available
+      const show = showsMap.get(event.show_id);
+      if (show) {
+        return {
+          ...event,
+          show: {
+            id: show.id,
+            name: show.name
+          }
+        };
+      }
+      return event;
+    }).sort((a, b) =>
+      new Date(a.start_dt).getTime() - new Date(b.start_dt).getTime()
+    );
+  }, [
+    calendarModeEventsData?.data,
+    showsData?.data,
+    debouncedCalendarSearch,
+    calendarStatusFilter,
+    calendarDateFilter,
+    calendarPastEvents,
+  ]);
+
+  const isLoading = layoutMode === "show"
+    ? showsLoading || showModeEventsLoading
+    : layoutMode === "event"
+      ? eventModeEventsLoading
+      : calendarModeEventsLoading;
   const totalEvents = showsWithEvents.reduce(
     (sum, show) => sum + show.events.length,
     0
@@ -448,7 +589,7 @@ export function ExploreList() {
               showPastEvents={eventPastEvents}
               onShowPastEventsChange={setEventPastEvents}
               onClearFilters={clearEventFilters}
-              events={eventsForTimelineOptions}
+              events={timelineEventsData?.data || []}
               onTimelineSourceChange={setTimelineSource}
             />
           ) : (
@@ -504,7 +645,7 @@ export function ExploreList() {
             </>
           ) : (
             <>
-              Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+              Showing {eventModeFilteredEvents.length} event{eventModeFilteredEvents.length !== 1 ? "s" : ""}
             </>
           )}
         </div>
@@ -513,9 +654,9 @@ export function ExploreList() {
       {/* Event-Based View */}
       {layoutMode === "event" ? (
         <EventList
-          events={filteredEvents}
+          events={eventModeFilteredEvents}
           loading={isLoading}
-          error={eventsLoading ? null : (eventsData ? null : new Error("Failed to load events"))}
+          error={eventModeEventsLoading ? null : (eventModeEventsData ? null : new Error("Failed to load events"))}
           onEventClick={handleEventClick}
           searchable={false}
           title=""
@@ -538,13 +679,13 @@ export function ExploreList() {
         />
       ) : layoutMode === "calendar" ? (
         <ExploreCalendar
-          events={filteredEvents}
+          events={calendarModeFilteredEvents}
           onEventClick={handleBookNow}
           onDateClick={handleDateClick}
         />
       ) : (
         <>
-          <ShowList 
+          <ShowList
             isLoading={isLoading}
             shows={showsWithEvents}
             hasActiveFilters={hasShowFilters}

@@ -21,10 +21,12 @@ import type { EventService } from "./event-service";
 export interface UseEventsParams {
   filter?: EventFilter;
   pagination?: Pagination;
+  enabled?: boolean;
+  disableCache?: boolean;
 }
 
 export function useEvents(service: EventService, params?: UseEventsParams) {
-  const { filter, pagination } = params || {};
+  const { filter, pagination, enabled = true, disableCache = false } = params || {};
 
   return useQuery<PaginatedResponse<Event>>({
     queryKey: [
@@ -33,6 +35,7 @@ export function useEvents(service: EventService, params?: UseEventsParams) {
       filter?.is_active,
       filter?.show_id,
       filter?.layout_id,
+      filter?.status,
       pagination?.page,
       pagination?.pageSize,
     ],
@@ -47,9 +50,11 @@ export function useEvents(service: EventService, params?: UseEventsParams) {
         is_active: filter?.is_active,
         show_id: filter?.show_id,
         layout_id: filter?.layout_id,
+        status: filter?.status,
       });
     },
-    staleTime: 5 * 60 * 1000,
+    enabled,
+    staleTime: disableCache ? 0 : 5 * 60 * 1000,
   });
 }
 
