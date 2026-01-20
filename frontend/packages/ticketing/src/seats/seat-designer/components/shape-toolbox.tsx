@@ -14,6 +14,7 @@ import {
   PenTool,
   Trash2,
   Eye,
+  Wand2,
 } from "lucide-react";
 import {
   PlacementShapeType,
@@ -33,6 +34,8 @@ export interface ShapeToolboxProps {
   onSectionView?: (section: SectionMarker) => void;
   onSeatDelete?: (seat: SeatMarker) => void;
   onSectionDelete?: (section: SectionMarker) => void;
+  onAutoDetect?: () => void;
+  isAutoDetecting?: boolean;
   className?: string;
   readOnly?: boolean;
 }
@@ -48,6 +51,8 @@ export function ShapeToolbox({
   onSectionView,
   onSeatDelete,
   onSectionDelete,
+  onAutoDetect,
+  isAutoDetecting = false,
   className,
   readOnly = false,
 }: ShapeToolboxProps) {
@@ -157,6 +162,28 @@ export function ShapeToolbox({
                 </button>
               );
             })}
+
+            {/* Magic Wand - Auto detect */}
+            {onAutoDetect && (
+              <button
+                type="button"
+                onClick={onAutoDetect}
+                disabled={readOnly || isAutoDetecting}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  !readOnly && !isAutoDetecting && "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
+                  (readOnly || isAutoDetecting) && "opacity-50 cursor-not-allowed",
+                  "bg-background border-border"
+                )}
+                title="Auto Detect"
+              >
+                {isAutoDetecting ? (
+                  <span className="h-3.5 w-3.5 animate-spin">⏳</span>
+                ) : (
+                  <Wand2 className="h-3.5 w-3.5 transition-transform duration-200" />
+                )}
+              </button>
+            )}
           </div>
         </div>
 

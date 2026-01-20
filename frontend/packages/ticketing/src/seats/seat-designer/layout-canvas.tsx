@@ -4,7 +4,7 @@
  * Provides better performance and smoother interactions compared to DOM-based rendering
  */
 
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import {
   Stage,
   Layer,
@@ -41,7 +41,8 @@ interface ShapeRendererProps {
   opacity?: number;
 }
 
-function ShapeRenderer({
+// ShapeRenderer is pure, good candidate for memo
+const ShapeRenderer = React.memo(function ShapeRenderer({
   shape,
   fill,
   stroke,
@@ -66,14 +67,6 @@ function ShapeRenderer({
     !shapeType ||
     !Object.values(PlacementShapeType).includes(shapeType as PlacementShapeType)
   ) {
-    console.warn(
-      "Invalid shape type:",
-      shapeType,
-      "Shape:",
-      shape,
-      "Valid types:",
-      Object.values(PlacementShapeType)
-    );
     // Fallback to circle if type is invalid
     return <Circle {...baseProps} radius={12} />;
   }
@@ -171,7 +164,7 @@ function ShapeRenderer({
       // Default to circle
       return <Circle {...baseProps} radius={12} />;
   }
-}
+});
 
 interface LayoutCanvasProps {
   imageUrl: string;
@@ -255,7 +248,7 @@ interface ShapeOverlayComponentProps {
   percentageToStage: (x: number, y: number) => { x: number; y: number };
 }
 
-function ShapeOverlayComponent({
+const ShapeOverlayComponent = React.memo(function ShapeOverlayComponent({
   overlay,
   isSelected,
   onShapeOverlayClick,
@@ -408,7 +401,7 @@ function ShapeOverlayComponent({
       )}
     </Group>
   );
-}
+});
 
 // Seat marker component with hover transitions
 interface SeatMarkerComponentProps {
@@ -430,7 +423,7 @@ interface SeatMarkerComponentProps {
   readOnly?: boolean;
 }
 
-function SeatMarkerComponent({
+const SeatMarkerComponent = React.memo(function SeatMarkerComponent({
   seat,
   x,
   y,
@@ -798,7 +791,7 @@ function SeatMarkerComponent({
       )}
     </>
   );
-}
+});
 
 // Section marker component with hover transitions
 interface SectionMarkerComponentProps {
@@ -1557,6 +1550,118 @@ export function LayoutCanvas({
   const validWidth = containerWidth > 0 ? containerWidth : 800;
   const validHeight = containerHeight > 0 ? containerHeight : 600;
 
+  // Calculate image dimensions to fit within container while maintaining aspect ratio
+  // We calculate this early (even if image not loaded) to satisfy Hook rules for dependencies
+  let displayedWidth = validWidth;
+  let displayedHeight = validHeight;
+  let imageX = 0;
+  let imageY = 0;
+
+  if (image && image.width && image.height) {
+    const imageAspectRatio = image.height / image.width;
+    const containerAspectRatio = validHeight / validWidth;
+
+    if (imageAspectRatio > containerAspectRatio) {
+      // Image is taller - fit to height
+      displayedHeight = validHeight;
+      displayedWidth = displayedHeight / imageAspectRatio;
+    } else {
+      // Image is wider - fit to width
+      displayedWidth = validWidth;
+      displayedHeight = displayedWidth * imageAspectRatio;
+    }
+
+    // Position image centered in container
+    imageX = (validWidth - displayedWidth) / 2;
+    imageY = (validHeight - displayedHeight) / 2;
+  }
+
+  // Calculate center point for zoom/pan transforms
+  const centerX = validWidth / 2;
+  const centerY = validHeight / 2;
+
+  // VIEWPORT CULLING OPTIMIZATION
+  // Buffer factor to render objects slightly outside viewport for smoother panning
+  // 0.5 means 50% extra on each side
+  const VIEWPORT_BUFFER = 0.5;
+
+  // Calculate visible bounds synchronously to avoid double-renders
+  const visibleBounds = useMemo(() => {
+    if (!image || !image.width || !image.height) return null;
+
+    // Stage transformation logic reversed to find visible percentage area
+    
+    // Top-Left in specific Layer Local Coordinates:
+    const topLeftX = (0 - centerX - panOffset.x) / zoomLevel + centerX;
+    const topLeftY = (0 - centerY - panOffset.y) / zoomLevel + centerY;
+    
+    // Bottom-Right in specific Layer Local Coordinates:
+    const bottomRightX = (validWidth - centerX - panOffset.x) / zoomLevel + centerX;
+    const bottomRightY = (validHeight - centerY - panOffset.y) / zoomLevel + centerY;
+    
+    // Percentage Bounds
+    // The Image is placed at (imageX, imageY) with size (displayedWidth, displayedHeight)
+    const pX1 = ((topLeftX - imageX) / displayedWidth) * 100;
+    const pY1 = ((topLeftY - imageY) / displayedHeight) * 100;
+    const pX2 = ((bottomRightX - imageX) / displayedWidth) * 100;
+    const pY2 = ((bottomRightY - imageY) / displayedHeight) * 100;
+
+    const width = pX2 - pX1;
+    const height = pY2 - pY1;
+    
+    // Add buffer
+    const bufferW = width * VIEWPORT_BUFFER;
+    const bufferH = height * VIEWPORT_BUFFER;
+    
+    return {
+      x: pX1 - bufferW,
+      y: pY1 - bufferH,
+      width: width + (bufferW * 2),
+      height: height + (bufferH * 2)
+    };
+  }, [centerX, centerY, panOffset, zoomLevel, imageX, imageY, displayedWidth, displayedHeight, validWidth, validHeight, image]);
+
+  // Memoize visible seats to avoid iterating thousands of seats on every render
+  const visibleSeats = useMemo(() => {
+    // If image not loaded or bounds not calculated, return all seats (or empty if safely handled downstream)
+    if (!visibleBounds) return seats;
+
+    // If zoomed out far enough that the whole image is likely visible, skip filtering
+    if (visibleBounds.x <= 0 && visibleBounds.y <= 0 && 
+        visibleBounds.width >= 100 && visibleBounds.height >= 100) {
+      return seats;
+    }
+
+    return seats.filter(seat => {
+      // Simple point-in-rect check
+      return (
+        seat.x >= visibleBounds.x &&
+        seat.x <= visibleBounds.x + visibleBounds.width &&
+        seat.y >= visibleBounds.y &&
+        seat.y <= visibleBounds.y + visibleBounds.height
+      );
+    });
+  }, [seats, visibleBounds]);
+
+  // Memoize visible sections
+  const visibleSections = useMemo(() => {
+     if (!visibleBounds) return sections;
+     if (visibleBounds.x <= 0 && visibleBounds.y <= 0 && 
+        visibleBounds.width >= 100 && visibleBounds.height >= 100) {
+      return sections;
+    }
+
+    return sections.filter(section => {
+      // Filter sections based on bounding box (center point approximation)
+      return (
+        section.x >= visibleBounds.x &&
+        section.x <= visibleBounds.x + visibleBounds.width &&
+        section.y >= visibleBounds.y &&
+        section.y <= visibleBounds.y + visibleBounds.height
+      );
+    });
+  }, [sections, visibleBounds]);
+
   // Show loading indicator while image is loading or image dimensions are invalid
   if (imageLoading || !image || !image.width || !image.height) {
     return (
@@ -1594,31 +1699,6 @@ export function LayoutCanvas({
       </div>
     );
   }
-
-  // Calculate image dimensions to fit within container while maintaining aspect ratio
-  const imageAspectRatio = image.height / image.width;
-  const containerAspectRatio = validHeight / validWidth;
-
-  let displayedWidth: number;
-  let displayedHeight: number;
-
-  if (imageAspectRatio > containerAspectRatio) {
-    // Image is taller - fit to height
-    displayedHeight = validHeight;
-    displayedWidth = displayedHeight / imageAspectRatio;
-  } else {
-    // Image is wider - fit to width
-    displayedWidth = validWidth;
-    displayedHeight = displayedWidth * imageAspectRatio;
-  }
-
-  // Position image centered in container
-  const imageX = (validWidth - displayedWidth) / 2;
-  const imageY = (validHeight - displayedHeight) / 2;
-
-  // Calculate center point for zoom/pan transforms
-  const centerX = validWidth / 2;
-  const centerY = validHeight / 2;
 
   return (
     <Stage
@@ -2237,7 +2317,7 @@ export function LayoutCanvas({
         />
 
         {/* Seats */}
-        {seats.map((seat) => {
+        {visibleSeats.map((seat) => {
           const { x, y } = percentageToStage(seat.x, seat.y);
           const colors = getSeatColor(seat.seat.seatType);
           const isSelected = selectedSeatId === seat.id;
@@ -2267,7 +2347,7 @@ export function LayoutCanvas({
 
         {/* Section Markers (for large venue mode) */}
         {venueType === "large" &&
-          sections.map((section) => {
+          visibleSections.map((section) => {
             const { x, y } = percentageToStage(section.x, section.y);
             const isSelected = selectedSectionId === section.id;
 

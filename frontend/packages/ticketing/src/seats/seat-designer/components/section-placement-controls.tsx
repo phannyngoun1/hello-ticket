@@ -30,52 +30,54 @@ export function SectionPlacementControls({
   onUseSectionName,
 }: SectionPlacementControlsProps) {
   return (
-    <Card className="p-3">
-      {selectedSectionMarker && (
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted-foreground">
-            Editing: {selectedSectionMarker.name}
-          </p>
-          {onDeleteSection && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                onDeleteSection(selectedSectionMarker);
-              }}
-              className="h-6 px-2"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          )}
+    <>
+      <Card className="p-3">
+        {selectedSectionMarker && (
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">
+              Editing: {selectedSectionMarker.name}
+            </p>
+            {onDeleteSection && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onDeleteSection(selectedSectionMarker);
+                }}
+                className="h-6 px-2"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
+        <div>
+          <Label className="text-xs">Section</Label>
+          <Select
+            value={selectedSectionMarker?.id || ""}
+            onValueChange={(value) => {
+              if (value === "new-section") {
+                onNewSection();
+              } else {
+                onSectionSelect(value);
+              }
+            }}
+          >
+            <SelectTrigger className="mt-1 h-8 text-sm">
+              <SelectValue placeholder="Select or create section" />
+            </SelectTrigger>
+            <SelectContent>
+              {sectionMarkers.map((section) => (
+                <SelectItem key={section.id} value={section.id}>
+                  {section.name}
+                </SelectItem>
+              ))}
+              
+            </SelectContent>
+          </Select>
         </div>
-      )}
-      <div>
-        <Label className="text-xs">Section</Label>
-        <Select
-          value={selectedSectionMarker?.id || ""}
-          onValueChange={(value) => {
-            if (value === "new-section") {
-              onNewSection();
-            } else {
-              onSectionSelect(value);
-            }
-          }}
-        >
-          <SelectTrigger className="mt-1 h-8 text-sm">
-            <SelectValue placeholder="Select or create section" />
-          </SelectTrigger>
-          <SelectContent>
-            {sectionMarkers.map((section) => (
-              <SelectItem key={section.id} value={section.id}>
-                {section.name}
-              </SelectItem>
-            ))}
-            
-          </SelectContent>
-        </Select>
-      </div>
-    </Card>
+      </Card>
+    </>
   );
 }
 

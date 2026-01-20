@@ -57,8 +57,8 @@ export const seatService = {
     async updateCoordinates(seatId: string, x: number, y: number, shape?: PlacementShape): Promise<Seat> {
         return api.patch<Seat>(
             `${BASE_ENDPOINT}/${seatId}/coordinates`,
-            { 
-                x_coordinate: x, 
+            {
+                x_coordinate: x,
                 y_coordinate: y,
                 shape: shape ? JSON.stringify(shape) : undefined,
             },
@@ -136,4 +136,28 @@ export const seatService = {
             { requiresAuth: true }
         );
     },
+
+    /**
+     * Auto-detect seats or sections from an uploaded floor plan
+     */
+    async autoDetect(fileId: string, target: 'seats' | 'sections'): Promise<SeatAutoDetectResponse> {
+        return api.post<SeatAutoDetectResponse>(
+            `${BASE_ENDPOINT}/auto-detect?file_id=${fileId}&target=${target}`,
+            {},
+            { requiresAuth: true }
+        );
+    },
 };
+
+export interface SeatAutoDetectResponse {
+    candidates: Array<{
+        x: number;
+        y: number;
+        radius?: number;
+        width?: number;
+        height?: number;
+        type: 'circle' | 'rectangle' | 'polygon';
+        points?: number[];
+    }>;
+}
+

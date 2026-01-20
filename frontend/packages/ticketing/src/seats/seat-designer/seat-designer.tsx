@@ -1689,6 +1689,123 @@ export function SeatDesigner({
     }
   }, [selectedSectionMarker, isPlacingSections, sectionForm]);
 
+  // Helper to get file ID for auto-detection
+  const getAutoDetectFileId = (targetSection?: SectionMarker | null) => {
+     if (targetSection) {
+       // Try to find section in sectionsData to get file_id
+       const sectionData = sectionsData?.find(s => s.id === targetSection.id);
+       if (sectionData?.file_id) {
+         return sectionData.file_id;
+       }
+     }
+     return mainImageFileId;
+  };
+
+  // Auto-detect state
+  const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+
+  // Handle auto-detection
+  const handleAutoDetect = async (target: 'seats' | 'sections' = 'seats') => {
+    const targetFileId = getAutoDetectFileId(viewingSection);
+    
+    if (!targetFileId) {
+       toast({ title: viewingSection ? "No image file for this section" : "Please upload a main floor plan image first", variant: "destructive" });
+       return;
+    }
+
+    try {
+      setIsAutoDetecting(true);
+      const result = await seatService.autoDetect(targetFileId, target);
+      
+      if (target === 'seats') {
+        // Convert candidates to SeatMarkers
+        const currentSeatCount = seats.length;
+        const newSeats: SeatMarker[] = result.candidates.map((c, i) => {
+            const seatValues = seatPlacementForm.getValues();
+            
+            // Map shape type
+            let shapeType = PlacementShapeType.CIRCLE;
+            if (c.type === 'rectangle') shapeType = PlacementShapeType.RECTANGLE;
+            if (c.type === 'polygon') shapeType = PlacementShapeType.POLYGON;
+            
+            const shape: PlacementShape = {
+                type: shapeType,
+                radius: c.radius || 1.2,
+                width: c.width,
+                height: c.height,
+                points: c.points,
+            };
+
+            // Generate a simple seat number or ID
+            const seatNum = currentSeatCount + i + 1;
+
+            return {
+                id: `auto-${Date.now()}-${i}`,
+                x: c.x,
+                y: c.y,
+                seat: {
+                    section: viewingSection?.name || seatValues.section,
+                    sectionId: viewingSection?.id || seatValues.sectionId,
+                    row: seatValues.row,
+                    seatNumber: String(seatNum), // Simple sequential numbering
+                    seatType: seatValues.seatType,
+                },
+                shape,
+                isNew: true,
+            };
+        });
+        
+        setSeats(prev => [...prev, ...newSeats]);
+        toast({ title: `Auto-detected ${newSeats.length} seats` });
+      } 
+      else if (target === 'sections') {
+         // Convert candidates to SectionMarkers
+         // Note: Only for section-level mode
+         if (designMode !== 'section-level') {
+             toast({ title: "Section detection is only available in Section Level mode", variant: "destructive" });
+             return;
+         }
+
+         const currentSectionCount = sectionMarkers.length;
+         const newSections: SectionMarker[] = result.candidates.map((c, i) => {
+             // Map shape type
+            let shapeType = PlacementShapeType.RECTANGLE; // Default for sections?
+            if (c.type === 'circle') shapeType = PlacementShapeType.CIRCLE;
+            if (c.type === 'polygon') shapeType = PlacementShapeType.POLYGON;
+             
+            const shape: PlacementShape = {
+                type: shapeType,
+                radius: c.radius,
+                width: c.width,
+                height: c.height,
+                points: c.points,
+            };
+
+            return {
+                 id: `auto-sec-${Date.now()}-${i}`,
+                 name: `Detected Section ${currentSectionCount + i + 1}`,
+                 x: c.x,
+                 y: c.y,
+                 shape,
+                 isNew: true,
+            };
+         });
+         
+         setSectionMarkers(prev => [...prev, ...newSections]);
+         toast({ title: `Auto-detected ${newSections.length} sections` });
+      }
+    } catch (error) {
+      console.error("Auto-detection failed:", error);
+      toast({ 
+        title: "Auto-detection failed", 
+        description: error instanceof Error ? error.message : "Using generic fallback detection",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsAutoDetecting(false);
+    }
+  };
+
   // Save seats mutation
   const saveSeatsMutation = useMutation({
     mutationFn: async (seatsToSave: SeatMarker[]) => {
@@ -2356,7 +2473,7 @@ export function SeatDesigner({
               )}
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
+                onShapeTypeSelect={(type) => !readOnly && setSelectedShapeTool(type)}
                 selectedSeat={selectedSeat}
                 selectedSection={
                   designMode === "section-level" ? selectedSectionMarker : null
@@ -2369,6 +2486,8 @@ export function SeatDesigner({
                 }
                 onSeatDelete={handleDeleteSeat}
                 onSectionDelete={handleDeleteSection}
+                onAutoDetect={() => handleAutoDetect('seats')}
+                isAutoDetecting={isAutoDetecting}
                 readOnly={readOnly}
               />
             </>
@@ -2377,9 +2496,26 @@ export function SeatDesigner({
           {/* Section Placement Controls Panel - On Top (Large Venue / Section-Level) */}
           {venueType === "large" && !viewingSection && (
             <>
+              {!readOnly && (
+                <SectionPlacementControls
+                  selectedSectionMarker={selectedSectionMarker}
+                  sectionMarkers={sectionMarkers}
+                  sectionFormName={sectionForm.watch("name")}
+                  onSectionSelect={(sectionId) => {
+                    const section = sectionMarkers.find(s => s.id === sectionId);
+                    if (section) setSelectedSectionMarker(section);
+                  }}
+                  onNewSection={() => {
+                     // Open new section form
+                     handleOpenNewSectionForm();
+                  }}
+                  onDeleteSection={handleDeleteSection}
+                  onUseSectionName={(name) => sectionForm.setValue("name", name)}
+                />
+              )}
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
+                onShapeTypeSelect={(type) => !readOnly && setSelectedShapeTool(type)}
                 selectedSeat={null}
                 selectedSection={selectedSectionMarker}
                 onSeatEdit={handleSeatEdit}
@@ -2388,6 +2524,8 @@ export function SeatDesigner({
                 onSectionView={handleSectionView}
                 onSeatDelete={handleDeleteSeat}
                 onSectionDelete={handleDeleteSection}
+                onAutoDetect={() => handleAutoDetect('sections')}
+                isAutoDetecting={isAutoDetecting}
                 readOnly={readOnly}
               />
             </>

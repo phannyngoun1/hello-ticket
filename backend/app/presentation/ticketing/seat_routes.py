@@ -3,6 +3,7 @@ from typing import Optional
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from app.domain.image_processing.seat_detector import SeatDetector
 
 from app.application.ticketing.commands_seat import (
     CreateSeatCommand,
@@ -26,11 +27,13 @@ from app.presentation.api.ticketing.schemas_seat import (
     SeatListResponse,
     SeatResponse,
     BulkSeatCreateRequest,
+    SeatAutoDetectResponse,
 )
 from app.presentation.api.ticketing.mapper_venue import TicketingApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
+from app.shared.container import get_container
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 
 # Permission constants for easy management and code generation
@@ -283,18 +286,61 @@ async def bulk_create_seats(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.delete("/venue/{venue_id}", status_code=200)
-async def delete_seats_by_venue(
-    venue_id: str,
-    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
-    mediator: Mediator = Depends(get_mediator_dependency),
-):
-    """Delete all seats for a venue"""
-
-    try:
-        count = await mediator.send(DeleteSeatsByVenueCommand(venue_id=venue_id))
-        return {"deleted_count": count}
-    except NotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
     except BusinessRuleError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+
+
+@router.post("/auto-detect", response_model=SeatAutoDetectResponse)
+async def auto_detect_seats(
+    file_id: str = Query(..., description="File ID of the floor plan image/SVG"),
+    target: str = Query("seats", description="Target to detect: 'seats' or 'sections'"),
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    mediator: Mediator = Depends(get_mediator_dependency),
+    seat_detector: "SeatDetector" = Depends(lambda: get_container().resolve(SeatDetector)),
+):
+    """
+    Auto-detect seats or sections from an uploaded floor plan (Image or SVG).
+    Returns a list of candidate shapes with percentage coordinates.
+    """
+    from app.domain.shared.file_upload_repository import FileUploadRepository
+    from pathlib import Path
+    import os
+    from starlette.concurrency import run_in_threadpool
+
+    try:
+        # 1. Get file metadata
+        file_repo = get_container().resolve(FileUploadRepository)
+        file_upload = await file_repo.get_by_id(file_id)
+        
+        if not file_upload:
+            raise NotFoundError(f"File not found: {file_id}")
+
+        # 2. Resolve file path on disk
+        filename = file_upload.filename
+        file_path = Path("uploads") / filename
+        
+        if not file_path.exists():
+             raise NotFoundError(f"File content not found on server at {file_path}")
+
+        # 3. Read file content (I/O bound is fine in async, but reading large file might block slightly)
+        # Using run_in_threadpool for file reading too to be safe/consistent
+        def read_file():
+            with open(file_path, "rb") as f:
+                return f.read()
+                
+        content = await run_in_threadpool(read_file)
+
+        # 4. Detect (CPU bound - MUST run in threadpool)
+        candidates = await run_in_threadpool(seat_detector.detect, content, filename, target)
+        
+        return SeatAutoDetectResponse(candidates=candidates)
+
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        # Log unexpected errors
+        print(f"Auto-detection failed: {exc}") 
+        raise HTTPException(status_code=500, detail="Failed to process image for auto-detection")
+

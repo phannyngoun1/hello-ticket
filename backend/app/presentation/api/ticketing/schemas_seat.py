@@ -121,3 +121,9 @@ class BulkSeatCreateRequest(BaseModel):
 
     seats: List[Dict[str, Any]] = Field(..., description="List of seat data dictionaries. Operation type determined by presence of 'id' and 'delete' flag")
     file_id: Optional[str] = Field(None, description="Optional file ID to update the layout's image file")
+
+
+class SeatAutoDetectResponse(BaseModel):
+    """Response for seat auto-detection"""
+    candidates: List[Dict[str, Any]] = Field(..., description="List of detected candidates (seats or sections)")
+

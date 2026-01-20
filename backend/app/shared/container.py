@@ -99,6 +99,10 @@ def setup_container() -> Container:
     #employees
     register_employee_container(container)  
 
+    # Register SeatDetector
+    from app.domain.image_processing.seat_detector import SeatDetector
+    container.register(SeatDetector, factory=lambda: SeatDetector())
+
     return container
 
 def setup_mediator(container: Container) -> Mediator:
