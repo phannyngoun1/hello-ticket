@@ -248,6 +248,9 @@ export function LayoutList({
         onOpenChange={setDeleteConfirmOpen}
         title="Delete Layout"
         description="Are you sure you want to delete this layout? This action cannot be undone and will remove all associated seats."
+        confirmText="delete"
+        confirmTextLabel="Type 'delete' to confirm"
+        confirmTextPlaceholder='Type "delete" to confirm'
         confirmAction={{
           label: "Delete",
           variant: "destructive",
