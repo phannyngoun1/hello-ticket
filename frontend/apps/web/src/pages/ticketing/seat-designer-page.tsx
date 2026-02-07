@@ -7,7 +7,11 @@ import {
   useLayoutService,
   useLayoutWithSeats,
 } from "@truths/ticketing";
-import { VenueProvider, LayoutProvider, EventProvider } from "@truths/ticketing";
+import {
+  VenueProvider,
+  LayoutProvider,
+  EventProvider,
+} from "@truths/ticketing";
 import { useEventService, useEvents, EventStatus } from "@truths/ticketing";
 import { api } from "@truths/api";
 

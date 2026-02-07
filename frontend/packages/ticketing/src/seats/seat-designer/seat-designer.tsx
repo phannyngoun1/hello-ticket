@@ -365,11 +365,12 @@ export function SeatDesigner({
             console.log("Parsed shape JSON from initialSections:", parsed);
             // Normalize the type to ensure it matches the enum
             if (parsed && typeof parsed === 'object' && parsed.type) {
-              shape = {
+              const normalized: PlacementShape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
-              console.log("Normalized shape from initialSections:", shape, "Type:", shape.type);
+              shape = normalized;
+              console.log("Normalized shape from initialSections:", normalized, "Type:", normalized.type);
             } else {
               console.warn("Parsed shape is invalid from initialSections:", parsed);
             }
@@ -419,11 +420,12 @@ export function SeatDesigner({
             console.log("Parsed shape JSON:", parsed);
             // Normalize the type to ensure it matches the enum
             if (parsed && typeof parsed === 'object' && parsed.type) {
-              shape = {
+              const normalized: PlacementShape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
-              console.log("Normalized shape:", shape, "Type:", shape.type);
+              shape = normalized;
+              console.log("Normalized shape:", normalized, "Type:", normalized.type);
             } else {
               console.warn("Parsed shape is invalid:", parsed);
             }
@@ -482,11 +484,12 @@ export function SeatDesigner({
               console.log("Parsed seat shape JSON from initialSeats:", parsed);
               // Normalize the type to ensure it matches the enum
               if (parsed && typeof parsed === 'object' && parsed.type) {
-                shape = {
+                const normalized: PlacementShape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
-                console.log("Normalized seat shape from initialSeats:", shape, "Type:", shape.type);
+                shape = normalized;
+                console.log("Normalized seat shape from initialSeats:", normalized, "Type:", normalized.type);
               } else {
                 console.warn("Parsed seat shape is invalid from initialSeats:", parsed);
               }
@@ -532,11 +535,12 @@ export function SeatDesigner({
               console.log("Parsed seat shape JSON from existingSeats:", parsed);
               // Normalize the type to ensure it matches the enum
               if (parsed && typeof parsed === 'object' && parsed.type) {
-                shape = {
+                const normalized: PlacementShape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
-                console.log("Normalized seat shape from existingSeats:", shape, "Type:", shape.type);
+                shape = normalized;
+                console.log("Normalized seat shape from existingSeats:", normalized, "Type:", normalized.type);
               } else {
                 console.warn("Parsed seat shape is invalid from existingSeats:", parsed);
               }
@@ -1216,11 +1220,12 @@ export function SeatDesigner({
             const parsed = JSON.parse(section.shape);
             // Normalize the type to ensure it matches the enum
             if (parsed && typeof parsed === 'object' && parsed.type) {
-              shape = {
+              const normalized: PlacementShape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
-              console.log("Parsed shape from API:", shape, "Type:", shape.type);
+              shape = normalized;
+              console.log("Parsed shape from API:", normalized, "Type:", normalized.type);
             } else {
               shape = placementShape; // Fallback to placementShape if invalid
             }
@@ -2356,7 +2361,7 @@ export function SeatDesigner({
               )}
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
+                onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
                 selectedSeat={selectedSeat}
                 selectedSection={
                   designMode === "section-level" ? selectedSectionMarker : null
@@ -2379,7 +2384,7 @@ export function SeatDesigner({
             <>
               <ShapeToolbox
                 selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? undefined : setSelectedShapeTool}
+                onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
                 selectedSeat={null}
                 selectedSection={selectedSectionMarker}
                 onSeatEdit={handleSeatEdit}
