@@ -4,7 +4,7 @@
  * Provides better performance and smoother interactions compared to DOM-based rendering
  */
 
-import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import {
   Stage,
   Layer,
@@ -260,6 +260,9 @@ interface ShapeOverlayComponentProps {
   percentageToStage: (x: number, y: number) => { x: number; y: number };
 }
 
+// Threshold: only virtualize when we have more than this many objects
+const VIRTUALIZATION_THRESHOLD = 80;
+
 function ShapeOverlayComponent({
   overlay,
   isSelected,
@@ -416,6 +419,8 @@ function ShapeOverlayComponent({
     </Group>
   );
 }
+
+const MemoizedShapeOverlayComponent = React.memo(ShapeOverlayComponent);
 
 // Seat marker component with hover transitions
 interface SeatMarkerComponentProps {
@@ -806,6 +811,8 @@ function SeatMarkerComponent({
     </>
   );
 }
+
+const MemoizedSeatMarkerComponent = React.memo(SeatMarkerComponent);
 
 // Section marker component with hover transitions
 interface SectionMarkerComponentProps {
@@ -1255,6 +1262,8 @@ function SectionMarkerComponent({
   );
 }
 
+const MemoizedSectionMarkerComponent = React.memo(SectionMarkerComponent);
+
 export function LayoutCanvas({
   imageUrl,
   seats,
@@ -1566,6 +1575,100 @@ export function LayoutCanvas({
   const validWidth = containerWidth > 0 ? containerWidth : 800;
   const validHeight = containerHeight > 0 ? containerHeight : 600;
 
+  // Compute display dimensions (use defaults when image not ready - for consistent hook order)
+  const centerX = validWidth / 2;
+  const centerY = validHeight / 2;
+  const imageAspectRatio =
+    image && image.width && image.height ? image.height / image.width : 1;
+  const containerAspectRatio = validHeight / validWidth;
+  const displayedWidth =
+    imageAspectRatio > containerAspectRatio
+      ? validHeight / imageAspectRatio
+      : validWidth;
+  const displayedHeight =
+    imageAspectRatio > containerAspectRatio
+      ? validHeight
+      : validWidth * imageAspectRatio;
+  const imageX = (validWidth - displayedWidth) / 2;
+  const imageY = (validHeight - displayedHeight) / 2;
+
+  // Viewport virtualization - MUST be before any early return to keep hook order consistent
+  const { visibleSeats, visibleSections, visibleShapeOverlays } = useMemo(() => {
+    const totalCount = seats.length + sections.length + shapeOverlays.length;
+    if (totalCount < VIRTUALIZATION_THRESHOLD) {
+      return {
+        visibleSeats: seats,
+        visibleSections: sections,
+        visibleShapeOverlays: shapeOverlays,
+      };
+    }
+
+    const padding = 0.2;
+    const minLayerX =
+      centerX -
+      (centerX + panOffset.x) / zoomLevel -
+      (validWidth * padding) / zoomLevel;
+    const maxLayerX =
+      centerX +
+      (validWidth - centerX - panOffset.x) / zoomLevel +
+      (validWidth * padding) / zoomLevel;
+    const minLayerY =
+      centerY -
+      (centerY + panOffset.y) / zoomLevel -
+      (validHeight * padding) / zoomLevel;
+    const maxLayerY =
+      centerY +
+      (validHeight - centerY - panOffset.y) / zoomLevel +
+      (validHeight * padding) / zoomLevel;
+
+    const isInView = (px: number, py: number) => {
+      const layerX = imageX + (px / 100) * displayedWidth;
+      const layerY = imageY + (py / 100) * displayedHeight;
+      return (
+        layerX >= minLayerX &&
+        layerX <= maxLayerX &&
+        layerY >= minLayerY &&
+        layerY <= maxLayerY
+      );
+    };
+
+    const visibleSeats = seats.filter((s) => {
+      if (selectedSeatId === s.id) return true;
+      return isInView(s.x, s.y);
+    });
+    const visibleSections = sections.filter((s) => {
+      if (selectedSectionId === s.id) return true;
+      return isInView(s.x, s.y);
+    });
+    const visibleShapeOverlays = shapeOverlays.filter((o) => {
+      if (selectedOverlayId === o.id) return true;
+      return isInView(o.x, o.y);
+    });
+
+    return {
+      visibleSeats,
+      visibleSections,
+      visibleShapeOverlays,
+    };
+  }, [
+    seats,
+    sections,
+    shapeOverlays,
+    panOffset,
+    zoomLevel,
+    validWidth,
+    validHeight,
+    centerX,
+    centerY,
+    imageX,
+    imageY,
+    displayedWidth,
+    displayedHeight,
+    selectedSeatId,
+    selectedSectionId,
+    selectedOverlayId,
+  ]);
+
   // Show loading indicator while image is loading or image dimensions are invalid
   if (imageLoading || !image || !image.width || !image.height) {
     return (
@@ -1603,31 +1706,6 @@ export function LayoutCanvas({
       </div>
     );
   }
-
-  // Calculate image dimensions to fit within container while maintaining aspect ratio
-  const imageAspectRatio = image.height / image.width;
-  const containerAspectRatio = validHeight / validWidth;
-
-  let displayedWidth: number;
-  let displayedHeight: number;
-
-  if (imageAspectRatio > containerAspectRatio) {
-    // Image is taller - fit to height
-    displayedHeight = validHeight;
-    displayedWidth = displayedHeight / imageAspectRatio;
-  } else {
-    // Image is wider - fit to width
-    displayedWidth = validWidth;
-    displayedHeight = displayedWidth * imageAspectRatio;
-  }
-
-  // Position image centered in container
-  const imageX = (validWidth - displayedWidth) / 2;
-  const imageY = (validHeight - displayedHeight) / 2;
-
-  // Calculate center point for zoom/pan transforms
-  const centerX = validWidth / 2;
-  const centerY = validHeight / 2;
 
   return (
     <Stage
@@ -1993,6 +2071,7 @@ export function LayoutCanvas({
       }}
       style={{
         display: "block",
+        willChange: "transform",
         cursor:
           isPanning || isSpacePressed
             ? "grab"
@@ -2274,13 +2353,13 @@ export function LayoutCanvas({
         />
 
         {/* Seats */}
-        {seats.map((seat) => {
+        {visibleSeats.map((seat) => {
           const { x, y } = percentageToStage(seat.x, seat.y);
           const colors = getSeatColor(seat.seat.seatType);
           const isSelected = selectedSeatId === seat.id;
 
           return (
-            <SeatMarkerComponent
+            <MemoizedSeatMarkerComponent
               key={seat.id}
               seat={seat}
               x={x}
@@ -2304,12 +2383,12 @@ export function LayoutCanvas({
 
         {/* Section Markers (for large venue mode) */}
         {venueType === "large" &&
-          sections.map((section) => {
+          visibleSections.map((section) => {
             const { x, y } = percentageToStage(section.x, section.y);
             const isSelected = selectedSectionId === section.id;
 
             return (
-              <SectionMarkerComponent
+              <MemoizedSectionMarkerComponent
                 key={section.id}
                 section={section}
                 x={x}
@@ -2339,10 +2418,10 @@ export function LayoutCanvas({
           })}
 
         {/* Shape Overlays - clickable areas on the image */}
-        {shapeOverlays.map((overlay) => {
+        {visibleShapeOverlays.map((overlay) => {
           const isSelected = selectedOverlayId === overlay.id;
           return (
-            <ShapeOverlayComponent
+            <MemoizedShapeOverlayComponent
               key={overlay.id}
               overlay={overlay}
               isSelected={isSelected}
