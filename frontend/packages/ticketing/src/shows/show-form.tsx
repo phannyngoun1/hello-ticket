@@ -14,7 +14,6 @@ import {
   Field,
   FieldLabel,
   FieldError,
-  Textarea,
   Button,
   Popover,
   PopoverContent,
@@ -28,11 +27,11 @@ import {
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
+import { AIAssistFormButton, TextareaInputField } from "@truths/custom-ui";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const showFormSchema = z
   .object({
-    code: z.string().optional(),
     name: z.string().min(1, "Name is required"),
     organizer_id: z.string().optional(),
     started_date: z.string().optional(),
@@ -78,6 +77,7 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
     
     const {
       register,
+      control,
       handleSubmit,
       watch,
       setValue,
@@ -85,7 +85,6 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
     } = useForm<ShowFormData>({
       resolver: zodResolver(showFormSchema),
       defaultValues: {
-        code: undefined,
         name: "",
         organizer_id: undefined,
         started_date: undefined,
@@ -120,6 +119,14 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
       await onSubmit(data);
     };
 
+    const showCurrentValues: Record<string, string> = {
+      name: watch("name") ?? "",
+      organizer_id: watch("organizer_id") ?? "",
+      started_date: watch("started_date") ?? "",
+      ended_date: watch("ended_date") ?? "",
+      note: watch("note") ?? "",
+    };
+
     return (
       <form
         ref={ref}
@@ -127,95 +134,45 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
+        <div className="flex justify-end">
+          <AIAssistFormButton
+            formType="show"
+            currentValues={showCurrentValues}
+            onSuggest={(values) => {
+              Object.entries(values).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== "") {
+                  if (key === "organizer_id") {
+                    const byId = organizers.find((o) => o.id === value);
+                    const byName = organizers.find((o) => o.name === value);
+                    setValue(
+                      "organizer_id",
+                      byId ? byId.id : byName ? byName.id : value
+                    );
+                  } else {
+                    setValue(key as keyof ShowFormData, value);
+                  }
+                }
+              });
+            }}
+            disabled={isLoading}
+          />
+        </div>
         <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4")}
           ref={firstErrorRef}
         >
-          
-          
-          <Field data-invalid={!!errors.code}>
-            <FieldLabel htmlFor="code">
-              Code
-            </FieldLabel>
-            
-              
-                
-                {(() => {
-                  const isCodeLocked =
-                    (true && mode === "edit") ||
-                    (true && mode === "create");
-                  const lockReason =
-                    true && mode === "edit"
-                      ? "Codes cannot be modified after creation"
-                      : true && mode === "create"
-                        ? "Code will be generated automatically"
-                        : undefined;
-                  return (
-                    <Input
-                      id="code"
-                      type="text"
-                      placeholder="Auto generated"
-                      {...register("code")}
-                      disabled={isLoading || isCodeLocked}
-                      readOnly={isCodeLocked}
-                      tabIndex={isCodeLocked ? -1 : undefined}
-                      aria-disabled={isCodeLocked || undefined}
-                      aria-readonly={isCodeLocked || undefined}
-                      title={lockReason}
-                      className={cn(
-                        isCodeLocked && "cursor-not-allowed bg-muted text-muted-foreground",
-                        errors.code && "border-destructive"
-                      )}
-                    />
-                  );
-                })()}
-                
-              
-              <FieldError>{errors.code?.message}</FieldError>
-            
-          </Field>
-          
-          
-          
           <Field data-invalid={!!errors.name}>
             <FieldLabel htmlFor="name">
               Name <span className="text-destructive">*</span>
             </FieldLabel>
-            
-              
-                
-                {(() => {
-                  const isCodeLocked =
-                    (false && mode === "edit") ||
-                    (false && mode === "create");
-                  const lockReason =
-                    false && mode === "edit"
-                      ? "Codes cannot be modified after creation"
-                      : false && mode === "create"
-                        ? "Code will be generated automatically"
-                        : undefined;
-                  return (
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter Name"
-                      {...register("name")}
-                      disabled={isLoading || isCodeLocked}
-                      readOnly={isCodeLocked}
-                      tabIndex={isCodeLocked ? -1 : undefined}
-                      aria-disabled={isCodeLocked || undefined}
-                      aria-readonly={isCodeLocked || undefined}
-                      title={lockReason}
-                      className={cn(
-                        isCodeLocked && "cursor-not-allowed bg-muted text-muted-foreground",
-                        errors.name && "border-destructive"
-                      )}
-                    />
-                  );
-                })()}
-                
-              
-              <FieldError>{errors.name?.message}</FieldError>
-            
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter Name"
+              {...register("name")}
+              disabled={isLoading}
+              className={cn(errors.name && "border-destructive")}
+            />
+            <FieldError>{errors.name?.message}</FieldError>
           </Field>
           
           <Field data-invalid={!!errors.organizer_id}>
@@ -317,20 +274,15 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
           </Field>
         </div>
 
-        <Field data-invalid={!!errors.note}>
-          <FieldLabel htmlFor="note">
-            Note
-          </FieldLabel>
-          <Textarea
-            id="note"
-            placeholder="Enter notes about the show"
-            {...register("note")}
-            disabled={isLoading}
-            className={cn(errors.note && "border-destructive")}
-            rows={4}
-          />
-          <FieldError>{errors.note?.message}</FieldError>
-        </Field>
+        <TextareaInputField
+          control={control}
+          name="note"
+          label="Note"
+          placeholder="Enter notes about the show"
+          rows={4}
+          disabled={isLoading}
+          showImproveButton
+        />
       </form>
     );
   }

@@ -98,9 +98,18 @@ export class ApiError extends Error {
             // Try to parse as JSON
             const errorData = JSON.parse(rawMessage);
 
-            // Handle common error formats
-            if (errorData.detail) {
-                return errorData.detail;
+            // Handle common error formats (FastAPI uses detail as string or array of { msg, loc, ... })
+            if (errorData.detail !== undefined && errorData.detail !== null) {
+                const d = errorData.detail;
+                if (typeof d === 'string') return d;
+                if (Array.isArray(d)) {
+                    const parts = d.map((item: unknown) => {
+                        if (item && typeof item === 'object' && 'msg' in item)
+                            return String((item as { msg: unknown }).msg);
+                        return String(item);
+                    });
+                    return parts.filter(Boolean).join(' ') || 'Validation error';
+                }
             }
             if (errorData.message) {
                 return errorData.message;

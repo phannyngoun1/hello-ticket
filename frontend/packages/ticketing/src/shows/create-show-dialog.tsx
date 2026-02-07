@@ -76,7 +76,6 @@ export function CreateShowDialog({
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
     return (data: ShowFormData, images: ShowImageData[]): CreateShowInput => ({
-      code: undefined,
       name: data.name,
       organizer_id: data.organizer_id || undefined,
       started_date: data.started_date || undefined,

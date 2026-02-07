@@ -39,7 +39,7 @@ export function AIAssistFormButton({
   const [open, setOpen] = useState(false);
   const [userPrompt, setUserPrompt] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { suggest, loading, error } = useAIAssistForm({
+  const { suggest, loading, error, clearError } = useAIAssistForm({
     formType,
     currentValues,
     fieldHints,
@@ -49,7 +49,10 @@ export function AIAssistFormButton({
   const handleOpenChange = (next: boolean) => {
     if (!loading) {
       setOpen(next);
-      if (!next) setUserPrompt("");
+      if (!next) {
+        setUserPrompt("");
+        clearError();
+      }
     }
   };
 
@@ -104,6 +107,14 @@ export function AIAssistFormButton({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
+            {error && (
+              <p
+                className="text-sm text-destructive rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2"
+                role="alert"
+              >
+                {error}
+              </p>
+            )}
             <div
               className={cn(
                 "flex flex-col rounded-xl border border-input bg-muted/30 p-4",
@@ -159,14 +170,6 @@ export function AIAssistFormButton({
           </div>
         </DialogContent>
       </Dialog>
-      {error && (
-        <p
-          className="text-xs text-destructive animate-in fade-in-0 slide-in-from-top-1 duration-200"
-          role="alert"
-        >
-          {error}
-        </p>
-      )}
     </div>
   );
 }

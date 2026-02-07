@@ -50,7 +50,6 @@ export function EditShowDialog({
   const defaultValues = useMemo(() => {
     if (!show) return undefined;
     return {
-      code: show.code ?? "",
       name: show.name ?? "",
       organizer_id: show.organizer_id ?? undefined,
       started_date: show.started_date ?? undefined,
@@ -94,7 +93,6 @@ export function EditShowDialog({
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
   const buildPayload = useMemo(() => {
     return (data: ShowFormData, images: ShowImageData[]): UpdateShowInput => ({
-      code: undefined,
       name: data.name,
       organizer_id: data.organizer_id || undefined,
       started_date: data.started_date || undefined,

@@ -98,6 +98,13 @@ FORM_SCHEMAS: Dict[str, Dict[str, str]] = {
         "emergency_contact_phone": "Emergency contact phone",
         "emergency_contact_relationship": "Emergency contact relationship",
     },
+    "show": {
+        "name": "Show name",
+        "organizer_id": "Organizer ID (UUID) or organizer name for reference",
+        "started_date": "Start date (YYYY-MM-DD)",
+        "ended_date": "End date (YYYY-MM-DD)",
+        "note": "Notes about the show",
+    },
 }
 
 

@@ -31,7 +31,9 @@ export function CreateVenueDialog({
   const [formKey, setFormKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingFormData, setPendingFormData] = useState<VenueFormData | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<VenueFormData | null>(
+    null
+  );
 
   useEffect(() => {
     if (!open) {
@@ -60,7 +62,10 @@ export function CreateVenueDialog({
       venue_type: data.venue_type || undefined,
       parking_info: data.parking_info || undefined,
       accessibility: data.accessibility || undefined,
-      amenities: data.amenities && data.amenities.length > 0 ? data.amenities : undefined,
+      amenities:
+        data.amenities && data.amenities.length > 0
+          ? data.amenities
+          : undefined,
       opening_hours: data.opening_hours || undefined,
       phone: data.phone || undefined,
       email: data.email || undefined,
@@ -100,25 +105,6 @@ export function CreateVenueDialog({
   const handleClear = () => {
     setPendingFormData(null);
     setFormKey((prev) => prev + 1);
-  };
-
-  const handleDialogSubmit = () => {
-    if (formRef.current) {
-      formRef.current.requestSubmit();
-    }
-  };
-
-  const handleConfirmDialogChange = (dialogOpen: boolean) => {
-    setShowConfirmDialog(dialogOpen);
-    if (!dialogOpen) {
-      setPendingFormData(null);
-      setTimeout(() => {
-        const firstInput = formRef.current?.querySelector(
-          "input, textarea, select"
-        ) as HTMLElement | null;
-        firstInput?.focus();
-      }, 0);
-    }
   };
 
   const confirmAction = {
@@ -194,4 +180,3 @@ export function CreateVenueDialog({
     </>
   );
 }
-
