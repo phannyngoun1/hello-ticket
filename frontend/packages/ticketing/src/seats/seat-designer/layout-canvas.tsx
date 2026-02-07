@@ -58,6 +58,7 @@ function ShapeRenderer({
     strokeWidth,
     opacity,
     dash,
+    perfectDrawEnabled: false,
   };
 
   // Normalize shape type to ensure it matches enum values
@@ -258,10 +259,14 @@ interface ShapeOverlayComponentProps {
   isPlacingSeats: boolean;
   isPlacingSections: boolean;
   percentageToStage: (x: number, y: number) => { x: number; y: number };
+  disableHoverAnimation?: boolean;
 }
 
 // Threshold: only virtualize when we have more than this many objects
-const VIRTUALIZATION_THRESHOLD = 80;
+const VIRTUALIZATION_THRESHOLD = 40;
+
+// Threshold: disable hover animations when total count exceeds this
+const HOVER_ANIMATION_THRESHOLD = 100;
 
 function ShapeOverlayComponent({
   overlay,
@@ -275,6 +280,7 @@ function ShapeOverlayComponent({
   isPlacingSeats,
   isPlacingSections,
   percentageToStage,
+  disableHoverAnimation = false,
 }: ShapeOverlayComponentProps) {
   const [isHovered, setIsHovered] = useState(false);
   const shapeGroupRef = useRef<Konva.Group>(null);
@@ -303,8 +309,9 @@ function ShapeOverlayComponent({
 
   const strokeWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
 
-  // Animate opacity on hover/selection change
+  // Animate opacity on hover/selection change (skip when disabled for performance)
   useEffect(() => {
+    if (disableHoverAnimation) return;
     const shapeGroup = shapeGroupRef.current;
     if (!shapeGroup) return;
 
@@ -327,10 +334,11 @@ function ShapeOverlayComponent({
         });
       }
     });
-  }, [currentOpacity, strokeWidth]);
+  }, [currentOpacity, strokeWidth, disableHoverAnimation]);
 
   // Animate label on hover/selection
   useEffect(() => {
+    if (disableHoverAnimation) return;
     const label = labelRef.current;
     if (!label) return;
 
@@ -340,7 +348,7 @@ function ShapeOverlayComponent({
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected]);
+  }, [isHovered, isSelected, disableHoverAnimation]);
 
   return (
     <Group
@@ -440,6 +448,9 @@ interface SeatMarkerComponentProps {
   imageWidth: number;
   imageHeight: number;
   readOnly?: boolean;
+  disableHoverAnimation?: boolean;
+  onSeatDragStart?: (seatId: string) => void;
+  useLowDetail?: boolean;
 }
 
 function SeatMarkerComponent({
@@ -459,6 +470,9 @@ function SeatMarkerComponent({
   imageWidth,
   imageHeight,
   readOnly = false,
+  disableHoverAnimation = false,
+  onSeatDragStart,
+  useLowDetail = false,
 }: SeatMarkerComponentProps) {
   const shapeRef = useRef<Konva.Shape>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -506,6 +520,17 @@ function SeatMarkerComponent({
     }
   }, [isSelected, shapeKey, readOnly]);
 
+  // Cache shape for performance when not selected
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    if (isSelected) {
+      group.clearCache();
+    } else if (!useLowDetail) {
+      group.cache();
+    }
+  }, [isSelected, useLowDetail, shapeKey]);
+
   // Calculate bounding box for transformer (if needed in the future)
   // const getBoundingBox = () => {
   //   if (shape.type === PlacementShapeType.CIRCLE) {
@@ -523,10 +548,10 @@ function SeatMarkerComponent({
 
   // Animate border color on hover state change
   useEffect(() => {
+    if (disableHoverAnimation) return;
     const shapeNode = shapeRef.current;
     if (!shapeNode || isSelected) return;
 
-    // Determine hover stroke color - brighter version of the original stroke
     const hoverStrokeColor = isHovered ? colors.stroke : colors.stroke;
 
     shapeNode.to({
@@ -535,7 +560,7 @@ function SeatMarkerComponent({
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected, colors.stroke]);
+  }, [isHovered, isSelected, colors.stroke, disableHoverAnimation]);
 
   // Make markers more visible with better colors
   // Use seat type colors but make them more vibrant and visible
@@ -637,6 +662,7 @@ function SeatMarkerComponent({
         y={y}
         rotation={shape.rotation || 0}
         draggable={!readOnly && (isPlacingSeats || isSelected)}
+        onDragStart={!readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined}
         onDragEnd={!readOnly ? (e) => onSeatDragEnd(seat.id, e) : undefined}
         onTransformEnd={!readOnly ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
@@ -683,15 +709,26 @@ function SeatMarkerComponent({
         }}
       >
         <Group ref={shapeRef as any}>
-          <ShapeRenderer
-            shape={shape}
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            imageWidth={imageWidth}
-            imageHeight={imageHeight}
-            opacity={fillOpacity}
-          />
+          {useLowDetail ? (
+            <Circle
+              radius={3}
+              fill={fillColor}
+              stroke={strokeColor}
+              strokeWidth={1}
+              opacity={fillOpacity}
+              perfectDrawEnabled={false}
+            />
+          ) : (
+            <ShapeRenderer
+              shape={shape}
+              fill={fillColor}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+              imageWidth={imageWidth}
+              imageHeight={imageHeight}
+              opacity={fillOpacity}
+            />
+          )}
         </Group>
       </Group>
       {isSelected && !readOnly && (
@@ -835,6 +872,9 @@ interface SectionMarkerComponentProps {
   imageWidth: number;
   readOnly?: boolean;
   imageHeight: number;
+  disableHoverAnimation?: boolean;
+  onSectionDragStart?: (sectionId: string) => void;
+  useLowDetail?: boolean;
 }
 
 function SectionMarkerComponent({
@@ -854,6 +894,9 @@ function SectionMarkerComponent({
   imageWidth,
   imageHeight,
   readOnly = false,
+  disableHoverAnimation = false,
+  onSectionDragStart,
+  useLowDetail = false,
 }: SectionMarkerComponentProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -904,6 +947,17 @@ function SectionMarkerComponent({
       transformerRef.current.getLayer()?.batchDraw();
     }
   }, [isSelected, shapeKey, readOnly]);
+
+  // Cache shape for performance when not selected
+  useEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    if (isSelected) {
+      group.clearCache();
+    } else if (!useLowDetail && section.shape) {
+      group.cache();
+    }
+  }, [isSelected, useLowDetail, section.shape, shapeKey]);
 
   // Handle transform end - convert back to percentage coordinates
   const handleTransformEnd = useCallback(() => {
@@ -998,6 +1052,7 @@ function SectionMarkerComponent({
 
   // Animate shape border on hover state change (when placing sections)
   useEffect(() => {
+    if (disableHoverAnimation) return;
     const shapeNode = shapeRef.current;
     if (!shapeNode || !isPlacingSections || isSelected) return;
 
@@ -1011,7 +1066,7 @@ function SectionMarkerComponent({
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected, isPlacingSections]);
+  }, [isHovered, isSelected, isPlacingSections, disableHoverAnimation]);
 
   return (
     <>
@@ -1021,6 +1076,7 @@ function SectionMarkerComponent({
         y={y}
         rotation={shape.rotation || 0}
         draggable={!readOnly && (isPlacingSections || isSelected)}
+        onDragStart={!readOnly && onSectionDragStart ? () => onSectionDragStart(section.id) : undefined}
         onDragEnd={!readOnly ? (e) => {
           if (!onSectionDragEnd) return;
           const node = e.target;
@@ -1085,15 +1141,26 @@ function SectionMarkerComponent({
         {/* Shape marker for section (if shape is defined) */}
         {section.shape && (
           <Group ref={shapeRef as any}>
-            <ShapeRenderer
-              shape={shape}
-              fill="#60a5fa" // Vibrant blue fill
-              stroke={isSelected ? "#1e40af" : "#2563eb"}
-              strokeWidth={isSelected ? 2.5 : 2}
-              imageWidth={imageWidth}
-              imageHeight={imageHeight}
-              opacity={isSelected ? 0.5 : 0.35}
-            />
+            {useLowDetail ? (
+              <Circle
+                radius={4}
+                fill="#60a5fa"
+                stroke={isSelected ? "#1e40af" : "#2563eb"}
+                strokeWidth={1}
+                opacity={isSelected ? 0.5 : 0.35}
+                perfectDrawEnabled={false}
+              />
+            ) : (
+              <ShapeRenderer
+                shape={shape}
+                fill="#60a5fa"
+                stroke={isSelected ? "#1e40af" : "#2563eb"}
+                strokeWidth={isSelected ? 2.5 : 2}
+                imageWidth={imageWidth}
+                imageHeight={imageHeight}
+                opacity={isSelected ? 0.5 : 0.35}
+              />
+            )}
           </Group>
         )}
         {/* Default circle marker when no shape is defined */}
@@ -1321,7 +1388,11 @@ export function LayoutCanvas({
     y: number;
   } | null>(null);
   const previewShapeRef = useRef<Konva.Group>(null);
-  
+
+  // Drag layer optimization: track which item is being dragged
+  const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+
   // Ref to prevent click event after drag-to-draw
   const ignoreClickRef = useRef(false);
 
@@ -1566,10 +1637,28 @@ export function LayoutCanvas({
     (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
       const { x, y } = stageToPercentage(node.x(), node.y());
+      setDraggedSeatId(null);
       onSeatDragEnd(seatId, x, y);
     },
     [onSeatDragEnd, stageToPercentage]
   );
+
+  const handleSeatDragStart = useCallback((seatId: string) => {
+    setDraggedSeatId(seatId);
+  }, []);
+
+  const handleSectionDragEnd = useCallback(
+    (sectionId: string, stageX: number, stageY: number) => {
+      setDraggedSectionId(null);
+      const { x, y } = stageToPercentage(stageX, stageY);
+      onSectionDragEnd?.(sectionId, x, y);
+    },
+    [onSectionDragEnd, stageToPercentage]
+  );
+
+  const handleSectionDragStart = useCallback((sectionId: string) => {
+    setDraggedSectionId(sectionId);
+  }, []);
 
   // Ensure container dimensions are valid
   const validWidth = containerWidth > 0 ? containerWidth : 800;
@@ -1668,6 +1757,32 @@ export function LayoutCanvas({
     selectedSectionId,
     selectedOverlayId,
   ]);
+
+  const totalVisibleCount =
+    visibleSeats.length + visibleSections.length + visibleShapeOverlays.length;
+  const disableHoverAnimation = totalVisibleCount > HOVER_ANIMATION_THRESHOLD;
+  const useLowDetail = zoomLevel < 0.4;
+
+  const layerTransform = {
+    x: centerX + panOffset.x,
+    y: centerY + panOffset.y,
+    scaleX: zoomLevel,
+    scaleY: zoomLevel,
+    offsetX: centerX,
+    offsetY: centerY,
+  };
+
+  const staticSeats = visibleSeats.filter(
+    (s) => s.id !== selectedSeatId && s.id !== draggedSeatId
+  );
+  const selectedSeat = visibleSeats.find((s) => s.id === selectedSeatId);
+  const draggedSeat = visibleSeats.find((s) => s.id === draggedSeatId);
+
+  const staticSections = visibleSections.filter(
+    (s) => s.id !== selectedSectionId && s.id !== draggedSectionId
+  );
+  const selectedSection = visibleSections.find((s) => s.id === selectedSectionId);
+  const draggedSection = visibleSections.find((s) => s.id === draggedSectionId);
 
   // Show loading indicator while image is loading or image dimensions are invalid
   if (imageLoading || !image || !image.width || !image.height) {
@@ -2080,14 +2195,367 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
+      {/* Background Layer: Image only - rarely redraws */}
+      <Layer ref={layerRef} {...layerTransform} listening={true}>
+        <Image
+          name="background-image"
+          image={image}
+          x={imageX}
+          y={imageY}
+          width={displayedWidth}
+          height={displayedHeight}
+          listening={true}
+          onMouseMove={(e) => {
+            if (
+              selectedShapeTool === PlacementShapeType.FREEFORM &&
+              freeformPath.length > 0
+            ) {
+              const pointerPos = e.target.getStage()?.getPointerPosition();
+              if (pointerPos) {
+                const percentageCoords = pointerToPercentage(
+                  pointerPos.x,
+                  pointerPos.y
+                );
+                setFreeformHoverPos(percentageCoords);
+              }
+            }
+          }}
+          onClick={(e) => {
+            if (ignoreClickRef.current) {
+              ignoreClickRef.current = false;
+              return;
+            }
+            if (
+              selectedShapeTool === PlacementShapeType.FREEFORM &&
+              onShapeDraw
+            ) {
+              e.cancelBubble = true;
+              const pointerPos = e.target.getStage()?.getPointerPosition();
+              if (pointerPos) {
+                const percentageCoords = pointerToPercentage(
+                  pointerPos.x,
+                  pointerPos.y
+                );
+                if (freeformPath.length >= 2) {
+                  const firstPoint = freeformPath[0];
+                  const distanceToStart = Math.sqrt(
+                    Math.pow(percentageCoords.x - firstPoint.x, 2) +
+                      Math.pow(percentageCoords.y - firstPoint.y, 2)
+                  );
+                  if (distanceToStart < 1.5) {
+                    const finalPath = [...freeformPath, firstPoint];
+                    const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                    const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                    const cx = sumX / finalPath.length;
+                    const cy = sumY / finalPath.length;
+                    const points: number[] = [];
+                    finalPath.forEach((point) => {
+                      points.push(point.x - cx, point.y - cy);
+                    });
+                    const shape: PlacementShape = {
+                      type: PlacementShapeType.FREEFORM,
+                      points,
+                    };
+                    onShapeDraw(shape, cx, cy);
+                    setFreeformPath([]);
+                    setFreeformHoverPos(null);
+                    return;
+                  }
+                }
+                setFreeformPath((prev) => {
+                  if (prev.length === 0) return [percentageCoords];
+                  const lastPoint = prev[prev.length - 1];
+                  const distanceInPercent = Math.sqrt(
+                    Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                      Math.pow(percentageCoords.y - lastPoint.y, 2)
+                  );
+                  if (distanceInPercent >= 0.1) return [...prev, percentageCoords];
+                  return prev;
+                });
+              }
+              return;
+            }
+            const target = e.target;
+            if (
+              target &&
+              target.name() === "background-image" &&
+              !selectedShapeTool &&
+              !isDrawingShape
+            ) {
+              onDeselect?.();
+            }
+            if (onImageClick) {
+              const pointerPos = e.target.getStage()?.getPointerPosition();
+              if (pointerPos) {
+                const percentageCoords = pointerToPercentage(
+                  pointerPos.x,
+                  pointerPos.y
+                );
+                onImageClick(e, percentageCoords);
+              } else {
+                onImageClick(e);
+              }
+            }
+          }}
+          onDblClick={(e) => {
+            if (
+              selectedShapeTool === PlacementShapeType.FREEFORM &&
+              freeformPath.length >= 2 &&
+              onShapeDraw
+            ) {
+              e.cancelBubble = true;
+              const finalPath = [...freeformPath, freeformPath[0]];
+              const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+              const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+              const cx = sumX / finalPath.length;
+              const cy = sumY / finalPath.length;
+              const points: number[] = [];
+              finalPath.forEach((point) => {
+                points.push(point.x - cx, point.y - cy);
+              });
+              const shape: PlacementShape = {
+                type: PlacementShapeType.FREEFORM,
+                points,
+              };
+              onShapeDraw(shape, cx, cy);
+              setFreeformPath([]);
+              setFreeformHoverPos(null);
+            }
+          }}
+          onTap={(e) => {
+            const target = e.target;
+            if (
+              target &&
+              target.name() === "background-image" &&
+              !selectedShapeTool &&
+              !isDrawingShape
+            ) {
+              onDeselect?.();
+            }
+          }}
+        />
+      </Layer>
+
+      {/* Static Layer: Non-selected, non-dragged - redraws only on selection/drag-end */}
+      <Layer {...layerTransform} listening={true}>
+        {staticSeats.map((seat) => {
+          const { x, y } = percentageToStage(seat.x, seat.y);
+          const colors = getSeatColor(seat.seat.seatType);
+          return (
+            <MemoizedSeatMarkerComponent
+              key={seat.id}
+              seat={seat}
+              x={x}
+              y={y}
+              isSelected={false}
+              isPlacingSeats={isPlacingSeats}
+              isPanning={isPanning}
+              isSpacePressed={isSpacePressed}
+              isPlacingSections={isPlacingSections}
+              selectedShapeTool={selectedShapeTool}
+              onSeatClick={onSeatClick}
+              onSeatDragStart={handleSeatDragStart}
+              onSeatDragEnd={handleSeatDragEnd}
+              onShapeTransform={onSeatShapeTransform}
+              colors={colors}
+              imageWidth={displayedWidth}
+              imageHeight={displayedHeight}
+              readOnly={readOnly}
+              disableHoverAnimation={disableHoverAnimation}
+              useLowDetail={useLowDetail}
+            />
+          );
+        })}
+        {venueType === "large" &&
+          staticSections.map((section) => {
+            const { x, y } = percentageToStage(section.x, section.y);
+            return (
+              <MemoizedSectionMarkerComponent
+                key={section.id}
+                section={section}
+                x={x}
+                y={y}
+                isSelected={false}
+                isPlacingSections={isPlacingSections}
+                isPanning={isPanning}
+                isSpacePressed={isSpacePressed}
+                isPlacingSeats={isPlacingSeats}
+                onSectionClick={onSectionClick}
+                onSectionDoubleClick={onSectionDoubleClick}
+                onSectionDragEnd={handleSectionDragEnd}
+                onSectionDragStart={handleSectionDragStart}
+                selectedShapeTool={selectedShapeTool}
+                onShapeTransform={onSectionShapeTransform}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                readOnly={readOnly}
+                disableHoverAnimation={disableHoverAnimation}
+                useLowDetail={useLowDetail}
+              />
+            );
+          })}
+        {visibleShapeOverlays.map((overlay) => {
+          const isSelected = selectedOverlayId === overlay.id;
+          return (
+            <MemoizedShapeOverlayComponent
+              key={overlay.id}
+              overlay={overlay}
+              isSelected={isSelected}
+              onShapeOverlayClick={onShapeOverlayClick}
+              imageWidth={displayedWidth}
+              imageHeight={displayedHeight}
+              isPanning={isPanning}
+              isSpacePressed={isSpacePressed}
+              selectedShapeTool={selectedShapeTool}
+              isPlacingSeats={isPlacingSeats}
+              isPlacingSections={isPlacingSections}
+              percentageToStage={percentageToStage}
+              disableHoverAnimation={disableHoverAnimation}
+            />
+          );
+        })}
+      </Layer>
+
+      {/* Interactive Layer: Selected seat/section + Transformer */}
+      <Layer {...layerTransform} listening={true}>
+        {selectedSeat && (
+          <>
+            {(() => {
+              const { x, y } = percentageToStage(selectedSeat.x, selectedSeat.y);
+              const colors = getSeatColor(selectedSeat.seat.seatType);
+              return (
+                <MemoizedSeatMarkerComponent
+                  key={selectedSeat.id}
+                  seat={selectedSeat}
+                  x={x}
+                  y={y}
+                  isSelected={true}
+                  isPlacingSeats={isPlacingSeats}
+                  isPanning={isPanning}
+                  isSpacePressed={isSpacePressed}
+                  isPlacingSections={isPlacingSections}
+                  selectedShapeTool={selectedShapeTool}
+                  onSeatClick={onSeatClick}
+                  onSeatDragStart={handleSeatDragStart}
+                  onSeatDragEnd={handleSeatDragEnd}
+                  onShapeTransform={onSeatShapeTransform}
+                  colors={colors}
+                  imageWidth={displayedWidth}
+                  imageHeight={displayedHeight}
+                  readOnly={readOnly}
+                  disableHoverAnimation={disableHoverAnimation}
+                  useLowDetail={false}
+                />
+              );
+            })()}
+          </>
+        )}
+        {venueType === "large" &&
+          selectedSection && (
+            (() => {
+              const { x, y } = percentageToStage(
+                selectedSection.x,
+                selectedSection.y
+              );
+              return (
+                <MemoizedSectionMarkerComponent
+                  key={selectedSection.id}
+                  section={selectedSection}
+                  x={x}
+                  y={y}
+                  isSelected={true}
+                  isPlacingSections={isPlacingSections}
+                  isPanning={isPanning}
+                  isSpacePressed={isSpacePressed}
+                  isPlacingSeats={isPlacingSeats}
+                  onSectionClick={onSectionClick}
+                  onSectionDoubleClick={onSectionDoubleClick}
+                  onSectionDragEnd={handleSectionDragEnd}
+                  onSectionDragStart={handleSectionDragStart}
+                  selectedShapeTool={selectedShapeTool}
+                  onShapeTransform={onSectionShapeTransform}
+                  imageWidth={displayedWidth}
+                  imageHeight={displayedHeight}
+                  readOnly={readOnly}
+                  disableHoverAnimation={disableHoverAnimation}
+                  useLowDetail={false}
+                />
+              );
+            })()
+          )}
+      </Layer>
+
+      {/* Drag Layer: Currently dragged shape - only this redraws during drag */}
+      <Layer {...layerTransform} listening={true}>
+        {draggedSeat && (
+          (() => {
+            const { x, y } = percentageToStage(draggedSeat.x, draggedSeat.y);
+            const colors = getSeatColor(draggedSeat.seat.seatType);
+            return (
+              <MemoizedSeatMarkerComponent
+                key={draggedSeat.id}
+                seat={draggedSeat}
+                x={x}
+                y={y}
+                isSelected={false}
+                isPlacingSeats={isPlacingSeats}
+                isPanning={isPanning}
+                isSpacePressed={isSpacePressed}
+                isPlacingSections={isPlacingSections}
+                selectedShapeTool={selectedShapeTool}
+                onSeatClick={onSeatClick}
+                onSeatDragStart={handleSeatDragStart}
+                onSeatDragEnd={handleSeatDragEnd}
+                onShapeTransform={onSeatShapeTransform}
+                colors={colors}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                readOnly={readOnly}
+                disableHoverAnimation={disableHoverAnimation}
+                useLowDetail={false}
+              />
+            );
+          })()
+        )}
+        {venueType === "large" &&
+          draggedSection && (
+            (() => {
+              const { x, y } = percentageToStage(
+                draggedSection.x,
+                draggedSection.y
+              );
+              return (
+                <MemoizedSectionMarkerComponent
+                  key={draggedSection.id}
+                  section={draggedSection}
+                  x={x}
+                  y={y}
+                  isSelected={false}
+                  isPlacingSections={isPlacingSections}
+                  isPanning={isPanning}
+                  isSpacePressed={isSpacePressed}
+                  isPlacingSeats={isPlacingSeats}
+                  onSectionClick={onSectionClick}
+                  onSectionDoubleClick={onSectionDoubleClick}
+                  onSectionDragEnd={handleSectionDragEnd}
+                  onSectionDragStart={handleSectionDragStart}
+                  selectedShapeTool={selectedShapeTool}
+                  onShapeTransform={onSectionShapeTransform}
+                  imageWidth={displayedWidth}
+                  imageHeight={displayedHeight}
+                  readOnly={readOnly}
+                  disableHoverAnimation={disableHoverAnimation}
+                  useLowDetail={false}
+                />
+              );
+            })()
+          )}
+      </Layer>
+
+      {/* Overlay Layer: Preview shapes, freeform lines, etc. */}
       <Layer
-        ref={layerRef}
-        x={centerX + panOffset.x}
-        y={centerY + panOffset.y}
-        scaleX={zoomLevel}
-        scaleY={zoomLevel}
-        offsetX={centerX}
-        offsetY={centerY}
+        {...layerTransform}
+        listening={true}
         onClick={(e) => {
           // Handle polygon/freeform click-to-add-points at Layer level
           // This ensures clicks work even when seats/sections are on top
@@ -2175,15 +2643,14 @@ export function LayoutCanvas({
           }
         }}
       >
-        {/* Background Image */}
-        <Image
-          name="background-image"
-          image={image}
+        {/* Hit area for freeform - passes through to lower layers for seat clicks */}
+        <Rect
           x={imageX}
           y={imageY}
           width={displayedWidth}
           height={displayedHeight}
-          listening={true}
+          fill="transparent"
+          listening={false}
           onMouseMove={(e) => {
             // Track hover position for freeform preview
             if (
@@ -2351,92 +2818,6 @@ export function LayoutCanvas({
             }
           }}
         />
-
-        {/* Seats */}
-        {visibleSeats.map((seat) => {
-          const { x, y } = percentageToStage(seat.x, seat.y);
-          const colors = getSeatColor(seat.seat.seatType);
-          const isSelected = selectedSeatId === seat.id;
-
-          return (
-            <MemoizedSeatMarkerComponent
-              key={seat.id}
-              seat={seat}
-              x={x}
-              y={y}
-              isSelected={isSelected}
-              isPlacingSeats={isPlacingSeats}
-              isPanning={isPanning}
-              isSpacePressed={isSpacePressed}
-              isPlacingSections={isPlacingSections}
-              selectedShapeTool={selectedShapeTool}
-              onSeatClick={onSeatClick}
-              onSeatDragEnd={handleSeatDragEnd}
-              onShapeTransform={onSeatShapeTransform}
-              colors={colors}
-              imageWidth={displayedWidth}
-              imageHeight={displayedHeight}
-              readOnly={readOnly}
-            />
-          );
-        })}
-
-        {/* Section Markers (for large venue mode) */}
-        {venueType === "large" &&
-          visibleSections.map((section) => {
-            const { x, y } = percentageToStage(section.x, section.y);
-            const isSelected = selectedSectionId === section.id;
-
-            return (
-              <MemoizedSectionMarkerComponent
-                key={section.id}
-                section={section}
-                x={x}
-                y={y}
-                isSelected={isSelected}
-                isPlacingSections={isPlacingSections}
-                isPanning={isPanning}
-                isSpacePressed={isSpacePressed}
-                isPlacingSeats={isPlacingSeats}
-                onSectionClick={onSectionClick}
-                onSectionDoubleClick={onSectionDoubleClick}
-                onSectionDragEnd={
-                  onSectionDragEnd
-                    ? (sectionId: string, stageX: number, stageY: number) => {
-                        const { x, y } = stageToPercentage(stageX, stageY);
-                        onSectionDragEnd(sectionId, x, y);
-                      }
-                    : undefined
-                }
-                selectedShapeTool={selectedShapeTool}
-                onShapeTransform={onSectionShapeTransform}
-                imageWidth={displayedWidth}
-                imageHeight={displayedHeight}
-                readOnly={readOnly}
-              />
-            );
-          })}
-
-        {/* Shape Overlays - clickable areas on the image */}
-        {visibleShapeOverlays.map((overlay) => {
-          const isSelected = selectedOverlayId === overlay.id;
-          return (
-            <MemoizedShapeOverlayComponent
-              key={overlay.id}
-              overlay={overlay}
-              isSelected={isSelected}
-              onShapeOverlayClick={onShapeOverlayClick}
-              imageWidth={displayedWidth}
-              imageHeight={displayedHeight}
-              isPanning={isPanning}
-              isSpacePressed={isSpacePressed}
-              selectedShapeTool={selectedShapeTool}
-              isPlacingSeats={isPlacingSeats}
-              isPlacingSections={isPlacingSections}
-              percentageToStage={percentageToStage}
-            />
-          );
-        })}
 
         {/* Preview shape while drawing - show freeform preview when points exist */}
         {selectedShapeTool === PlacementShapeType.FREEFORM &&
