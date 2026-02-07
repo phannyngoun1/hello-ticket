@@ -58,12 +58,10 @@ import {
   SectionFormSheet,
   SeatEditSheet,
   SeatPlacementControls,
-  SectionPlacementControls,
   SectionDetailView,
   DatasheetView,
   SelectedSectionSheet,
   ManageSectionsSheet,
-  ShapeSelector,
   ShapeToolbox,
 } from "./components";
 
