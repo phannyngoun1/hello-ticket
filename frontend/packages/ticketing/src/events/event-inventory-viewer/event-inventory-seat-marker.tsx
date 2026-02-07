@@ -8,6 +8,31 @@ import Konva from "konva";
 import type { Seat } from "../../seats/types";
 import type { EventSeat } from "../types";
 import {
+  AMBER_FILL,
+  AMBER_STROKE,
+  BLUE_FILL,
+  BLUE_STROKE,
+  DEFAULT_SHAPE_FILL,
+  DEFAULT_SHAPE_STROKE,
+  GRAY_FILL,
+  GRAY_STROKE,
+  GREEN_FILL,
+  GREEN_HOVER_FILL,
+  GREEN_HOVER_STROKE,
+  GREEN_STROKE,
+  PURPLE_FILL,
+  PURPLE_STROKE,
+  RED_FILL,
+  RED_STROKE,
+  SELECTED_FILL,
+  SELECTED_STROKE,
+  GRAY_HOVER_FILL,
+  BLUE_HOVER_FILL,
+  AMBER_HOVER_FILL,
+  PURPLE_HOVER_FILL,
+  RED_HOVER_FILL,
+} from "./event-inventory-viewer-colors";
+import {
   getTicketStatusColor,
   getSeatStatusColor,
   getSeatStatusTransparency,
@@ -62,7 +87,7 @@ export function SeatMarker({
   } else if (eventSeat) {
     statusColors = getSeatStatusColor(eventSeat.status);
   } else {
-    statusColors = { fill: "#9ca3af", stroke: "#6b7280" };
+    statusColors = { fill: GRAY_FILL, stroke: GRAY_STROKE };
   }
 
   const parsedShape = parseShape(seat.shape);
@@ -72,16 +97,55 @@ export function SeatMarker({
   const isDefaultOrEmpty = (v: string | undefined, d: string) =>
     !v ||
     v.toLowerCase().replace(/^#/, "") === d.toLowerCase().replace(/^#/, "");
-  const fillColor = isSelected
-    ? "#06b6d4"
-    : !isDefaultOrEmpty(configFill, "#60a5fa")
+
+  /** Colors from shape config; default or empty returns undefined */
+  const shapeCodeColors = {
+    fill: isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
+      ? undefined
+      : configFill!,
+    stroke: isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
+      ? undefined
+      : configStroke!,
+  };
+  /** Brighter colors for mouse-over state */
+  const hoverColors = {
+    fill: !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
       ? configFill!
-      : statusColors.fill;
-  const borderColor = isSelected
-    ? "#0891b2"
-    : !isDefaultOrEmpty(configStroke, "#2563eb")
+      : statusColors.fill === GRAY_FILL
+        ? GRAY_HOVER_FILL
+        : statusColors.fill === BLUE_FILL
+          ? BLUE_HOVER_FILL
+          : statusColors.fill === AMBER_FILL
+            ? AMBER_HOVER_FILL
+            : statusColors.fill === PURPLE_FILL
+              ? PURPLE_HOVER_FILL
+              : statusColors.fill === RED_FILL
+                ? RED_HOVER_FILL
+                : GREEN_HOVER_FILL,
+    stroke: !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
       ? configStroke!
-      : statusColors.stroke;
+      : statusColors.stroke === GRAY_STROKE
+        ? GRAY_FILL
+        : statusColors.stroke === BLUE_STROKE
+          ? BLUE_FILL
+          : statusColors.stroke === AMBER_STROKE
+            ? AMBER_FILL
+            : statusColors.stroke === PURPLE_STROKE
+              ? PURPLE_FILL
+              : statusColors.stroke === RED_STROKE
+                ? RED_FILL
+                : GREEN_HOVER_STROKE,
+  };
+
+  const isHover = isHovered || isHoveredState;
+  const fillColor = isSelected
+    ? SELECTED_FILL
+    : ((isHover ? hoverColors.fill : shapeCodeColors.fill) ??
+      statusColors.fill);
+  const borderColor = isSelected
+    ? SELECTED_STROKE
+    : ((isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
+      statusColors.stroke);
 
   const isAvailableForSelection = eventSeat?.status === "available";
 
@@ -91,11 +155,11 @@ export function SeatMarker({
 
   const currentOpacity = isSelected
     ? selectedOpacity
-    : isHovered || isHoveredState
+    : isHover
       ? hoverOpacity
       : baseOpacity;
 
-  const strokeWidth = isSelected ? 4 : isHovered || isHoveredState ? 3 : 2;
+  const strokeWidth = isSelected ? 4 : isHover ? 3 : 2;
 
   useEffect(() => {
     const shapeGroup = shapeGroupRef.current;
@@ -200,11 +264,15 @@ export function SeatMarker({
       <Group ref={shapeGroupRef} opacity={currentOpacity}>
         {renderShape(
           parsedShape,
-          { fill: fillColor, stroke: borderColor },
+          {
+            fill: shapeCodeColors.fill,
+            stroke: shapeCodeColors.stroke,
+          },
           imageWidth,
           imageHeight,
           strokeWidth,
-          1
+          1,
+          { hoverColors, isHover }
         )}
       </Group>
     </Group>

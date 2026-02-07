@@ -8,6 +8,22 @@ import {
   PlacementShapeType,
   type PlacementShape,
 } from "../../seats/seat-designer/types";
+import {
+  AMBER_FILL,
+  AMBER_STROKE,
+  BLUE_FILL,
+  BLUE_STROKE,
+  GRAY_FILL,
+  GRAY_STROKE,
+  GREEN_FILL,
+  GREEN_STROKE,
+  PURPLE_FILL,
+  PURPLE_STROKE,
+  RED_FILL,
+  RED_STROKE,
+  USED_FILL,
+  USED_STROKE,
+} from "./event-inventory-viewer-colors";
 
 // Get color for ticket status (takes priority over event-seat status)
 export function getTicketStatusColor(ticketStatus?: string): {
@@ -19,17 +35,17 @@ export function getTicketStatusColor(ticketStatus?: string): {
   const statusUpper = String(ticketStatus).toUpperCase().trim();
   switch (statusUpper) {
     case "AVAILABLE":
-      return { fill: "#10b981", stroke: "#059669" };
+      return { fill: GREEN_FILL, stroke: GREEN_STROKE };
     case "RESERVED":
-      return { fill: "#f59e0b", stroke: "#d97706" };
+      return { fill: AMBER_FILL, stroke: AMBER_STROKE };
     case "CONFIRMED":
-      return { fill: "#3b82f6", stroke: "#2563eb" };
+      return { fill: BLUE_FILL, stroke: BLUE_STROKE };
     case "CANCELLED":
-      return { fill: "#ef4444", stroke: "#dc2626" };
+      return { fill: RED_FILL, stroke: RED_STROKE };
     case "USED":
-      return { fill: "#6b7280", stroke: "#4b5563" };
+      return { fill: USED_FILL, stroke: USED_STROKE };
     case "TRANSFERRED":
-      return { fill: "#a855f7", stroke: "#9333ea" };
+      return { fill: PURPLE_FILL, stroke: PURPLE_STROKE };
     default:
       return null;
   }
@@ -43,17 +59,17 @@ export function getSeatStatusColor(status: EventSeatStatus): {
 
   switch (statusUpper) {
     case "AVAILABLE":
-      return { fill: "#10b981", stroke: "#059669" };
+      return { fill: GREEN_FILL, stroke: GREEN_STROKE };
     case "RESERVED":
-      return { fill: "#f59e0b", stroke: "#d97706" };
+      return { fill: AMBER_FILL, stroke: AMBER_STROKE };
     case "SOLD":
-      return { fill: "#3b82f6", stroke: "#2563eb" };
+      return { fill: BLUE_FILL, stroke: BLUE_STROKE };
     case "HELD":
-      return { fill: "#a855f7", stroke: "#9333ea" };
+      return { fill: PURPLE_FILL, stroke: PURPLE_STROKE };
     case "BLOCKED":
-      return { fill: "#ef4444", stroke: "#dc2626" };
+      return { fill: RED_FILL, stroke: RED_STROKE };
     default:
-      return { fill: "#9ca3af", stroke: "#6b7280" };
+      return { fill: GRAY_FILL, stroke: GRAY_STROKE };
   }
 }
 

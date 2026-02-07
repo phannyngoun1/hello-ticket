@@ -6,42 +6,34 @@ import { useRef, useEffect, useState } from "react";
 import { Group, Text } from "react-konva";
 import Konva from "konva";
 import type { Section } from "../../layouts/types";
+import {
+  AMBER_FILL,
+  AMBER_STROKE,
+  BLUE_FILL,
+  BLUE_STROKE,
+  DEFAULT_SHAPE_FILL,
+  DEFAULT_SHAPE_STROKE,
+  GRAY_FILL,
+  GRAY_STROKE,
+  GREEN_FILL,
+  GREEN_HOVER_FILL,
+  GREEN_HOVER_STROKE,
+  GREEN_STROKE,
+  LABEL_BACKGROUND_FILL,
+  LABEL_BACKGROUND_STROKE,
+  LABEL_SHADOW_COLOR,
+  LABEL_TEXT_FILL,
+  PURPLE_FILL,
+  PURPLE_STROKE,
+  RED_FILL,
+  RED_STROKE,
+  GRAY_HOVER_FILL,
+  BLUE_HOVER_FILL,
+  AMBER_HOVER_FILL,
+  PURPLE_HOVER_FILL,
+  RED_HOVER_FILL,
+} from "./event-inventory-viewer-colors";
 import { parseShape, renderShape } from "./event-inventory-viewer-utils";
-
-/** Section status colors (no seats / default) */
-const GRAY_FILL = "#9ca3af";
-const GRAY_STROKE = "#6b7280";
-/** Sold */
-const BLUE_FILL = "#3b82f6";
-const BLUE_STROKE = "#2563eb";
-/** Reserved */
-const AMBER_FILL = "#f59e0b";
-const AMBER_STROKE = "#d97706";
-/** Held */
-const PURPLE_FILL = "#a855f7";
-const PURPLE_STROKE = "#9333ea";
-/** Blocked */
-const RED_FILL = "#ef4444";
-const RED_STROKE = "#dc2626";
-/** Available */
-const GREEN_FILL = "#10b981";
-const GREEN_STROKE = "#059669";
-/** Default shape config (used for "is default or empty" check) */
-const DEFAULT_SHAPE_FILL = "#60a5fa";
-const DEFAULT_SHAPE_STROKE = "#2563eb";
-/** Hover state (brighter variants) */
-const GRAY_HOVER_FILL = "#d1d5db";
-const BLUE_HOVER_FILL = "#60a5fa";
-const AMBER_HOVER_FILL = "#fbbf24";
-const PURPLE_HOVER_FILL = "#c084fc";
-const RED_HOVER_FILL = "#f87171";
-const GREEN_HOVER_FILL = "#34d399";
-const GREEN_HOVER_STROKE = "#10b981";
-/** Section name label */
-const LABEL_TEXT_FILL = "#1e293b";
-const LABEL_BACKGROUND_FILL = "rgba(255, 255, 255, 0.9)";
-const LABEL_BACKGROUND_STROKE = "#e2e8f0";
-const LABEL_SHADOW_COLOR = "rgba(0,0,0,0.2)";
 
 export interface SectionMarkerProps {
   section: Section;
