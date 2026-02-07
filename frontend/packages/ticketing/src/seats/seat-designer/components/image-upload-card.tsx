@@ -21,12 +21,22 @@ export function ImageUploadCard({
   onFileSelect,
 }: ImageUploadCardProps) {
   return (
-    <Card className="p-8 text-center">
-      <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-      <Label htmlFor={id} className="cursor-pointer">
-        <span className="text-sm font-medium text-gray-700">
-          {isUploading ? "Uploading..." : label}
-        </span>
+    <Card className="border-2 border-dashed border-gray-200 bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
+      <Label
+        htmlFor={id}
+        className="flex flex-col items-center justify-center w-full h-full py-12 cursor-pointer gap-4"
+      >
+        <div className="bg-white p-4 rounded-full shadow-sm ring-1 ring-gray-200/50">
+          <Upload className="h-6 w-6 text-gray-500" />
+        </div>
+        <div className="text-center space-y-1">
+          <span className="text-base font-medium text-gray-900 block">
+            {isUploading ? "Uploading..." : label}
+          </span>
+          <p className="text-sm text-gray-500">
+            Click to select an image from your device
+          </p>
+        </div>
         <Input
           id={id}
           type="file"

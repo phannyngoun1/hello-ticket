@@ -10,3 +10,4 @@ export * from "./selected-section-sheet";
 export * from "./manage-sections-sheet";
 export * from "./shape-toolbox";
 export * from "./section-creation-toolbar";
+export * from "./designer-header";

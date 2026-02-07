@@ -1327,8 +1327,8 @@ export function LayoutCanvas({
         target.isContentEditable ||
         target.closest("input, textarea, [contenteditable]");
 
-      // Handle ESC key to delete last polygon point
-      if (e.key === "Escape" && !isInputField) {
+      // Handle Delete/Backspace to delete last freeform point
+      if ((e.key === "Delete" || e.key === "Backspace") && !isInputField) {
         if (
           selectedShapeTool === PlacementShapeType.FREEFORM &&
           freeformPath.length > 0
@@ -1336,7 +1336,6 @@ export function LayoutCanvas({
           e.preventDefault();
           setFreeformPath((prev) => {
             const newPath = prev.slice(0, -1); // Remove last point
-            // If no points remain after deletion, clear hover position
             if (newPath.length === 0) {
               setFreeformHoverPos(null);
             }
@@ -1635,10 +1634,25 @@ export function LayoutCanvas({
       ref={stageRef}
       width={validWidth}
       height={validHeight}
-      onWheel={(e) => onWheel?.(e, isSpacePressed)}
+      onWheel={(e) => {
+        // Always prevent default to stop page from scrolling
+        e.evt.preventDefault();
+        onWheel?.(e, isSpacePressed);
+      }}
+      onTouchStart={(e) => {
+        // Prevent browser from handling touch as scroll
+        if (e.evt) {
+          e.evt.preventDefault();
+        }
+      }}
       onMouseDown={(e) => {
         // Reset ignore click ref on new interaction
         ignoreClickRef.current = false;
+        
+        // Prevent default browser behavior (scrolling, text selection)
+        if(e.evt) {
+          e.evt.preventDefault();
+        }
         
         const stage = e.target.getStage();
         if (!stage) return;

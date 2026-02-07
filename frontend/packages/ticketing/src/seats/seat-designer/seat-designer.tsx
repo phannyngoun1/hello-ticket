@@ -14,26 +14,9 @@ import React, {
   useMemo,
 } from "react";
 import {
-  Button,
   Card,
-  Input,
-  Label,
-  Checkbox,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
 } from "@truths/ui";
-import {
-  Trash2,
-  Save,
-  Maximize,
-  Minimize,
-  MoreVertical,
-  Image as ImageIcon,
-  List,
-} from "lucide-react";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { seatService } from "../seat-service";
@@ -65,6 +48,7 @@ import {
   ManageSectionsSheet,
   ShapeToolbox,
   SectionCreationToolbar,
+  DesignerHeader,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -184,11 +168,7 @@ export function SeatDesigner({
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
-  const [sectionToDelete, setSectionToDelete] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
-  const [confirmDeleteWithSeats, setConfirmDeleteWithSeats] = useState(false);
+
   const [isSectionCreationPending, setIsSectionCreationPending] = useState(false);
 
   // Debounce timers for shape updates to prevent rate limiting
@@ -364,11 +344,19 @@ export function SeatDesigner({
     resizeObserver.observe(containerRef.current);
     window.addEventListener("resize", scheduleUpdate);
 
+    // Prevent wheel events from scrolling the page (macOS trackpad)
+    const container = containerRef.current;
+    const preventWheelScroll = (e: WheelEvent) => {
+      e.preventDefault();
+    };
+    container.addEventListener("wheel", preventWheelScroll, { passive: false });
+
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       clearTimeout(timeoutId);
       resizeObserver.disconnect();
       window.removeEventListener("resize", scheduleUpdate);
+      container.removeEventListener("wheel", preventWheelScroll);
     };
   }, [dimensionsReady]);
 
@@ -672,7 +660,7 @@ export function SeatDesigner({
         }
 
         // Save file_id to the section in the database
-        // Try to get section from sectionsData first (has real coordinates), otherwise use sectionMarkers
+        // Try to get section from sectionsData first (saved in DB), otherwise use sectionMarkers
         const sectionFromData = sectionsData?.find((s) => s.id === sectionId);
         const sectionFromMarkers = sectionMarkers.find(
           (s) => s.id === sectionId
@@ -683,16 +671,71 @@ export function SeatDesigner({
           if (!section) {
             throw new Error("Section not found");
           }
-          await sectionService.update(sectionId, {
-            name: section.name,
-            x_coordinate: sectionFromData
-              ? (sectionFromData.x_coordinate ?? undefined)
-              : sectionFromMarkers?.x,
-            y_coordinate: sectionFromData
-              ? (sectionFromData.y_coordinate ?? undefined)
-              : sectionFromMarkers?.y,
-            file_id: response.id, // Save the file_id
-          });
+          const isNewSection = sectionFromMarkers?.isNew === true;
+
+          if (isNewSection && sectionFromMarkers) {
+            // Section marker not yet saved: create it in DB with file_id
+            const created = await sectionService.create({
+              layout_id: layoutId,
+              name: sectionFromMarkers.name,
+              x_coordinate: sectionFromMarkers.x,
+              y_coordinate: sectionFromMarkers.y,
+              file_id: response.id,
+              shape: sectionFromMarkers.shape
+                ? JSON.stringify(sectionFromMarkers.shape)
+                : undefined,
+            });
+            // Replace temp id with real section id and mark as saved
+            const oldId = sectionId;
+            setSectionMarkers((prev) =>
+              prev.map((s) =>
+                s.id === oldId
+                  ? {
+                      ...s,
+                      id: created.id,
+                      imageUrl: response.url,
+                      isNew: false,
+                    }
+                  : s
+              )
+            );
+            if (selectedSectionMarker?.id === oldId) {
+              setSelectedSectionMarker((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      id: created.id,
+                      imageUrl: response.url,
+                      isNew: false,
+                    }
+                  : null
+              );
+            }
+            if (viewingSection?.id === oldId) {
+              setViewingSection((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      id: created.id,
+                      imageUrl: response.url,
+                      isNew: false,
+                    }
+                  : null
+              );
+            }
+          } else {
+            // Section already in DB: update with file_id
+            await sectionService.update(sectionId, {
+              name: section.name,
+              x_coordinate: sectionFromData
+                ? (sectionFromData.x_coordinate ?? undefined)
+                : sectionFromMarkers?.x,
+              y_coordinate: sectionFromData
+                ? (sectionFromData.y_coordinate ?? undefined)
+                : sectionFromMarkers?.y,
+              file_id: response.id,
+            });
+          }
 
           // Invalidate sections query to refresh data
           queryClient.invalidateQueries({
@@ -1233,8 +1276,10 @@ export function SeatDesigner({
       x?: number;
       y?: number;
       shape?: PlacementShape;
+      replaceSectionId?: string;
     }) => {
-      console.log("createSectionMutation.mutationFn called with:", input);
+      const { replaceSectionId: _, ...createInput } = input;
+      console.log("createSectionMutation.mutationFn called with:", createInput);
       const result = await sectionService.create({
         layout_id: layoutId,
         name: input.name,
@@ -1245,68 +1290,90 @@ export function SeatDesigner({
       console.log("createSectionMutation.mutationFn result:", result);
       return result;
     },
-    onSuccess: (section) => {
+    onSuccess: (section, variables) => {
       // Always update seat placement form with the new section name and ID
       seatPlacementForm.setValue("section", section.name);
       seatPlacementForm.setValue("sectionId", section.id);
 
+      const replaceSectionId = variables.replaceSectionId;
+
       // Only update sectionMarkers in section-level mode
       if (designMode === "section-level") {
-        // Use pending coordinates if available (from canvas click), otherwise use default
-        const coordinates = pendingSectionCoordinates || {
-          x: section.x_coordinate || 50,
-          y: section.y_coordinate || 50,
-        };
-
-        // Parse shape from API response if available, otherwise use placementShape
-        let shape: PlacementShape | undefined = placementShape;
-        if (section.shape) {
-          try {
-            const parsed = JSON.parse(section.shape);
-            // Normalize the type to ensure it matches the enum
-            if (parsed && typeof parsed === 'object' && parsed.type) {
-              const normalized: PlacementShape = {
-                ...parsed,
-                type: parsed.type as PlacementShapeType,
-              };
-              shape = normalized;
-              console.log("Parsed shape from API:", normalized, "Type:", normalized.type);
-            } else {
-              shape = placementShape; // Fallback to placementShape if invalid
+        if (replaceSectionId) {
+          // Replacing an unsaved section marker: update in place with real id
+          let shape: PlacementShape | undefined = placementShape;
+          if (section.shape) {
+            try {
+              const parsed = JSON.parse(section.shape);
+              if (parsed && typeof parsed === "object" && parsed.type) {
+                shape = { ...parsed, type: parsed.type as PlacementShapeType };
+              }
+            } catch (e) {
+              console.error("Failed to parse section shape from API:", e);
             }
-          } catch (e) {
-            console.error("Failed to parse section shape from API:", e);
-            shape = placementShape; // Fallback to placementShape
           }
-        }
+          const updatedMarker: SectionMarker = {
+            id: section.id,
+            name: section.name,
+            x: section.x_coordinate ?? 50,
+            y: section.y_coordinate ?? 50,
+            imageUrl: section.image_url || undefined,
+            isNew: false,
+            shape,
+          };
+          setSectionMarkers((prev) =>
+            prev.map((s) => (s.id === replaceSectionId ? updatedMarker : s))
+          );
+          setSelectedSectionMarker((prev) =>
+            prev?.id === replaceSectionId ? updatedMarker : prev
+          );
+          setViewingSection((prev) =>
+            prev?.id === replaceSectionId ? updatedMarker : prev
+          );
+        } else {
+          // New section: use pending coordinates or API values
+          const coordinates = pendingSectionCoordinates || {
+            x: section.x_coordinate || 50,
+            y: section.y_coordinate || 50,
+          };
 
-        const newSectionMarker: SectionMarker = {
-          id: section.id,
-          name: section.name,
-          x: coordinates.x,
-          y: coordinates.y,
-          imageUrl: section.image_url || undefined,
-          isNew: false,
-          shape, // Use parsed shape from API or placementShape
-        };
-        setSectionMarkers((prev) => [...prev, newSectionMarker]);
-        // Clear placement shape after use
-        setPlacementShape({
-          type: PlacementShapeType.CIRCLE,
-          radius: 1.2,
-        });
-        // Don't auto-select the new section to avoid opening the Selected Section sheet
-        // setSelectedSectionMarker(newSectionMarker);
+          let shape: PlacementShape | undefined = placementShape;
+          if (section.shape) {
+            try {
+              const parsed = JSON.parse(section.shape);
+              if (parsed && typeof parsed === "object" && parsed.type) {
+                shape = { ...parsed, type: parsed.type as PlacementShapeType };
+              } else {
+                shape = placementShape;
+              }
+            } catch (e) {
+              console.error("Failed to parse section shape from API:", e);
+              shape = placementShape;
+            }
+          }
+
+          const newSectionMarker: SectionMarker = {
+            id: section.id,
+            name: section.name,
+            x: coordinates.x,
+            y: coordinates.y,
+            imageUrl: section.image_url || undefined,
+            isNew: false,
+            shape,
+          };
+          setSectionMarkers((prev) => [...prev, newSectionMarker]);
+          setPlacementShape({
+            type: PlacementShapeType.CIRCLE,
+            radius: 1.2,
+          });
+        }
       }
 
-      // Clear pending coordinates after use
       setPendingSectionCoordinates(null);
-
       setIsSectionFormOpen(false);
       setEditingSectionId(null);
       sectionForm.reset({ name: "" });
       toast({ title: "Section created successfully" });
-      // Invalidate sections query
       queryClient.invalidateQueries({
         queryKey: ["sections", "layout", layoutId],
       });
@@ -1650,14 +1717,25 @@ export function SeatDesigner({
       );
 
       if (sectionFromMarkers) {
-        // Update existing section (section-level mode)
-        updateSectionMutation.mutate({
-          sectionId: editingSectionId,
-          name,
-          x: sectionFromMarkers.x,
-          y: sectionFromMarkers.y,
-          shape: sectionFromMarkers.shape,
-        });
+        if (sectionFromMarkers.isNew) {
+          // Unsaved section: create in DB and replace marker
+          createSectionMutation.mutate({
+            name,
+            x: sectionFromMarkers.x,
+            y: sectionFromMarkers.y,
+            shape: sectionFromMarkers.shape,
+            replaceSectionId: editingSectionId,
+          });
+        } else {
+          // Update existing section (section-level mode)
+          updateSectionMutation.mutate({
+            sectionId: editingSectionId,
+            name,
+            x: sectionFromMarkers.x,
+            y: sectionFromMarkers.y,
+            shape: sectionFromMarkers.shape,
+          });
+        }
       } else if (sectionFromData) {
         // Update existing section (seat-level mode)
         updateSectionMutation.mutate({
@@ -1696,27 +1774,34 @@ export function SeatDesigner({
 
   const handleInlineSectionSave = (name: string) => {
     if (editingSectionId) {
-      // Update existing section
       const section = sectionMarkers.find((s) => s.id === editingSectionId);
       if (section) {
-        console.log("Updating section via API (Inline):", {
+        if (section.isNew) {
+          console.log("Creating unsaved section via API (Inline):", {
+            name,
+            layoutId,
+          });
+          createSectionMutation.mutate({
+            name,
+            x: section.x,
+            y: section.y,
+            shape: placementShape ?? section.shape,
+            replaceSectionId: editingSectionId,
+          });
+        } else {
+          console.log("Updating section via API (Inline):", {
             sectionId: editingSectionId,
             name,
-            layoutId
-        });
-        
-        updateSectionMutation.mutate({
+            layoutId,
+          });
+          updateSectionMutation.mutate({
             sectionId: editingSectionId,
             name,
             x: section.x,
             y: section.y,
-            // If the user redrew the shape, placementShape will be updated.
-            // If not, we should use the existing shape.
-            // However, handleShapeDraw updates placementShape.
-            // So if they drew a new one, placementShape is new.
-            // If they didn't, we set placementShape in handleSectionEdit.
-            shape: placementShape,
-        });
+            shape: placementShape ?? section.shape,
+          });
+        }
       }
     } else {
         // Create new section - always call API since seats need section_id
@@ -2089,34 +2174,27 @@ export function SeatDesigner({
     },
   });
 
-  // Delete section handler (with confirmation)
-  const handleDeleteSection = (
-    section: SectionMarker | { id: string; name: string }
-  ) => {
-    setSectionToDelete(section);
-    setConfirmDeleteWithSeats(false); // Reset checkbox when opening dialog
-  };
-
-  const handleConfirmDeleteSection = () => {
-    if (sectionToDelete) {
-      deleteSectionMutation.mutate(sectionToDelete.id);
-      setSectionToDelete(null);
-      setConfirmDeleteWithSeats(false);
+  // Delete section handlers
+  const handleDeleteSection = (section: { id: string; isNew?: boolean }) => {
+    if (section.isNew) {
+      // Unsaved section: only remove from local state
+      const sectionId = section.id;
+      setSectionMarkers((prev) => prev.filter((s) => s.id !== sectionId));
+      setSeats((prev) =>
+        prev.filter((s) => {
+          const seatSectionId = (s.seat as any).sectionId;
+          return seatSectionId !== sectionId && s.seat.section !== sectionId;
+        })
+      );
+      if (selectedSectionMarker?.id === sectionId) setSelectedSectionMarker(null);
+      if (viewingSection?.id === sectionId) setViewingSection(null);
+      toast({ title: "Section removed" });
+    } else {
+      deleteSectionMutation.mutate(section.id);
     }
   };
 
   // Count seats for the section to be deleted
-  const getSectionSeatCount = (sectionId: string, sectionName: string) => {
-    return seats.filter((s) => {
-      const seatSectionId = (s.seat as any).sectionId;
-      return (
-        seatSectionId === sectionId ||
-        s.seat.section === sectionId ||
-        s.seat.section === sectionName
-      );
-    }).length;
-  };
-
   // Fullscreen functionality
   const handleFullscreen = async () => {
     if (!fullscreenRef.current) return;
@@ -2340,103 +2418,7 @@ export function SeatDesigner({
 
   const designerContent = (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold">
-            {layoutName ? `Designer - ${layoutName}` : "Seat Designer"}
-          </h3>
-          {isLoading && (
-            <span className="text-xs text-muted-foreground">
-              Loading seats...
-            </span>
-          )}
-          {seatsError && (
-            <span className="text-xs text-destructive">
-              Error loading seats
-            </span>
-          )}
-        </div>
-        <div className="flex gap-1">
-          {/* Datasheet Toggle Button */}
-          {((venueType === "large" && sectionMarkers.length > 0) ||
-            (venueType === "small" && seats.length > 0) ||
-            (viewingSection && displayedSeats.length > 0)) && (
-            <Button
-              variant="outline"
-              onClick={() => setIsDatasheetOpen(true)}
-              size="sm"
-              className="h-7 w-7 p-0"
-              title="View Datasheet"
-            >
-              <List className="h-3.5 w-3.5" />
-            </Button>
-          )}
-          {!readOnly && (
-            <Button
-              onClick={handleSave}
-              disabled={saveSeatsMutation.isPending}
-              size="sm"
-              className="h-7 px-2"
-            >
-              <Save className="h-3.5 w-3.5 mr-1" />
-              Save
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            onClick={handleFullscreen}
-            size="sm"
-            className="h-7 w-7 p-0"
-            title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-3.5 w-3.5" />
-            ) : (
-              <Maximize className="h-3.5 w-3.5" />
-            )}
-          </Button>
-          {mainImageUrl &&
-            !readOnly &&
-            (isPlacingSeats ||
-              (venueType === "large" && isPlacingSections)) && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 w-7 p-0">
-                    <MoreVertical className="h-3.5 w-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleClearAllPlacements}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All Placements
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <Label htmlFor="change-main-image" className="cursor-pointer">
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      asChild
-                    >
-                      <div>
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        Change Image
-                        <Input
-                          id="change-main-image"
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            handleMainImageSelect(e);
-                            e.target.value = ""; // Reset input
-                          }}
-                          className="hidden"
-                        />
-                      </div>
-                    </DropdownMenuItem>
-                  </Label>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-        </div>
-      </div>
+     
 
       {/* Main Image Upload */}
       {!mainImageUrl && (
@@ -2447,10 +2429,33 @@ export function SeatDesigner({
           onFileSelect={handleMainImageSelect}
         />
       )}
-
-      {/* Main Floor Plan Image */}
+      
+      {/* Main Designer Content (Header + Canvas) */}
       {mainImageUrl && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out">
+          <DesignerHeader
+            layoutName={layoutName}
+            isLoading={isLoading}
+            seatsError={seatsError}
+            venueType={venueType}
+            sectionMarkers={sectionMarkers}
+            seats={seats}
+            viewingSection={viewingSection}
+            displayedSeats={displayedSeats}
+            onToggleDatasheet={() => setIsDatasheetOpen(true)}
+            readOnly={readOnly}
+            onSave={handleSave}
+            isSaving={saveSeatsMutation.isPending}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={handleFullscreen}
+            mainImageUrl={mainImageUrl}
+            isPlacingSeats={isPlacingSeats}
+            isPlacingSections={isPlacingSections}
+            onClearAllPlacements={handleClearAllPlacements}
+            onMainImageSelect={handleMainImageSelect}
+          />
+
+          <div className="space-y-4">
           {/* Seat Placement Controls Panel - On Top (Small Venue) */}
           {venueType === "small" && (
             <>
@@ -2532,12 +2537,12 @@ export function SeatDesigner({
           {/* Canvas Container */}
           <div
             ref={containerRef}
-            className="relative border rounded-lg overflow-hidden bg-gray-100 flex-1"
+            className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
             style={{
-              minHeight: "600px",
-              minWidth: 0,
-              display: "flex",
-              flexDirection: "column",
+              height: "600px", // Fixed height to prevent resizing during zoom
+              width: "100%", // Fixed width to prevent resizing
+              touchAction: "none", // Prevent browser handling touch scroll/pan
+              overscrollBehavior: "contain", // Prevent scroll chaining to parent
             }}
           >
             {dimensionsReady ? (
@@ -2587,6 +2592,7 @@ export function SeatDesigner({
             />
           </div>
         </div>
+      </div>
       )}
 
       {/* Datasheet Sheet */}
@@ -2760,90 +2766,7 @@ export function SeatDesigner({
         }}
       />
 
-      {/* Delete Section Confirmation Dialog */}
-      <ConfirmationDialog
-        open={!!sectionToDelete}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSectionToDelete(null);
-            setConfirmDeleteWithSeats(false);
-          }
-        }}
-        title="Delete Section"
-        description={
-          sectionToDelete ? (
-            <div className="space-y-3">
-              <p>
-                Are you sure you want to delete "{sectionToDelete.name}"? This
-                action cannot be undone.
-              </p>
-              {(() => {
-                const seatCount = getSectionSeatCount(
-                  sectionToDelete.id,
-                  sectionToDelete.name
-                );
-                if (seatCount > 0) {
-                  return (
-                    <div className="space-y-2 pt-2 border-t">
-                      <p className="text-destructive font-medium">
-                        ⚠️ Warning: This section contains {seatCount} seat
-                        {seatCount === 1 ? "" : "s"}.
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Deleting this section will permanently remove all{" "}
-                        {seatCount} seat{seatCount === 1 ? "" : "s"} associated
-                        with it.
-                      </p>
-                      <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox
-                          id="confirm-delete-with-seats"
-                          checked={confirmDeleteWithSeats}
-                          onCheckedChange={(checked) =>
-                            setConfirmDeleteWithSeats(checked === true)
-                          }
-                        />
-                        <Label
-                          htmlFor="confirm-delete-with-seats"
-                          className="text-sm font-normal cursor-pointer"
-                        >
-                          I understand that {seatCount} seat
-                          {seatCount === 1 ? "" : "s"} will be permanently
-                          deleted
-                        </Label>
-                      </div>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          ) : (
-            ""
-          )
-        }
-        confirmAction={{
-          label: "Delete",
-          variant: "destructive",
-          onClick: handleConfirmDeleteSection,
-          loading: deleteSectionMutation.isPending,
-          disabled: sectionToDelete
-            ? (() => {
-                const seatCount = getSectionSeatCount(
-                  sectionToDelete.id,
-                  sectionToDelete.name
-                );
-                return seatCount > 0 && !confirmDeleteWithSeats;
-              })()
-            : false,
-        }}
-        cancelAction={{
-          label: "Cancel",
-          onClick: () => {
-            setSectionToDelete(null);
-            setConfirmDeleteWithSeats(false);
-          },
-        }}
-      />
+
 
       {/* Manage Sections Sheet (for seat-level mode) */}
       {designMode === "seat-level" && (
