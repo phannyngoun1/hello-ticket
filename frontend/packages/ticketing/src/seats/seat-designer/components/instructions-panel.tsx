@@ -16,8 +16,8 @@ export function InstructionsPanel({
   isFullscreen = false,
 }: InstructionsPanelProps) {
   return (
-    <div className="text-sm text-gray-500 space-y-1">
-      {designMode === "seat-level" && (
+    <div className="text-xs text-gray-500 space-y-0.5">
+      {designMode === "seat-level" ? (
         <>
           <p>
             Click on the image to place seats. Adjust section, row, seat
@@ -25,8 +25,7 @@ export function InstructionsPanel({
           </p>
           <p>Drag seats to reposition them.</p>
         </>
-      )}
-      {designMode === "section-level" && (
+      ) : (
         <>
           <p>
             Click on the image to place sections. After placing, click a
@@ -41,7 +40,7 @@ export function InstructionsPanel({
         </>
       )}
       {!isFullscreen && (
-        <p className="text-xs mt-2">
+        <p className="text-xs mt-1">
           💡 Tip: Use the fullscreen button for a larger workspace
         </p>
       )}

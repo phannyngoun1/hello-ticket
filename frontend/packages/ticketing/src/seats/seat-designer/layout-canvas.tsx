@@ -39,6 +39,7 @@ interface ShapeRendererProps {
   imageWidth: number;
   imageHeight: number;
   opacity?: number;
+  dash?: number[];
 }
 
 function ShapeRenderer({
@@ -49,12 +50,14 @@ function ShapeRenderer({
   imageWidth,
   imageHeight,
   opacity = 1,
+  dash,
 }: ShapeRendererProps) {
   const baseProps = {
     fill,
     stroke,
     strokeWidth,
     opacity,
+    dash,
   };
 
   // Normalize shape type to ensure it matches enum values
@@ -227,6 +230,7 @@ interface LayoutCanvasProps {
     onHover?: () => void;
     label?: string;
     isSelected?: boolean;
+    isPlacement?: boolean;
   }>;
   selectedOverlayId?: string | null;
 }
@@ -242,6 +246,7 @@ interface ShapeOverlayComponentProps {
     onHover?: () => void;
     label?: string;
     isSelected?: boolean;
+    isPlacement?: boolean;
   };
   isSelected: boolean;
   onShapeOverlayClick?: (overlayId: string) => void;
@@ -315,6 +320,7 @@ function ShapeOverlayComponent({
           strokeWidth: strokeWidth,
           duration: 0.2,
           easing: Konva.Easings.EaseInOut,
+          // Removed dashed style animation - passed as prop instead
         });
       }
     });
@@ -384,6 +390,7 @@ function ShapeOverlayComponent({
           imageWidth={imageWidth}
           imageHeight={imageHeight}
           opacity={1} // Let the Group handle opacity animation
+          dash={overlay.isPlacement ? [5, 5] : undefined}
         />
       </Group>
       {overlay.label && (
@@ -1305,6 +1312,9 @@ export function LayoutCanvas({
     y: number;
   } | null>(null);
   const previewShapeRef = useRef<Konva.Group>(null);
+  
+  // Ref to prevent click event after drag-to-draw
+  const ignoreClickRef = useRef(false);
 
   // Handle Space key for panning
   useEffect(() => {
@@ -1627,6 +1637,9 @@ export function LayoutCanvas({
       height={validHeight}
       onWheel={(e) => onWheel?.(e, isSpacePressed)}
       onMouseDown={(e) => {
+        // Reset ignore click ref on new interaction
+        ignoreClickRef.current = false;
+        
         const stage = e.target.getStage();
         if (!stage) return;
 
@@ -1864,10 +1877,6 @@ export function LayoutCanvas({
           selectedShapeTool &&
           onShapeDraw
         ) {
-          // Prevent click event from propagating to Image onClick handler
-          // This prevents creating an extra rectangle when finishing a shape draw
-          e.cancelBubble = true;
-
           // Freeform is now handled via click-to-add-points, not mouseUp
           // So we skip it here and only handle other shape types
           if (
@@ -1887,6 +1896,13 @@ export function LayoutCanvas({
             const minDragDistance = 0.3; // 0.3% of image - minimum drag distance to create shape
 
             if (distance >= minDragDistance) {
+              // Prevent click event from propagating to Image onClick handler
+              // This prevents duplicate creation (one from drag, one from click)
+              e.cancelBubble = true;
+              
+              // Set ref to ignore subsequent click event
+              ignoreClickRef.current = true;
+
               // Valid drag - create shape with dragged dimensions
               const minSize = 1.5; // 1.5% of image
               const width = Math.max(minSize, Math.abs(endX - startX));
@@ -1941,6 +1957,7 @@ export function LayoutCanvas({
                   type: PlacementShapeType.POLYGON,
                   points: scaledPoints,
                 };
+
                 onShapeDraw(shape, centerX, centerY);
               }
             }
@@ -2091,6 +2108,12 @@ export function LayoutCanvas({
             }
           }}
           onClick={(e) => {
+            // Check if we should ignore this click (e.g. after drag-to-draw)
+            if (ignoreClickRef.current) {
+                ignoreClickRef.current = false;
+                return;
+            }
+
             // Handle freeform click-to-add-points
             if (
               selectedShapeTool === PlacementShapeType.FREEFORM &&

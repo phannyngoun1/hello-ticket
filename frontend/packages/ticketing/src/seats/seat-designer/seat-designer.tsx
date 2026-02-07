@@ -11,6 +11,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
 } from "react";
 import {
   Button,
@@ -63,6 +64,7 @@ import {
   SelectedSectionSheet,
   ManageSectionsSheet,
   ShapeToolbox,
+  SectionCreationToolbar,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -187,6 +189,7 @@ export function SeatDesigner({
     name: string;
   } | null>(null);
   const [confirmDeleteWithSeats, setConfirmDeleteWithSeats] = useState(false);
+  const [isSectionCreationPending, setIsSectionCreationPending] = useState(false);
 
   // Debounce timers for shape updates to prevent rate limiting
   const seatShapeUpdateTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
@@ -212,11 +215,30 @@ export function SeatDesigner({
       onHover?: () => void;
       label?: string;
       isSelected?: boolean;
+      isPlacement?: boolean;
     }>
   >([]);
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(
     null
   );
+
+  // Combine existing overlays with pending section creation shape
+  const displayedShapeOverlays = useMemo(() => {
+    if (isSectionCreationPending && pendingSectionCoordinates) {
+      return [
+        ...shapeOverlays,
+        {
+          id: "pending-section-creation",
+          x: pendingSectionCoordinates.x,
+          y: pendingSectionCoordinates.y,
+          shape: placementShape,
+          isSelected: true, // Make it look selected/active
+          isPlacement: true, // Use dashed style for placement
+        },
+      ];
+    }
+    return shapeOverlays;
+  }, [shapeOverlays, isSectionCreationPending, pendingSectionCoordinates, placementShape]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
@@ -760,13 +782,13 @@ export function SeatDesigner({
           isPlacingSections &&
           !viewingSection
         ) {
-          // Store coordinates and open section form
+          // Store coordinates and start inline creation
           setPendingSectionCoordinates({ x: clampedX, y: clampedY });
           // Store shape to apply after section is created
           setPlacementShape(finalShape);
-          setIsSectionFormOpen(true);
+          setIsSectionCreationPending(true);
           setEditingSectionId(null);
-          sectionForm.reset({ name: "" });
+          // sectionForm.reset({ name: "" }); // Not used for inline creation
           return; // Exit early when creating section from shape tool
         }
 
@@ -804,9 +826,9 @@ export function SeatDesigner({
         setPendingSectionCoordinates({ x: clampedX, y: clampedY });
         // Store shape to apply after section is created
         setPlacementShape(finalShape);
-        setIsSectionFormOpen(true);
+        setIsSectionCreationPending(true); // Switch to inline creation
         setEditingSectionId(null);
-        sectionForm.reset({ name: "" });
+        // sectionForm.reset({ name: "" });
         return; // Don't create seat when creating section
       }
 
@@ -872,19 +894,16 @@ export function SeatDesigner({
         return; // Just deselect, don't create anything
       }
 
-      // If a shape tool is selected, shapes should be created via drag-to-draw (handleShapeDraw)
-      // This click handler should not create markers when shape tools are active
-      // This prevents duplicate markers from being created and ensures all shapes behave the same
-      // All shapes (rectangle, circle, ellipse, polygon, freeform) use the same drag-to-draw behavior
-      if (selectedShapeTool) {
-        return; // Shape tools use drag-to-draw, not click-to-place
-      }
+      // We allow "Click to Add" for primitive shapes even if a tool is selected.
+      // Drag-to-draw is handled by handleShapeDraw.
+      // This click handler handles single-click placement.
 
-      const { x, y } = percentageCoords;
+       const { x, y } = percentageCoords;
 
       // Section detail view - place seats
       if (venueType === "large" && viewingSection && isPlacingSeats) {
-        const seatValues = seatPlacementForm.getValues();
+
+         const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
           x: Math.max(0, Math.min(100, x)),
@@ -904,14 +923,35 @@ export function SeatDesigner({
         const nextSeatNumber = String(parseInt(seatValues.seatNumber) + 1);
         seatPlacementForm.setValue("seatNumber", nextSeatNumber);
       }
-      // Main floor - place sections (open form to get name first)
+      // Main floor - place sections (open inline toolbar to get name)
       else if (venueType === "large" && isPlacingSections) {
+        // Handle default shape for Click-to-Add based on selected tool
+        let defaultShape: PlacementShape | undefined;
+        
+        switch (selectedShapeTool) {
+            case PlacementShapeType.RECTANGLE:
+                defaultShape = { type: PlacementShapeType.RECTANGLE, width: 15, height: 10 };
+                break;
+            case PlacementShapeType.CIRCLE:
+                defaultShape = { type: PlacementShapeType.CIRCLE, radius: 8 };
+                break;
+            case PlacementShapeType.ELLIPSE:
+                defaultShape = { type: PlacementShapeType.ELLIPSE, width: 15, height: 10 };
+                break;
+            default:
+                // For Polygon/Freeform, we don't support single-click add yet (requires drawing)
+                return; 
+        }
+
+        if (defaultShape) {
+            setPlacementShape(defaultShape);
+        }
+
         // Store the coordinates where user clicked
         setPendingSectionCoordinates({ x, y });
-        // Open section form to get the name
-        setIsSectionFormOpen(true);
+        // Start inline creation
+        setIsSectionCreationPending(true);
         setEditingSectionId(null);
-        sectionForm.reset({ name: "" });
       }
       // Small venue - place seats
       else if (venueType === "small" && isPlacingSeats) {
@@ -1114,9 +1154,16 @@ export function SeatDesigner({
     setIsSelectedSectionSheetOpen(true);
   };
 
-  // Handle section edit from toolbox - opens the section form
+  // Handle section edit from toolbox - opens the inline toolbar
   const handleSectionEdit = (section: SectionMarker) => {
-    handleEditSectionFromSheet(section);
+    setEditingSectionId(section.id);
+    setIsSectionCreationPending(true);
+    
+    // Set shape tool to match section shape so user knows what they're editing
+    if (section.shape) {
+      setPlacementShape(section.shape);
+      setSelectedShapeTool(section.shape.type);
+    }
   };
 
   // Handle deselection - clear all selections when clicking on empty space
@@ -1647,6 +1694,70 @@ export function SeatDesigner({
     }
   });
 
+  const handleInlineSectionSave = (name: string) => {
+    if (editingSectionId) {
+      // Update existing section
+      const section = sectionMarkers.find((s) => s.id === editingSectionId);
+      if (section) {
+        console.log("Updating section via API (Inline):", {
+            sectionId: editingSectionId,
+            name,
+            layoutId
+        });
+        
+        updateSectionMutation.mutate({
+            sectionId: editingSectionId,
+            name,
+            x: section.x,
+            y: section.y,
+            // If the user redrew the shape, placementShape will be updated.
+            // If not, we should use the existing shape.
+            // However, handleShapeDraw updates placementShape.
+            // So if they drew a new one, placementShape is new.
+            // If they didn't, we set placementShape in handleSectionEdit.
+            shape: placementShape,
+        });
+      }
+    } else {
+        // Create new section - always call API since seats need section_id
+        console.log("Creating section via API (Inline):", {
+        name,
+        layoutId,
+        designMode,
+        pendingCoordinates: pendingSectionCoordinates,
+        });
+        
+        createSectionMutation.mutate({
+        name,
+        // Use pending coordinates if available (from canvas click), otherwise use defaults
+        x:
+            designMode === "section-level"
+            ? (pendingSectionCoordinates?.x ?? 50)
+            : undefined,
+        y:
+            designMode === "section-level"
+            ? (pendingSectionCoordinates?.y ?? 50)
+            : undefined,
+        shape:
+            designMode === "section-level" && placementShape
+            ? placementShape
+            : undefined,
+        });
+    }
+    
+    // Reset inline creation/editing state
+    setIsSectionCreationPending(false);
+    setPendingSectionCoordinates(null);
+    setEditingSectionId(null);
+  };
+
+  const handleInlineSectionCancel = () => {
+    setIsSectionCreationPending(false);
+    setPendingSectionCoordinates(null);
+    setEditingSectionId(null);
+    // Don't clear selected shape tool to allow retry
+  };
+
   const handleCancelSectionForm = () => {
     setIsSectionFormOpen(false);
     setEditingSectionId(null);
@@ -2120,9 +2231,10 @@ export function SeatDesigner({
           onZoomOut={handleZoomOut}
           onResetZoom={handleResetZoom}
           onNewSection={() => {
-            setIsSectionFormOpen(true);
+            setViewingSection(null);
+            setIsSectionCreationPending(true);
             setEditingSectionId(null);
-            sectionForm.reset({ name: "" });
+            // sectionForm.reset({ name: "" });
           }}
           saveSeatsMutationPending={saveSeatsMutation.isPending}
           seats={seats}
@@ -2380,19 +2492,40 @@ export function SeatDesigner({
           {/* Section Placement Controls Panel - On Top (Large Venue / Section-Level) */}
           {venueType === "large" && !viewingSection && (
             <>
-              <ShapeToolbox
-                selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
-                selectedSeat={null}
-                selectedSection={selectedSectionMarker}
-                onSeatEdit={handleSeatEdit}
-                onSeatView={handleSeatView}
-                onSectionEdit={handleSectionEdit}
-                onSectionView={handleSectionView}
-                onSeatDelete={handleDeleteSeat}
-                onSectionDelete={handleDeleteSection}
-                readOnly={readOnly}
-              />
+              {isSectionCreationPending ? (
+
+                <SectionCreationToolbar
+                  initialName={
+                    editingSectionId
+                      ? sectionMarkers.find((s) => s.id === editingSectionId)?.name || ""
+                      : ""
+                  }
+                  selectedShapeType={selectedShapeTool}
+                  onShapeTypeSelect={(type) => {
+                     setSelectedShapeTool(type);
+                     // If we are editing, we keep the editing state.
+                     // If we are creating, we keep the creating state.
+                     // But if they change tool implies they might want to redraw.
+                     // For now, just update the tool.
+                  }}
+                  onSave={handleInlineSectionSave}
+                  onCancel={handleInlineSectionCancel}
+                />
+              ) : (
+                <ShapeToolbox
+                  selectedShapeType={selectedShapeTool}
+                  onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
+                  selectedSeat={null}
+                  selectedSection={selectedSectionMarker}
+                  onSeatEdit={handleSeatEdit}
+                  onSeatView={handleSeatView}
+                  onSectionEdit={handleSectionEdit}
+                  onSectionView={handleSectionView}
+                  onSeatDelete={handleDeleteSeat}
+                  onSectionDelete={handleDeleteSection}
+                  readOnly={readOnly}
+                />
+              )}
             </>
           )}
 
@@ -2425,6 +2558,7 @@ export function SeatDesigner({
                 onSeatDragEnd={handleKonvaSeatDragEnd}
                 onSeatShapeTransform={handleSeatShapeTransform}
                 onSectionShapeTransform={handleSectionShapeTransform}
+                shapeOverlays={displayedShapeOverlays}
                 onImageClick={handleKonvaImageClick}
                 onDeselect={handleDeselect}
                 onShapeDraw={handleShapeDraw}
@@ -2435,7 +2569,7 @@ export function SeatDesigner({
                 containerHeight={containerDimensions.height}
                 venueType={venueType}
                 selectedShapeTool={selectedShapeTool}
-                shapeOverlays={shapeOverlays}
+
                 selectedOverlayId={selectedOverlayId}
               />
             ) : (
@@ -2721,8 +2855,13 @@ export function SeatDesigner({
           onDelete={handleDeleteSection}
           onNewSection={() => {
             setEditingSectionId(null);
-            sectionForm.reset({ name: "" });
-            setIsSectionFormOpen(true);
+            // Default shape/tool for new section
+            setPlacementShape({
+                type: PlacementShapeType.RECTANGLE,
+                width: 10,
+                height: 10,
+            });
+            setIsSectionCreationPending(true);
             setIsManageSectionsOpen(false);
           }}
           isDeleting={deleteSectionMutation.isPending}
