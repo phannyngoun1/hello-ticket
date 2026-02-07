@@ -1,4 +1,13 @@
-import { User, ShoppingCart, FileText, RotateCcw } from "lucide-react";
+import {
+  User,
+  ShoppingCart,
+  RotateCcw,
+  UserRound,
+  Ticket,
+  Film,
+  Building2,
+  Store,
+} from "lucide-react";
 import type { QuickAction } from "@truths/custom-ui";
 import { cacheManager } from "@truths/utils";
 import { clearPersistedQueryCache } from "../../providers/query-provider";
@@ -30,6 +39,61 @@ export function getAppQuickActions(
             action: () => {
                 if (navigate) {
                     navigate({ to: "/sales/customers?action=create" });
+                }
+            },
+        },
+        {
+            icon: UserRound,
+            label: "Add New Employee",
+            value: "action-add-employee",
+            keywords: ["employee", "emp", "staff", "worker"],
+            action: () => {
+                if (navigate) {
+                    navigate({ to: "/sales/employees?action=create" });
+                }
+            },
+        },
+        {
+            icon: Ticket,
+            label: "Add New Booking",
+            value: "action-add-booking",
+            keywords: ["booking", "book", "reservation", "order"],
+            action: () => {
+                if (navigate) {
+                    navigate({ to: "/sales/bookings?action=create" });
+                }
+            },
+        },
+        {
+            icon: Film,
+            label: "Add New Show",
+            value: "action-add-show",
+            keywords: ["show", "event", "concert"],
+            action: () => {
+                if (navigate) {
+                    navigate({ to: "/ticketing/shows?action=create" });
+                }
+            },
+        },
+        {
+            icon: Building2,
+            label: "Add New Venue",
+            value: "action-add-venue",
+            keywords: ["venue", "location", "place", "theater"],
+            action: () => {
+                if (navigate) {
+                    navigate({ to: "/ticketing/venues?action=create" });
+                }
+            },
+        },
+        {
+            icon: Store,
+            label: "Add New Organizer",
+            value: "action-add-organizer",
+            keywords: ["organizer", "org", "promoter"],
+            action: () => {
+                if (navigate) {
+                    navigate({ to: "/ticketing/organizers?action=create" });
                 }
             },
         },

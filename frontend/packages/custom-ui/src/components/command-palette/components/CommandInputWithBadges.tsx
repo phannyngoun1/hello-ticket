@@ -24,7 +24,7 @@ export function CommandInputWithBadges({
       <CommandInput
         placeholder={
           scope === "all"
-            ? "Type a command or search... (try: user:, order:, nav:)"
+            ? "Type a command or search... (try: users:, employees:, bookings:, nav:)"
             : `Searching in ${scope}...`
         }
         value={search}

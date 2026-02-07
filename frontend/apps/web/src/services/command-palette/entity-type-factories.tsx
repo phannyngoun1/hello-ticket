@@ -1,11 +1,20 @@
-import { User, Users } from "lucide-react";
+import {
+  User,
+  Users,
+  UserRound,
+  Ticket,
+  Building2,
+  Film,
+  Store,
+} from "lucide-react";
 import type { DataTypeConfig, BaseDataItem } from "@truths/custom-ui";
 import type { CommandPaletteUser } from "./types";
 import { nameExtractors } from "./mappers";
 import { DefaultAppCommandPaletteItem } from "../../components/app-command-palette/default-app-command-palette-item";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Customer } from "@truths/sales";
+import { Customer, Employee, Booking } from "@truths/sales";
+import { Venue, Show, Organizer } from "@truths/ticketing";
 
 /**
  * Configuration for creating a searchable entity type in the command palette
@@ -134,5 +143,94 @@ export const createCustomerEntityType = (
       const displayName = customer.name || displayCode;
       return `customer-${customer.id}-${displayCode}-${displayName}`;
     },
+  });
+};
+
+export const createEmployeeEntityType = (
+  fetcher: (query: string) => Promise<Employee[]>
+): DataTypeConfig<BaseDataItem> => {
+  return createEntityType<Employee>({
+    key: "employees",
+    name: "Employees",
+    icon: UserRound,
+    scope: "employees",
+    fetcher,
+    navigateTo: "/sales/employees/$id",
+    getDisplayName: (emp) => emp.name || emp.code || String(emp.id),
+    getSubtitle: (emp) => emp.job_title || emp.department || null,
+    getBadge: (emp) => emp.employment_type || null,
+    getSearchValue: (emp) =>
+      `employee-${emp.name}-${emp.code || ""}-${emp.work_email || ""}`,
+  });
+};
+
+export const createBookingEntityType = (
+  fetcher: (query: string) => Promise<(Booking & { name: string })[]>
+): DataTypeConfig<BaseDataItem> => {
+  return createEntityType<Booking & { name: string }>({
+    key: "bookings",
+    name: "Bookings",
+    icon: Ticket,
+    scope: "bookings",
+    fetcher,
+    navigateTo: "/sales/bookings/$id",
+    getDisplayName: (b) => b.booking_number || String(b.id),
+    getSubtitle: (b) => b.status || null,
+    getBadge: (b) => b.payment_status || null,
+    getSearchValue: (b) =>
+      `booking-${b.booking_number}-${b.id}-${b.status || ""}`,
+  });
+};
+
+export const createVenueEntityType = (
+  fetcher: (query: string) => Promise<Venue[]>
+): DataTypeConfig<BaseDataItem> => {
+  return createEntityType<Venue>({
+    key: "venues",
+    name: "Venues",
+    icon: Building2,
+    scope: "venues",
+    fetcher,
+    navigateTo: "/ticketing/venues/$id",
+    getDisplayName: (v) => v.name || v.code || String(v.id),
+    getSubtitle: (v) => v.city || v.venue_type || null,
+    getBadge: (v) => (v.capacity ? `${v.capacity} seats` : null),
+    getSearchValue: (v) =>
+      `venue-${v.name}-${v.code || ""}-${v.city || ""}-${v.venue_type || ""}`,
+  });
+};
+
+export const createShowEntityType = (
+  fetcher: (query: string) => Promise<Show[]>
+): DataTypeConfig<BaseDataItem> => {
+  return createEntityType<Show>({
+    key: "shows",
+    name: "Shows",
+    icon: Film,
+    scope: "shows",
+    fetcher,
+    navigateTo: "/ticketing/shows/$id",
+    getDisplayName: (s) => s.name || s.code || String(s.id),
+    getSubtitle: (s) => s.organizer?.name || s.started_date || null,
+    getBadge: (s) => s.started_date || null,
+    getSearchValue: (s) =>
+      `show-${s.name}-${s.code || ""}-${s.organizer?.name || ""}`,
+  });
+};
+
+export const createOrganizerEntityType = (
+  fetcher: (query: string) => Promise<Organizer[]>
+): DataTypeConfig<BaseDataItem> => {
+  return createEntityType<Organizer>({
+    key: "organizers",
+    name: "Organizers",
+    icon: Store,
+    scope: "organizers",
+    fetcher,
+    navigateTo: "/ticketing/organizers/$id",
+    getDisplayName: (o) => o.name || o.code || String(o.id),
+    getSubtitle: (o) => o.email || o.city || null,
+    getSearchValue: (o) =>
+      `organizer-${o.name}-${o.code || ""}-${o.email || ""}`,
   });
 };
