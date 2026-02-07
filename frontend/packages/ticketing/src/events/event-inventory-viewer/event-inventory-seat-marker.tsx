@@ -142,7 +142,7 @@ export function SeatMarker({
     ? SELECTED_FILL
     : ((isHover ? hoverColors.fill : shapeCodeColors.fill) ??
       statusColors.fill);
-  const borderColor = isSelected
+  const strokeColor = isSelected
     ? SELECTED_STROKE
     : ((isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
       statusColors.stroke);
@@ -252,7 +252,7 @@ export function SeatMarker({
         <Group opacity={statusTransparency * currentOpacity}>
           {renderShape(
             parsedShape,
-            { fill: fillColor, stroke: "transparent" },
+            { fill: fillColor, stroke: strokeColor },
             imageWidth,
             imageHeight,
             0,
