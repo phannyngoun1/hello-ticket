@@ -29,6 +29,7 @@ import {
   Ellipse,
   Line,
   Group,
+  Text,
 } from "react-konva";
 import { PlacementShapeType, type PlacementShape } from "./types";
 
@@ -412,16 +413,44 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
             if (!seat.x_coordinate || !seat.y_coordinate) return null;
             const x = (seat.x_coordinate / 100) * containerSize.width;
             const y = (seat.y_coordinate / 100) * containerSize.height;
-            const fill = seat.parsedShape?.fillColor?.trim();
-            const stroke = seat.parsedShape?.strokeColor?.trim();
-            const colors =
-              fill && stroke
-                ? { fill, stroke }
-                : getSeatColor(seat.seat_type);
+            const configFill = seat.parsedShape?.fillColor?.trim();
+            const configStroke = seat.parsedShape?.strokeColor?.trim();
+            const defaults = getSeatColor(seat.seat_type);
+            const isDefaultOrEmpty = (v: string | undefined, d: string) =>
+              !v ||
+              v.toLowerCase().replace(/^#/, "") ===
+                d.toLowerCase().replace(/^#/, "");
+            const colors = {
+              fill: !isDefaultOrEmpty(configFill, "#60a5fa")
+                ? configFill!
+                : defaults.fill,
+              stroke: !isDefaultOrEmpty(configStroke, "#2563eb")
+                ? configStroke!
+                : defaults.stroke,
+            };
+
+            const markerLabel = `${seat.section_name || "?"} ${seat.row}-${seat.seat_number}`;
 
             return (
               <Group key={seat.id} x={x} y={y}>
                 {renderShape(seat.parsedShape, colors, imageWidth, imageHeight)}
+                <Text
+                  text={markerLabel}
+                  fontSize={10}
+                  fontFamily="Arial"
+                  fill="#1e293b"
+                  padding={2}
+                  align="center"
+                  verticalAlign="middle"
+                  listening={false}
+                  x={-24}
+                  y={8}
+                  width={48}
+                  backgroundFill="rgba(255, 255, 255, 0.9)"
+                  backgroundStroke="#e2e8f0"
+                  backgroundStrokeWidth={1}
+                  cornerRadius={2}
+                />
               </Group>
             );
           })}

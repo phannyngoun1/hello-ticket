@@ -57,8 +57,8 @@ export const seatService = {
     async updateCoordinates(seatId: string, x: number, y: number, shape?: PlacementShape): Promise<Seat> {
         return api.patch<Seat>(
             `${BASE_ENDPOINT}/${seatId}/coordinates`,
-            { 
-                x_coordinate: x, 
+            {
+                x_coordinate: x,
                 y_coordinate: y,
                 shape: shape ? JSON.stringify(shape) : undefined,
             },

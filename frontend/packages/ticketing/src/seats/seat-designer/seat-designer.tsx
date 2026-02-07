@@ -13,9 +13,7 @@ import React, {
   useLayoutEffect,
   useMemo,
 } from "react";
-import {
-  Card,
-} from "@truths/ui";
+import { Card } from "@truths/ui";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -156,7 +154,9 @@ export function SeatDesigner({
 
   // Copy/paste state
   const [copiedSeat, setCopiedSeat] = useState<SeatMarker | null>(null);
-  const [copiedSection, setCopiedSection] = useState<SectionMarker | null>(null);
+  const [copiedSection, setCopiedSection] = useState<SectionMarker | null>(
+    null
+  );
 
   // Seat Edit Form (for editing existing seats)
   const seatEditForm = useForm<SeatFormData>({
@@ -173,10 +173,13 @@ export function SeatDesigner({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
 
-  const [isSectionCreationPending, setIsSectionCreationPending] = useState(false);
+  const [isSectionCreationPending, setIsSectionCreationPending] =
+    useState(false);
 
   // Debounce timers for shape updates to prevent rate limiting
-  const seatShapeUpdateTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const seatShapeUpdateTimersRef = useRef<Map<string, NodeJS.Timeout>>(
+    new Map()
+  );
 
   // Shape state for placement marks
   const [placementShape, setPlacementShape] = useState<PlacementShape>({
@@ -222,12 +225,19 @@ export function SeatDesigner({
       ];
     }
     return shapeOverlays;
-  }, [shapeOverlays, isSectionCreationPending, pendingSectionCoordinates, placementShape]);
+  }, [
+    shapeOverlays,
+    isSectionCreationPending,
+    pendingSectionCoordinates,
+    placementShape,
+  ]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const deleteSeatRef = useRef<(seat: SeatMarker) => void>(() => {});
-  const deleteSectionRef = useRef<(section: { id: string; isNew?: boolean }) => void>(() => {});
+  const deleteSectionRef = useRef<
+    (section: { id: string; isNew?: boolean }) => void
+  >(() => {});
   const queryClient = useQueryClient();
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
@@ -371,28 +381,58 @@ export function SeatDesigner({
     if (initialSections && designMode === "section-level") {
       console.log("Loading sections from initialSections:", initialSections);
       const markers: SectionMarker[] = initialSections.map((section) => {
-        console.log("Processing initialSection:", section.id, "shape value:", section.shape, "type:", typeof section.shape, "has shape prop:", "shape" in section);
+        console.log(
+          "Processing initialSection:",
+          section.id,
+          "shape value:",
+          section.shape,
+          "type:",
+          typeof section.shape,
+          "has shape prop:",
+          "shape" in section
+        );
         let shape: PlacementShape | undefined;
         if ("shape" in section && section.shape) {
           try {
             const parsed = JSON.parse(section.shape);
             console.log("Parsed shape JSON from initialSections:", parsed);
             // Normalize the type to ensure it matches the enum
-            if (parsed && typeof parsed === 'object' && parsed.type) {
+            if (parsed && typeof parsed === "object" && parsed.type) {
               const normalized: PlacementShape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
               shape = normalized;
-              console.log("Normalized shape from initialSections:", normalized, "Type:", normalized.type);
+              console.log(
+                "Normalized shape from initialSections:",
+                normalized,
+                "Type:",
+                normalized.type
+              );
             } else {
-              console.warn("Parsed shape is invalid from initialSections:", parsed);
+              console.warn(
+                "Parsed shape is invalid from initialSections:",
+                parsed
+              );
             }
           } catch (e) {
-            console.error("Failed to parse section shape from initialSections:", e, "Raw shape string:", section.shape);
+            console.error(
+              "Failed to parse section shape from initialSections:",
+              e,
+              "Raw shape string:",
+              section.shape
+            );
           }
         } else {
-          console.log("Section from initialSections has no shape or shape is falsy:", { id: section.id, name: section.name, shape: section.shape, hasShapeProp: "shape" in section });
+          console.log(
+            "Section from initialSections has no shape or shape is falsy:",
+            {
+              id: section.id,
+              name: section.name,
+              shape: section.shape,
+              hasShapeProp: "shape" in section,
+            }
+          );
         }
         return {
           id: section.id,
@@ -404,7 +444,16 @@ export function SeatDesigner({
           isNew: false,
         };
       });
-      console.log("Section markers created from initialSections:", markers.map(m => ({ id: m.id, name: m.name, hasShape: !!m.shape, shapeType: m.shape?.type, shape: m.shape })));
+      console.log(
+        "Section markers created from initialSections:",
+        markers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          hasShape: !!m.shape,
+          shapeType: m.shape?.type,
+          shape: m.shape,
+        }))
+      );
       setSectionMarkers(markers);
       // Don't auto-select the first section to avoid opening the Selected Section sheet immediately
       // if (markers.length > 0) {
@@ -426,28 +475,50 @@ export function SeatDesigner({
       // This replaces any temporary "section-default" markers with real sections
       console.log("sectionsData received:", sectionsData);
       const markers: SectionMarker[] = sectionsData.map((section) => {
-        console.log("Processing section:", section.id, "shape value:", section.shape, "type:", typeof section.shape, "isTruthy:", !!section.shape);
+        console.log(
+          "Processing section:",
+          section.id,
+          "shape value:",
+          section.shape,
+          "type:",
+          typeof section.shape,
+          "isTruthy:",
+          !!section.shape
+        );
         let shape: PlacementShape | undefined;
         if (section.shape) {
           try {
             const parsed = JSON.parse(section.shape);
             console.log("Parsed shape JSON:", parsed);
             // Normalize the type to ensure it matches the enum
-            if (parsed && typeof parsed === 'object' && parsed.type) {
+            if (parsed && typeof parsed === "object" && parsed.type) {
               const normalized: PlacementShape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
               shape = normalized;
-              console.log("Normalized shape:", normalized, "Type:", normalized.type);
+              console.log(
+                "Normalized shape:",
+                normalized,
+                "Type:",
+                normalized.type
+              );
             } else {
               console.warn("Parsed shape is invalid:", parsed);
             }
           } catch (e) {
-            console.error("Failed to parse section shape:", e, "Raw shape string:", section.shape);
+            console.error(
+              "Failed to parse section shape:",
+              e,
+              "Raw shape string:",
+              section.shape
+            );
           }
         } else {
-          console.log("Section has no shape property or shape is falsy. Section:", { id: section.id, name: section.name, shape: section.shape });
+          console.log(
+            "Section has no shape property or shape is falsy. Section:",
+            { id: section.id, name: section.name, shape: section.shape }
+          );
         }
         return {
           id: section.id,
@@ -459,7 +530,16 @@ export function SeatDesigner({
           isNew: false,
         };
       });
-      console.log("Section markers created from sectionsData:", markers.map(m => ({ id: m.id, name: m.name, hasShape: !!m.shape, shapeType: m.shape?.type, shape: m.shape })));
+      console.log(
+        "Section markers created from sectionsData:",
+        markers.map((m) => ({
+          id: m.id,
+          name: m.name,
+          hasShape: !!m.shape,
+          shapeType: m.shape?.type,
+          shape: m.shape,
+        }))
+      );
       setSectionMarkers(markers);
     }
   }, [sectionsData, initialSections, designMode]);
@@ -489,7 +569,16 @@ export function SeatDesigner({
       if (initialSeats.length > 0) {
         console.log("Loading seats from initialSeats:", initialSeats);
         const markers: SeatMarker[] = initialSeats.map((seat) => {
-          console.log("Processing initialSeat:", seat.id, "shape value:", seat.shape, "type:", typeof seat.shape, "has shape prop:", "shape" in seat);
+          console.log(
+            "Processing initialSeat:",
+            seat.id,
+            "shape value:",
+            seat.shape,
+            "type:",
+            typeof seat.shape,
+            "has shape prop:",
+            "shape" in seat
+          );
           // Parse shape from JSON string if available
           let shape: PlacementShape | undefined;
           if ("shape" in seat && seat.shape) {
@@ -497,23 +586,39 @@ export function SeatDesigner({
               const parsed = JSON.parse(seat.shape);
               console.log("Parsed seat shape JSON from initialSeats:", parsed);
               // Normalize the type to ensure it matches the enum
-              if (parsed && typeof parsed === 'object' && parsed.type) {
+              if (parsed && typeof parsed === "object" && parsed.type) {
                 const normalized: PlacementShape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
                 shape = normalized;
-                console.log("Normalized seat shape from initialSeats:", normalized, "Type:", normalized.type);
+                console.log(
+                  "Normalized seat shape from initialSeats:",
+                  normalized,
+                  "Type:",
+                  normalized.type
+                );
               } else {
-                console.warn("Parsed seat shape is invalid from initialSeats:", parsed);
+                console.warn(
+                  "Parsed seat shape is invalid from initialSeats:",
+                  parsed
+                );
               }
             } catch (e) {
-              console.error("Failed to parse seat shape from initialSeats:", e, "Raw shape string:", seat.shape);
+              console.error(
+                "Failed to parse seat shape from initialSeats:",
+                e,
+                "Raw shape string:",
+                seat.shape
+              );
             }
           } else {
-            console.log("Seat from initialSeats has no shape or shape is falsy:", { id: seat.id, shape: seat.shape, hasShapeProp: "shape" in seat });
+            console.log(
+              "Seat from initialSeats has no shape or shape is falsy:",
+              { id: seat.id, shape: seat.shape, hasShapeProp: "shape" in seat }
+            );
           }
-          
+
           return {
             id: seat.id,
             x: seat.x_coordinate || 0,
@@ -528,7 +633,15 @@ export function SeatDesigner({
             shape,
           };
         });
-        console.log("Seat markers created from initialSeats:", markers.map(m => ({ id: m.id, hasShape: !!m.shape, shapeType: m.shape?.type, shape: m.shape })));
+        console.log(
+          "Seat markers created from initialSeats:",
+          markers.map((m) => ({
+            id: m.id,
+            hasShape: !!m.shape,
+            shapeType: m.shape?.type,
+            shape: m.shape,
+          }))
+        );
         setSeats(markers);
       } else {
         // Layout exists but has no seats yet - start with empty array
@@ -540,7 +653,14 @@ export function SeatDesigner({
       console.log("Loading seats from existingSeats:", existingSeats);
       if (existingSeats.items && existingSeats.items.length > 0) {
         const markers: SeatMarker[] = existingSeats.items.map((seat) => {
-          console.log("Processing existingSeat:", seat.id, "shape value:", seat.shape, "type:", typeof seat.shape);
+          console.log(
+            "Processing existingSeat:",
+            seat.id,
+            "shape value:",
+            seat.shape,
+            "type:",
+            typeof seat.shape
+          );
           // Parse shape from JSON string if available
           let shape: PlacementShape | undefined;
           if (seat.shape) {
@@ -548,23 +668,39 @@ export function SeatDesigner({
               const parsed = JSON.parse(seat.shape);
               console.log("Parsed seat shape JSON from existingSeats:", parsed);
               // Normalize the type to ensure it matches the enum
-              if (parsed && typeof parsed === 'object' && parsed.type) {
+              if (parsed && typeof parsed === "object" && parsed.type) {
                 const normalized: PlacementShape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
                 shape = normalized;
-                console.log("Normalized seat shape from existingSeats:", normalized, "Type:", normalized.type);
+                console.log(
+                  "Normalized seat shape from existingSeats:",
+                  normalized,
+                  "Type:",
+                  normalized.type
+                );
               } else {
-                console.warn("Parsed seat shape is invalid from existingSeats:", parsed);
+                console.warn(
+                  "Parsed seat shape is invalid from existingSeats:",
+                  parsed
+                );
               }
             } catch (e) {
-              console.error("Failed to parse seat shape from existingSeats:", e, "Raw shape string:", seat.shape);
+              console.error(
+                "Failed to parse seat shape from existingSeats:",
+                e,
+                "Raw shape string:",
+                seat.shape
+              );
             }
           } else {
-            console.log("Seat from existingSeats has no shape or shape is falsy:", { id: seat.id, shape: seat.shape });
+            console.log(
+              "Seat from existingSeats has no shape or shape is falsy:",
+              { id: seat.id, shape: seat.shape }
+            );
           }
-          
+
           return {
             id: seat.id,
             x: seat.x_coordinate || 0,
@@ -579,7 +715,15 @@ export function SeatDesigner({
             shape,
           };
         });
-        console.log("Seat markers created from existingSeats:", markers.map(m => ({ id: m.id, hasShape: !!m.shape, shapeType: m.shape?.type, shape: m.shape })));
+        console.log(
+          "Seat markers created from existingSeats:",
+          markers.map((m) => ({
+            id: m.id,
+            hasShape: !!m.shape,
+            shapeType: m.shape?.type,
+            shape: m.shape,
+          }))
+        );
         setSeats(markers);
       } else if (
         lastInitialSeatsRef.current === undefined &&
@@ -947,12 +1091,11 @@ export function SeatDesigner({
       // Drag-to-draw is handled by handleShapeDraw.
       // This click handler handles single-click placement.
 
-       const { x, y } = percentageCoords;
+      const { x, y } = percentageCoords;
 
       // Section detail view - place seats
       if (venueType === "large" && viewingSection && isPlacingSeats) {
-
-         const seatValues = seatPlacementForm.getValues();
+        const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
           x: Math.max(0, Math.min(100, x)),
@@ -976,24 +1119,32 @@ export function SeatDesigner({
       else if (venueType === "large" && isPlacingSections) {
         // Handle default shape for Click-to-Add based on selected tool
         let defaultShape: PlacementShape | undefined;
-        
+
         switch (selectedShapeTool) {
-            case PlacementShapeType.RECTANGLE:
-                defaultShape = { type: PlacementShapeType.RECTANGLE, width: 15, height: 10 };
-                break;
-            case PlacementShapeType.CIRCLE:
-                defaultShape = { type: PlacementShapeType.CIRCLE, radius: 8 };
-                break;
-            case PlacementShapeType.ELLIPSE:
-                defaultShape = { type: PlacementShapeType.ELLIPSE, width: 15, height: 10 };
-                break;
-            default:
-                // For Polygon/Freeform, we don't support single-click add yet (requires drawing)
-                return; 
+          case PlacementShapeType.RECTANGLE:
+            defaultShape = {
+              type: PlacementShapeType.RECTANGLE,
+              width: 15,
+              height: 10,
+            };
+            break;
+          case PlacementShapeType.CIRCLE:
+            defaultShape = { type: PlacementShapeType.CIRCLE, radius: 8 };
+            break;
+          case PlacementShapeType.ELLIPSE:
+            defaultShape = {
+              type: PlacementShapeType.ELLIPSE,
+              width: 15,
+              height: 10,
+            };
+            break;
+          default:
+            // For Polygon/Freeform, we don't support single-click add yet (requires drawing)
+            return;
         }
 
         if (defaultShape) {
-            setPlacementShape(defaultShape);
+          setPlacementShape(defaultShape);
         }
 
         // Store the coordinates where user clicked
@@ -1089,7 +1240,7 @@ export function SeatDesigner({
               }
             : seat
         );
-        
+
         // Save shape to backend for the updated seat (debounced to avoid rate limiting)
         const seat = updated.find((s) => s.id === seatId);
         if (seat && !seat.isNew) {
@@ -1098,18 +1249,20 @@ export function SeatDesigner({
           if (existingTimer) {
             clearTimeout(existingTimer);
           }
-          
+
           // Set new debounced timer (500ms delay)
           const timer = setTimeout(() => {
-            seatService.updateCoordinates(seatId, seat.x, seat.y, shape).catch((error) => {
-              console.error("Failed to save seat shape:", error);
-            });
+            seatService
+              .updateCoordinates(seatId, seat.x, seat.y, shape)
+              .catch((error) => {
+                console.error("Failed to save seat shape:", error);
+              });
             seatShapeUpdateTimersRef.current.delete(seatId);
           }, 500);
-          
+
           seatShapeUpdateTimersRef.current.set(seatId, timer);
         }
-        
+
         return updated;
       });
     },
@@ -1220,7 +1373,7 @@ export function SeatDesigner({
   const handleSectionEdit = (section: SectionMarker) => {
     setEditingSectionId(section.id);
     setIsSectionCreationPending(true);
-    
+
     // Set shape tool to match section shape so user knows what they're editing
     if (section.shape) {
       setPlacementShape(section.shape);
@@ -1243,12 +1396,12 @@ export function SeatDesigner({
       setSelectedSectionIds(sectionIds);
       setSelectedSeat(
         seatIds.length > 0
-          ? seats.find((s) => s.id === seatIds[0]) ?? null
+          ? (seats.find((s) => s.id === seatIds[0]) ?? null)
           : null
       );
       setSelectedSectionMarker(
         sectionIds.length > 0
-          ? sectionMarkers.find((s) => s.id === sectionIds[0]) ?? null
+          ? (sectionMarkers.find((s) => s.id === sectionIds[0]) ?? null)
           : null
       );
       setViewingSection(null);
@@ -1454,7 +1607,7 @@ export function SeatDesigner({
         try {
           const parsed = JSON.parse(section.shape);
           // Normalize the type to ensure it matches the enum
-          if (parsed && typeof parsed === 'object' && parsed.type) {
+          if (parsed && typeof parsed === "object" && parsed.type) {
             shape = {
               ...parsed,
               type: parsed.type as PlacementShapeType,
@@ -1464,7 +1617,7 @@ export function SeatDesigner({
           console.error("Failed to parse section shape from API:", e);
         }
       }
-      
+
       // Update sectionMarkers
       setSectionMarkers((prev) =>
         prev.map((s) =>
@@ -1581,7 +1734,7 @@ export function SeatDesigner({
       // Handle paste (Ctrl+V or Cmd+V)
       if ((event.ctrlKey || event.metaKey) && event.key === "v") {
         event.preventDefault();
-        
+
         // Paste seat
         if (copiedSeat) {
           const seatValues = seatPlacementForm.getValues();
@@ -1589,11 +1742,11 @@ export function SeatDesigner({
           const offsetY = 2;
           const newX = Math.min(100, Math.max(0, copiedSeat.x + offsetX));
           const newY = Math.min(100, Math.max(0, copiedSeat.y + offsetY));
-          
+
           // Increment seat number
           const currentSeatNumber = parseInt(seatValues.seatNumber) || 1;
           const nextSeatNumber = String(currentSeatNumber + 1);
-          
+
           const newSeat: SeatMarker = {
             id: `temp-${Date.now()}`,
             x: newX,
@@ -1608,20 +1761,27 @@ export function SeatDesigner({
             shape: copiedSeat.shape ? { ...copiedSeat.shape } : undefined,
             isNew: true,
           };
-          
+
           setSeats((prev) => [...prev, newSeat]);
           setSelectedSeat(newSeat);
-          seatPlacementForm.setValue("seatNumber", String(parseInt(nextSeatNumber) + 1));
+          seatPlacementForm.setValue(
+            "seatNumber",
+            String(parseInt(nextSeatNumber) + 1)
+          );
           return;
         }
-        
+
         // Paste section
-        if (copiedSection && designMode === "section-level" && venueType === "large") {
+        if (
+          copiedSection &&
+          designMode === "section-level" &&
+          venueType === "large"
+        ) {
           const offsetX = 2; // 2% offset for pasted section
           const offsetY = 2;
           const newX = Math.min(100, Math.max(0, copiedSection.x + offsetX));
           const newY = Math.min(100, Math.max(0, copiedSection.y + offsetY));
-          
+
           // Generate unique section name
           const baseName = copiedSection.name;
           const existingNames = sectionMarkers.map((s) => s.name);
@@ -1631,7 +1791,7 @@ export function SeatDesigner({
             newName = `${baseName} (${counter})`;
             counter++;
           }
-          
+
           const newSection: SectionMarker = {
             id: `temp-${Date.now()}`,
             name: newName,
@@ -1641,7 +1801,7 @@ export function SeatDesigner({
             shape: copiedSection.shape ? { ...copiedSection.shape } : undefined,
             isNew: true,
           };
-          
+
           setSectionMarkers((prev) => [...prev, newSection]);
           setSelectedSectionMarker(newSection);
           return;
@@ -1649,7 +1809,9 @@ export function SeatDesigner({
       }
 
       // Only handle arrow keys for movement
-      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+      if (
+        !["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)
+      ) {
         return;
       }
 
@@ -1810,19 +1972,18 @@ export function SeatDesigner({
     ) => {
       const mergeSectionShape = (
         existing: PlacementShape | undefined
-      ): PlacementShape => ({
-        ...(existing || {
-          type: PlacementShapeType.RECTANGLE,
-          width: 3,
-          height: 2,
-        }),
-        ...style,
-      } as PlacementShape);
+      ): PlacementShape =>
+        ({
+          ...(existing || {
+            type: PlacementShapeType.RECTANGLE,
+            width: 3,
+            height: 2,
+          }),
+          ...style,
+        }) as PlacementShape;
       setSectionMarkers((prev) =>
         prev.map((s) =>
-          s.id === sectionId
-            ? { ...s, shape: mergeSectionShape(s.shape) }
-            : s
+          s.id === sectionId ? { ...s, shape: mergeSectionShape(s.shape) } : s
         )
       );
       setSelectedSectionMarker((prev) =>
@@ -1934,32 +2095,32 @@ export function SeatDesigner({
         }
       }
     } else {
-        // Create new section - always call API since seats need section_id
-        console.log("Creating section via API (Inline):", {
+      // Create new section - always call API since seats need section_id
+      console.log("Creating section via API (Inline):", {
         name,
         layoutId,
         designMode,
         pendingCoordinates: pendingSectionCoordinates,
-        });
-        
-        createSectionMutation.mutate({
+      });
+
+      createSectionMutation.mutate({
         name,
         // Use pending coordinates if available (from canvas click), otherwise use defaults
         x:
-            designMode === "section-level"
+          designMode === "section-level"
             ? (pendingSectionCoordinates?.x ?? 50)
             : undefined,
         y:
-            designMode === "section-level"
+          designMode === "section-level"
             ? (pendingSectionCoordinates?.y ?? 50)
             : undefined,
         shape:
-            designMode === "section-level" && placementShape
+          designMode === "section-level" && placementShape
             ? placementShape
             : undefined,
-        });
+      });
     }
-    
+
     // Reset inline creation/editing state
     setIsSectionCreationPending(false);
     setPendingSectionCoordinates(null);
@@ -2184,18 +2345,20 @@ export function SeatDesigner({
 
   const handleConfirmSave = async () => {
     setShowSaveConfirmDialog(false);
-    
+
     // For section-level layout, save sections first, then seats
     if (designMode === "section-level" && venueType === "large") {
       // Save all section markers in batch
       const sectionsToSave = sectionMarkers.filter((section) => !section.isNew);
       const newSections = sectionMarkers.filter((section) => section.isNew);
-      
+
       try {
         // Save existing sections (updates)
         const updatePromises = sectionsToSave.map((section) => {
           // Get the original section to preserve file_id
-          const originalSection = sectionsData?.find((s) => s.id === section.id);
+          const originalSection = sectionsData?.find(
+            (s) => s.id === section.id
+          );
           return sectionService.update(section.id, {
             name: section.name,
             x_coordinate: section.x,
@@ -2205,7 +2368,7 @@ export function SeatDesigner({
             file_id: originalSection?.file_id || undefined,
           });
         });
-        
+
         // Save new sections (creates)
         const createPromises = newSections.map((section) =>
           sectionService.create({
@@ -2216,20 +2379,20 @@ export function SeatDesigner({
             shape: section.shape ? JSON.stringify(section.shape) : undefined,
           })
         );
-        
+
         // Wait for all section saves to complete
         await Promise.all([...updatePromises, ...createPromises]);
-        
+
         // Invalidate sections query to refresh data
         queryClient.invalidateQueries({
           queryKey: ["sections", "layout", layoutId],
         });
-        
+
         // Mark all sections as saved
         setSectionMarkers((prev) =>
           prev.map((section) => ({ ...section, isNew: false }))
         );
-        
+
         // Then save seats
         saveSeatsMutation.mutate(seats);
       } catch (error) {
@@ -2318,7 +2481,8 @@ export function SeatDesigner({
           return seatSectionId !== sectionId && s.seat.section !== sectionId;
         })
       );
-      if (selectedSectionMarker?.id === sectionId) setSelectedSectionMarker(null);
+      if (selectedSectionMarker?.id === sectionId)
+        setSelectedSectionMarker(null);
       setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
       if (viewingSection?.id === sectionId) setViewingSection(null);
       toast({ title: "Section removed" });
@@ -2557,8 +2721,6 @@ export function SeatDesigner({
 
   const designerContent = (
     <div className="space-y-4">
-     
-
       {/* Main Image Upload */}
       {!mainImageUrl && (
         <ImageUploadCard
@@ -2568,7 +2730,7 @@ export function SeatDesigner({
           onFileSelect={handleMainImageSelect}
         />
       )}
-      
+
       {/* Main Designer Content (Header + Canvas) */}
       {mainImageUrl && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out">
@@ -2595,150 +2757,155 @@ export function SeatDesigner({
           />
 
           <div className="space-y-4">
-          {/* Seat Placement Controls Panel - On Top (Small Venue) */}
-          {venueType === "small" && (
-            <>
-              {!readOnly && (
-                <SeatPlacementControls
-                  form={seatPlacementForm}
-                  uniqueSections={getUniqueSections()}
-                  sectionsData={sectionsData}
-                  sectionSelectValue={sectionSelectValue}
-                  onSectionSelectValueChange={setSectionSelectValue}
-                  onNewSection={() => {
-                    setIsSectionFormOpen(true);
-                    setEditingSectionId(null);
-                    sectionForm.reset({ name: "" });
-                  }}
-                  onManageSections={() => setIsManageSectionsOpen(true)}
-                />
-              )}
-              <ShapeToolbox
-                selectedShapeType={selectedShapeTool}
-                onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
-                selectedSeat={selectedSeat}
-                selectedSection={
-                  designMode === "section-level" ? selectedSectionMarker : null
-                }
-                onSeatEdit={handleSeatEdit}
-                onSeatView={handleSeatView}
-                onSectionEdit={handleSectionEdit}
-                onSectionView={
-                  designMode === "section-level" ? handleSectionView : undefined
-                }
-                onSeatDelete={handleDeleteSeat}
-                onSectionDelete={handleDeleteSection}
-                onSeatShapeStyleChange={handleSeatShapeStyleChange}
-                onSectionShapeStyleChange={handleSectionShapeStyleChange}
-                readOnly={readOnly}
-              />
-            </>
-          )}
-
-          {/* Section Placement Controls Panel - On Top (Large Venue / Section-Level) */}
-          {venueType === "large" && !viewingSection && (
-            <>
-              {isSectionCreationPending ? (
-
-                <SectionCreationToolbar
-                  initialName={
-                    editingSectionId
-                      ? sectionMarkers.find((s) => s.id === editingSectionId)?.name || ""
-                      : ""
-                  }
-                  selectedShapeType={selectedShapeTool}
-                  onShapeTypeSelect={(type) => {
-                     setSelectedShapeTool(type);
-                     // If we are editing, we keep the editing state.
-                     // If we are creating, we keep the creating state.
-                     // But if they change tool implies they might want to redraw.
-                     // For now, just update the tool.
-                  }}
-                  onSave={handleInlineSectionSave}
-                  onCancel={handleInlineSectionCancel}
-                />
-              ) : (
+            {/* Seat Placement Controls Panel - On Top (Small Venue) */}
+            {venueType === "small" && (
+              <>
+                {!readOnly && (
+                  <SeatPlacementControls
+                    form={seatPlacementForm}
+                    uniqueSections={getUniqueSections()}
+                    sectionsData={sectionsData}
+                    sectionSelectValue={sectionSelectValue}
+                    onSectionSelectValueChange={setSectionSelectValue}
+                    onNewSection={() => {
+                      setIsSectionFormOpen(true);
+                      setEditingSectionId(null);
+                      sectionForm.reset({ name: "" });
+                    }}
+                    onManageSections={() => setIsManageSectionsOpen(true)}
+                  />
+                )}
                 <ShapeToolbox
                   selectedShapeType={selectedShapeTool}
                   onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
-                  selectedSeat={null}
-                  selectedSection={selectedSectionMarker}
+                  selectedSeat={selectedSeat}
+                  selectedSection={
+                    designMode === "section-level"
+                      ? selectedSectionMarker
+                      : null
+                  }
                   onSeatEdit={handleSeatEdit}
                   onSeatView={handleSeatView}
                   onSectionEdit={handleSectionEdit}
-                  onSectionView={handleSectionView}
+                  onSectionView={
+                    designMode === "section-level"
+                      ? handleSectionView
+                      : undefined
+                  }
                   onSeatDelete={handleDeleteSeat}
                   onSectionDelete={handleDeleteSection}
                   onSeatShapeStyleChange={handleSeatShapeStyleChange}
                   onSectionShapeStyleChange={handleSectionShapeStyleChange}
                   readOnly={readOnly}
                 />
-              )}
-            </>
-          )}
+              </>
+            )}
 
-          {/* Canvas Container */}
-          <div
-            ref={containerRef}
-            className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
-            style={{
-              height: "600px", // Fixed height to prevent resizing during zoom
-              width: "100%", // Fixed width to prevent resizing
-              touchAction: "none", // Prevent browser handling touch scroll/pan
-              overscrollBehavior: "contain", // Prevent scroll chaining to parent
-            }}
-          >
-            {dimensionsReady ? (
-              <LayoutCanvas
-                imageUrl={mainImageUrl}
-                seats={venueType === "small" ? displayedSeats : []}
-                sections={venueType === "large" ? sectionMarkers : []}
-                selectedSeatId={selectedSeat?.id || null}
-                selectedSectionId={selectedSectionMarker?.id || null}
-                selectedSeatIds={selectedSeatIds}
-                selectedSectionIds={selectedSectionIds}
-                onMarkersInRect={handleMarkersInRect}
-                isPlacingSeats={venueType === "small" && isPlacingSeats}
-                isPlacingSections={venueType === "large" && isPlacingSections}
-                readOnly={readOnly}
+            {/* Section Placement Controls Panel - On Top (Large Venue / Section-Level) */}
+            {venueType === "large" && !viewingSection && (
+              <>
+                {isSectionCreationPending ? (
+                  <SectionCreationToolbar
+                    initialName={
+                      editingSectionId
+                        ? sectionMarkers.find((s) => s.id === editingSectionId)
+                            ?.name || ""
+                        : ""
+                    }
+                    selectedShapeType={selectedShapeTool}
+                    onShapeTypeSelect={(type) => {
+                      setSelectedShapeTool(type);
+                      // If we are editing, we keep the editing state.
+                      // If we are creating, we keep the creating state.
+                      // But if they change tool implies they might want to redraw.
+                      // For now, just update the tool.
+                    }}
+                    onSave={handleInlineSectionSave}
+                    onCancel={handleInlineSectionCancel}
+                  />
+                ) : (
+                  <ShapeToolbox
+                    selectedShapeType={selectedShapeTool}
+                    onShapeTypeSelect={
+                      readOnly ? () => {} : setSelectedShapeTool
+                    }
+                    selectedSeat={null}
+                    selectedSection={selectedSectionMarker}
+                    onSeatEdit={handleSeatEdit}
+                    onSeatView={handleSeatView}
+                    onSectionEdit={handleSectionEdit}
+                    onSectionView={handleSectionView}
+                    onSeatDelete={handleDeleteSeat}
+                    onSectionDelete={handleDeleteSection}
+                    onSeatShapeStyleChange={handleSeatShapeStyleChange}
+                    onSectionShapeStyleChange={handleSectionShapeStyleChange}
+                    readOnly={readOnly}
+                  />
+                )}
+              </>
+            )}
+
+            {/* Canvas Container */}
+            <div
+              ref={containerRef}
+              className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
+              style={{
+                height: "600px", // Fixed height to prevent resizing during zoom
+                width: "100%", // Fixed width to prevent resizing
+                touchAction: "none", // Prevent browser handling touch scroll/pan
+                overscrollBehavior: "contain", // Prevent scroll chaining to parent
+              }}
+            >
+              {dimensionsReady ? (
+                <LayoutCanvas
+                  imageUrl={mainImageUrl}
+                  seats={venueType === "small" ? displayedSeats : []}
+                  sections={venueType === "large" ? sectionMarkers : []}
+                  selectedSeatId={selectedSeat?.id || null}
+                  selectedSectionId={selectedSectionMarker?.id || null}
+                  selectedSeatIds={selectedSeatIds}
+                  selectedSectionIds={selectedSectionIds}
+                  onMarkersInRect={handleMarkersInRect}
+                  isPlacingSeats={venueType === "small" && isPlacingSeats}
+                  isPlacingSections={venueType === "large" && isPlacingSections}
+                  readOnly={readOnly}
+                  zoomLevel={zoomLevel}
+                  panOffset={panOffset}
+                  onSeatClick={handleSeatClick}
+                  onSectionClick={handleKonvaSectionClick}
+                  onSectionDragEnd={handleKonvaSectionDragEnd}
+                  onSeatDragEnd={handleKonvaSeatDragEnd}
+                  onSeatShapeTransform={handleSeatShapeTransform}
+                  onSectionShapeTransform={handleSectionShapeTransform}
+                  shapeOverlays={displayedShapeOverlays}
+                  onImageClick={handleKonvaImageClick}
+                  onDeselect={handleDeselect}
+                  onShapeDraw={handleShapeDraw}
+                  onShapeOverlayClick={handleShapeOverlayClick}
+                  onWheel={handleKonvaWheel}
+                  onPan={handlePan}
+                  containerWidth={containerDimensions.width}
+                  containerHeight={containerDimensions.height}
+                  venueType={venueType}
+                  selectedShapeTool={selectedShapeTool}
+                  selectedOverlayId={selectedOverlayId}
+                />
+              ) : (
+                <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
+                  Initializing canvas...
+                </div>
+              )}
+              {/* Zoom Controls */}
+              <ZoomControls
                 zoomLevel={zoomLevel}
                 panOffset={panOffset}
-                onSeatClick={handleSeatClick}
-                onSectionClick={handleKonvaSectionClick}
-                onSectionDragEnd={handleKonvaSectionDragEnd}
-                onSeatDragEnd={handleKonvaSeatDragEnd}
-                onSeatShapeTransform={handleSeatShapeTransform}
-                onSectionShapeTransform={handleSectionShapeTransform}
-                shapeOverlays={displayedShapeOverlays}
-                onImageClick={handleKonvaImageClick}
-                onDeselect={handleDeselect}
-                onShapeDraw={handleShapeDraw}
-                onShapeOverlayClick={handleShapeOverlayClick}
-                onWheel={handleKonvaWheel}
-                onPan={handlePan}
-                containerWidth={containerDimensions.width}
-                containerHeight={containerDimensions.height}
-                venueType={venueType}
-                selectedShapeTool={selectedShapeTool}
-
-                selectedOverlayId={selectedOverlayId}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onResetZoom={handleResetZoom}
               />
-            ) : (
-              <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
-                Initializing canvas...
-              </div>
-            )}
-            {/* Zoom Controls */}
-            <ZoomControls
-              zoomLevel={zoomLevel}
-              panOffset={panOffset}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onResetZoom={handleResetZoom}
-            />
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Datasheet Sheet */}
@@ -2912,8 +3079,6 @@ export function SeatDesigner({
         }}
       />
 
-
-
       {/* Manage Sections Sheet (for seat-level mode) */}
       {designMode === "seat-level" && (
         <ManageSectionsSheet
@@ -2926,9 +3091,9 @@ export function SeatDesigner({
             setEditingSectionId(null);
             // Default shape/tool for new section
             setPlacementShape({
-                type: PlacementShapeType.RECTANGLE,
-                width: 10,
-                height: 10,
+              type: PlacementShapeType.RECTANGLE,
+              width: 10,
+              height: 10,
             });
             setIsSectionCreationPending(true);
             setIsManageSectionsOpen(false);
