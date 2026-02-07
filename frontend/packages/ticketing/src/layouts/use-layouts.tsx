@@ -80,3 +80,22 @@ export function useDeleteLayout(service: LayoutService) {
     },
   });
 }
+
+export function useCloneLayout(service: LayoutService) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (layout: Layout) =>
+      service.createLayout({
+        venue_id: layout.venue_id,
+        name: `${layout.name} (Copy)`,
+        description: layout.description,
+        design_mode: layout.design_mode,
+      }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: ["layouts", "venue", data.venue_id],
+      });
+    },
+  });
+}

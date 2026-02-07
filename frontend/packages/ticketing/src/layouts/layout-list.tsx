@@ -13,6 +13,7 @@ import {
   ItemTitle,
   ItemDescription,
   Badge,
+  toast,
 } from "@truths/ui";
 import {
   Edit,
@@ -21,8 +22,9 @@ import {
   LayoutGrid,
   Loader2,
   Settings,
+  Copy,
 } from "lucide-react";
-import { useLayoutsByVenue, useDeleteLayout } from "./use-layouts";
+import { useLayoutsByVenue, useDeleteLayout, useCloneLayout } from "./use-layouts";
 import { useLayoutService } from "./layout-provider";
 import type { Layout } from "./types";
 import {
@@ -51,6 +53,7 @@ export function LayoutList({
     error,
   } = useLayoutsByVenue(service, venueId);
   const deleteMutation = useDeleteLayout(service);
+  const cloneMutation = useCloneLayout(service);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [layoutToDelete, setLayoutToDelete] = useState<string | null>(null);
 
@@ -76,6 +79,21 @@ export function LayoutList({
     if (mode === "seat-level") return "Seat Level";
     if (mode === "section-level") return "Section Level";
     return "Not Set";
+  };
+
+  const handleClone = (layout: Layout) => {
+    cloneMutation.mutate(layout, {
+      onSuccess: (data) => {
+        toast({ title: `Layout "${data.name}" created.` });
+      },
+      onError: (error) => {
+        toast({
+          title: "Failed to clone layout",
+          description: error instanceof Error ? error.message : undefined,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   // Action button configuration
@@ -104,6 +122,13 @@ export function LayoutList({
         show: !!onEdit,
       },
       {
+        id: "clone",
+        icon: <Copy className="h-4 w-4" />,
+        title: "Clone layout",
+        onClick: handleClone,
+        show: true,
+      },
+      {
         id: "delete",
         icon: <Trash2 className="h-4 w-4" />,
         title: "Delete layout",
@@ -113,7 +138,7 @@ export function LayoutList({
         show: true,
       },
     ],
-    [onNavigateToDesigner, onEdit, handleDelete]
+    [onNavigateToDesigner, onEdit, handleDelete, handleClone]
   );
 
   if (isLoading) {
