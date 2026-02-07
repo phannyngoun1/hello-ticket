@@ -14,6 +14,7 @@ import {
   PenTool,
   Trash2,
   Eye,
+  RotateCcw,
 } from "lucide-react";
 import {
   PlacementShapeType,
@@ -236,6 +237,24 @@ export function ShapeToolbox({
                 }
               />
             </div>
+            <button
+              type="button"
+              onClick={() =>
+                onStyleChange?.({
+                  fillColor: undefined,
+                  strokeColor: undefined,
+                })
+              }
+              className={cn(
+                "flex items-center justify-center h-6 w-6 rounded border transition-all shrink-0",
+                "hover:bg-accent hover:border-accent-foreground",
+                "bg-background border-border"
+              )}
+              title="Reset to default colors"
+              aria-label="Reset to default colors"
+            >
+              <RotateCcw className="h-3 w-3 text-muted-foreground" />
+            </button>
           </div>
         )}
 
