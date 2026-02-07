@@ -52,6 +52,7 @@ ALLOWED_IMAGE_TYPES = {
     "image/png",
     "image/gif",
     "image/webp",
+    "image/svg+xml",
 }
 
 ALLOWED_DOCUMENT_TYPES = {
