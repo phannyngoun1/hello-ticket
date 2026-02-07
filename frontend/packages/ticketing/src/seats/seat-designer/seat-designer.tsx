@@ -127,6 +127,10 @@ export function SeatDesigner({
   // Seats (for small venue: all seats, for large venue: seats in viewingSection)
   const [seats, setSeats] = useState<SeatMarker[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
+  /** Multi-selection: all selected seat ids (for highlight + Delete key). */
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  /** Multi-selection: all selected section ids (for highlight + Delete key). */
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
   // Always in placement mode - simplified
   const isPlacingSeats = true;
 
@@ -222,6 +226,8 @@ export function SeatDesigner({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
+  const deleteSeatRef = useRef<(seat: SeatMarker) => void>(() => {});
+  const deleteSectionRef = useRef<(section: { id: string; isNew?: boolean }) => void>(() => {});
   const queryClient = useQueryClient();
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
@@ -1134,14 +1140,14 @@ export function SeatDesigner({
       // Shift + click: navigate to section detail view
       if (event?.shiftKey) {
         setViewingSection(section);
-        // Update seat placement form with section name
         seatPlacementForm.setValue("section", section.name);
         setSelectedSectionMarker(null);
-        // Reset zoom when switching sections
+        setSelectedSectionIds([]);
+        setSelectedSeatIds([]);
         setZoomLevel(1);
         setPanOffset({ x: 0, y: 0 });
       } else {
-        // Regular click: select for resizing/moving
+        setSelectedSectionIds([section.id]);
         setSelectedSectionMarker(section);
         setViewingSection(null);
       }
@@ -1171,11 +1177,24 @@ export function SeatDesigner({
     setPanOffset({ x: 0, y: 0 });
   };
 
-  // Handle seat marker click - only select, don't open sheet
-  const handleSeatClick = (seat: SeatMarker) => {
-    // Just select the seat for transform controls, don't open the sheet
-    setSelectedSeat(seat);
-    // Don't set viewingSeat - this prevents the sheet from opening
+  // Handle seat marker click - select (shift+click adds to selection)
+  const handleSeatClick = (
+    seat: SeatMarker,
+    event?: { shiftKey?: boolean }
+  ) => {
+    if (event?.shiftKey) {
+      setSelectedSeatIds((prev) =>
+        prev.includes(seat.id)
+          ? prev.filter((id) => id !== seat.id)
+          : [...prev, seat.id]
+      );
+      setSelectedSeat(seat);
+      setSelectedSectionIds([]);
+    } else {
+      setSelectedSeatIds([seat.id]);
+      setSelectedSeat(seat);
+      setSelectedSectionIds([]);
+    }
   };
 
   // Handle seat view from toolbox - opens the seat sheet in view mode
@@ -1213,7 +1232,29 @@ export function SeatDesigner({
   const handleDeselect = () => {
     setSelectedSeat(null);
     setSelectedSectionMarker(null);
+    setSelectedSeatIds([]);
+    setSelectedSectionIds([]);
   };
+
+  // Apply drag-to-select result: set multi-selection and primary from first item
+  const handleMarkersInRect = useCallback(
+    (seatIds: string[], sectionIds: string[]) => {
+      setSelectedSeatIds(seatIds);
+      setSelectedSectionIds(sectionIds);
+      setSelectedSeat(
+        seatIds.length > 0
+          ? seats.find((s) => s.id === seatIds[0]) ?? null
+          : null
+      );
+      setSelectedSectionMarker(
+        sectionIds.length > 0
+          ? sectionMarkers.find((s) => s.id === sectionIds[0]) ?? null
+          : null
+      );
+      setViewingSection(null);
+    },
+    [seats, sectionMarkers]
+  );
 
   // Section form helpers (Sheet)
   const handleOpenNewSectionForm = () => {
@@ -1493,6 +1534,26 @@ export function SeatDesigner({
         return;
       }
 
+      // Handle Delete/Backspace: delete all selected markers (handlers called via refs to avoid declaration order)
+      if (event.key === "Delete" || event.key === "Backspace") {
+        if (selectedSeatIds.length > 0 || selectedSectionIds.length > 0) {
+          event.preventDefault();
+          selectedSectionIds.forEach((id) => {
+            const section = sectionMarkers.find((s) => s.id === id);
+            if (section) deleteSectionRef.current?.(section);
+          });
+          selectedSeatIds.forEach((id) => {
+            const seat = seats.find((s) => s.id === id);
+            if (seat) deleteSeatRef.current?.(seat);
+          });
+          setSelectedSeatIds([]);
+          setSelectedSectionIds([]);
+          setSelectedSeat(null);
+          setSelectedSectionMarker(null);
+          return;
+        }
+      }
+
       // Handle copy (Ctrl+C or Cmd+C)
       if ((event.ctrlKey || event.metaKey) && event.key === "c") {
         if (selectedSeat) {
@@ -1672,6 +1733,8 @@ export function SeatDesigner({
   }, [
     selectedSeat,
     selectedSectionMarker,
+    selectedSeatIds,
+    selectedSectionIds,
     seats,
     sectionMarkers,
     handleKonvaSeatDragEnd,
@@ -2128,6 +2191,7 @@ export function SeatDesigner({
     if (selectedSeat?.id === seat.id) {
       setSelectedSeat(null);
     }
+    setSelectedSeatIds((prev) => prev.filter((id) => id !== seat.id));
   };
 
   // Delete section mutation
@@ -2152,6 +2216,7 @@ export function SeatDesigner({
       if (selectedSectionMarker?.id === sectionId) {
         setSelectedSectionMarker(null);
       }
+      setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
       if (viewingSection?.id === sectionId) {
         setViewingSection(null);
       }
@@ -2187,12 +2252,19 @@ export function SeatDesigner({
         })
       );
       if (selectedSectionMarker?.id === sectionId) setSelectedSectionMarker(null);
+      setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
       if (viewingSection?.id === sectionId) setViewingSection(null);
       toast({ title: "Section removed" });
     } else {
       deleteSectionMutation.mutate(section.id);
     }
   };
+
+  // Keep delete handler refs in sync for keyboard shortcut (effect must be after handlers)
+  useEffect(() => {
+    deleteSeatRef.current = handleDeleteSeat;
+    deleteSectionRef.current = handleDeleteSection;
+  });
 
   // Count seats for the section to be deleted
   // Fullscreen functionality
@@ -2552,6 +2624,9 @@ export function SeatDesigner({
                 sections={venueType === "large" ? sectionMarkers : []}
                 selectedSeatId={selectedSeat?.id || null}
                 selectedSectionId={selectedSectionMarker?.id || null}
+                selectedSeatIds={selectedSeatIds}
+                selectedSectionIds={selectedSectionIds}
+                onMarkersInRect={handleMarkersInRect}
                 isPlacingSeats={venueType === "small" && isPlacingSeats}
                 isPlacingSections={venueType === "large" && isPlacingSections}
                 readOnly={readOnly}

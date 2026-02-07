@@ -183,12 +183,18 @@ interface LayoutCanvasProps {
   sections?: SectionMarker[];
   selectedSeatId?: string | null;
   selectedSectionId?: string | null;
+  /** Multi-selection: all selected seat ids (used for highlight + Delete). */
+  selectedSeatIds?: string[];
+  /** Multi-selection: all selected section ids (used for highlight + Delete). */
+  selectedSectionIds?: string[];
+  /** Called when user finishes a drag-to-select marquee with markers inside the rect. */
+  onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
   isPlacingSeats: boolean;
   isPlacingSections: boolean;
   readOnly?: boolean;
   zoomLevel: number;
   panOffset: { x: number; y: number };
-  onSeatClick?: (seat: SeatMarker) => void;
+  onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSectionClick?: (
     section: SectionMarker,
     event?: { shiftKey?: boolean }
@@ -441,7 +447,7 @@ interface SeatMarkerComponentProps {
   isSpacePressed: boolean;
   isPlacingSections: boolean;
   selectedShapeTool?: PlacementShapeType | null;
-  onSeatClick?: (seat: SeatMarker) => void;
+  onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
   onShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   colors: { fill: string; stroke: string };
@@ -678,7 +684,7 @@ function SeatMarkerComponent({
             return; // Don't cancel bubble, let it pass through
           }
           e.cancelBubble = true;
-          onSeatClick?.(seat);
+          onSeatClick?.(seat, { shiftKey: e.evt.shiftKey });
         }}
         onTap={(e) => {
           // Allow clicks to pass through to Layer when polygon tool is selected
@@ -686,7 +692,7 @@ function SeatMarkerComponent({
             return; // Don't cancel bubble, let it pass through
           }
           e.cancelBubble = true;
-          onSeatClick?.(seat);
+          onSeatClick?.(seat, { shiftKey: e.evt.shiftKey });
         }}
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
@@ -1337,6 +1343,9 @@ export function LayoutCanvas({
   sections = [],
   selectedSeatId,
   selectedSectionId,
+  selectedSeatIds: selectedSeatIdsProp,
+  selectedSectionIds: selectedSectionIdsProp,
+  onMarkersInRect,
   isPlacingSeats,
   isPlacingSections,
   readOnly = false,
@@ -1392,6 +1401,30 @@ export function LayoutCanvas({
   // Drag layer optimization: track which item is being dragged
   const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+
+  // Drag-to-select marquee (stage coordinates)
+  const [selectionStart, setSelectionStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [selectionCurrent, setSelectionCurrent] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Multi-selection sets (derived from props or single selection)
+  const selectedSeatIdSet = useMemo(() => {
+    if (selectedSeatIdsProp && selectedSeatIdsProp.length > 0) {
+      return new Set(selectedSeatIdsProp);
+    }
+    return new Set(selectedSeatId ? [selectedSeatId] : []);
+  }, [selectedSeatIdsProp, selectedSeatId]);
+  const selectedSectionIdSet = useMemo(() => {
+    if (selectedSectionIdsProp && selectedSectionIdsProp.length > 0) {
+      return new Set(selectedSectionIdsProp);
+    }
+    return new Set(selectedSectionId ? [selectedSectionId] : []);
+  }, [selectedSectionIdsProp, selectedSectionId]);
 
   // Ref to prevent click event after drag-to-draw
   const ignoreClickRef = useRef(false);
@@ -1722,11 +1755,11 @@ export function LayoutCanvas({
     };
 
     const visibleSeats = seats.filter((s) => {
-      if (selectedSeatId === s.id) return true;
+      if (selectedSeatIdSet.has(s.id)) return true;
       return isInView(s.x, s.y);
     });
     const visibleSections = sections.filter((s) => {
-      if (selectedSectionId === s.id) return true;
+      if (selectedSectionIdSet.has(s.id)) return true;
       return isInView(s.x, s.y);
     });
     const visibleShapeOverlays = shapeOverlays.filter((o) => {
@@ -1753,8 +1786,8 @@ export function LayoutCanvas({
     imageY,
     displayedWidth,
     displayedHeight,
-    selectedSeatId,
-    selectedSectionId,
+    selectedSeatIdSet,
+    selectedSectionIdSet,
     selectedOverlayId,
   ]);
 
@@ -1861,13 +1894,11 @@ export function LayoutCanvas({
           return;
         }
 
-        // Check if clicking on a selected marker or its transformer
-        // If so, don't start shape drawing - let the marker handle the interaction
         const target = e.target;
         const targetType = target.getType();
-        const isTransformer = targetType === "Transformer";
 
-        // Check if target or any ancestor is a transformer
+        // Detect if click is on a marker or transformer (don't start marquee in those cases)
+        const isTransformer = targetType === "Transformer";
         let current: Konva.Node | null = target;
         let isTransformerRelated = false;
         while (current) {
@@ -1883,8 +1914,7 @@ export function LayoutCanvas({
         const isMarkerChild =
           target.getParent()?.name() === "seat-marker" ||
           target.getParent()?.name() === "section-marker";
-        // Check if any ancestor is a marker group
-        let ancestor = target.getParent();
+        let ancestor: Konva.Node | null = target.getParent();
         let isMarkerAncestor = false;
         while (ancestor) {
           if (
@@ -1896,26 +1926,40 @@ export function LayoutCanvas({
           }
           ancestor = ancestor.getParent();
         }
-        const hasSelectedMarker = selectedSeatId || selectedSectionId;
 
-        // If clicking on a selected marker or transformer, don't start shape drawing
+        const isClickOnMarkerOrTransformer =
+          isTransformer ||
+          isTransformerRelated ||
+          isMarkerGroup ||
+          isMarkerChild ||
+          isMarkerAncestor;
+
+        // Drag-to-select: start marquee when clicking on empty area (not on a marker/transformer) and no shape tool
+        if (
+          !readOnly &&
+          onMarkersInRect &&
+          !selectedShapeTool &&
+          !isDrawingShape &&
+          !isClickOnMarkerOrTransformer
+        ) {
+          setSelectionStart(pointerPos);
+          setSelectionCurrent(pointerPos);
+          return;
+        }
+
+        const hasSelectedMarker =
+          selectedSeatIdSet.size > 0 || selectedSectionIdSet.size > 0;
+
         if (
           hasSelectedMarker &&
-          (isTransformer ||
-            isTransformerRelated ||
-            isMarkerGroup ||
-            isMarkerChild ||
-            isMarkerAncestor)
+          isClickOnMarkerOrTransformer
         ) {
-          // Also cancel any ongoing shape drawing
           setIsDrawingShape(false);
           setDrawStartPos(null);
           setDrawCurrentPos(null);
           return;
         }
 
-        // If shape tool is selected, start drawing (drag to draw)
-        // For freeform, we use click-to-add-points instead of drag
         if (
           selectedShapeTool &&
           onShapeDraw &&
@@ -1930,11 +1974,6 @@ export function LayoutCanvas({
           setDrawCurrentPos(percentageCoords);
           return;
         }
-
-        // For freeform, we don't start drawing on mouseDown - we wait for clicks
-
-        // Pointer tool: Only for selection, don't place seats automatically
-        // Seat placement should be done through other UI controls
       }}
       onMouseMove={(e) => {
         const stage = e.target.getStage();
@@ -1943,12 +1982,15 @@ export function LayoutCanvas({
         const pointerPos = stage.getPointerPosition();
         if (!pointerPos) return;
 
-        // Check if interacting with transformer or selected marker
+        // Update drag-to-select marquee
+        if (selectionStart) {
+          setSelectionCurrent(pointerPos);
+          return;
+        }
+
         const target = e.target;
         const targetType = target.getType();
         const isTransformer = targetType === "Transformer";
-
-        // Check if target or any ancestor is a transformer
         let current: Konva.Node | null = target;
         let isTransformerRelated = false;
         while (current) {
@@ -1964,7 +2006,6 @@ export function LayoutCanvas({
         const isMarkerChild =
           target.getParent()?.name() === "seat-marker" ||
           target.getParent()?.name() === "section-marker";
-        // Check if any ancestor is a marker group
         let ancestor: Konva.Node | null = target.getParent();
         let isMarkerAncestor = false;
         while (ancestor) {
@@ -1977,7 +2018,8 @@ export function LayoutCanvas({
           }
           ancestor = ancestor.getParent();
         }
-        const hasSelectedMarker = selectedSeatId || selectedSectionId;
+        const hasSelectedMarker =
+          selectedSeatIdSet.size > 0 || selectedSectionIdSet.size > 0;
         const isInteractingWithMarker =
           hasSelectedMarker &&
           (isTransformer ||
@@ -2001,7 +2043,6 @@ export function LayoutCanvas({
           selectedShapeTool &&
           selectedShapeTool !== PlacementShapeType.FREEFORM
         ) {
-          // Update current drawing position for preview (for non-freeform shapes)
           const percentageCoords = pointerToPercentage(
             pointerPos.x,
             pointerPos.y
@@ -2012,7 +2053,6 @@ export function LayoutCanvas({
           selectedShapeTool === PlacementShapeType.FREEFORM &&
           freeformPath.length > 0
         ) {
-          // Update hover position for freeform preview (show line from last point to cursor)
           const percentageCoords = pointerToPercentage(
             pointerPos.x,
             pointerPos.y
@@ -2027,12 +2067,41 @@ export function LayoutCanvas({
           return;
         }
 
-        // Check if interacting with transformer or selected marker
+        // Finish drag-to-select marquee
+        if (selectionStart && selectionCurrent && onMarkersInRect) {
+          const x1 = Math.min(selectionStart.x, selectionCurrent.x);
+          const y1 = Math.min(selectionStart.y, selectionCurrent.y);
+          const x2 = Math.max(selectionStart.x, selectionCurrent.x);
+          const y2 = Math.max(selectionStart.y, selectionCurrent.y);
+          const p1 = stageToPercentage(x1, y1);
+          const p2 = stageToPercentage(x2, y2);
+          const minPx = Math.min(p1.x, p2.x);
+          const maxPx = Math.max(p1.x, p2.x);
+          const minPy = Math.min(p1.y, p2.y);
+          const maxPy = Math.max(p1.y, p2.y);
+          const seatIds = seats.filter(
+            (s) =>
+              s.x >= minPx &&
+              s.x <= maxPx &&
+              s.y >= minPy &&
+              s.y <= maxPy
+          ).map((s) => s.id);
+          const sectionIds = sections.filter(
+            (s) =>
+              s.x >= minPx &&
+              s.x <= maxPx &&
+              s.y >= minPy &&
+              s.y <= maxPy
+          ).map((s) => s.id);
+          onMarkersInRect(seatIds, sectionIds);
+          setSelectionStart(null);
+          setSelectionCurrent(null);
+          return;
+        }
+
         const target = e.target;
         const targetType = target.getType();
         const isTransformer = targetType === "Transformer";
-
-        // Check if target or any ancestor is a transformer
         let current: Konva.Node | null = target;
         let isTransformerRelated = false;
         while (current) {
@@ -2048,7 +2117,6 @@ export function LayoutCanvas({
         const isMarkerChild =
           target.getParent()?.name() === "seat-marker" ||
           target.getParent()?.name() === "section-marker";
-        // Check if any ancestor is a marker group
         let ancestor: Konva.Node | null = target.getParent();
         let isMarkerAncestor = false;
         while (ancestor) {
@@ -2061,7 +2129,8 @@ export function LayoutCanvas({
           }
           ancestor = ancestor.getParent();
         }
-        const hasSelectedMarker = selectedSeatId || selectedSectionId;
+        const hasSelectedMarker =
+          selectedSeatIdSet.size > 0 || selectedSectionIdSet.size > 0;
         const isInteractingWithMarker =
           hasSelectedMarker &&
           (isTransformer ||
@@ -2070,7 +2139,6 @@ export function LayoutCanvas({
             isMarkerChild ||
             isMarkerAncestor);
 
-        // If interacting with marker/transformer, cancel any shape drawing
         if (isInteractingWithMarker) {
           setIsDrawingShape(false);
           setDrawStartPos(null);
@@ -2182,7 +2250,8 @@ export function LayoutCanvas({
           setIsPanning(false);
           onPanEnd?.();
         }
-        // Freeform is now handled via click-to-add-points, not mouseLeave
+        setSelectionStart(null);
+        setSelectionCurrent(null);
       }}
       style={{
         display: "block",
@@ -2347,7 +2416,7 @@ export function LayoutCanvas({
               seat={seat}
               x={x}
               y={y}
-              isSelected={false}
+              isSelected={selectedSeatIdSet.has(seat.id)}
               isPlacingSeats={isPlacingSeats}
               isPanning={isPanning}
               isSpacePressed={isSpacePressed}
@@ -2375,7 +2444,7 @@ export function LayoutCanvas({
                 section={section}
                 x={x}
                 y={y}
-                isSelected={false}
+                isSelected={selectedSectionIdSet.has(section.id)}
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2974,6 +3043,22 @@ export function LayoutCanvas({
             return null;
           })()}
       </Layer>
+
+      {/* Selection marquee (stage coordinates, on top) */}
+      {selectionStart && selectionCurrent && (
+        <Layer listening={false}>
+          <Rect
+            x={Math.min(selectionStart.x, selectionCurrent.x)}
+            y={Math.min(selectionStart.y, selectionCurrent.y)}
+            width={Math.abs(selectionCurrent.x - selectionStart.x)}
+            height={Math.abs(selectionCurrent.y - selectionStart.y)}
+            stroke="#2563eb"
+            strokeWidth={2}
+            dash={[6, 4]}
+            fill="rgba(37, 99, 235, 0.08)"
+          />
+        </Layer>
+      )}
     </Stage>
   );
 }
