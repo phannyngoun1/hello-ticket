@@ -196,57 +196,25 @@ function transformToBackend(input: CreateCustomerInput | UpdateCustomerInput): R
     payload.last_contact_date = input.last_contact_date;
   }
 
-  // Preferences
-  if ("event_preferences" in input && input.event_preferences !== undefined && input.event_preferences !== null) {
-    payload.event_preferences = input.event_preferences;
-  }
-  if ("seating_preferences" in input && input.seating_preferences !== undefined && input.seating_preferences !== null) {
-    payload.seating_preferences = input.seating_preferences;
-  }
-  if ("accessibility_needs" in input && input.accessibility_needs !== undefined && input.accessibility_needs !== null) {
-    payload.accessibility_needs = input.accessibility_needs;
-  }
-  if ("dietary_restrictions" in input && input.dietary_restrictions !== undefined && input.dietary_restrictions !== null) {
-    payload.dietary_restrictions = input.dietary_restrictions;
-  }
-  if ("emergency_contact_name" in input && input.emergency_contact_name !== undefined && input.emergency_contact_name !== null) {
-    payload.emergency_contact_name = input.emergency_contact_name;
-  }
-  if ("emergency_contact_phone" in input && input.emergency_contact_phone !== undefined && input.emergency_contact_phone !== null) {
-    payload.emergency_contact_phone = input.emergency_contact_phone;
-  }
-  if ("emergency_contact_relationship" in input && input.emergency_contact_relationship !== undefined && input.emergency_contact_relationship !== null) {
-    payload.emergency_contact_relationship = input.emergency_contact_relationship;
-  }
-  if ("preferred_language" in input && input.preferred_language !== undefined && input.preferred_language !== null) {
-    payload.preferred_language = input.preferred_language;
-  }
-  if ("marketing_opt_in" in input && input.marketing_opt_in !== undefined && input.marketing_opt_in !== null) {
-    payload.marketing_opt_in = input.marketing_opt_in;
-  }
-  if ("email_marketing" in input && input.email_marketing !== undefined && input.email_marketing !== null) {
-    payload.email_marketing = input.email_marketing;
-  }
-  if ("sms_marketing" in input && input.sms_marketing !== undefined && input.sms_marketing !== null) {
-    payload.sms_marketing = input.sms_marketing;
-  }
+  // Preferences & Settings – always send when present in input (so edit payload includes them)
+  if ("event_preferences" in input) payload.event_preferences = input.event_preferences ?? null;
+  if ("seating_preferences" in input) payload.seating_preferences = input.seating_preferences ?? null;
+  if ("accessibility_needs" in input) payload.accessibility_needs = input.accessibility_needs ?? null;
+  if ("dietary_restrictions" in input) payload.dietary_restrictions = input.dietary_restrictions ?? null;
+  if ("emergency_contact_name" in input) payload.emergency_contact_name = input.emergency_contact_name ?? null;
+  if ("emergency_contact_phone" in input) payload.emergency_contact_phone = input.emergency_contact_phone ?? null;
+  if ("emergency_contact_relationship" in input) payload.emergency_contact_relationship = input.emergency_contact_relationship ?? null;
+  if ("preferred_language" in input) payload.preferred_language = input.preferred_language ?? null;
+  if ("marketing_opt_in" in input) payload.marketing_opt_in = input.marketing_opt_in ?? null;
+  if ("email_marketing" in input) payload.email_marketing = input.email_marketing ?? null;
+  if ("sms_marketing" in input) payload.sms_marketing = input.sms_marketing ?? null;
 
-  // Social & Online
-  if ("facebook_url" in input && input.facebook_url !== undefined && input.facebook_url !== null) {
-    payload.facebook_url = input.facebook_url;
-  }
-  if ("twitter_handle" in input && input.twitter_handle !== undefined && input.twitter_handle !== null) {
-    payload.twitter_handle = input.twitter_handle;
-  }
-  if ("linkedin_url" in input && input.linkedin_url !== undefined && input.linkedin_url !== null) {
-    payload.linkedin_url = input.linkedin_url;
-  }
-  if ("instagram_handle" in input && input.instagram_handle !== undefined && input.instagram_handle !== null) {
-    payload.instagram_handle = input.instagram_handle;
-  }
-  if ("website" in input && input.website !== undefined && input.website !== null) {
-    payload.website = input.website;
-  }
+  // Social & Online – always send when present in input
+  if ("facebook_url" in input) payload.facebook_url = input.facebook_url ?? null;
+  if ("twitter_handle" in input) payload.twitter_handle = input.twitter_handle ?? null;
+  if ("linkedin_url" in input) payload.linkedin_url = input.linkedin_url ?? null;
+  if ("instagram_handle" in input) payload.instagram_handle = input.instagram_handle ?? null;
+  if ("website" in input) payload.website = input.website ?? null;
 
   // Tags & Classification
   // Tags are now managed via tag service - only tag_ids are accepted

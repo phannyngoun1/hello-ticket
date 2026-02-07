@@ -52,18 +52,24 @@ export function CreateVenueDialog({
   };
 
   // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
-  // createValue is null for timestamp fields, so they are automatically excluded
   const buildPayload = useMemo(() => {
     return (data: VenueFormData): CreateVenueInput => ({
-
-
       code: undefined,
-
-
-
       name: data.name,
-
-
+      description: data.description || undefined,
+      venue_type: data.venue_type || undefined,
+      parking_info: data.parking_info || undefined,
+      accessibility: data.accessibility || undefined,
+      amenities: data.amenities && data.amenities.length > 0 ? data.amenities : undefined,
+      opening_hours: data.opening_hours || undefined,
+      phone: data.phone || undefined,
+      email: data.email || undefined,
+      website: data.website || undefined,
+      street_address: data.street_address || undefined,
+      city: data.city || undefined,
+      state_province: data.state_province || undefined,
+      postal_code: data.postal_code || undefined,
+      country: data.country || undefined,
     });
   }, []);
 

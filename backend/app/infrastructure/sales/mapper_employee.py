@@ -32,7 +32,6 @@ class EmployeeMapper(BaseMapper[Employee, EmployeeModel]):
             # Organizational Structure
             job_title=model.job_title,
             department=model.department,
-            manager_id=model.manager_id,
             employment_type=model.employment_type,
             hire_date=model.hire_date,
             # Contact & Location
@@ -79,7 +78,7 @@ class EmployeeMapper(BaseMapper[Employee, EmployeeModel]):
             # Organizational Structure
             job_title=employee.job_title,
             department=employee.department,
-            manager_id=employee.manager_id,
+            manager_id=None,
             employment_type=employee.employment_type,
             hire_date=employee.hire_date,
             # Contact & Location

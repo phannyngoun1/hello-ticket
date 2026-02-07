@@ -17,7 +17,6 @@ class CreateEmployeeCommand:
     # Organizational Structure
     job_title: Optional[str] = None
     department: Optional[str] = None
-    manager_id: Optional[str] = None
     employment_type: Optional[str] = None
     hire_date: Optional[str] = None
 
@@ -55,7 +54,6 @@ class UpdateEmployeeCommand:
     # Organizational Structure
     job_title: Optional[str] = None
     department: Optional[str] = None
-    manager_id: Optional[str] = None
     employment_type: Optional[str] = None
     hire_date: Optional[str] = None
 

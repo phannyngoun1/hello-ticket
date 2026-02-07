@@ -21,7 +21,6 @@ export interface Employee {
     // Organizational Structure
     job_title?: string;
     department?: string;
-    manager_id?: string;
     employment_type?: string;
     hire_date?: string;
 
@@ -61,7 +60,6 @@ export interface CreateEmployeeInput {
     // Organizational Structure
     job_title?: string;
     department?: string;
-    manager_id?: string;
     employment_type?: string;
     hire_date?: string;
 
@@ -97,7 +95,6 @@ export interface UpdateEmployeeInput {
     // Organizational Structure
     job_title?: string;
     department?: string;
-    manager_id?: string;
     employment_type?: string;
     hire_date?: string;
 

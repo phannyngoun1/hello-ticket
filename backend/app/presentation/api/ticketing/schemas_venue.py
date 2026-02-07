@@ -11,6 +11,7 @@ class VenueCreateRequest(BaseModel):
     code: Optional[str] = Field(None, description="Venue business code (auto-generated)")
     name: str = Field(..., description="Display name for the venue")
     description: Optional[str] = Field(None, description="Venue description")
+    image_url: Optional[str] = Field(None, description="URL for venue seat map image")
     venue_type: Optional[str] = Field(None, description="Venue type (Theater, Stadium, Concert Hall, etc.)")
     capacity: Optional[int] = Field(None, description="Total seating capacity")
     parking_info: Optional[str] = Field(None, description="Parking availability/details")

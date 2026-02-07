@@ -13,6 +13,7 @@ import {
 } from "@truths/sales";
 import type { UpdateEmployeeInput } from "@truths/sales";
 import { api } from "@truths/api";
+import { toast } from "@truths/ui";
 import { TagService, AttachmentService } from "@truths/shared";
 
 function EmployeeDetailContent({ id }: { id: string | undefined }) {
@@ -74,9 +75,11 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
   ) => {
     try {
       await updateMutation.mutateAsync({ id: employeeId, input });
+      toast({ title: "Success", description: "Employee updated successfully" });
       setEditDialogOpen(false);
     } catch (error) {
-      console.error("Error updating employee:", error);
+      // Error toast is shown by EditEmployeeDialog
+      throw error;
     }
   };
 

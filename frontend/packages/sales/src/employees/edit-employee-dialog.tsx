@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { cn } from "@truths/ui";
+import { cn, toast } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { FullScreenDialog, ConfirmationDialog } from "@truths/custom-ui";
 import { EmployeeForm, type EmployeeFormData } from "./employee-form";
@@ -107,7 +107,6 @@ export function EditEmployeeDialog({
       // Organizational Structure
       job_title: employee.job_title ?? "",
       department: employee.department ?? "",
-      manager_id: employee.manager_id ?? "",
       employment_type: employee.employment_type ?? "",
       hire_date: employee.hire_date ?? "",
 
@@ -163,9 +162,8 @@ export function EditEmployeeDialog({
       // Organizational Structure
       job_title: data.job_title || undefined,
       department: data.department || undefined,
-      manager_id: data.manager_id || undefined,
       employment_type: data.employment_type || undefined,
-      hire_date: data.hire_date || undefined,
+      hire_date: data.hire_date?.trim() || undefined,
       
       // Contact & Location
       work_phone: data.work_phone || undefined,
@@ -179,7 +177,7 @@ export function EditEmployeeDialog({
       commission_tier: data.commission_tier || undefined,
       
       // Personal (HR)
-      birthday: data.birthday || undefined,
+      birthday: data.birthday?.trim() || undefined,
       emergency_contact_name: data.emergency_contact_name || undefined,
       emergency_contact_phone: data.emergency_contact_phone || undefined,
       emergency_contact_relationship: data.emergency_contact_relationship || undefined,
@@ -197,6 +195,8 @@ export function EditEmployeeDialog({
       setPendingFormData(null);
     } catch (error) {
       console.error("Error updating employee:", error);
+      const message = error instanceof Error ? error.message : "Failed to update employee";
+      toast({ title: "Error", description: message, variant: "destructive" });
       setShowConfirmDialog(false);
     } finally {
       setIsSubmitting(false);

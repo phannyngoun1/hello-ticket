@@ -27,7 +27,6 @@ class Employee(AggregateRoot):
         # Organizational Structure
         job_title: Optional[str] = None,
         department: Optional[str] = None,
-        manager_id: Optional[str] = None,
         employment_type: Optional[str] = None,
         hire_date: Optional[date] = None,
         
@@ -70,7 +69,6 @@ class Employee(AggregateRoot):
         # Organizational Structure
         self.job_title = job_title
         self.department = department
-        self.manager_id = manager_id
         self.employment_type = employment_type
         self.hire_date = hire_date
         
@@ -110,7 +108,6 @@ class Employee(AggregateRoot):
         work_email: Optional[str] = None,
         job_title: Optional[str] = None,
         department: Optional[str] = None,
-        manager_id: Optional[str] = None,
         employment_type: Optional[str] = None,
         hire_date: Optional[date] = None,
         work_phone: Optional[str] = None,
@@ -139,8 +136,6 @@ class Employee(AggregateRoot):
             self.job_title = job_title
         if department is not None:
             self.department = department
-        if manager_id is not None:
-            self.manager_id = manager_id
         if employment_type is not None:
             self.employment_type = employment_type
         if hire_date is not None:
@@ -228,9 +223,6 @@ class Employee(AggregateRoot):
 
     def _validate(self) -> None:
         """Validate employee data and business rules."""
-        # Prevent circular manager relationship
-        if self.manager_id == self.id:
-            raise BusinessRuleError("Employee cannot be their own manager")
         pass
 
     def _touch(self) -> None:

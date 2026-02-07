@@ -20,7 +20,6 @@ interface EmployeeDTO {
   // Organizational Structure
   job_title?: string | null;
   department?: string | null;
-  manager_id?: string | null;
   employment_type?: string | null;
   hire_date?: string | null;
 
@@ -62,7 +61,6 @@ function transformEmployee(dto: EmployeeDTO): Employee {
     // Organizational Structure
     job_title: dto.job_title ?? undefined,
     department: dto.department ?? undefined,
-    manager_id: dto.manager_id ?? undefined,
     employment_type: dto.employment_type ?? undefined,
     hire_date: dto.hire_date ?? undefined,
 

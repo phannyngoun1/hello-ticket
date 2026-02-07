@@ -92,9 +92,8 @@ export function CreateEmployeeDialog({
       // Organizational Structure
       job_title: data.job_title || undefined,
       department: data.department || undefined,
-      manager_id: data.manager_id || undefined,
       employment_type: data.employment_type || undefined,
-      hire_date: data.hire_date || undefined,
+      hire_date: data.hire_date?.trim() || undefined,
       
       // Contact & Location
       work_phone: data.work_phone || undefined,
@@ -108,7 +107,7 @@ export function CreateEmployeeDialog({
       commission_tier: data.commission_tier || undefined,
       
       // Personal (HR)
-      birthday: data.birthday || undefined,
+      birthday: data.birthday?.trim() || undefined,
       emergency_contact_name: data.emergency_contact_name || undefined,
       emergency_contact_phone: data.emergency_contact_phone || undefined,
       emergency_contact_relationship: data.emergency_contact_relationship || undefined,

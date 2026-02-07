@@ -68,7 +68,6 @@ async def create_customer(
             linkedin_url=request.linkedin_url,
             instagram_handle=request.instagram_handle,
             website=request.website,
-            priority=request.priority,
             notes=request.notes,
             public_notes=request.public_notes,
         )

@@ -11,7 +11,8 @@ export type FormType =
   | "event"
   | "organizer"
   | "user"
-  | "group";
+  | "group"
+  | "employee";
 
 export interface UseAIAssistFormOptions {
   formType: FormType;

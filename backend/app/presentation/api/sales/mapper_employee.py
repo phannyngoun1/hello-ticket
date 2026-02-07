@@ -21,7 +21,6 @@ class SalesApiMapper:
             # Organizational Structure
             job_title=employee.job_title,
             department=employee.department,
-            manager_id=employee.manager_id,
             employment_type=employee.employment_type,
             hire_date=employee.hire_date,
 

@@ -1,5 +1,6 @@
 """Handlers for employee commands and queries."""
 import logging
+from datetime import datetime, date
 
 from app.application.sales.commands_employee import (
     CreateEmployeeCommand,
@@ -17,6 +18,24 @@ from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationEr
 from app.shared.tenant_context import require_tenant_context
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_date(value: str | date | None, field_name: str) -> date | None:
+    """Parse ISO date string to date. Returns None for empty/None. Raises ValidationError on invalid format."""
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, str) and not value.strip():
+        return None
+    if not isinstance(value, str):
+        return None
+    try:
+        # Accept both "YYYY-MM-DD" and "YYYY-MM-DDTHH:MM:SS..."
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.date() if hasattr(parsed, "date") else parsed
+    except (ValueError, TypeError) as e:
+        raise ValidationError(f"Invalid {field_name}: expected YYYY-MM-DD, got {value!r}") from e
 
 
 class EmployeeCommandHandler:
@@ -46,16 +65,9 @@ class EmployeeCommandHandler:
                 description="Employee code"
             )
 
-        # Convert string dates to date objects if provided
-        hire_date_obj = None
-        if command.hire_date:
-            from datetime import datetime
-            hire_date_obj = datetime.fromisoformat(command.hire_date).date()
-
-        birthday_obj = None
-        if command.birthday:
-            from datetime import datetime
-            birthday_obj = datetime.fromisoformat(command.birthday).date()
+        # Convert string dates to date objects if provided (safe parse to avoid hang/invalid input)
+        hire_date_obj = _parse_date(command.hire_date, "hire_date")
+        birthday_obj = _parse_date(command.birthday, "birthday")
 
         employee = Employee(
             tenant_id=tenant_id,
@@ -69,7 +81,6 @@ class EmployeeCommandHandler:
             # Organizational Structure
             job_title=command.job_title,
             department=command.department,
-            manager_id=command.manager_id,
             employment_type=command.employment_type,
             hire_date=hire_date_obj,
 
@@ -107,16 +118,9 @@ class EmployeeCommandHandler:
                 if duplicate and duplicate.id != employee.id:
                     raise BusinessRuleError(f"Employee code '{normalized_code}' already exists")
 
-        # Convert string dates to date objects if provided
-        hire_date_obj = None
-        if command.hire_date:
-            from datetime import datetime
-            hire_date_obj = datetime.fromisoformat(command.hire_date).date()
-
-        birthday_obj = None
-        if command.birthday:
-            from datetime import datetime
-            birthday_obj = datetime.fromisoformat(command.birthday).date()
+        # Convert string dates to date objects if provided (safe parse to avoid hang/invalid input)
+        hire_date_obj = _parse_date(command.hire_date, "hire_date") if command.hire_date is not None else None
+        birthday_obj = _parse_date(command.birthday, "birthday") if command.birthday is not None else None
 
         # Build update kwargs, only including fields that are explicitly provided
         update_kwargs = {}
@@ -136,8 +140,6 @@ class EmployeeCommandHandler:
             update_kwargs['job_title'] = command.job_title
         if command.department is not None:
             update_kwargs['department'] = command.department
-        if command.manager_id is not None:
-            update_kwargs['manager_id'] = command.manager_id
         if command.employment_type is not None:
             update_kwargs['employment_type'] = command.employment_type
         if command.hire_date is not None:

@@ -8,7 +8,7 @@ import { forwardRef, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { TextInputField, DateInputField, SelectInputField } from "@truths/custom-ui";
+import { TextInputField, DateInputField, SelectInputField, AIAssistFormButton } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
 
 // Form schema with all new employee fields
@@ -22,7 +22,6 @@ const employeeFormSchema = z
     // Organizational Structure
     job_title: z.string().optional(),
     department: z.string().optional(),
-    manager_id: z.string().optional(),
     employment_type: z.string().optional(),
     hire_date: z.string().optional(),
     
@@ -53,6 +52,13 @@ const employeeFormSchema = z
 
 export type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
+/** Normalize a form field value to string (for API/defaultValues that may send arrays). */
+function toFormString(value: unknown): string {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map((v) => String(v ?? "")).join(", ");
+  return String(value);
+}
+
 export interface EmployeeFormProps {
   defaultValues?: Partial<EmployeeFormData>;
   onSubmit: (data: EmployeeFormData) => Promise<void> | void;
@@ -73,25 +79,44 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
       handleSubmit,
       control,
       reset,
+      watch,
+      setValue,
       formState: { errors, isSubmitted },
     } = useForm<EmployeeFormData>({
       resolver: zodResolver(employeeFormSchema),
-      defaultValues: {
-        name: "",
-        work_email: "",
-        job_title: "",
-        department: "",
-        employment_type: "",
-        // Address defaults
-        street_address: "",
-        city: "",
-        state_province: "",
-        postal_code: "",
-        country: "",
-        office_location: "",
-        timezone: "UTC",
-        ...defaultValues,
-      },
+      defaultValues: (() => {
+        const base = {
+          name: "",
+          work_email: "",
+          job_title: "",
+          department: "",
+          employment_type: "",
+          street_address: "",
+          city: "",
+          state_province: "",
+          postal_code: "",
+          country: "",
+          office_location: "",
+          timezone: "UTC",
+          hire_date: "",
+          work_phone: "",
+          mobile_phone: "",
+          skills: "",
+          assigned_territories: "",
+          commission_tier: "",
+          birthday: "",
+          emergency_contact_name: "",
+          emergency_contact_phone: "",
+          emergency_contact_relationship: "",
+        };
+        if (!defaultValues) return base;
+        return {
+          ...base,
+          ...defaultValues,
+          skills: toFormString(defaultValues.skills),
+          assigned_territories: toFormString(defaultValues.assigned_territories),
+        };
+      })(),
     });
 
     const firstErrorRef = useRef<HTMLDivElement | null>(null);
@@ -101,6 +126,8 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         reset((formValues) => ({
           ...formValues,
           ...defaultValues,
+          skills: toFormString(defaultValues.skills ?? formValues.skills),
+          assigned_territories: toFormString(defaultValues.assigned_territories ?? formValues.assigned_territories),
         }));
       }
     }, [defaultValues, reset]);
@@ -124,6 +151,32 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
       }
     }, [errors, isSubmitted]);
 
+    const watched = watch();
+    const employeeCurrentValues: Record<string, string> = {
+      name: toFormString(watched.name),
+      work_email: toFormString(watched.work_email),
+      job_title: toFormString(watched.job_title),
+      department: toFormString(watched.department),
+      employment_type: toFormString(watched.employment_type),
+      hire_date: toFormString(watched.hire_date),
+      work_phone: toFormString(watched.work_phone),
+      mobile_phone: toFormString(watched.mobile_phone),
+      street_address: toFormString(watched.street_address),
+      city: toFormString(watched.city),
+      state_province: toFormString(watched.state_province),
+      postal_code: toFormString(watched.postal_code),
+      country: toFormString(watched.country),
+      office_location: toFormString(watched.office_location),
+      timezone: toFormString(watched.timezone),
+      skills: toFormString(watched.skills),
+      assigned_territories: toFormString(watched.assigned_territories),
+      commission_tier: toFormString(watched.commission_tier),
+      birthday: toFormString(watched.birthday),
+      emergency_contact_name: toFormString(watched.emergency_contact_name),
+      emergency_contact_phone: toFormString(watched.emergency_contact_phone),
+      emergency_contact_relationship: toFormString(watched.emergency_contact_relationship),
+    };
+
     const handleFormSubmit = async (data: EmployeeFormData) => {
       await onSubmit(data);
     };
@@ -135,6 +188,19 @@ export const EmployeeForm = forwardRef<HTMLFormElement, EmployeeFormProps>(
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
+        <div className="flex justify-end">
+          <AIAssistFormButton
+            formType="employee"
+            currentValues={employeeCurrentValues}
+            onSuggest={(values) => {
+              Object.entries(values).forEach(([key, value]) => {
+                if (value !== undefined && value !== null)
+                  setValue(key as keyof EmployeeFormData, value);
+              });
+            }}
+            disabled={isLoading}
+          />
+        </div>
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Basic Information</h3>

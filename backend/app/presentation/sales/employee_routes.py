@@ -54,9 +54,8 @@ async def create_employee(
             # Organizational Structure
             job_title=request.job_title,
             department=request.department,
-            manager_id=request.manager_id,
             employment_type=request.employment_type,
-            hire_date=request.hire_date,
+            hire_date=request.hire_date.isoformat() if request.hire_date is not None else None,
 
             # Contact & Location
             work_phone=request.work_phone,
@@ -71,7 +70,7 @@ async def create_employee(
             commission_tier=request.commission_tier,
 
             # Personal (HR)
-            birthday=request.birthday,
+            birthday=request.birthday.isoformat() if request.birthday is not None else None,
             emergency_contact_name=request.emergency_contact_name,
             emergency_contact_phone=request.emergency_contact_phone,
             emergency_contact_relationship=request.emergency_contact_relationship,
@@ -151,9 +150,8 @@ async def update_employee(
             # Organizational Structure
             job_title=request.job_title,
             department=request.department,
-            manager_id=request.manager_id,
             employment_type=request.employment_type,
-            hire_date=request.hire_date,
+            hire_date=request.hire_date.isoformat() if request.hire_date is not None else None,
 
             # Contact & Location
             work_phone=request.work_phone,
@@ -168,7 +166,7 @@ async def update_employee(
             commission_tier=request.commission_tier,
 
             # Personal (HR)
-            birthday=request.birthday,
+            birthday=request.birthday.isoformat() if request.birthday is not None else None,
             emergency_contact_name=request.emergency_contact_name,
             emergency_contact_phone=request.emergency_contact_phone,
             emergency_contact_relationship=request.emergency_contact_relationship,

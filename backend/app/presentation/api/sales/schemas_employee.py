@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
 
 class EmployeeCreateRequest(BaseModel):
@@ -18,9 +18,8 @@ class EmployeeCreateRequest(BaseModel):
     # Organizational Structure
     job_title: Optional[str] = Field(None, description="Position title")
     department: Optional[str] = Field(None, description="Department name")
-    manager_id: Optional[str] = Field(None, description="Manager employee ID")
     employment_type: Optional[str] = Field(None, description="Full-time, Part-time, Contractor, etc.")
-    hire_date: Optional[date] = Field(None, description="Employment start date")
+    hire_date: Optional[date] = Field(None, description="Employment start date (YYYY-MM-DD or empty)")
     
     # Contact & Location
     work_phone: Optional[str] = Field(None, description="Office phone/extension")
@@ -35,7 +34,15 @@ class EmployeeCreateRequest(BaseModel):
     commission_tier: Optional[str] = Field(None, description="Commission plan identifier")
     
     # Personal (HR)
-    birthday: Optional[date] = Field(None, description="Birthday for celebrations")
+    birthday: Optional[date] = Field(None, description="Birthday for celebrations (YYYY-MM-DD or empty)")
+
+    @field_validator("hire_date", "birthday", mode="before")
+    @classmethod
+    def normalize_date_fields(cls, v: Any) -> Optional[date]:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        return v
+
     emergency_contact_name: Optional[str] = Field(None, description="Emergency contact name")
     emergency_contact_phone: Optional[str] = Field(None, description="Emergency contact phone")
     emergency_contact_relationship: Optional[str] = Field(None, description="Emergency contact relationship")
@@ -54,9 +61,8 @@ class EmployeeUpdateRequest(BaseModel):
     # Organizational Structure
     job_title: Optional[str] = Field(None, description="Position title")
     department: Optional[str] = Field(None, description="Department name")
-    manager_id: Optional[str] = Field(None, description="Manager employee ID")
     employment_type: Optional[str] = Field(None, description="Full-time, Part-time, Contractor, etc.")
-    hire_date: Optional[date] = Field(None, description="Employment start date")
+    hire_date: Optional[date] = Field(None, description="Employment start date (YYYY-MM-DD or empty)")
     
     # Contact & Location
     work_phone: Optional[str] = Field(None, description="Office phone/extension")
@@ -71,7 +77,15 @@ class EmployeeUpdateRequest(BaseModel):
     commission_tier: Optional[str] = Field(None, description="Commission plan identifier")
     
     # Personal (HR)
-    birthday: Optional[date] = Field(None, description="Birthday for celebrations")
+    birthday: Optional[date] = Field(None, description="Birthday for celebrations (YYYY-MM-DD or empty)")
+
+    @field_validator("hire_date", "birthday", mode="before")
+    @classmethod
+    def normalize_date_fields(cls, v: Any) -> Optional[date]:
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        return v
+
     emergency_contact_name: Optional[str] = Field(None, description="Emergency contact name")
     emergency_contact_phone: Optional[str] = Field(None, description="Emergency contact phone")
     emergency_contact_relationship: Optional[str] = Field(None, description="Emergency contact relationship")
@@ -92,7 +106,6 @@ class EmployeeResponse(BaseModel):
     # Organizational Structure
     job_title: Optional[str]
     department: Optional[str]
-    manager_id: Optional[str]
     employment_type: Optional[str]
     hire_date: Optional[date]
     
