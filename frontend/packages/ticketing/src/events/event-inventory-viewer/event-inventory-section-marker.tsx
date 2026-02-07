@@ -8,6 +8,41 @@ import Konva from "konva";
 import type { Section } from "../../layouts/types";
 import { parseShape, renderShape } from "./event-inventory-viewer-utils";
 
+/** Section status colors (no seats / default) */
+const GRAY_FILL = "#9ca3af";
+const GRAY_STROKE = "#6b7280";
+/** Sold */
+const BLUE_FILL = "#3b82f6";
+const BLUE_STROKE = "#2563eb";
+/** Reserved */
+const AMBER_FILL = "#f59e0b";
+const AMBER_STROKE = "#d97706";
+/** Held */
+const PURPLE_FILL = "#a855f7";
+const PURPLE_STROKE = "#9333ea";
+/** Blocked */
+const RED_FILL = "#ef4444";
+const RED_STROKE = "#dc2626";
+/** Available */
+const GREEN_FILL = "#10b981";
+const GREEN_STROKE = "#059669";
+/** Default shape config (used for "is default or empty" check) */
+const DEFAULT_SHAPE_FILL = "#60a5fa";
+const DEFAULT_SHAPE_STROKE = "#2563eb";
+/** Hover state (brighter variants) */
+const GRAY_HOVER_FILL = "#d1d5db";
+const BLUE_HOVER_FILL = "#60a5fa";
+const AMBER_HOVER_FILL = "#fbbf24";
+const PURPLE_HOVER_FILL = "#c084fc";
+const RED_HOVER_FILL = "#f87171";
+const GREEN_HOVER_FILL = "#34d399";
+const GREEN_HOVER_STROKE = "#10b981";
+/** Section name label */
+const LABEL_TEXT_FILL = "#1e293b";
+const LABEL_BACKGROUND_FILL = "rgba(255, 255, 255, 0.9)";
+const LABEL_BACKGROUND_STROKE = "#e2e8f0";
+const LABEL_SHADOW_COLOR = "rgba(0,0,0,0.2)";
+
 export interface SectionMarkerProps {
   section: Section;
   x: number;
@@ -46,18 +81,18 @@ export function SectionMarker({
   const [isHoveredState, setIsHoveredState] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
 
-  let statusColor = { fill: "#9ca3af", stroke: "#6b7280" };
+  let statusColor = { fill: GRAY_FILL, stroke: GRAY_STROKE };
   if (eventSeatCount > 0) {
     if (statusCounts["sold"] > 0) {
-      statusColor = { fill: "#3b82f6", stroke: "#2563eb" };
+      statusColor = { fill: BLUE_FILL, stroke: BLUE_STROKE };
     } else if (statusCounts["reserved"] > 0) {
-      statusColor = { fill: "#f59e0b", stroke: "#d97706" };
+      statusColor = { fill: AMBER_FILL, stroke: AMBER_STROKE };
     } else if (statusCounts["held"] > 0) {
-      statusColor = { fill: "#a855f7", stroke: "#9333ea" };
+      statusColor = { fill: PURPLE_FILL, stroke: PURPLE_STROKE };
     } else if (statusCounts["blocked"] > 0) {
-      statusColor = { fill: "#ef4444", stroke: "#dc2626" };
+      statusColor = { fill: RED_FILL, stroke: RED_STROKE };
     } else if (statusCounts["available"] > 0) {
-      statusColor = { fill: "#10b981", stroke: "#059669" };
+      statusColor = { fill: GREEN_FILL, stroke: GREEN_STROKE };
     }
   }
 
@@ -69,21 +104,51 @@ export function SectionMarker({
   const isDefaultOrEmpty = (v: string | undefined, d: string) =>
     !v ||
     v.toLowerCase().replace(/^#/, "") === d.toLowerCase().replace(/^#/, "");
-  const colors = {
-    fill: !isDefaultOrEmpty(configFill, "#60a5fa")
-      ? configFill!
-      : statusColor.fill,
-    stroke: !isDefaultOrEmpty(configStroke, "#2563eb")
-      ? configStroke!
-      : statusColor.stroke,
+  /** Colors from shape config; default or empty returns undefined */
+  const shapeCodeColors = {
+    fill: isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
+      ? undefined
+      : configFill!,
+    stroke: isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
+      ? undefined
+      : configStroke!,
   };
+  /** Brighter colors for mouse-over state */
+  const hoverColors = {
+    fill: !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
+      ? configFill!
+      : statusColor.fill === GRAY_FILL
+        ? GRAY_HOVER_FILL
+        : statusColor.fill === BLUE_FILL
+          ? BLUE_HOVER_FILL
+          : statusColor.fill === AMBER_FILL
+            ? AMBER_HOVER_FILL
+            : statusColor.fill === PURPLE_FILL
+              ? PURPLE_HOVER_FILL
+              : statusColor.fill === RED_FILL
+                ? RED_HOVER_FILL
+                : GREEN_HOVER_FILL,
+    stroke: !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
+      ? configStroke!
+      : statusColor.stroke === GRAY_STROKE
+        ? GRAY_FILL
+        : statusColor.stroke === BLUE_STROKE
+          ? BLUE_FILL
+          : statusColor.stroke === AMBER_STROKE
+            ? AMBER_FILL
+            : statusColor.stroke === PURPLE_STROKE
+              ? PURPLE_FILL
+              : statusColor.stroke === RED_STROKE
+                ? RED_FILL
+                : GREEN_HOVER_STROKE,
+  };
+  const isHover = isHovered || isHoveredState;
 
   const baseOpacity = 0.5;
   const hoverOpacity = 0.75;
-  const currentOpacity =
-    isHovered || isHoveredState ? hoverOpacity : baseOpacity;
+  const currentOpacity = isHover ? hoverOpacity : baseOpacity;
 
-  const strokeWidth = isHovered || isHoveredState ? 2.5 : 1.5;
+  const strokeWidth = isHover ? 2.5 : 1.5;
 
   useEffect(() => {
     const shapeGroup = shapeGroupRef.current;
@@ -112,13 +177,13 @@ export function SectionMarker({
     if (!text || hasShape) return;
 
     text.to({
-      fontSize: isHovered || isHoveredState ? 15 : 14,
-      shadowBlur: isHovered || isHoveredState ? 4 : 2,
+      fontSize: isHover ? 15 : 14,
+      shadowBlur: isHover ? 4 : 2,
       backgroundStrokeWidth: strokeWidth,
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isHoveredState, strokeWidth, hasShape]);
+  }, [isHover, strokeWidth, hasShape]);
 
   useEffect(() => {
     if (!isClicked) return;
@@ -186,11 +251,15 @@ export function SectionMarker({
           <Group ref={shapeGroupRef} opacity={currentOpacity}>
             {renderShape(
               parsedShape,
-              { fill: colors.fill, stroke: colors.stroke },
+              {
+                fill: shapeCodeColors.fill,
+                stroke: shapeCodeColors.stroke,
+              },
               imageWidth,
               imageHeight,
               strokeWidth,
-              1
+              1,
+              { hoverColors, isHover }
             )}
           </Group>
           <Text
@@ -198,7 +267,7 @@ export function SectionMarker({
             text={section.name}
             fontSize={10}
             fontFamily="Arial"
-            fill="#1e293b"
+            fill={LABEL_TEXT_FILL}
             padding={2}
             align="center"
             verticalAlign="middle"
@@ -206,8 +275,8 @@ export function SectionMarker({
             x={-24}
             y={8}
             width={48}
-            backgroundFill="rgba(255, 255, 255, 0.9)"
-            backgroundStroke="#e2e8f0"
+            backgroundFill={LABEL_BACKGROUND_FILL}
+            backgroundStroke={LABEL_BACKGROUND_STROKE}
             backgroundStrokeWidth={1}
             cornerRadius={2}
           />
@@ -218,18 +287,24 @@ export function SectionMarker({
           text={section.name}
           fontSize={14}
           fontFamily="Arial"
-          fill={isHovered || isHoveredState ? "#1e3a8a" : "#1e40af"}
+          // fill={isHovered || isHoveredState ? "#1e3a8a" : "#1e40af"}
           padding={8}
           align="center"
           verticalAlign="middle"
-          backgroundFill={colors.fill}
-          backgroundStroke={colors.stroke}
+          backgroundFill={
+            (isHover ? hoverColors.fill : shapeCodeColors.fill) ??
+            statusColor.fill
+          }
+          backgroundStroke={
+            (isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
+            statusColor.stroke
+          }
           backgroundStrokeWidth={strokeWidth}
           cornerRadius={4}
           x={-30}
           y={-10}
           shadowBlur={2}
-          shadowColor="rgba(0,0,0,0.2)"
+          shadowColor={LABEL_SHADOW_COLOR}
           opacity={currentOpacity}
         />
       )}

@@ -2,12 +2,7 @@
  * Event Inventory Viewer – shared helpers and shape rendering
  */
 
-import {
-  Circle,
-  Rect,
-  Ellipse,
-  Line,
-} from "react-konva";
+import { Circle, Rect, Ellipse, Line } from "react-konva";
 import type { EventSeatStatus } from "../types";
 import {
   PlacementShapeType,
@@ -81,7 +76,9 @@ export function getSeatStatusTransparency(status: EventSeatStatus): number {
   }
 }
 
-export function parseShape(shapeString?: string | null): PlacementShape | undefined {
+export function parseShape(
+  shapeString?: string | null
+): PlacementShape | undefined {
   if (!shapeString) return undefined;
   try {
     const parsed = JSON.parse(shapeString);
@@ -102,17 +99,25 @@ export function parseShape(shapeString?: string | null): PlacementShape | undefi
   return undefined;
 }
 
+export interface ShapeColors {
+  fill?: string;
+  stroke?: string;
+}
+
 export function renderShape(
   shape: PlacementShape | undefined,
-  colors: { fill: string; stroke: string },
+  colors: ShapeColors,
   imageWidth: number,
   imageHeight: number,
   strokeWidth: number = 2.5,
-  opacity: number = 1
+  opacity: number = 1,
+  options?: { hoverColors?: ShapeColors; isHover?: boolean }
 ) {
+  const activeColors =
+    options?.isHover && options?.hoverColors ? options.hoverColors : colors;
   const baseProps = {
-    fill: colors.fill,
-    stroke: colors.stroke,
+    fill: activeColors.fill || "transparent",
+    stroke: activeColors.stroke || "transparent",
     strokeWidth,
     opacity,
   };
