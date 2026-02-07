@@ -52,18 +52,28 @@ export function ImproveTextButton({
         size={isIconOnly ? "icon" : "sm"}
         disabled={disabled || loading || !value?.trim()}
         onClick={handleClick}
-        className={isIconOnly ? "size-8 shrink-0 rounded-full" : "gap-2"}
+        className={cn(
+          "group transition-all duration-200 ease-out",
+          "hover:border-primary/50 hover:bg-primary/5 hover:shadow-sm",
+          "active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          isIconOnly
+            ? "size-8 shrink-0 rounded-full hover:scale-105 active:scale-95 disabled:hover:scale-100"
+            : "gap-2"
+        )}
         aria-label={isIconOnly ? "Improve with AI" : undefined}
       >
         {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
         ) : (
-          <Sparkles className="h-4 w-4 text-blue-500" />
+          <Sparkles className="h-4 w-4 text-primary transition-transform duration-200 ease-out group-hover:rotate-12 group-hover:scale-110" />
         )}
         {!isIconOnly && (loading ? "Improving…" : label)}
       </Button>
       {error && (
-        <p className="text-xs text-destructive" role="alert">
+        <p
+          className="text-xs text-destructive animate-in fade-in-0 slide-in-from-top-1 duration-200"
+          role="alert"
+        >
           {error}
         </p>
       )}

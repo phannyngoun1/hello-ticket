@@ -144,6 +144,10 @@ class FormSuggestRequest(BaseModel):
         default=None,
         description="Optional hints per field for context",
     )
+    userPrompt: Optional[str] = Field(
+        default=None,
+        description="Optional instructions from the user to guide suggestions (e.g. tone, focus)",
+    )
 
 
 class FormSuggestResponse(BaseModel):
@@ -228,10 +232,13 @@ async def form_suggest(
             [f"- {schema.get(k, k)}: {v}" for k, v in filled.items()]
             + [f"- Hint for {schema.get(k, k)}: {v}" for k, v in hints.items() if v]
         ) or "No context yet."
+        user_instruction = ""
+        if body.userPrompt and body.userPrompt.strip():
+            user_instruction = f"\nUser instructions (follow these when suggesting): {body.userPrompt.strip()}\n"
         prompt = f"""Form type: {form_type}.
 Current values or hints:
 {context}
-
+{user_instruction}
 Suggest values for the form fields. Return a JSON object with field names as keys and suggested string values.
 Only include fields you can reasonably suggest. Use empty string for optional fields you leave blank.
 Field names must match exactly: {list(schema.keys())}.

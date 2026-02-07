@@ -21,6 +21,8 @@ export interface FormSuggestRequest {
   formType: string;
   currentValues?: Record<string, string>;
   fieldHints?: Record<string, string>;
+  /** Optional instructions from the user to guide suggestions (e.g. tone, focus). */
+  userPrompt?: string;
 }
 
 export interface FormSuggestResponse {

@@ -20,7 +20,7 @@ export interface UseAIAssistFormOptions {
 }
 
 export interface UseAIAssistFormResult {
-  suggest: () => Promise<Record<string, string>>;
+  suggest: (userPrompt?: string) => Promise<Record<string, string>>;
   loading: boolean;
   error: string | null;
 }
@@ -33,7 +33,7 @@ export function useAIAssistForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const suggest = useCallback(async (): Promise<Record<string, string>> => {
+  const suggest = useCallback(async (userPrompt?: string): Promise<Record<string, string>> => {
     setError(null);
     setLoading(true);
     try {
@@ -41,6 +41,7 @@ export function useAIAssistForm({
         formType,
         currentValues: currentValues ?? {},
         fieldHints,
+        userPrompt: userPrompt?.trim() || undefined,
       });
       return res.suggestedValues ?? {};
     } catch (e: unknown) {
