@@ -667,7 +667,7 @@ function SeatMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && (isPlacingSeats || isSelected)}
+        draggable={!readOnly && isPlacingSeats && isSelected}
         onDragStart={!readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined}
         onDragEnd={!readOnly ? (e) => onSeatDragEnd(seat.id, e) : undefined}
         onTransformEnd={!readOnly ? handleTransformEnd : undefined}
@@ -1081,7 +1081,7 @@ function SectionMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && (isPlacingSections || isSelected)}
+        draggable={!readOnly && isPlacingSections && isSelected}
         onDragStart={!readOnly && onSectionDragStart ? () => onSectionDragStart(section.id) : undefined}
         onDragEnd={!readOnly ? (e) => {
           if (!onSectionDragEnd) return;
