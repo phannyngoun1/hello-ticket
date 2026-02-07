@@ -4,7 +4,7 @@
  * Toolbox for selecting shape tools to draw on the canvas
  */
 
-import { Card } from "@truths/ui";
+import { Card, Input, Label } from "@truths/ui";
 import {
   Circle,
   Square,
@@ -33,6 +33,14 @@ export interface ShapeToolboxProps {
   onSectionView?: (section: SectionMarker) => void;
   onSeatDelete?: (seat: SeatMarker) => void;
   onSectionDelete?: (section: SectionMarker) => void;
+  onSeatShapeStyleChange?: (
+    seatId: string,
+    style: { fillColor?: string; strokeColor?: string }
+  ) => void;
+  onSectionShapeStyleChange?: (
+    sectionId: string,
+    style: { fillColor?: string; strokeColor?: string }
+  ) => void;
   className?: string;
   readOnly?: boolean;
 }
@@ -48,6 +56,8 @@ export function ShapeToolbox({
   onSectionView,
   onSeatDelete,
   onSectionDelete,
+  onSeatShapeStyleChange,
+  onSectionShapeStyleChange,
   className,
   readOnly = false,
 }: ShapeToolboxProps) {
@@ -105,9 +115,24 @@ export function ShapeToolbox({
         ? () => onSectionDelete(selectedSection)
         : undefined;
 
+  const markerShape = selectedSeat?.shape ?? selectedSection?.shape;
+  const onStyleChange =
+    selectedSeat && onSeatShapeStyleChange
+      ? (style: { fillColor?: string; strokeColor?: string }) =>
+          onSeatShapeStyleChange(selectedSeat.id, style)
+      : selectedSection && onSectionShapeStyleChange
+        ? (style: { fillColor?: string; strokeColor?: string }) =>
+            onSectionShapeStyleChange(selectedSection.id, style)
+        : undefined;
+  const showColorControls =
+    !readOnly &&
+    selectedMarker &&
+    onStyleChange &&
+    (selectedSeat || (selectedSection && selectedSection.shape));
+
   return (
     <Card className={cn("px-3 py-2.5", className)}>
-      <div className="flex items-center gap-3 justify-between w-full">
+      <div className="flex items-center gap-3 flex-wrap w-full">
         <div className="flex items-center gap-2">
           <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             Shapes:
@@ -160,9 +185,63 @@ export function ShapeToolbox({
           </div>
         </div>
 
-        {/* Selected marker name with view, edit and delete actions - shown on the right */}
+        {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
+        {showColorControls && (
+          <div className="flex items-center gap-2 border-l pl-2.5">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground shrink-0 w-7">Fill</Label>
+              <input
+                type="color"
+                aria-label="Fill color"
+                title="Fill color"
+                value={markerShape?.fillColor?.trim() || "#60a5fa"}
+                onChange={(e) =>
+                  onStyleChange?.({ fillColor: e.target.value })
+                }
+                className="h-6 w-7 cursor-pointer rounded border shrink-0"
+              />
+              <Input
+                className="h-6 w-16 font-mono text-[11px] py-0 px-1 min-w-0"
+                placeholder="#rrggbb"
+                aria-label="Fill color hex"
+                value={markerShape?.fillColor?.trim() || ""}
+                onChange={(e) =>
+                  onStyleChange?.({
+                    fillColor: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground shrink-0 w-12">Border</Label>
+              <input
+                type="color"
+                aria-label="Border color"
+                title="Border color"
+                value={markerShape?.strokeColor?.trim() || "#2563eb"}
+                onChange={(e) =>
+                  onStyleChange?.({ strokeColor: e.target.value })
+                }
+                className="h-6 w-7 cursor-pointer rounded border shrink-0"
+              />
+              <Input
+                className="h-6 w-16 font-mono text-[11px] py-0 px-1 min-w-0"
+                placeholder="#rrggbb"
+                aria-label="Border color hex"
+                value={markerShape?.strokeColor?.trim() || ""}
+                onChange={(e) =>
+                  onStyleChange?.({
+                    strokeColor: e.target.value || undefined,
+                  })
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Selected marker name with view, edit and delete actions */}
         {selectedMarker && markerName && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 ml-auto">
             <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
               {markerName}
             </span>

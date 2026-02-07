@@ -412,7 +412,12 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
             if (!seat.x_coordinate || !seat.y_coordinate) return null;
             const x = (seat.x_coordinate / 100) * containerSize.width;
             const y = (seat.y_coordinate / 100) * containerSize.height;
-            const colors = getSeatColor(seat.seat_type);
+            const fill = seat.parsedShape?.fillColor?.trim();
+            const stroke = seat.parsedShape?.strokeColor?.trim();
+            const colors =
+              fill && stroke
+                ? { fill, stroke }
+                : getSeatColor(seat.seat_type);
 
             return (
               <Group key={seat.id} x={x} y={y}>

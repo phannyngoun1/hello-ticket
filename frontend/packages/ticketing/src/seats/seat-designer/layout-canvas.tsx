@@ -881,6 +881,7 @@ interface SectionMarkerComponentProps {
   disableHoverAnimation?: boolean;
   onSectionDragStart?: (sectionId: string) => void;
   useLowDetail?: boolean;
+  colors: { fill: string; stroke: string };
 }
 
 function SectionMarkerComponent({
@@ -903,6 +904,7 @@ function SectionMarkerComponent({
   disableHoverAnimation = false,
   onSectionDragStart,
   useLowDetail = false,
+  colors,
 }: SectionMarkerComponentProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -1062,17 +1064,14 @@ function SectionMarkerComponent({
     const shapeNode = shapeRef.current;
     if (!shapeNode || !isPlacingSections || isSelected) return;
 
-    // Change border color and width on hover - more visible
-    const hoverStrokeColor = isHovered ? "#1e40af" : "#3b82f6";
     const hoverStrokeWidth = isHovered ? 2.5 : 2;
-
     shapeNode.to({
-      stroke: hoverStrokeColor,
+      stroke: colors.stroke,
       strokeWidth: hoverStrokeWidth,
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected, isPlacingSections, disableHoverAnimation]);
+  }, [isHovered, isSelected, isPlacingSections, disableHoverAnimation, colors.stroke]);
 
   return (
     <>
@@ -1150,8 +1149,8 @@ function SectionMarkerComponent({
             {useLowDetail ? (
               <Circle
                 radius={4}
-                fill="#60a5fa"
-                stroke={isSelected ? "#1e40af" : "#2563eb"}
+                fill={colors.fill}
+                stroke={colors.stroke}
                 strokeWidth={1}
                 opacity={isSelected ? 0.5 : 0.35}
                 perfectDrawEnabled={false}
@@ -1159,8 +1158,8 @@ function SectionMarkerComponent({
             ) : (
               <ShapeRenderer
                 shape={shape}
-                fill="#60a5fa"
-                stroke={isSelected ? "#1e40af" : "#2563eb"}
+                fill={colors.fill}
+                stroke={colors.stroke}
                 strokeWidth={isSelected ? 2.5 : 2}
                 imageWidth={imageWidth}
                 imageHeight={imageHeight}
@@ -1173,11 +1172,12 @@ function SectionMarkerComponent({
         {!section.shape && (
           <Circle
             radius={isSelected ? 12 : 10}
-            fill="rgba(96, 165, 250, 0.35)"
-            stroke={isSelected ? "#1e40af" : "#2563eb"}
+            fill={colors.fill}
+            stroke={colors.stroke}
             strokeWidth={isSelected ? 2.5 : 2}
             x={0}
             y={0}
+            opacity={isSelected ? 0.5 : 0.35}
           />
         )}
       </Group>
@@ -1542,6 +1542,22 @@ export function LayoutCanvas({
       default:
         return { fill: "#60a5fa", stroke: "#2563eb" }; // vibrant blue (instead of gray)
     }
+  };
+
+  // Use shape fill/stroke when both set, otherwise type-based seat color
+  const getSeatMarkerColors = (seat: SeatMarker) => {
+    const fill = seat.shape?.fillColor?.trim();
+    const stroke = seat.shape?.strokeColor?.trim();
+    if (fill && stroke) return { fill, stroke };
+    return getSeatColor(seat.seat.seatType);
+  };
+
+  // Use shape fill/stroke when both set, otherwise default section blue
+  const getSectionMarkerColors = (section: SectionMarker) => {
+    const fill = section.shape?.fillColor?.trim();
+    const stroke = section.shape?.strokeColor?.trim();
+    if (fill && stroke) return { fill, stroke };
+    return { fill: "#60a5fa", stroke: "#2563eb" };
   };
 
   // Convert percentage coordinates to Konva stage coordinates
@@ -2409,7 +2425,7 @@ export function LayoutCanvas({
       <Layer {...layerTransform} listening={true}>
         {staticSeats.map((seat) => {
           const { x, y } = percentageToStage(seat.x, seat.y);
-          const colors = getSeatColor(seat.seat.seatType);
+          const colors = getSeatMarkerColors(seat);
           return (
             <MemoizedSeatMarkerComponent
               key={seat.id}
@@ -2455,6 +2471,7 @@ export function LayoutCanvas({
                 onSectionDragStart={handleSectionDragStart}
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
+                colors={getSectionMarkerColors(section)}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
                 readOnly={readOnly}
@@ -2491,7 +2508,7 @@ export function LayoutCanvas({
           <>
             {(() => {
               const { x, y } = percentageToStage(selectedSeat.x, selectedSeat.y);
-              const colors = getSeatColor(selectedSeat.seat.seatType);
+              const colors = getSeatMarkerColors(selectedSeat);
               return (
                 <MemoizedSeatMarkerComponent
                   key={selectedSeat.id}
@@ -2543,6 +2560,7 @@ export function LayoutCanvas({
                   onSectionDragStart={handleSectionDragStart}
                   selectedShapeTool={selectedShapeTool}
                   onShapeTransform={onSectionShapeTransform}
+                  colors={getSectionMarkerColors(selectedSection)}
                   imageWidth={displayedWidth}
                   imageHeight={displayedHeight}
                   readOnly={readOnly}
@@ -2559,7 +2577,7 @@ export function LayoutCanvas({
         {draggedSeat && (
           (() => {
             const { x, y } = percentageToStage(draggedSeat.x, draggedSeat.y);
-            const colors = getSeatColor(draggedSeat.seat.seatType);
+            const colors = getSeatMarkerColors(draggedSeat);
             return (
               <MemoizedSeatMarkerComponent
                 key={draggedSeat.id}
@@ -2610,6 +2628,7 @@ export function LayoutCanvas({
                   onSectionDragStart={handleSectionDragStart}
                   selectedShapeTool={selectedShapeTool}
                   onShapeTransform={onSectionShapeTransform}
+                  colors={getSectionMarkerColors(draggedSection)}
                   imageWidth={displayedWidth}
                   imageHeight={displayedHeight}
                   readOnly={readOnly}

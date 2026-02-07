@@ -1767,6 +1767,73 @@ export function SeatDesigner({
     []
   );
 
+  const handleSeatShapeStyleChange = useCallback(
+    (seatId: string, style: { fillColor?: string; strokeColor?: string }) => {
+      setSeats((prev) =>
+        prev.map((s) =>
+          s.id === seatId
+            ? {
+                ...s,
+                shape: {
+                  ...(s.shape || {
+                    type: PlacementShapeType.CIRCLE,
+                    radius: 1.2,
+                  }),
+                  ...style,
+                } as PlacementShape,
+              }
+            : s
+        )
+      );
+      setViewingSeat((prev) =>
+        prev && prev.id === seatId
+          ? {
+              ...prev,
+              shape: {
+                ...(prev.shape || {
+                  type: PlacementShapeType.CIRCLE,
+                  radius: 1.2,
+                }),
+                ...style,
+              } as PlacementShape,
+            }
+          : prev
+      );
+    },
+    []
+  );
+
+  const handleSectionShapeStyleChange = useCallback(
+    (
+      sectionId: string,
+      style: { fillColor?: string; strokeColor?: string }
+    ) => {
+      const mergeSectionShape = (
+        existing: PlacementShape | undefined
+      ): PlacementShape => ({
+        ...(existing || {
+          type: PlacementShapeType.RECTANGLE,
+          width: 3,
+          height: 2,
+        }),
+        ...style,
+      } as PlacementShape);
+      setSectionMarkers((prev) =>
+        prev.map((s) =>
+          s.id === sectionId
+            ? { ...s, shape: mergeSectionShape(s.shape) }
+            : s
+        )
+      );
+      setSelectedSectionMarker((prev) =>
+        prev && prev.id === sectionId
+          ? { ...prev, shape: mergeSectionShape(prev.shape) }
+          : prev
+      );
+    },
+    []
+  );
+
   const handleSaveSectionForm = sectionForm.handleSubmit((data) => {
     const name = data.name.trim() || "Section";
 
@@ -2561,6 +2628,8 @@ export function SeatDesigner({
                 }
                 onSeatDelete={handleDeleteSeat}
                 onSectionDelete={handleDeleteSection}
+                onSeatShapeStyleChange={handleSeatShapeStyleChange}
+                onSectionShapeStyleChange={handleSectionShapeStyleChange}
                 readOnly={readOnly}
               />
             </>
@@ -2600,6 +2669,8 @@ export function SeatDesigner({
                   onSectionView={handleSectionView}
                   onSeatDelete={handleDeleteSeat}
                   onSectionDelete={handleDeleteSection}
+                  onSeatShapeStyleChange={handleSeatShapeStyleChange}
+                  onSectionShapeStyleChange={handleSectionShapeStyleChange}
                   readOnly={readOnly}
                 />
               )}

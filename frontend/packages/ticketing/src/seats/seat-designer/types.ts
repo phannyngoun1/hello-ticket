@@ -30,6 +30,9 @@ export interface PlacementShape {
   points?: number[]; // Array of [x, y] pairs as percentages (for polygon/freeform)
   rotation?: number; // Rotation in degrees
   cornerRadius?: number; // For rounded rectangles
+  // Optional style (when set, used in maker and view mode; otherwise type-based/default colors)
+  fillColor?: string; // e.g. hex #rrggbb
+  strokeColor?: string; // Border color
 }
 
 export interface SeatDesignerProps {
