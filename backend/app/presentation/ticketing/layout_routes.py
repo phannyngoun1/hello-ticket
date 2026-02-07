@@ -6,6 +6,7 @@ from app.application.ticketing.commands_layout import (
     CreateLayoutCommand,
     UpdateLayoutCommand,
     DeleteLayoutCommand,
+    CloneLayoutCommand,
 )
 from app.application.ticketing.queries_layout import (
     GetLayoutByIdQuery,
@@ -121,6 +122,32 @@ async def get_layout(
                 image_url = file_upload.url
         
         return TicketingApiMapper.layout_to_response(layout, image_url=image_url)
+    except NotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{layout_id}/clone", response_model=LayoutResponse, status_code=201)
+async def clone_layout(
+    layout_id: str,
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    mediator: Mediator = Depends(get_mediator_dependency),
+    file_upload_repo: FileUploadRepository = Depends(get_file_upload_repository),
+):
+    """Clone a layout with all its sections and seats."""
+
+    try:
+        set_tenant_context(current_user.tenant_id)
+        layout = await mediator.send(CloneLayoutCommand(layout_id=layout_id))
+
+        image_url = None
+        if layout.file_id:
+            file_upload = await file_upload_repo.get_by_id(layout.file_id)
+            if file_upload:
+                image_url = file_upload.url
+
+        return TicketingApiMapper.layout_to_response(layout, image_url=image_url)
+    except (BusinessRuleError, ValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 

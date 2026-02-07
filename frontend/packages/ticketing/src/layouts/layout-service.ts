@@ -122,6 +122,20 @@ export class LayoutService {
     }
   }
 
+  async cloneLayout(layoutId: string): Promise<Layout> {
+    try {
+      const response = await this.apiClient.post<LayoutDTO>(
+        `${this.endpoints.layouts}/${layoutId}/clone`,
+        {},
+        { requiresAuth: true }
+      );
+      return transformLayout(response);
+    } catch (error) {
+      console.error(`Error cloning layout ${layoutId}:`, error);
+      throw error;
+    }
+  }
+
   async fetchLayoutWithSeats(id: string): Promise<{
     layout: Layout;
     seats: Seat[];

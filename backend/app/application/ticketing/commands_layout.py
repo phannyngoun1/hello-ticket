@@ -29,3 +29,10 @@ class DeleteLayoutCommand:
     """Command to remove a layout (soft-delete only)"""
 
     layout_id: str
+
+
+@dataclass
+class CloneLayoutCommand:
+    """Command to clone a layout with all its sections and seats."""
+
+    layout_id: str

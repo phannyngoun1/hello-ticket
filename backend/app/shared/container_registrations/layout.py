@@ -32,25 +32,23 @@ def register_layout_container(container: Container) -> None:
     # Get Venue repository for Layout handlers
     venue_repository = container.resolve(VenueRepository)
     
-    # Register Layout command handler
-    layout_command_handler = LayoutCommandHandler(
-        layout_repository=layout_repository,
-        venue_repository=venue_repository
-    )
-    container.register(LayoutCommandHandler, instance=layout_command_handler)
-    
-    # Register Layout query handler
-    # Note: SeatRepository is created here since layout container is registered before seat container
-    # The seat container will reuse this instance
+    # Resolve or create SeatRepository for clone (sections + seats)
     from app.infrastructure.ticketing.seat_repository import SQLSeatRepository
     try:
-        # Try to resolve SeatRepository (in case it was already registered)
         seat_repository = container.resolve(SeatRepository)
     except Exception:
-        # If not registered yet, create and register it
         seat_repository = SQLSeatRepository()
         container.register(SeatRepository, instance=seat_repository)
     
+    # Register Layout command handler
+    layout_command_handler = LayoutCommandHandler(
+        layout_repository=layout_repository,
+        venue_repository=venue_repository,
+        seat_repository=seat_repository,
+    )
+    container.register(LayoutCommandHandler, instance=layout_command_handler)
+    
+    # Register Layout query handler (reuse seat_repository from above)
     layout_query_handler = LayoutQueryHandler(
         layout_repository=layout_repository,
         seat_repository=seat_repository
@@ -69,6 +67,7 @@ def register_layout_mediator(mediator: Mediator) -> None:
         CreateLayoutCommand,
         UpdateLayoutCommand,
         DeleteLayoutCommand,
+        CloneLayoutCommand,
     )
     from app.application.ticketing.queries_layout import (
         GetLayoutByIdQuery,
@@ -80,6 +79,7 @@ def register_layout_mediator(mediator: Mediator) -> None:
     mediator.register_command_handler(CreateLayoutCommand, LayoutCommandHandler)
     mediator.register_command_handler(UpdateLayoutCommand, LayoutCommandHandler)
     mediator.register_command_handler(DeleteLayoutCommand, LayoutCommandHandler)
+    mediator.register_command_handler(CloneLayoutCommand, LayoutCommandHandler)
     
     # Register Layout query handlers
     mediator.register_query_handler(GetLayoutByIdQuery, LayoutQueryHandler)
