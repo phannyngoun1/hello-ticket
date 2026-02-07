@@ -16,6 +16,7 @@ import {
   Textarea,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
+import { ImproveTextButton } from "@truths/custom-ui";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const organizerFormSchema = z
@@ -61,6 +62,8 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
     const {
       register,
       handleSubmit,
+      watch,
+      setValue,
       formState: { errors, isSubmitted },
     } = useForm<OrganizerFormData>({
       resolver: zodResolver(organizerFormSchema),
@@ -277,13 +280,21 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
 
              <Field data-invalid={!!errors.description}>
                 <FieldLabel htmlFor="description">Description</FieldLabel>
-                <Textarea
-                    id="description"
-                    placeholder="Enter description"
-                    {...register("description")}
-                    disabled={isLoading}
-                    className={cn(errors.description && "border-destructive")}
-                />
+                <div className="flex gap-2 items-start">
+                    <Textarea
+                        id="description"
+                        placeholder="Enter description"
+                        {...register("description")}
+                        disabled={isLoading}
+                        className={cn("flex-1 min-w-0", errors.description && "border-destructive")}
+                    />
+                    <ImproveTextButton
+                        value={watch("description") ?? ""}
+                        onImproved={(text) => setValue("description", text)}
+                        disabled={isLoading}
+                        className="shrink-0"
+                    />
+                </div>
                 <FieldError>{errors.description?.message}</FieldError>
             </Field>
         </div>

@@ -16,6 +16,7 @@ import {
 } from "react-hook-form";
 import { Textarea, Field, FieldLabel, FieldError } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
+import { ImproveTextButton } from "../../ai";
 
 export interface TextareaInputFieldProps<
   TFieldValues extends FieldValues = FieldValues,
@@ -84,6 +85,11 @@ export interface TextareaInputFieldProps<
    * Custom error message override
    */
   errorMessage?: string;
+
+  /**
+   * Show "Improve with AI" button next to the textarea
+   */
+  showImproveButton?: boolean;
 }
 
 /**
@@ -107,6 +113,7 @@ export function TextareaInputField<
   helperText,
   className,
   errorMessage,
+  showImproveButton = false,
   control: controlProp,
 }: TextareaInputFieldProps<TFieldValues>) {
   let control: Control<TFieldValues>;
@@ -139,27 +146,40 @@ export function TextareaInputField<
         name={name}
         control={control}
         render={({ field }) => (
-          <Textarea
-            {...field}
-            id={name}
-            placeholder={placeholder}
-            disabled={disabled}
-            readOnly={readOnly}
-            rows={rows}
-            maxLength={maxLength}
-            minLength={minLength}
-            className={cn(
-              hasError && "border-destructive",
-              readOnly && "cursor-not-allowed bg-muted text-muted-foreground",
-              className
-            )}
-            aria-invalid={hasError}
-            aria-describedby={
-              displayError || helperText
-                ? `${name}-${displayError ? "error" : "helper"}`
-                : undefined
-            }
-          />
+          <div className="space-y-2">
+            <div className="flex gap-2 items-start">
+              <Textarea
+                {...field}
+                id={name}
+                placeholder={placeholder}
+                disabled={disabled}
+                readOnly={readOnly}
+                rows={rows}
+                maxLength={maxLength}
+                minLength={minLength}
+                className={cn(
+                  "flex-1 min-w-0",
+                  hasError && "border-destructive",
+                  readOnly && "cursor-not-allowed bg-muted text-muted-foreground",
+                  className
+                )}
+                aria-invalid={hasError}
+                aria-describedby={
+                  displayError || helperText
+                    ? `${name}-${displayError ? "error" : "helper"}`
+                    : undefined
+                }
+              />
+              {showImproveButton && !readOnly && (
+                <ImproveTextButton
+                  value={field.value ?? ""}
+                  onImproved={field.onChange}
+                  disabled={disabled}
+                  className="shrink-0"
+                />
+              )}
+            </div>
+          </div>
         )}
       />
       {helperText && !displayError && (

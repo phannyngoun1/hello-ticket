@@ -13,6 +13,7 @@ import {
   NumberInputField,
   DateTimeInputField,
   SelectInputField,
+  AIAssistFormButton,
 } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
 import { EventStatus, EventConfigurationType } from "./types";
@@ -82,6 +83,7 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
 
     const {
       watch,
+      setValue,
       handleSubmit,
       formState: { errors, isSubmitted },
     } = methods;
@@ -141,6 +143,16 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
       },
     ];
 
+    const eventCurrentValues: Record<string, string> = {
+      title: watch("title") ?? "",
+      start_dt: watch("start_dt") ?? "",
+      duration_minutes: String(watch("duration_minutes") ?? ""),
+      venue_id: watch("venue_id") ?? "",
+      layout_id: watch("layout_id") ?? "",
+      status: watch("status") ?? "",
+      configuration_type: watch("configuration_type") ?? "",
+    };
+
     return (
       <FormProvider {...methods}>
         <form
@@ -149,6 +161,23 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
           className={cn("space-y-6")}
           noValidate
         >
+        <div className="flex justify-end">
+          <AIAssistFormButton
+            formType="event"
+            currentValues={eventCurrentValues}
+            onSuggest={(values) => {
+              Object.entries(values).forEach(([key, value]) => {
+                if (value === undefined || value === null) return;
+                if (key === "duration_minutes") {
+                  setValue(key, Number(value) || 0);
+                } else {
+                  setValue(key as keyof EventFormData, value);
+                }
+              });
+            }}
+            disabled={isLoading}
+          />
+        </div>
         <div ref={firstErrorRef} />
 
         <TextInputField

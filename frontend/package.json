@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@radix-ui/react-context-menu": "^2.2.16",
-    "@tanstack/react-virtual": "^3.13.12"
+    "@tanstack/react-virtual": "^3.13.12",
+    "jsqr": "^1.4.0"
   }
 }

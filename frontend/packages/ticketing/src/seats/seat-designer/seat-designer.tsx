@@ -21,8 +21,10 @@ import { seatService } from "../seat-service";
 import { sectionService } from "../../sections/section-service";
 import { SeatType } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ApiError } from "@truths/api";
 import { uploadService } from "@truths/shared";
 import { ConfirmationDialog } from "@truths/custom-ui";
+import { detectMarkers } from "../../ai/detect-markers";
 import { toast } from "@truths/ui";
 import { LayoutCanvas } from "./layout-canvas";
 import Konva from "konva";
@@ -102,6 +104,7 @@ export function SeatDesigner({
   const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  const [isDetectingSections, setIsDetectingSections] = useState(false);
   // Store coordinates when clicking to place a section (pending section creation)
   const [pendingSectionCoordinates, setPendingSectionCoordinates] = useState<{
     x: number;
@@ -923,6 +926,58 @@ export function SeatDesigner({
     }
     setSelectedSeat(null);
   };
+
+  // Detect sections from floor plan image via AI
+  const handleDetectSections = useCallback(async () => {
+    if (!mainImageUrl) return;
+    setIsDetectingSections(true);
+    try {
+      const url = mainImageUrl.startsWith("http") ? mainImageUrl : `${window.location.origin}${mainImageUrl}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to load image");
+      const blob = await res.blob();
+      const file = new File([blob], "floor-plan.png", { type: blob.type || "image/png" });
+      const data = await detectMarkers(file);
+      const newMarkers: SectionMarker[] = (data.sections || []).map((s, i) => {
+        const shapeType =
+          s.shape.type === "ellipse"
+            ? PlacementShapeType.ELLIPSE
+            : s.shape.type === "polygon"
+              ? PlacementShapeType.POLYGON
+              : PlacementShapeType.RECTANGLE;
+        const shape: PlacementShape = {
+          type: shapeType,
+          width: s.shape.width,
+          height: s.shape.height,
+        };
+        return {
+          id: `detected-${Date.now()}-${i}`,
+          name: s.name,
+          x: s.shape.x,
+          y: s.shape.y,
+          isNew: true,
+          shape,
+        };
+      });
+      if (newMarkers.length > 0) {
+        setSectionMarkers((prev) => [...prev, ...newMarkers]);
+        toast.success(`Added ${newMarkers.length} suggested section(s). You can move or edit them.`);
+      } else {
+        toast.info("No sections detected. Try a clearer floor plan image.");
+      }
+    } catch (err) {
+      console.error("Detect sections failed:", err);
+      if (err instanceof ApiError && err.status === 503) {
+        toast.error(
+          "AI section detection is not available. The server is not configured for AI features. Please contact your administrator."
+        );
+      } else {
+        toast.error(err instanceof Error ? err.message : "Failed to detect sections");
+      }
+    } finally {
+      setIsDetectingSections(false);
+    }
+  }, [mainImageUrl]);
 
   // Clear seats in current section (for section detail view)
   const handleClearSectionSeats = () => {
@@ -2754,6 +2809,8 @@ export function SeatDesigner({
             isPlacingSections={isPlacingSections}
             onClearAllPlacements={handleClearAllPlacements}
             onMainImageSelect={handleMainImageSelect}
+            onDetectSections={designMode === "section-level" ? handleDetectSections : undefined}
+            isDetectingSections={isDetectingSections}
           />
 
           <div className="space-y-4">

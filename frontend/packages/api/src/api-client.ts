@@ -165,8 +165,10 @@ export async function apiClient<T>(
     const url = `${API_CONFIG.BASE_URL}${endpoint}`
 
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
         ...fetchOptions.headers as Record<string, string>,
+    }
+    if (!(fetchOptions.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json'
     }
 
     if (requiresAuth) {
@@ -309,5 +311,12 @@ export const api = {
 
     delete: <T>(endpoint: string, options?: RequestOptions) =>
         apiClient<T>(endpoint, { ...options, method: 'DELETE' }),
+
+    postForm: <T>(endpoint: string, formData: FormData, options?: RequestOptions) =>
+        apiClient<T>(endpoint, {
+            ...options,
+            method: 'POST',
+            body: formData,
+        }),
 }
 

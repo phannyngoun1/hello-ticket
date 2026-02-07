@@ -1,6 +1,7 @@
 """
 API Mapper for EventSeat module.
 """
+from datetime import datetime
 from typing import Optional
 from app.domain.ticketing.event_seat import EventSeat
 from app.presentation.api.ticketing.schemas_event_seat import EventSeatResponse
@@ -11,14 +12,15 @@ class EventSeatApiMapper:
 
     @staticmethod
     def to_response(
-        seat: EventSeat, 
-        ticket_number: Optional[str] = None, 
+        seat: EventSeat,
+        ticket_number: Optional[str] = None,
         ticket_price: Optional[float] = None,
-        ticket_status: Optional[str] = None
+        ticket_status: Optional[str] = None,
+        ticket_scanned_at: Optional[datetime] = None,
     ) -> EventSeatResponse:
         """Convert domain EventSeat to EventSeatResponse schema"""
         from app.shared.enums import TicketStatusEnum
-        
+
         # Convert ticket_status string to enum if provided
         ticket_status_enum = None
         if ticket_status:
@@ -26,7 +28,7 @@ class EventSeatApiMapper:
                 ticket_status_enum = TicketStatusEnum(ticket_status)
             except (ValueError, TypeError):
                 pass
-        
+
         return EventSeatResponse(
             id=seat.id,
             tenant_id=seat.tenant_id,
@@ -42,5 +44,6 @@ class EventSeatApiMapper:
             updated_at=seat.updated_at,
             ticket_number=ticket_number,
             ticket_price=ticket_price,
-            ticket_status=ticket_status_enum
+            ticket_status=ticket_status_enum,
+            ticket_scanned_at=ticket_scanned_at,
         )

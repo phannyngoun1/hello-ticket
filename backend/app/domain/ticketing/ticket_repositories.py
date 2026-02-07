@@ -18,6 +18,16 @@ class TicketRepository(ABC):
         pass
 
     @abstractmethod
+    async def get_by_barcode(self, tenant_id: str, barcode: str) -> Optional[Ticket]:
+        """Get ticket by barcode"""
+        pass
+
+    @abstractmethod
+    async def get_by_qr_code(self, tenant_id: str, qr_code: str) -> Optional[Ticket]:
+        """Get ticket by QR code"""
+        pass
+
+    @abstractmethod
     async def get_by_event_seat(self, tenant_id: str, event_seat_id: str) -> Optional[Ticket]:
         """Get ticket by event seat ID"""
         pass

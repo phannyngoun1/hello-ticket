@@ -22,6 +22,7 @@ from app.presentation.core import (
     workflow_router,
     external_api_router,
     upload_router,
+    ai_router,
 )
 from app.presentation.sales import sales_router
 from app.presentation.shared.dependencies import get_mediator_dependency    
@@ -46,6 +47,7 @@ ROUTERS = [
     api_key_router,
     external_api_router,
     upload_router,  # File upload management
+    ai_router,  # AI: form suggest, improve text, marker detection
     cache_router,
     audit_router,  # Audit logs and user activity
     user_preferences_router,  # User preferences management

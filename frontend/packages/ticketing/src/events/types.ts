@@ -48,6 +48,7 @@ export interface EventSeat {
   ticket_number?: string;
   ticket_price?: number;  // Ticket price
   ticket_status?: string;  // Ticket status (AVAILABLE, RESERVED, CONFIRMED, etc.)
+  ticket_scanned_at?: string | null;  // ISO datetime when ticket was scanned
 }
 
 export interface BrokerSeatImportItem {

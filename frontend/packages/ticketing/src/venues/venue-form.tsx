@@ -22,6 +22,7 @@ import {
   Separator,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
+import { ImproveTextButton, AIAssistFormButton } from "@truths/custom-ui";
 import { VenueTypeContext } from "../venue-types/venue-type-provider";
 import { useVenueType } from "../venue-types/use-venue-types";
 
@@ -164,6 +165,20 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
       await onSubmit(transformedData);
     };
 
+    const venueCurrentValues: Record<string, string> = {
+      name: watch("name") ?? "",
+      description: watch("description") ?? "",
+      venue_type: watch("venue_type") ?? "",
+      street_address: watch("street_address") ?? "",
+      city: watch("city") ?? "",
+      state_province: watch("state_province") ?? "",
+      postal_code: watch("postal_code") ?? "",
+      country: watch("country") ?? "",
+      phone: watch("phone") ?? "",
+      email: watch("email") ?? "",
+      website: watch("website") ?? "",
+    };
+
     return (
       <form
         ref={ref}
@@ -171,6 +186,18 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
+        <div className="flex justify-end">
+          <AIAssistFormButton
+            formType="venue"
+            currentValues={venueCurrentValues}
+            onSuggest={(values) => {
+              Object.entries(values).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) setValue(key as keyof VenueFormInputData, value);
+              });
+            }}
+            disabled={isLoading}
+          />
+        </div>
         {/* Basic Information Section */}
         <div ref={firstErrorRef} className="space-y-4">
           <h3 className="text-base font-semibold">Basic Information</h3>
@@ -217,14 +244,22 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
 
           <Field data-invalid={!!errors.description}>
             <FieldLabel htmlFor="description">Description</FieldLabel>
-            <Textarea
-              id="description"
-              placeholder="Venue description"
-              {...register("description")}
-              disabled={isLoading}
-              rows={3}
-              className={cn(errors.description && "border-destructive")}
-            />
+            <div className="flex gap-2 items-start">
+              <Textarea
+                id="description"
+                placeholder="Venue description"
+                {...register("description")}
+                disabled={isLoading}
+                rows={3}
+                className={cn("flex-1 min-w-0", errors.description && "border-destructive")}
+              />
+              <ImproveTextButton
+                value={watch("description") ?? ""}
+                onImproved={(text) => setValue("description", text)}
+                disabled={isLoading}
+                className="shrink-0"
+              />
+            </div>
             <FieldError>{errors.description?.message}</FieldError>
           </Field>
         </div>

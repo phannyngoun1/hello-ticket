@@ -36,6 +36,8 @@ from app.presentation.api.ticketing.schemas_event_seat import (
     EventSeatResponse,
     EventSeatListResponse,
     EventSeatStatisticsResponse,
+    ScanTicketRequest,
+    ScanTicketResponse,
 )
 from app.presentation.api.ticketing.mapper_event_seat import EventSeatApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
@@ -44,6 +46,8 @@ from app.shared.mediator import Mediator
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
 from app.shared.container import container
 from app.domain.ticketing.ticket_repositories import TicketRepository
+from app.domain.ticketing.event_seat_repositories import EventSeatRepository
+from app.shared.enums import TicketStatusEnum
 from app.shared.tenant_context import set_tenant_context
 
 # Permission constants
@@ -243,7 +247,8 @@ async def list_event_seats(
                 seat,
                 ticket_number=ticket.ticket_number if ticket else None,
                 ticket_price=ticket.price if ticket else None,
-                ticket_status=ticket.status.value if ticket else None
+                ticket_status=ticket.status.value if ticket else None,
+                ticket_scanned_at=ticket.scanned_at if ticket else None,
             ))
         
         return EventSeatListResponse(
@@ -375,3 +380,49 @@ async def block_event_seats(
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+
+@router.post("/{event_id}/tickets/scan", response_model=ScanTicketResponse)
+async def scan_ticket(
+    event_id: str,
+    request: ScanTicketRequest,
+    current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
+):
+    """Scan/redeem a ticket by barcode, QR code, or ticket number. Marks the ticket as used."""
+    set_tenant_context(current_user.tenant_id)
+    ticket_repo: TicketRepository = container.resolve(TicketRepository)
+    event_seat_repo: EventSeatRepository = container.resolve(EventSeatRepository)
+    code = (request.code or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Code is required")
+    ticket = await ticket_repo.get_by_barcode(current_user.tenant_id, code)
+    if not ticket:
+        ticket = await ticket_repo.get_by_qr_code(current_user.tenant_id, code)
+    if not ticket:
+        ticket = await ticket_repo.get_by_ticket_number(current_user.tenant_id, code)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    if ticket.event_id != event_id:
+        raise HTTPException(status_code=400, detail="Ticket is for a different event")
+    if ticket.status == TicketStatusEnum.USED:
+        raise HTTPException(status_code=409, detail="Ticket already used")
+    if ticket.status != TicketStatusEnum.CONFIRMED:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ticket cannot be scanned (status: {ticket.status})",
+        )
+    try:
+        ticket.mark_as_used()
+        await ticket_repo.save(ticket)
+    except BusinessRuleError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    event_seat = await event_seat_repo.get_by_id(current_user.tenant_id, ticket.event_seat_id)
+    return ScanTicketResponse(
+        ticket_id=ticket.id,
+        ticket_number=ticket.ticket_number,
+        event_seat_id=ticket.event_seat_id,
+        section_name=event_seat.section_name if event_seat else None,
+        row_name=event_seat.row_name if event_seat else None,
+        seat_number=event_seat.seat_number if event_seat else None,
+        scanned_at=ticket.scanned_at,
+    )

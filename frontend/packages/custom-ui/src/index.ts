@@ -9,6 +9,9 @@
 // Export all components
 export * from './components';
 
+// AI (improve text, form suggest)
+export * from './ai';
+
 // Re-export density hooks from utils package
 export { useDensity, useDensityStyles, useIsCompact } from '@truths/utils';
 export type { DensityStyles } from '@truths/utils';

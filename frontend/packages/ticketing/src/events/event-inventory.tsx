@@ -33,7 +33,9 @@ import {
   Ban,
   X,
   Pause,
+  ScanBarcode,
 } from "lucide-react";
+import { WebcamTicketReader } from "../ticket-scanner";
 import { useEventService } from "./event-provider";
 import { useLayoutService } from "../layouts";
 import {
@@ -141,6 +143,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const [holdBlockAction, setHoldBlockAction] = useState<
     "hold" | "unhold" | "unblock" | "block"
   >("hold");
+  const [scanSheetOpen, setScanSheetOpen] = useState(false);
 
   // Fetch event data
   const {
@@ -778,16 +781,27 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                 </Button>
               )}
             {hasSeats && (
-              <Button
-                onClick={() => setSeatListSheetOpen(true)}
-                disabled={selectedSeatIds.size > 0}
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-                title={`View Seat List (${totalSeats})`}
-              >
-                <List className="h-3.5 w-3.5" />
-              </Button>
+              <>
+                <Button
+                  onClick={() => setScanSheetOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title="Scan tickets (webcam)"
+                >
+                  <ScanBarcode className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  onClick={() => setSeatListSheetOpen(true)}
+                  disabled={selectedSeatIds.size > 0}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title={`View Seat List (${totalSeats})`}
+                >
+                  <List className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -984,6 +998,23 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               //   }
               //   setSelectedSeatIds(newSelected);
               // }}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Scan Tickets Sheet */}
+      <Sheet open={scanSheetOpen} onOpenChange={setScanSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 overflow-hidden">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
+            <SheetTitle>Scan tickets</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-6">
+            <WebcamTicketReader
+              eventId={eventId}
+              autoStart
+              onScanSuccess={() => refetchSeats()}
+              onClose={() => setScanSheetOpen(false)}
             />
           </div>
         </SheetContent>

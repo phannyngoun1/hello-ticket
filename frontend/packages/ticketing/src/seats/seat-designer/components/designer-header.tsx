@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Trash2,
   Image as ImageIcon,
+  ScanSearch,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -40,6 +41,8 @@ export interface DesignerHeaderProps {
   isPlacingSections: boolean;
   onClearAllPlacements: () => void;
   onMainImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDetectSections?: () => void;
+  isDetectingSections?: boolean;
 }
 
 export function DesignerHeader({
@@ -62,6 +65,8 @@ export function DesignerHeader({
   isPlacingSections,
   onClearAllPlacements,
   onMainImageSelect,
+  onDetectSections,
+  isDetectingSections = false,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle
   const showDatasheetButton =
@@ -99,6 +104,19 @@ export function DesignerHeader({
             title="View Datasheet"
           >
             <List className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        {onDetectSections && (
+          <Button
+            variant="outline"
+            onClick={onDetectSections}
+            disabled={isDetectingSections}
+            size="sm"
+            className="h-7 px-2"
+            title="Detect sections from image (AI)"
+          >
+            <ScanSearch className="h-3.5 w-3.5 mr-1" />
+            {isDetectingSections ? "Detecting…" : "Detect sections"}
           </Button>
         )}
         {!readOnly && (

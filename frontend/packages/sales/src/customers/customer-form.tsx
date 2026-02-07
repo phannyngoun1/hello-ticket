@@ -15,7 +15,8 @@ import {
   TextareaInputField,
   SelectInputField,
   CheckboxField,
-  DateInputField
+  DateInputField,
+  AIAssistFormButton,
 } from "@truths/custom-ui";
 import { Separator } from "@truths/ui";
 
@@ -69,6 +70,8 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
     const {
       handleSubmit,
       control,
+      watch,
+      setValue,
       formState: { errors, isSubmitted },
     } = useForm<CustomerFormData>({
       resolver: zodResolver(customerFormSchema),
@@ -109,6 +112,14 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
       await onSubmit(data);
     };
 
+    const customerCurrentValues: Record<string, string> = {
+      name: watch("name") ?? "",
+      email: watch("email") ?? "",
+      phone: watch("phone") ?? "",
+      business_name: watch("business_name") ?? "",
+      notes: watch("notes") ?? "",
+    };
+
     return (
       <form
         ref={ref}
@@ -116,6 +127,18 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
+        <div className="flex justify-end">
+          <AIAssistFormButton
+            formType="customer"
+            currentValues={customerCurrentValues}
+            onSuggest={(values) => {
+              Object.entries(values).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) setValue(key as keyof CustomerFormData, value);
+              });
+            }}
+            disabled={isLoading}
+          />
+        </div>
         {/* 1. Essential Information */}
         <div ref={firstErrorRef} className="space-y-4">
           <h3 className="text-base font-semibold">Personal Information</h3>

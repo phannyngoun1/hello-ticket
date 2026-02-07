@@ -117,6 +117,23 @@ class EventSeatResponse(BaseModel):
     ticket_number: Optional[str] = None
     ticket_price: Optional[float] = None  # Ticket price
     ticket_status: Optional[TicketStatusEnum] = None  # Ticket status
+    ticket_scanned_at: Optional[datetime] = None  # When ticket was scanned (check-in)
+
+
+class ScanTicketRequest(BaseModel):
+    """Request to scan/redeem a ticket by barcode, QR code, or ticket number"""
+    code: str = Field(..., min_length=1, description="Decoded barcode, QR code, or ticket number")
+
+
+class ScanTicketResponse(BaseModel):
+    """Response after successfully scanning a ticket"""
+    ticket_id: str
+    ticket_number: str
+    event_seat_id: str
+    section_name: Optional[str] = None
+    row_name: Optional[str] = None
+    seat_number: Optional[str] = None
+    scanned_at: datetime
 
 
 class EventSeatListResponse(BaseModel):

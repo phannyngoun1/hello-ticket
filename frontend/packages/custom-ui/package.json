@@ -24,6 +24,7 @@
   "license": "MIT",
   "dependencies": {
     "@tanstack/react-table": "^8.11.2",
+    "@truths/api": "*",
     "@truths/shared": "*",
     "@truths/ui": "*",
     "lucide-react": "^0.562.0",

@@ -37,6 +37,32 @@ class SQLTicketRepository(BaseSQLRepository[Ticket, TicketModel], TicketReposito
             model = session.exec(statement).first()
             return self._mapper.to_domain(model) if model else None
 
+    async def get_by_barcode(self, tenant_id: str, barcode: str) -> Optional[Ticket]:
+        """Get ticket by barcode"""
+        with self._session_factory() as session:
+            statement = select(TicketModel).where(
+                and_(
+                    TicketModel.barcode == barcode,
+                    TicketModel.tenant_id == tenant_id,
+                    TicketModel.is_deleted == False
+                )
+            )
+            model = session.exec(statement).first()
+            return self._mapper.to_domain(model) if model else None
+
+    async def get_by_qr_code(self, tenant_id: str, qr_code: str) -> Optional[Ticket]:
+        """Get ticket by QR code"""
+        with self._session_factory() as session:
+            statement = select(TicketModel).where(
+                and_(
+                    TicketModel.qr_code == qr_code,
+                    TicketModel.tenant_id == tenant_id,
+                    TicketModel.is_deleted == False
+                )
+            )
+            model = session.exec(statement).first()
+            return self._mapper.to_domain(model) if model else None
+
     async def get_by_event_seat(self, tenant_id: str, event_seat_id: str) -> Optional[Ticket]:
         """Get ticket by event seat ID"""
         with self._session_factory() as session:

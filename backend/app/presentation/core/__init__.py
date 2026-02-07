@@ -20,6 +20,7 @@ from .routes import (
     workflow_router,
     external_api_router,
     upload_router,
+    ai_router,
     role_router,
     group_router,
 ) 
@@ -41,6 +42,7 @@ __all__ = [
     "workflow_router",
     "external_api_router",
     "upload_router",
+    "ai_router",
     "role_router",
     "group_router",
     "sales_router",
