@@ -22,7 +22,7 @@ import {
   Separator,
 } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { ImproveTextButton, AIAssistFormButton } from "@truths/custom-ui";
+import { TextareaInputField, AIAssistFormButton } from "@truths/custom-ui";
 import { VenueTypeContext } from "../venue-types/venue-type-provider";
 import { useVenueType } from "../venue-types/use-venue-types";
 
@@ -99,6 +99,7 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
 
     const {
       register,
+      control,
       handleSubmit,
       watch,
       setValue,
@@ -192,7 +193,8 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
             currentValues={venueCurrentValues}
             onSuggest={(values) => {
               Object.entries(values).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) setValue(key as keyof VenueFormInputData, value);
+                if (value !== undefined && value !== null)
+                  setValue(key as keyof VenueFormInputData, value);
               });
             }}
             disabled={isLoading}
@@ -242,26 +244,15 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
             </Field>
           </div>
 
-          <Field data-invalid={!!errors.description}>
-            <FieldLabel htmlFor="description">Description</FieldLabel>
-            <div className="flex gap-2 items-start">
-              <Textarea
-                id="description"
-                placeholder="Venue description"
-                {...register("description")}
-                disabled={isLoading}
-                rows={3}
-                className={cn("flex-1 min-w-0", errors.description && "border-destructive")}
-              />
-              <ImproveTextButton
-                value={watch("description") ?? ""}
-                onImproved={(text) => setValue("description", text)}
-                disabled={isLoading}
-                className="shrink-0"
-              />
-            </div>
-            <FieldError>{errors.description?.message}</FieldError>
-          </Field>
+          <TextareaInputField
+            control={control}
+            name="description"
+            label="Description"
+            placeholder="Venue description"
+            rows={3}
+            disabled={isLoading}
+            showImproveButton
+          />
         </div>
 
         <Separator />

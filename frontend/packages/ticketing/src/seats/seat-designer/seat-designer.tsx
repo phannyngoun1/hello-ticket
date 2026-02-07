@@ -25,6 +25,7 @@ import { ApiError } from "@truths/api";
 import { uploadService } from "@truths/shared";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { detectMarkers } from "../../ai/detect-markers";
+import { detectSeats } from "../../ai/detect-seats";
 import { toast } from "@truths/ui";
 import { LayoutCanvas } from "./layout-canvas";
 import Konva from "konva";
@@ -105,6 +106,7 @@ export function SeatDesigner({
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
   const [isDetectingSections, setIsDetectingSections] = useState(false);
+  const [isDetectingSeats, setIsDetectingSeats] = useState(false);
   // Store coordinates when clicking to place a section (pending section creation)
   const [pendingSectionCoordinates, setPendingSectionCoordinates] = useState<{
     x: number;
@@ -978,6 +980,60 @@ export function SeatDesigner({
       setIsDetectingSections(false);
     }
   }, [mainImageUrl]);
+
+  // Detect seats from floor plan or section image via AI (seat-level)
+  const handleDetectSeats = useCallback(async () => {
+    const imageUrl = viewingSection?.imageUrl ?? mainImageUrl;
+    if (!imageUrl) return;
+    setIsDetectingSeats(true);
+    try {
+      const url = imageUrl.startsWith("http") ? imageUrl : `${window.location.origin}${imageUrl}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to load image");
+      const blob = await res.blob();
+      const file = new File([blob], "floor-plan.png", { type: blob.type || "image/png" });
+      const sectionName = viewingSection?.name ?? undefined;
+      const data = await detectSeats(file, sectionName);
+      const seatValues = seatPlacementForm.getValues();
+      const sectionForNewSeats = viewingSection?.name ?? seatValues.section;
+      const sectionIdForNewSeats = viewingSection?.id ?? seatValues.sectionId;
+      const newSeats: SeatMarker[] = (data.seats || []).map((s, i) => ({
+        id: `detected-${Date.now()}-${i}`,
+        x: s.x,
+        y: s.y,
+        seat: {
+          section: sectionForNewSeats,
+          sectionId: sectionIdForNewSeats,
+          row: s.row,
+          seatNumber: s.seat_number,
+          seatType: SeatType.STANDARD,
+        },
+        shape: {
+          type: PlacementShapeType.RECTANGLE,
+          width: s.width,
+          height: s.height,
+        },
+        isNew: true,
+      }));
+      if (newSeats.length > 0) {
+        setSeats((prev) => [...prev, ...newSeats]);
+        toast.success(`Added ${newSeats.length} suggested seat(s). You can move or edit them.`);
+      } else {
+        toast.info("No seats detected. Try a clearer image of the seating area.");
+      }
+    } catch (err) {
+      console.error("Detect seats failed:", err);
+      if (err instanceof ApiError && err.status === 503) {
+        toast.error(
+          "AI seat detection is not available. The server is not configured for AI features. Please contact your administrator."
+        );
+      } else {
+        toast.error(err instanceof Error ? err.message : "Failed to detect seats");
+      }
+    } finally {
+      setIsDetectingSeats(false);
+    }
+  }, [mainImageUrl, viewingSection, seatPlacementForm]);
 
   // Clear seats in current section (for section detail view)
   const handleClearSectionSeats = () => {
@@ -2687,6 +2743,8 @@ export function SeatDesigner({
           shapeOverlays={shapeOverlays}
           selectedOverlayId={selectedOverlayId}
           onShapeOverlayClick={handleShapeOverlayClick}
+          onDetectSeats={handleDetectSeats}
+          isDetectingSeats={isDetectingSeats}
         />
         {/* Seat Edit Sheet - needed for section detail view */}
         <SeatEditSheet
@@ -2811,6 +2869,8 @@ export function SeatDesigner({
             onMainImageSelect={handleMainImageSelect}
             onDetectSections={designMode === "section-level" ? handleDetectSections : undefined}
             isDetectingSections={isDetectingSections}
+            onDetectSeats={venueType === "small" ? handleDetectSeats : undefined}
+            isDetectingSeats={isDetectingSeats}
           />
 
           <div className="space-y-4">

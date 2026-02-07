@@ -43,6 +43,8 @@ export interface DesignerHeaderProps {
   onMainImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDetectSections?: () => void;
   isDetectingSections?: boolean;
+  onDetectSeats?: () => void;
+  isDetectingSeats?: boolean;
 }
 
 export function DesignerHeader({
@@ -67,6 +69,8 @@ export function DesignerHeader({
   onMainImageSelect,
   onDetectSections,
   isDetectingSections = false,
+  onDetectSeats,
+  isDetectingSeats = false,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle
   const showDatasheetButton =
@@ -117,6 +121,19 @@ export function DesignerHeader({
           >
             <ScanSearch className="h-3.5 w-3.5 mr-1" />
             {isDetectingSections ? "Detecting…" : "Detect sections"}
+          </Button>
+        )}
+        {onDetectSeats && (
+          <Button
+            variant="outline"
+            onClick={onDetectSeats}
+            disabled={isDetectingSeats}
+            size="sm"
+            className="h-7 px-2"
+            title="Detect seats from image (AI)"
+          >
+            <ScanSearch className="h-3.5 w-3.5 mr-1" />
+            {isDetectingSeats ? "Detecting…" : "Detect seats"}
           </Button>
         )}
         {!readOnly && (

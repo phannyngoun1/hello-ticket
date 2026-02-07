@@ -7,7 +7,7 @@ import json
 import os
 from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 
 from app.presentation.core.dependencies.auth_dependencies import (
@@ -92,6 +92,19 @@ def _require_openai() -> str:
     return key
 
 
+def _get_openai_client():
+    """Return OpenAI client. Raises 503 if openai package is not installed."""
+    _require_openai()
+    try:
+        from openai import OpenAI
+    except ImportError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI features are not available. Install the openai package in your backend environment: pip install openai",
+        ) from e
+    return OpenAI(api_key=get_openai_api_key())
+
+
 class AIHealthResponse(BaseModel):
     """AI module health / configuration status."""
 
@@ -165,11 +178,8 @@ async def improve_text(
     current_user: AuthenticatedUser = Depends(get_current_active_user_from_request),
 ):
     """Improve the given text (grammar, clarity, or tone)."""
-    _require_openai()
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=get_openai_api_key())
+        client = _get_openai_client()
         mode_instruction = {
             "grammar": "Fix grammar and spelling only. Keep the same meaning and tone.",
             "clarity": "Make the text clearer and more readable. Keep it concise.",
@@ -203,7 +213,6 @@ async def form_suggest(
     current_user: AuthenticatedUser = Depends(get_current_active_user_from_request),
 ):
     """Suggest form field values based on form type and current values."""
-    _require_openai()
     form_type = (body.formType or "").strip().lower()
     if form_type not in FORM_SCHEMAS:
         raise HTTPException(
@@ -212,9 +221,7 @@ async def form_suggest(
         )
     schema = FORM_SCHEMAS[form_type]
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=get_openai_api_key())
+        client = _get_openai_client()
         filled = {k: v for k, v in (body.currentValues or {}).items() if v}
         hints = body.fieldHints or {}
         context = "\n".join(
@@ -291,17 +298,41 @@ class DetectMarkersResponse(BaseModel):
     sections: List[SuggestedSection] = Field(default_factory=list, description="Suggested section regions")
 
 
+class SuggestedSeat(BaseModel):
+    """Suggested seat position from vision (normalized 0-100)."""
+
+    row: str = Field(default="1", description="Row label (e.g. A, 1)")
+    seat_number: str = Field(description="Seat number or label (e.g. 1, A1)")
+    x: float = Field(description="Center x as percentage of image (0-100)")
+    y: float = Field(description="Center y as percentage of image (0-100)")
+    width: float = Field(default=2.0, description="Width as percentage (0-100)")
+    height: float = Field(default=2.0, description="Height as percentage (0-100)")
+
+
+class DetectSeatsResponse(BaseModel):
+    """Response for detect-seats."""
+
+    seats: List[SuggestedSeat] = Field(default_factory=list, description="Suggested seat positions")
+
+
 @router.post("/detect-markers", response_model=DetectMarkersResponse)
 async def detect_markers(
     file: UploadFile = File(..., description="Floor plan image (PNG/JPEG)"),
     current_user: AuthenticatedUser = Depends(get_current_active_user_from_request),
 ):
     """Analyze a floor plan image and suggest section regions (rectangles) for the seat designer."""
-    _require_openai()
-    if not file.content_type or not file.content_type.startswith("image/"):
+    # OpenAI vision API supports only: png, jpeg, gif, webp (no SVG)
+    ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
+    content_type = (file.content_type or "").strip().lower()
+    if not content_type or not content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an image (e.g. image/png, image/jpeg)",
+        )
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image format not supported for AI detection. Use PNG, JPEG, GIF, or WebP (SVG is not supported).",
         )
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:  # 10MB
@@ -310,9 +341,7 @@ async def detect_markers(
             detail="Image size must be under 10MB",
         )
     try:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=get_openai_api_key())
+        client = _get_openai_client()
         b64 = base64.standard_b64encode(content).decode("ascii")
         mime = file.content_type or "image/png"
         data_uri = f"data:{mime};base64,{b64}"
@@ -365,6 +394,105 @@ Return only valid JSON, no markdown or explanation."""
             shape = SuggestedShape(type=shape_type, x=x, y=y, width=width, height=height)
             sections_out.append(SuggestedSection(name=name, shape=shape))
         return DetectMarkersResponse(sections=sections_out)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"AI service error: {str(e)}",
+        ) from e
+
+
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"}
+
+
+@router.post("/detect-seats", response_model=DetectSeatsResponse)
+async def detect_seats(
+    file: UploadFile = File(..., description="Floor plan or section image (PNG/JPEG)"),
+    section_name: Optional[str] = Form(None, description="Optional section name for context"),
+    current_user: AuthenticatedUser = Depends(get_current_active_user_from_request),
+):
+    """Analyze an image and suggest individual seat positions (for seat-level design)."""
+    content_type = (file.content_type or "").strip().lower()
+    if not content_type or not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image (e.g. image/png, image/jpeg)",
+        )
+    if content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image format not supported for AI detection. Use PNG, JPEG, GIF, or WebP (SVG is not supported).",
+        )
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10MB
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Image size must be under 10MB",
+        )
+    try:
+        client = _get_openai_client()
+        b64 = base64.standard_b64encode(content).decode("ascii")
+        mime = file.content_type or "image/png"
+        data_uri = f"data:{mime};base64,{b64}"
+
+        section_context = (
+            f" This image shows the seating area for section: {section_name}."
+            if section_name
+            else " This is a floor plan or section image showing seating."
+        )
+        prompt = f"""Look at this venue floor plan or section image.{section_context}
+Identify individual seat positions (chairs, seats). For each seat, give:
+- row: string (row label, e.g. A, 1, Row 1)
+- seat_number: string (seat number or label, e.g. 1, 2, A1)
+- x, y: center of the seat as percentage of image width/height (0-100)
+- width, height: seat size as percentage of image (0-100), typically small (e.g. 1-4)
+
+Return a JSON object with a single key "seats" which is an array of objects. Each object has:
+- "row": string
+- "seat_number": string
+- "x": number
+- "y": number
+- "width": number (optional, default 2)
+- "height": number (optional, default 2)
+Return only valid JSON, no markdown or explanation."""
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_uri}},
+                    ],
+                }
+            ],
+            max_tokens=4000,
+        )
+        raw = (response.choices[0].message.content or "").strip()
+        if raw.startswith("```"):
+            lines = raw.split("\n")
+            raw = "\n".join(line for line in lines if not line.strip().startswith("```"))
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return DetectSeatsResponse(seats=[])
+        seats_in = data.get("seats") or []
+        seats_out: List[SuggestedSeat] = []
+        for s in seats_in:
+            if not isinstance(s, dict):
+                continue
+            row = str(s.get("row") or "1").strip() or "1"
+            seat_number = str(s.get("seat_number") or s.get("seatNumber") or "1").strip() or "1"
+            x = float(s.get("x", 50))
+            y = float(s.get("y", 50))
+            width = float(s.get("width", 2))
+            height = float(s.get("height", 2))
+            seats_out.append(
+                SuggestedSeat(row=row, seat_number=seat_number, x=x, y=y, width=width, height=height)
+            )
+        return DetectSeatsResponse(seats=seats_out)
     except HTTPException:
         raise
     except Exception as e:

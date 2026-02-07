@@ -136,50 +136,57 @@ export function TextareaInputField<
 
   return (
     <Field data-invalid={hasError}>
-      {label && (
-        <FieldLabel htmlFor={name}>
-          {label}
-          {required && <span className="text-destructive ml-1">*</span>}
-        </FieldLabel>
+      {(label || (showImproveButton && !readOnly)) && (
+        <div className="flex items-center gap-2">
+          {label && (
+            <FieldLabel htmlFor={name}>
+              {label}
+              {required && <span className="text-destructive ml-1">*</span>}
+            </FieldLabel>
+          )}
+          {showImproveButton && !readOnly && (
+            <Controller
+              name={name}
+              control={control}
+              render={({ field }) => (
+                <ImproveTextButton
+                  value={field.value ?? ""}
+                  onImproved={field.onChange}
+                  disabled={disabled}
+                  size="icon"
+                  className="shrink-0"
+                />
+              )}
+            />
+          )}
+        </div>
       )}
       <Controller
         name={name}
         control={control}
         render={({ field }) => (
-          <div className="space-y-2">
-            <div className="flex gap-2 items-start">
-              <Textarea
-                {...field}
-                id={name}
-                placeholder={placeholder}
-                disabled={disabled}
-                readOnly={readOnly}
-                rows={rows}
-                maxLength={maxLength}
-                minLength={minLength}
-                className={cn(
-                  "flex-1 min-w-0",
-                  hasError && "border-destructive",
-                  readOnly && "cursor-not-allowed bg-muted text-muted-foreground",
-                  className
-                )}
-                aria-invalid={hasError}
-                aria-describedby={
-                  displayError || helperText
-                    ? `${name}-${displayError ? "error" : "helper"}`
-                    : undefined
-                }
-              />
-              {showImproveButton && !readOnly && (
-                <ImproveTextButton
-                  value={field.value ?? ""}
-                  onImproved={field.onChange}
-                  disabled={disabled}
-                  className="shrink-0"
-                />
-              )}
-            </div>
-          </div>
+          <Textarea
+            {...field}
+            id={name}
+            placeholder={placeholder}
+            disabled={disabled}
+            readOnly={readOnly}
+            rows={rows}
+            maxLength={maxLength}
+            minLength={minLength}
+            className={cn(
+              "flex-1 min-w-0 w-full",
+              hasError && "border-destructive",
+              readOnly && "cursor-not-allowed bg-muted text-muted-foreground",
+              className
+            )}
+            aria-invalid={hasError}
+            aria-describedby={
+              displayError || helperText
+                ? `${name}-${displayError ? "error" : "helper"}`
+                : undefined
+            }
+          />
         )}
       />
       {helperText && !displayError && (
@@ -195,4 +202,3 @@ export function TextareaInputField<
 }
 
 export default TextareaInputField;
-

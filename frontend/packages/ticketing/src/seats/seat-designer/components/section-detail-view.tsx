@@ -22,6 +22,7 @@ import {
   Image as ImageIcon,
   List,
   ArrowLeft,
+  ScanSearch,
 } from "lucide-react";
 import { LayoutCanvas } from "../layout-canvas";
 import {
@@ -88,6 +89,8 @@ export interface SectionDetailViewProps {
   shapeOverlays?: any[];
   selectedOverlayId?: string | null;
   onShapeOverlayClick: (overlayId: string) => void;
+  onDetectSeats?: () => void;
+  isDetectingSeats?: boolean;
 }
 
 export function SectionDetailView({
@@ -136,6 +139,8 @@ export function SectionDetailView({
   shapeOverlays,
   selectedOverlayId,
   onShapeOverlayClick,
+  onDetectSeats,
+  isDetectingSeats = false,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   return (
@@ -166,6 +171,19 @@ export function SectionDetailView({
               <List className="h-3.5 w-3.5 mr-1" />
               Seat List ({displayedSeats.length})
             </Button>
+            {onDetectSeats && viewingSection.imageUrl && !readOnly && (
+              <Button
+                variant="outline"
+                onClick={onDetectSeats}
+                disabled={isDetectingSeats}
+                size="sm"
+                className="h-7 px-2"
+                title="Detect seats from section image (AI)"
+              >
+                <ScanSearch className="h-3.5 w-3.5 mr-1" />
+                {isDetectingSeats ? "Detecting…" : "Detect seats"}
+              </Button>
+            )}
             {!readOnly && (
               <Button
                 onClick={onSave}

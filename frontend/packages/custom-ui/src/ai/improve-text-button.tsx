@@ -15,6 +15,8 @@ export interface ImproveTextButtonProps {
   disabled?: boolean;
   className?: string;
   label?: string;
+  /** Use "icon" for a compact icon-only button (e.g. next to labels) */
+  size?: "sm" | "icon";
 }
 
 export function ImproveTextButton({
@@ -24,8 +26,10 @@ export function ImproveTextButton({
   disabled = false,
   className,
   label = "Improve with AI",
+  size = "sm",
 }: ImproveTextButtonProps) {
   const { improve, loading, error } = useImproveText();
+  const isIconOnly = size === "icon";
 
   const handleClick = async () => {
     const result = await improve(value, mode);
@@ -35,21 +39,28 @@ export function ImproveTextButton({
   };
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        isIconOnly && "w-fit items-end",
+        className
+      )}
+    >
       <Button
         type="button"
         variant="outline"
-        size="sm"
+        size={isIconOnly ? "icon" : "sm"}
         disabled={disabled || loading || !value?.trim()}
         onClick={handleClick}
-        className="gap-2"
+        className={isIconOnly ? "size-8 shrink-0 rounded-full" : "gap-2"}
+        aria-label={isIconOnly ? "Improve with AI" : undefined}
       >
         {loading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
         ) : (
-          <Sparkles className="h-4 w-4" />
+          <Sparkles className="h-4 w-4 text-blue-500" />
         )}
-        {loading ? "Improving…" : label}
+        {!isIconOnly && (loading ? "Improving…" : label)}
       </Button>
       {error && (
         <p className="text-xs text-destructive" role="alert">
