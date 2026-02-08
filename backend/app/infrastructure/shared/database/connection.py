@@ -67,41 +67,100 @@ engine = create_engine(
 )
 
 
-def create_db_and_tables() -> None:
-    """Create operational database tables (only operational models, not platform ones)"""
+def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
+    """Create one table; swallow duplicate/already-exists errors."""
     from sqlalchemy.exc import ProgrammingError, OperationalError
     try:
-        import psycopg2.errors
-    except ImportError:
-        psycopg2 = None
-    
-    try:
-        operational_metadata.create_all(engine, checkfirst=True)
+        table.create(eng, checkfirst=True)
     except (ProgrammingError, OperationalError) as e:
-        # Handle cases where tables/indexes already exist
-        # psycopg2 raises ProgrammingError with specific error codes
-        if psycopg2 and hasattr(e, 'orig'):
-            if isinstance(e.orig, (psycopg2.errors.DuplicateTable, psycopg2.errors.DuplicateObject)):
-                # Table/index already exists, which is fine
+        err_str = str(e).lower()
+        if exc_codes_ok and hasattr(e, "orig"):
+            try:
+                import psycopg2.errors
+                if isinstance(
+                    e.orig,
+                    (psycopg2.errors.DuplicateTable, psycopg2.errors.DuplicateObject),
+                ):
+                    return
+            except ImportError:
                 pass
-            else:
-                # Check error message for "already exists" or "duplicate"
-                error_str = str(e).lower()
-                if "already exists" in error_str or "duplicate" in error_str:
-                    # Tables/indexes already exist, which is fine
-                    pass
-                else:
-                    # Re-raise if it's a different error
-                    raise
-        else:
-            # Check error message for "already exists" or "duplicate"
-            error_str = str(e).lower()
-            if "already exists" in error_str or "duplicate" in error_str:
-                # Tables/indexes already exist, which is fine
-                pass
-            else:
-                # Re-raise if it's a different error
-                raise
+        if "already exists" in err_str or "duplicate" in err_str:
+            return
+        raise
+
+
+def create_db_and_tables() -> None:
+    """Create operational database tables. Uses explicit per-table creation (same approach
+    as platform) so tables are created even when custom metadata does not register for create_all.
+    """
+    # Import all operational models so we can create each table explicitly in dependency order
+    from app.infrastructure.shared.database.models import (
+        CustomerTypeModel,
+        CustomerGroupModel,
+        EmployeeModel,
+        VenueTypeModel,
+        OrganizerModel,
+        VenueModel,
+        LayoutModel,
+        SectionModel,
+        SeatModel,
+        EventTypeModel,
+        ShowModel,
+        EventModel,
+        ShowImageModel,
+        EventSeatModel,
+        TicketModel,
+        BookingModel,
+        BookingItemModel,
+        PaymentModel,
+        CustomerModel,
+        TagModel,
+        TagLinkModel,
+        UserCacheModel,
+        UISchemaModel,
+        UISchemaVersionModel,
+        UIPageModel,
+        UICustomComponentModel,
+        AuditLogModel,
+        SequenceModel,
+        FileUploadModel,
+        AttachmentLinkModel,
+    )
+    # Create in dependency-friendly order (no-FK / base tables first, then FKs)
+    operational_tables = [
+        CustomerTypeModel.__table__,
+        CustomerGroupModel.__table__,
+        EmployeeModel.__table__,
+        VenueTypeModel.__table__,
+        OrganizerModel.__table__,
+        VenueModel.__table__,
+        LayoutModel.__table__,
+        SectionModel.__table__,
+        SeatModel.__table__,
+        EventTypeModel.__table__,
+        ShowModel.__table__,
+        EventModel.__table__,
+        ShowImageModel.__table__,
+        EventSeatModel.__table__,
+        TicketModel.__table__,
+        BookingModel.__table__,
+        BookingItemModel.__table__,
+        PaymentModel.__table__,
+        CustomerModel.__table__,
+        TagModel.__table__,
+        TagLinkModel.__table__,
+        UserCacheModel.__table__,
+        UISchemaModel.__table__,
+        UISchemaVersionModel.__table__,
+        UIPageModel.__table__,
+        UICustomComponentModel.__table__,
+        AuditLogModel.__table__,
+        SequenceModel.__table__,
+        FileUploadModel.__table__,
+        AttachmentLinkModel.__table__,
+    ]
+    for table in operational_tables:
+        _create_table_safe(engine, table, exc_codes_ok=True)
 
 
 def get_session() -> Generator[Session, None, None]:
