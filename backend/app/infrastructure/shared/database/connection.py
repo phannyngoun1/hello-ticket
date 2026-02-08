@@ -31,6 +31,18 @@ from app.infrastructure.shared.database.models import (
     VenueTypeModel,
     # Sales master data
     EmployeeModel,
+    # Shared module - file uploads (must be imported for FK dependencies)
+    FileUploadModel,
+    ShowImageModel,
+    EventSeatModel,
+    TicketModel,
+    BookingItemModel,
+    PaymentModel,
+    CustomerModel,
+    TagModel,
+    TagLinkModel,
+    SequenceModel,
+    AttachmentLinkModel,
 )
 
 # Load environment variables from .env file
