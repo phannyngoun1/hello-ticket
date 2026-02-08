@@ -1,5 +1,7 @@
 # Hello Ticket - Full-Stack Application
 
+**Development guide.** For production deployment (combined run, Railway) see **[README-PRODUCTION.md](./README-PRODUCTION.md)**.
+
 ## 🚀 Quick Start (3 Commands!)
 
 ```bash
@@ -78,7 +80,7 @@ isort app/
 cd frontend
 npm run dev
 
-# Build for production
+# Build (production bundle; for combined serve see README-PRODUCTION.md)
 npm run build
 
 # Type check
@@ -87,45 +89,6 @@ npm run type-check
 # Lint
 npm run lint
 ```
-
----
-
-## 🚀 Production deployment (combined backend + frontend)
-
-To run a single process that serves both the API and the React app:
-
-**1. Build the frontend with same-origin API** (so the app calls the same host):
-
-```bash
-cd frontend
-npm install
-VITE_API_BASE_URL= npm run build
-```
-
-**2. Start the backend** (from project root, with DB running):
-
-```bash
-./start.sh   # if not already
-cd backend
-source venv/bin/activate
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-The backend will detect `frontend/apps/web/dist` and serve the SPA at `/` and assets at `/assets`. API and docs stay at `/api/v1`, `/docs`, etc.
-
-**Override frontend path:** set `FRONTEND_DIST_DIR` in `backend/.env` (e.g. in Docker: `FRONTEND_DIST_DIR=/app/frontend/dist`).
-
-### Deploy on Railway
-
-The repo includes a root **Dockerfile** that builds the frontend and runs the backend in one image (combined deploy).
-
-1. **New project:** [Railway](https://railway.app) → New Project → Deploy from GitHub (this repo).
-2. **Add PostgreSQL:** In the project → New → Database → PostgreSQL. Link it to your service so `DATABASE_URL` is set.
-3. **Configure the service:**
-   - **Settings → Build:** Builder = **Dockerfile**, Dockerfile path = **Dockerfile** (root).
-   - **Variables:** Add `ENVIRONMENT=production`, `SECRET_KEY=<generate a long random secret>`, `ALLOWED_ORIGINS=https://<your-app>.up.railway.app` (use your Railway URL or custom domain). `DATABASE_URL` is set automatically if Postgres is linked.
-   - **Settings → Deploy → Release Command:** `python tools/migrate-db.py upgrade` (runs migrations before each deploy).
-4. Deploy; the app and API docs will be at `https://<your-service>.up.railway.app` and `.../docs`.
 
 ---
 
@@ -256,22 +219,8 @@ python tools/migrate-db.py status
 
 ### Environment Modes
 
-The application behaves differently based on `ENVIRONMENT`:
-
-- **development** (default):
-
-  - Permissive CORS (`*`)
-  - Shows warnings for weak configs (non-blocking)
-  - Console.log works normally
-  - Detailed error messages
-
-- **production**:
-  - Requires explicit CORS origins
-  - Fails fast on insecure configs
-  - Console.log auto-removed from builds
-  - Generic error messages
-
-See [SECURITY_IMPROVEMENTS.md](./SECURITY_IMPROVEMENTS.md) for details.
+- **development** (default): Permissive CORS (`*`), warnings for weak configs, detailed errors.
+- **production**: Explicit CORS, strict checks, frontend strips console.log. See [README-PRODUCTION.md](./README-PRODUCTION.md) and [SECURITY_IMPROVEMENTS.md](./SECURITY_IMPROVEMENTS.md).
 
 ---
 
