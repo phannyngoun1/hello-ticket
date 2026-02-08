@@ -17,8 +17,6 @@ from dotenv import load_dotenv
 from sqlmodel import create_engine, SQLModel, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import sessionmaker
-from app.infrastructure.shared.database.platform_models import platform_metadata
 import logging
 
 logger = logging.getLogger(__name__)
@@ -67,17 +65,34 @@ else:
     async_platform_session_maker = None
 
 
-def create_platform_db_and_tables():
-    """Create all platform database tables. Call this at app startup (single source of truth)."""
+def _create_table_safe(engine, table, exc_codes_ok):
+    """Create one table; swallow duplicate/already-exists errors."""
     from sqlalchemy.exc import ProgrammingError, OperationalError
     try:
-        import psycopg2.errors
-    except ImportError:
-        psycopg2 = None
+        table.create(engine, checkfirst=True)
+    except (ProgrammingError, OperationalError) as e:
+        err_str = str(e).lower()
+        if exc_codes_ok and e:
+            try:
+                import psycopg2.errors
+                if hasattr(e, "orig") and isinstance(
+                    e.orig,
+                    (psycopg2.errors.DuplicateTable, psycopg2.errors.DuplicateObject),
+                ):
+                    return
+            except ImportError:
+                pass
+        if "already exists" in err_str or "duplicate" in err_str:
+            return
+        raise
 
-    # Ensure all platform models are registered with platform_metadata before create_all
-    # (SQLModel only adds tables to metadata when the model class is imported)
-    from app.infrastructure.shared.database.platform_models import (  # noqa: F401
+
+def create_platform_db_and_tables():
+    """Create all platform database tables. Call this at app startup (single source of truth).
+    Creates each table explicitly so it works even when custom metadata does not register
+    tables for create_all (e.g. SQLModel + separate metadata).
+    """
+    from app.infrastructure.shared.database.platform_models import (
         TenantModel,
         TenantSubscriptionModel,
         UserModel,
@@ -89,37 +104,21 @@ def create_platform_db_and_tables():
         GroupRoleModel,
         UserPreferenceModel,
     )
-
-    try:
-        platform_metadata.create_all(platform_engine, checkfirst=True)
-    except (ProgrammingError, OperationalError) as e:
-        # Handle cases where tables/indexes already exist
-        # psycopg2 raises ProgrammingError with specific error codes
-        if psycopg2 and hasattr(e, 'orig'):
-            if isinstance(e.orig, (psycopg2.errors.DuplicateTable, psycopg2.errors.DuplicateObject)):
-                # Table/index already exists, which is fine
-                logger.debug("Platform tables/indexes already exist, skipping creation")
-                pass
-            else:
-                # Check error message for "already exists" or "duplicate"
-                error_str = str(e).lower()
-                if "already exists" in error_str or "duplicate" in error_str:
-                    # Tables/indexes already exist, which is fine
-                    logger.debug("Platform tables/indexes already exist, skipping creation")
-                    pass
-                else:
-                    # Re-raise if it's a different error
-                    raise
-        else:
-            # Check error message for "already exists" or "duplicate"
-            error_str = str(e).lower()
-            if "already exists" in error_str or "duplicate" in error_str:
-                # Tables/indexes already exist, which is fine
-                logger.debug("Platform tables/indexes already exist, skipping creation")
-                pass
-            else:
-                # Re-raise if it's a different error
-                raise
+    # Create in dependency-friendly order: tenants first, then tenant-scoped tables
+    platform_tables = [
+        TenantModel.__table__,
+        TenantSubscriptionModel.__table__,
+        UserModel.__table__,
+        SessionModel.__table__,
+        GroupModel.__table__,
+        UserGroupModel.__table__,
+        RoleModel.__table__,
+        UserRoleModel.__table__,
+        GroupRoleModel.__table__,
+        UserPreferenceModel.__table__,
+    ]
+    for table in platform_tables:
+        _create_table_safe(platform_engine, table, exc_codes_ok=True)
 
 
 def get_platform_session() -> AsyncSession:
