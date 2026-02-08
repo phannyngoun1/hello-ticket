@@ -72,7 +72,7 @@ The repo includes a root **Dockerfile** that builds the frontend and runs the ba
   python tools/migrate-db.py upgrade
   ```
 
-  Runs migrations before each deploy.
+  This **creates and updates the database schema** (tables) before each deploy. On first deploy it runs all migrations and creates the schema; on later deploys it applies any new migrations.
 
 ### 4. Deploy
 
@@ -91,6 +91,24 @@ From `backend/env.example` you may also set:
 - `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD`, `DEFAULT_ADMIN_NAME` – if you use the built-in admin creation (change password after first login).
 - `CACHE_BACKEND` – `disk` or `redis` (if you add Redis).
 - `REQUIRE_TENANT` – `true` in production if you want to require tenant headers.
+
+---
+
+## Database schema on Railway
+
+The schema (tables) is created and updated by **Alembic migrations**, not by creating a DB in the Railway UI.
+
+1. **Automatic (recommended):** Set the **Release Command** to `python tools/migrate-db.py upgrade` (see above). Railway runs it after each build, before the app starts. First deploy = full schema creation; later deploys = new migrations only.
+
+2. **Manual (one-off):** If you need to run migrations by hand (e.g. from Railway’s shell or a one-off job):
+   - Open your service → **Settings** or **Deployments** → run a command, or use **Railway CLI** and run inside the container:
+   - `python tools/migrate-db.py upgrade`
+   - Ensure `DATABASE_URL` is set (it is when Postgres is linked).
+
+3. **No migrations yet:** If the repo has no migration files, generate and apply the initial migration locally, commit, then redeploy so the Release Command can run it:
+   - From project root: `python tools/migrate-db.py create-initial` then `python tools/migrate-db.py upgrade`, commit the new file in `backend/alembic/versions/`, push and redeploy.
+
+You do **not** create the schema in the Railway PostgreSQL dashboard; the app creates it via migrations.
 
 ---
 

@@ -24,6 +24,7 @@ diskcache==5.6.3
 python-dotenv==1.0.0
 pydantic==2.12.2
 pydantic-settings==2.1.0
+punq>=0.6.2  # Dependency injection container
 
 # Development
 pytest==7.4.3
