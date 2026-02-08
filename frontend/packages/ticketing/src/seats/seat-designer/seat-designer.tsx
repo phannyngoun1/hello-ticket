@@ -2911,48 +2911,45 @@ export function SeatDesigner({
           />
 
           <div className="space-y-4">
-            {/* Seat Placement Controls Panel - On Top (Small Venue) */}
+            {/* Seat Placement Controls + Shape Toolbox (Small Venue) */}
             {venueType === "small" && (
-              <>
-                {!readOnly && (
-                  <SeatPlacementControls
-                    form={seatPlacementForm}
-                    uniqueSections={getUniqueSections()}
-                    sectionsData={sectionsData}
-                    sectionSelectValue={sectionSelectValue}
-                    onSectionSelectValueChange={setSectionSelectValue}
-                    onNewSection={() => {
-                      setIsSectionFormOpen(true);
-                      setEditingSectionId(null);
-                      sectionForm.reset({ name: "" });
-                    }}
-                    onManageSections={() => setIsManageSectionsOpen(true)}
-                  />
-                )}
-                <ShapeToolbox
-                  selectedShapeType={selectedShapeTool}
-                  onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
-                  selectedSeat={selectedSeat}
-                  selectedSection={
-                    designMode === "section-level"
-                      ? selectedSectionMarker
-                      : null
-                  }
-                  onSeatEdit={handleSeatEdit}
-                  onSeatView={handleSeatView}
-                  onSectionEdit={handleSectionEdit}
-                  onSectionView={
-                    designMode === "section-level"
-                      ? handleSectionView
-                      : undefined
-                  }
-                  onSeatDelete={handleDeleteSeat}
-                  onSectionDelete={handleDeleteSection}
-                  onSeatShapeStyleChange={handleSeatShapeStyleChange}
-                  onSectionShapeStyleChange={handleSectionShapeStyleChange}
-                  readOnly={readOnly}
-                />
-              </>
+              <ShapeToolbox
+                selectedShapeType={selectedShapeTool}
+                onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
+                selectedSeat={selectedSeat}
+                selectedSection={
+                  designMode === "section-level" ? selectedSectionMarker : null
+                }
+                onSeatEdit={handleSeatEdit}
+                onSeatView={handleSeatView}
+                onSectionEdit={handleSectionEdit}
+                onSectionView={
+                  designMode === "section-level" ? handleSectionView : undefined
+                }
+                onSeatDelete={handleDeleteSeat}
+                onSectionDelete={handleDeleteSection}
+                onSeatShapeStyleChange={handleSeatShapeStyleChange}
+                onSectionShapeStyleChange={handleSectionShapeStyleChange}
+                seatPlacementControls={
+                  !readOnly ? (
+                    <SeatPlacementControls
+                      compact
+                      form={seatPlacementForm}
+                      uniqueSections={getUniqueSections()}
+                      sectionsData={sectionsData}
+                      sectionSelectValue={sectionSelectValue}
+                      onSectionSelectValueChange={setSectionSelectValue}
+                      onNewSection={() => {
+                        setIsSectionFormOpen(true);
+                        setEditingSectionId(null);
+                        sectionForm.reset({ name: "" });
+                      }}
+                      onManageSections={() => setIsManageSectionsOpen(true)}
+                    />
+                  ) : undefined
+                }
+                readOnly={readOnly}
+              />
             )}
 
             {/* Section Placement Controls Panel - On Top (Large Venue / Section-Level) */}

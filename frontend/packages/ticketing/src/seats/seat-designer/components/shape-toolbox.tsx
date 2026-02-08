@@ -42,6 +42,8 @@ export interface ShapeToolboxProps {
     sectionId: string,
     style: { fillColor?: string; strokeColor?: string }
   ) => void;
+  /** Compact seat placement controls rendered after shapes and seat info */
+  seatPlacementControls?: React.ReactNode;
   className?: string;
   readOnly?: boolean;
 }
@@ -59,6 +61,7 @@ export function ShapeToolbox({
   onSectionDelete,
   onSeatShapeStyleChange,
   onSectionShapeStyleChange,
+  seatPlacementControls,
   className,
   readOnly = false,
 }: ShapeToolboxProps) {
@@ -185,6 +188,13 @@ export function ShapeToolbox({
             })}
           </div>
         </div>
+
+        {/* Compact seat placement controls - right after shapes so always visible in seat-level */}
+        {seatPlacementControls && (
+          <div className="flex items-center gap-2 border-l pl-2.5">
+            {seatPlacementControls}
+          </div>
+        )}
 
         {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
         {showColorControls && (
