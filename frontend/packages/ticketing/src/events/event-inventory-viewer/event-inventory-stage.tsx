@@ -3,7 +3,7 @@
  */
 
 import type { RefObject } from "react";
-import { Stage, Layer, Image } from "react-konva";
+import { Stage, Layer, Image, Rect } from "react-konva";
 import type Konva from "konva";
 import { toast } from "@truths/ui";
 import type { Layout } from "../../layouts/types";
@@ -278,7 +278,7 @@ export function EventInventoryStage({
           offsetX={centerX}
           offsetY={centerY}
         >
-          {image && (
+          {image ? (
             <Image
               name="background-image"
               image={image}
@@ -286,6 +286,16 @@ export function EventInventoryStage({
               y={imageY}
               width={displayedWidth}
               height={displayedHeight}
+              listening={true}
+            />
+          ) : (
+            <Rect
+              name="background-image"
+              x={imageX}
+              y={imageY}
+              width={displayedWidth}
+              height={displayedHeight}
+              fill="#f3f4f6"
               listening={true}
             />
           )}

@@ -41,6 +41,8 @@ export interface DesignerHeaderProps {
   isPlacingSections: boolean;
   onClearAllPlacements: () => void;
   onMainImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Called when user removes the floor plan image (switch to simple floor) */
+  onRemoveImage?: () => void | Promise<void>;
   onDetectSections?: () => void;
   isDetectingSections?: boolean;
   onDetectSeats?: () => void;
@@ -67,6 +69,7 @@ export function DesignerHeader({
   isPlacingSections,
   onClearAllPlacements,
   onMainImageSelect,
+  onRemoveImage,
   onDetectSections,
   isDetectingSections = false,
   onDetectSeats,
@@ -78,8 +81,8 @@ export function DesignerHeader({
     (venueType === "small" && seats.length > 0) ||
     (viewingSection && displayedSeats.length > 0);
 
-  // Logic for showing dropdown menu
-  const showMenu =
+  // Logic for showing dropdown menu (when we have image)
+  const showImageMenu =
     mainImageUrl &&
     !readOnly &&
     (isPlacingSeats || (venueType === "large" && isPlacingSections));
@@ -93,7 +96,7 @@ export function DesignerHeader({
         {isLoading && (
           <span className="text-xs text-muted-foreground">Loading seats...</span>
         )}
-        {seatsError && (
+        {Boolean(seatsError) && (
           <span className="text-xs text-destructive">Error loading seats</span>
         )}
       </div>
@@ -161,7 +164,27 @@ export function DesignerHeader({
           )}
         </Button>
         
-        {showMenu && (
+        {!mainImageUrl && !readOnly && onMainImageSelect && (
+          <Label htmlFor="add-floor-plan-image" className="cursor-pointer">
+            <Button variant="outline" size="sm" className="h-7 px-2" asChild>
+              <span>
+                <ImageIcon className="h-3.5 w-3.5 mr-1" />
+                Add floor plan image
+              </span>
+            </Button>
+            <Input
+              id="add-floor-plan-image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                onMainImageSelect(e);
+                e.target.value = "";
+              }}
+              className="hidden"
+            />
+          </Label>
+        )}
+        {showImageMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-7 w-7 p-0">
@@ -192,6 +215,18 @@ export function DesignerHeader({
                   </div>
                 </DropdownMenuItem>
               </Label>
+              {onRemoveImage && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onRemoveImage()}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove Image
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}

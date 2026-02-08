@@ -6,6 +6,7 @@ import {
   useVenue,
   useLayoutService,
   useLayoutWithSeats,
+  useUpdateLayout,
 } from "@truths/ticketing";
 import {
   VenueProvider,
@@ -42,6 +43,7 @@ function SeatDesignerContent({
   // Use combined endpoint to fetch layout with seats in one request
   const { data: layoutWithSeats, isLoading: layoutLoading } =
     useLayoutWithSeats(layoutService, effectiveLayoutId ?? null);
+  const updateLayoutMutation = useUpdateLayout(layoutService);
 
   // Check if layout is attached to any active events (not completed or cancelled)
   const { data: eventsData } = useEvents(
@@ -119,6 +121,12 @@ function SeatDesignerContent({
         initialSections={layoutWithSeats?.sections}
         fileId={layoutWithSeats?.layout.file_id}
         readOnly={isReadOnly}
+        onRemoveImage={async () => {
+          await updateLayoutMutation.mutateAsync({
+            id: effectiveLayoutId,
+            input: { file_id: "" },
+          });
+        }}
       />
     </div>
   );

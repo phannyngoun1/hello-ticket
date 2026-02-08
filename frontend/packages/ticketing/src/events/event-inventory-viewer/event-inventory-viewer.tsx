@@ -197,14 +197,15 @@ export function EventInventoryViewer({
     return layoutSeats;
   }, [layout.design_mode, selectedSectionId, layoutSeats]);
 
-  // Load image
+  // Load image (when no displayImageUrl, use simple floor mode - no image, blank canvas)
   useEffect(() => {
     if (!displayImageUrl) {
       setImage(null);
-      setImageLoaded(false);
+      setImageLoaded(true); // Ready to render blank canvas
       return;
     }
 
+    setImageLoaded(false);
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -501,19 +502,25 @@ export function EventInventoryViewer({
   const validWidth = containerSize.width > 0 ? containerSize.width : 800;
   const validHeight = containerSize.height > 0 ? containerSize.height : 600;
 
+  const hasImage = !!image && !!image.width && !!image.height;
+
   // Convert percentage coordinates to Konva stage coordinates
-  // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
-  // This matches the layout designer exactly
+  // When no image (simple floor), use container as reference
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
-      if (!image) return { x: 0, y: 0 };
-
       const currentValidWidth =
         containerSize.width > 0 ? containerSize.width : 800;
       const currentValidHeight =
         containerSize.height > 0 ? containerSize.height : 600;
 
-      const imageAspectRatio = image.height / image.width;
+      if (!hasImage) {
+        return {
+          x: (xPercent / 100) * currentValidWidth,
+          y: (yPercent / 100) * currentValidHeight,
+        };
+      }
+
+      const imageAspectRatio = image!.height / image!.width;
       const containerAspectRatio = currentValidHeight / currentValidWidth;
 
       let displayedWidth: number;
@@ -527,7 +534,6 @@ export function EventInventoryViewer({
         displayedHeight = displayedWidth * imageAspectRatio;
       }
 
-      // Image is positioned centered in container
       const imageX = (currentValidWidth - displayedWidth) / 2;
       const imageY = (currentValidHeight - displayedHeight) / 2;
 
@@ -536,11 +542,11 @@ export function EventInventoryViewer({
 
       return { x, y };
     },
-    [image, containerSize]
+    [image, hasImage, containerSize]
   );
 
-  // Show loading indicator while image is loading or image dimensions are invalid
-  if (isLoading || !image || !imageLoaded || !image.width || !image.height) {
+  // Show loading indicator only when image URL provided but not yet loaded
+  if (isLoading || (displayImageUrl && (!imageLoaded || !hasImage))) {
     return (
       <div
         className={cn(
@@ -566,27 +572,27 @@ export function EventInventoryViewer({
     );
   }
 
-  // Calculate image dimensions to fit within container while maintaining aspect ratio
-  // Use the same logic as layout designer
-  const imageAspectRatio = image.height / image.width;
+  // Calculate display dimensions (no image = use full container for simple floor)
+  const imageAspectRatio = hasImage
+    ? image!.height / image!.width
+    : validHeight / validWidth;
   const containerAspectRatio = validHeight / validWidth;
 
   let displayedWidth: number;
   let displayedHeight: number;
 
-  if (imageAspectRatio > containerAspectRatio) {
-    // Image is taller - fit to height
+  if (hasImage && imageAspectRatio > containerAspectRatio) {
     displayedHeight = validHeight;
     displayedWidth = displayedHeight / imageAspectRatio;
   } else {
-    // Image is wider - fit to width
     displayedWidth = validWidth;
-    displayedHeight = displayedWidth * imageAspectRatio;
+    displayedHeight = hasImage
+      ? validWidth * imageAspectRatio
+      : validHeight;
   }
 
-  // Position image centered in container
-  const imageX = (validWidth - displayedWidth) / 2;
-  const imageY = (validHeight - displayedHeight) / 2;
+  const imageX = hasImage ? (validWidth - displayedWidth) / 2 : 0;
+  const imageY = hasImage ? (validHeight - displayedHeight) / 2 : 0;
 
   // Calculate center point for zoom/pan transforms
   const centerX = validWidth / 2;

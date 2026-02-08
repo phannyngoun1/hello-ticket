@@ -63,6 +63,8 @@ export interface SeatDesignerProps {
     shape?: string | null;
   }>;
   onImageUpload?: (url: string) => void;
+  /** Called when user removes the floor plan image (switch to simple floor). Parent should persist via layout update. */
+  onRemoveImage?: () => Promise<void>;
   className?: string;
   fileId?: string;
 }

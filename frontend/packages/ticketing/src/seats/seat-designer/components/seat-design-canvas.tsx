@@ -14,8 +14,9 @@ import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
 
 export interface SeatDesignCanvasProps {
-  imageUrl: string;
-  /** When true and no imageUrl, render ImageUploadCard instead of canvas */
+  /** When undefined/empty, renders blank canvas (simple floor mode) */
+  imageUrl?: string;
+  /** When true and no imageUrl, render ImageUploadCard instead of canvas. When false, render blank canvas. */
   showImageUpload?: boolean;
   imageUploadId?: string;
   imageUploadLabel?: string;
@@ -115,9 +116,7 @@ export function SeatDesignCanvas({
     );
   }
 
-  if (!imageUrl) {
-    return null;
-  }
+  // When !imageUrl and !showImageUpload: render blank canvas (simple floor mode)
 
   const containerStyleProps =
     containerStyle === "fixed"
@@ -144,7 +143,7 @@ export function SeatDesignCanvas({
       {dimensionsReady ? (
         <>
           <LayoutCanvas
-            imageUrl={imageUrl}
+            imageUrl={imageUrl ?? undefined}
             seats={seats}
             sections={[]}
             selectedSeatId={selectedSeatId ?? null}

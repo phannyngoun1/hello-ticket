@@ -38,7 +38,6 @@ import {
 } from "./form-schemas";
 import {
   ZoomControls,
-  ImageUploadCard,
   InstructionsPanel,
   SectionFormSheet,
   SeatEditSheet,
@@ -74,6 +73,7 @@ export function SeatDesigner({
   initialSeats,
   initialSections,
   onImageUpload,
+  onRemoveImage,
   className,
   fileId: initialFileId,
 }: SeatDesignerProps & { fileId?: string }) {
@@ -305,15 +305,6 @@ export function SeatDesigner({
     initialSections,
     sectionsData,
   ]);
-
-  // Validate venueId and layoutId after hooks
-  if (!venueId) {
-    return <div className="p-4 text-destructive">Venue ID is required</div>;
-  }
-
-  if (!layoutId) {
-    return <div className="p-4 text-destructive">Layout ID is required</div>;
-  }
 
   // Initial synchronous measurement to avoid first-render resizing
   useLayoutEffect(() => {
@@ -2869,21 +2860,101 @@ export function SeatDesigner({
     );
   }
 
+  const handleRemoveMainImage = async () => {
+    setMainImageUrl(undefined);
+    setMainImageFileId(undefined);
+    await onRemoveImage?.();
+  };
+
+  const handleAlign = useCallback(
+    (
+      alignment:
+        | "left"
+        | "center"
+        | "right"
+        | "top"
+        | "middle"
+        | "bottom"
+    ) => {
+      const seatItems = seats.filter((s) => selectedSeatIds.includes(s.id));
+      const sectionItems = sectionMarkers.filter((s) =>
+        selectedSectionIds.includes(s.id)
+      );
+      const allX = [
+        ...seatItems.map((s) => s.x),
+        ...sectionItems.map((s) => s.x),
+      ];
+      const allY = [
+        ...seatItems.map((s) => s.y),
+        ...sectionItems.map((s) => s.y),
+      ];
+      if (allX.length === 0 && allY.length === 0) return;
+
+      const minX = Math.min(...allX);
+      const maxX = Math.max(...allX);
+      const minY = Math.min(...allY);
+      const maxY = Math.max(...allY);
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      const getNewX = () => {
+        if (alignment === "left") return minX;
+        if (alignment === "right") return maxX;
+        if (alignment === "center") return centerX;
+        return undefined;
+      };
+      const getNewY = () => {
+        if (alignment === "top") return minY;
+        if (alignment === "bottom") return maxY;
+        if (alignment === "middle") return centerY;
+        return undefined;
+      };
+
+      const newX = getNewX();
+      const newY = getNewY();
+
+      if (seatItems.length > 0 && (newX !== undefined || newY !== undefined)) {
+        setSeats((prev) =>
+          prev.map((s) =>
+            selectedSeatIds.includes(s.id)
+              ? {
+                  ...s,
+                  x: newX !== undefined ? newX : s.x,
+                  y: newY !== undefined ? newY : s.y,
+                }
+              : s
+          )
+        );
+      }
+      if (
+        sectionItems.length > 0 &&
+        (newX !== undefined || newY !== undefined)
+      ) {
+        setSectionMarkers((prev) =>
+          prev.map((s) =>
+            selectedSectionIds.includes(s.id)
+              ? {
+                  ...s,
+                  x: newX !== undefined ? newX : s.x,
+                  y: newY !== undefined ? newY : s.y,
+                }
+              : s
+          )
+        );
+      }
+    },
+    [
+      seats,
+      sectionMarkers,
+      selectedSeatIds,
+      selectedSectionIds,
+    ]
+  );
+
   const designerContent = (
     <div className="space-y-4">
-      {/* Main Image Upload */}
-      {!mainImageUrl && (
-        <ImageUploadCard
-          id="main-image-upload"
-          label={`Upload ${designMode === "seat-level" ? "Venue" : "Main"} Floor Plan Image`}
-          isUploading={isUploadingImage}
-          onFileSelect={handleMainImageSelect}
-        />
-      )}
-
-      {/* Main Designer Content (Header + Canvas) */}
-      {mainImageUrl && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out">
+      {/* Main Designer Content (Header + Canvas) - always visible; canvas shows blank when no image (simple floor) */}
+      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out">
           <DesignerHeader
             layoutName={layoutName}
             isLoading={isLoading}
@@ -2905,13 +2976,16 @@ export function SeatDesigner({
             onClearAllPlacements={handleClearAllPlacements}
             onMainImageSelect={handleMainImageSelect}
             onDetectSections={
-              designMode === "section-level" ? handleDetectSections : undefined
+              mainImageUrl && designMode === "section-level"
+                ? handleDetectSections
+                : undefined
             }
             isDetectingSections={isDetectingSections}
             onDetectSeats={
-              venueType === "small" ? handleDetectSeats : undefined
+              mainImageUrl && venueType === "small" ? handleDetectSeats : undefined
             }
             isDetectingSeats={isDetectingSeats}
+            onRemoveImage={mainImageUrl ? handleRemoveMainImage : undefined}
           />
 
           <div className="space-y-4">
@@ -2934,6 +3008,9 @@ export function SeatDesigner({
                 onSectionDelete={handleDeleteSection}
                 onSeatShapeStyleChange={handleSeatShapeStyleChange}
                 onSectionShapeStyleChange={handleSectionShapeStyleChange}
+                onAlign={handleAlign}
+                selectedSeatCount={selectedSeatIds.length}
+                selectedSectionCount={selectedSectionIds.length}
                 seatPlacement={{
                   form: seatPlacementForm,
                   uniqueSections: getUniqueSections(),
@@ -3005,6 +3082,9 @@ export function SeatDesigner({
                     onSectionDelete={handleDeleteSection}
                     onSeatShapeStyleChange={handleSeatShapeStyleChange}
                     onSectionShapeStyleChange={handleSectionShapeStyleChange}
+                    onAlign={handleAlign}
+                    selectedSeatCount={0}
+                    selectedSectionCount={selectedSectionIds.length}
                     readOnly={readOnly}
                   />
                 )}
@@ -3102,7 +3182,6 @@ export function SeatDesigner({
             )}
           </div>
         </div>
-      )}
 
       {/* Datasheet Sheet */}
       <DatasheetView
@@ -3193,6 +3272,13 @@ export function SeatDesigner({
       )}
     </div>
   );
+
+  if (!venueId) {
+    return <div className="p-4 text-destructive">Venue ID is required</div>;
+  }
+  if (!layoutId) {
+    return <div className="p-4 text-destructive">Layout ID is required</div>;
+  }
 
   return (
     <>

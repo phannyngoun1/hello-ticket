@@ -15,6 +15,12 @@ import {
   Trash2,
   Eye,
   RotateCcw,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
 } from "lucide-react";
 import {
   PlacementShapeType,
@@ -42,6 +48,20 @@ export interface ShapeToolboxProps {
     sectionId: string,
     style: { fillColor?: string; strokeColor?: string }
   ) => void;
+  /** Called when user aligns multiple selected markers. Only shown when 2+ selected. */
+  onAlign?: (
+    alignment:
+      | "left"
+      | "center"
+      | "right"
+      | "top"
+      | "middle"
+      | "bottom"
+  ) => void;
+  /** Number of selected seats (for alignment UI) */
+  selectedSeatCount?: number;
+  /** Number of selected sections (for alignment UI) */
+  selectedSectionCount?: number;
   /** Compact seat placement controls rendered after shapes and seat info */
   seatPlacementControls?: React.ReactNode;
   /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
@@ -63,11 +83,16 @@ export function ShapeToolbox({
   onSectionDelete,
   onSeatShapeStyleChange,
   onSectionShapeStyleChange,
+  onAlign,
+  selectedSeatCount = 0,
+  selectedSectionCount = 0,
   seatPlacementControls,
   seatEditControls,
   className,
   readOnly = false,
 }: ShapeToolboxProps) {
+  const totalSelected = selectedSeatCount + selectedSectionCount;
+  const showAlignment = !readOnly && onAlign && totalSelected >= 2;
   const shapes = [
     {
       type: PlacementShapeType.CIRCLE,
@@ -195,6 +220,89 @@ export function ShapeToolbox({
             })}
           </div>
         </div>
+        )}
+
+        {/* Alignment tools - shown when 2+ markers selected */}
+        {showAlignment && (
+          <div className="flex items-center gap-1 border-l pl-2.5">
+            <div className="text-xs font-medium text-muted-foreground shrink-0">
+              Align:
+            </div>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => onAlign?.("left")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align left"
+              >
+                <AlignLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("center")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align center"
+              >
+                <AlignCenter className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("right")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align right"
+              >
+                <AlignRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("top")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align top"
+              >
+                <AlignStartVertical className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("middle")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align middle"
+              >
+                <AlignCenterVertical className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("bottom")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all",
+                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "bg-background border-border"
+                )}
+                title="Align bottom"
+              >
+                <AlignEndVertical className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Compact seat placement controls - right after shapes so always visible in seat-level */}

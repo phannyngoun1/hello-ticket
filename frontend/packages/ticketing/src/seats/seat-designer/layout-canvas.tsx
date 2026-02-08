@@ -178,7 +178,8 @@ function ShapeRenderer({
 }
 
 interface LayoutCanvasProps {
-  imageUrl: string;
+  /** When undefined/empty, renders blank canvas (simple floor mode) */
+  imageUrl?: string;
   seats: SeatMarker[];
   sections?: SectionMarker[];
   selectedSeatId?: string | null;
@@ -1560,125 +1561,89 @@ export function LayoutCanvas({
     return { fill: "#60a5fa", stroke: "#2563eb" };
   };
 
+  // Compute display dimensions for coordinate conversion (no-image = use container)
+  const hasImage = !!image && !!image.width && !!image.height;
+  const coordValidWidth = containerWidth > 0 ? containerWidth : 800;
+  const coordValidHeight = containerHeight > 0 ? containerHeight : 600;
+  const imageAspectRatio = hasImage
+    ? image!.height / image!.width
+    : coordValidHeight / coordValidWidth;
+  const containerAspectRatio = coordValidHeight / coordValidWidth;
+  const coordDisplayedWidth =
+    hasImage && imageAspectRatio > containerAspectRatio
+      ? coordValidHeight / imageAspectRatio
+      : coordValidWidth;
+  const coordDisplayedHeight =
+    hasImage && imageAspectRatio > containerAspectRatio
+      ? coordValidHeight
+      : coordValidWidth * imageAspectRatio;
+  const coordImageX = hasImage
+    ? (coordValidWidth - coordDisplayedWidth) / 2
+    : 0;
+  const coordImageY = hasImage
+    ? (coordValidHeight - coordDisplayedHeight) / 2
+    : 0;
+
   // Convert percentage coordinates to Konva stage coordinates
   // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
-      if (!image) return { x: 0, y: 0 };
-
-      const validWidth = containerWidth > 0 ? containerWidth : 800;
-      const validHeight = containerHeight > 0 ? containerHeight : 600;
-
-      const imageAspectRatio = image.height / image.width;
-      const containerAspectRatio = validHeight / validWidth;
-
-      let displayedWidth: number;
-      let displayedHeight: number;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        displayedHeight = validHeight;
-        displayedWidth = displayedHeight / imageAspectRatio;
-      } else {
-        displayedWidth = validWidth;
-        displayedHeight = displayedWidth * imageAspectRatio;
-      }
-
-      // Image is positioned centered in container
-      const imageX = (validWidth - displayedWidth) / 2;
-      const imageY = (validHeight - displayedHeight) / 2;
-
-      const x = imageX + (xPercent / 100) * displayedWidth;
-      const y = imageY + (yPercent / 100) * displayedHeight;
-
+      const x =
+        coordImageX + (xPercent / 100) * coordDisplayedWidth;
+      const y =
+        coordImageY + (yPercent / 100) * coordDisplayedHeight;
       return { x, y };
     },
-    [image, containerWidth, containerHeight]
+    [
+      coordImageX,
+      coordImageY,
+      coordDisplayedWidth,
+      coordDisplayedHeight,
+    ]
   );
 
   // Convert Konva stage coordinates to percentage
-  // Coordinates are relative to Layer's centered origin
   const stageToPercentage = useCallback(
     (stageX: number, stageY: number) => {
-      if (!image) return { x: 0, y: 0 };
-
-      const validWidth = containerWidth > 0 ? containerWidth : 800;
-      const validHeight = containerHeight > 0 ? containerHeight : 600;
-
-      const imageAspectRatio = image.height / image.width;
-      const containerAspectRatio = validHeight / validWidth;
-
-      let displayedWidth: number;
-      let displayedHeight: number;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        displayedHeight = validHeight;
-        displayedWidth = displayedHeight / imageAspectRatio;
-      } else {
-        displayedWidth = validWidth;
-        displayedHeight = displayedWidth * imageAspectRatio;
-      }
-
-      // Image is positioned centered in container
-      const imageX = (validWidth - displayedWidth) / 2;
-      const imageY = (validHeight - displayedHeight) / 2;
-
-      const x = ((stageX - imageX) / displayedWidth) * 100;
-      const y = ((stageY - imageY) / displayedHeight) * 100;
-
+      const x = ((stageX - coordImageX) / coordDisplayedWidth) * 100;
+      const y = ((stageY - coordImageY) / coordDisplayedHeight) * 100;
       return { x, y };
     },
-    [image, containerWidth, containerHeight]
+    [
+      coordImageX,
+      coordImageY,
+      coordDisplayedWidth,
+      coordDisplayedHeight,
+    ]
   );
 
   // Convert stage pointer position to percentage, accounting for Layer transforms
   const pointerToPercentage = useCallback(
     (pointerX: number, pointerY: number) => {
-      if (!image) return { x: 0, y: 0 };
+      const centerX = coordValidWidth / 2;
+      const centerY = coordValidHeight / 2;
 
-      // Account for Layer transforms: panOffset, zoomLevel, and offset (centering)
-      const validWidth = containerWidth > 0 ? containerWidth : 800;
-      const validHeight = containerHeight > 0 ? containerHeight : 600;
-      const centerX = validWidth / 2;
-      const centerY = validHeight / 2;
-
-      // Reverse the Layer transform:
-      // Layer has: x = centerX + panOffset.x, y = centerY + panOffset.y, offsetX = centerX, offsetY = centerY
-      // So to reverse: first subtract the layer position, then reverse zoom, then add back offset
       const relativeToLayerX = pointerX - (centerX + panOffset.x);
       const relativeToLayerY = pointerY - (centerY + panOffset.y);
-
-      // Reverse zoom (divide by zoomLevel)
       const beforeZoomX = relativeToLayerX / zoomLevel;
       const beforeZoomY = relativeToLayerY / zoomLevel;
-
-      // Add back offset to get stage coordinates
       const stageX = beforeZoomX + centerX;
       const stageY = beforeZoomY + centerY;
 
-      // Now convert to percentage relative to image
-      const imageAspectRatio = image.height / image.width;
-      const containerAspectRatio = validHeight / validWidth;
-
-      let displayedWidth: number;
-      let displayedHeight: number;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        displayedHeight = validHeight;
-        displayedWidth = displayedHeight / imageAspectRatio;
-      } else {
-        displayedWidth = validWidth;
-        displayedHeight = displayedWidth * imageAspectRatio;
-      }
-
-      const imageX = (validWidth - displayedWidth) / 2;
-      const imageY = (validHeight - displayedHeight) / 2;
-
-      const x = ((stageX - imageX) / displayedWidth) * 100;
-      const y = ((stageY - imageY) / displayedHeight) * 100;
-
+      const x = ((stageX - coordImageX) / coordDisplayedWidth) * 100;
+      const y = ((stageY - coordImageY) / coordDisplayedHeight) * 100;
       return { x, y };
     },
-    [image, containerWidth, containerHeight, panOffset, zoomLevel]
+    [
+      coordValidWidth,
+      coordValidHeight,
+      coordImageX,
+      coordImageY,
+      coordDisplayedWidth,
+      coordDisplayedHeight,
+      panOffset,
+      zoomLevel,
+    ]
   );
 
   // Handle seat drag end
@@ -1713,22 +1678,13 @@ export function LayoutCanvas({
   const validWidth = containerWidth > 0 ? containerWidth : 800;
   const validHeight = containerHeight > 0 ? containerHeight : 600;
 
-  // Compute display dimensions (use defaults when image not ready - for consistent hook order)
+  // Compute display dimensions (no-image = use full container for simple floor mode)
   const centerX = validWidth / 2;
   const centerY = validHeight / 2;
-  const imageAspectRatio =
-    image && image.width && image.height ? image.height / image.width : 1;
-  const containerAspectRatio = validHeight / validWidth;
-  const displayedWidth =
-    imageAspectRatio > containerAspectRatio
-      ? validHeight / imageAspectRatio
-      : validWidth;
-  const displayedHeight =
-    imageAspectRatio > containerAspectRatio
-      ? validHeight
-      : validWidth * imageAspectRatio;
-  const imageX = (validWidth - displayedWidth) / 2;
-  const imageY = (validHeight - displayedHeight) / 2;
+  const displayedWidth = coordDisplayedWidth;
+  const displayedHeight = coordDisplayedHeight;
+  const imageX = coordImageX;
+  const imageY = coordImageY;
 
   // Viewport virtualization - MUST be before any early return to keep hook order consistent
   const { visibleSeats, visibleSections, visibleShapeOverlays } = useMemo(() => {
@@ -1833,8 +1789,9 @@ export function LayoutCanvas({
   const selectedSection = visibleSections.find((s) => s.id === selectedSectionId);
   const draggedSection = visibleSections.find((s) => s.id === draggedSectionId);
 
-  // Show loading indicator while image is loading or image dimensions are invalid
-  if (imageLoading || !image || !image.width || !image.height) {
+  // Show loading indicator only when imageUrl is provided but image not yet loaded
+  // When !imageUrl (simple floor mode), render canvas immediately with blank background
+  if (imageUrl && (imageLoading || !image || !image.width || !image.height)) {
     return (
       <div
         style={{
@@ -2280,16 +2237,17 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
-      {/* Background Layer: Image only - rarely redraws */}
+      {/* Background Layer: Image or blank rect (simple floor) */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
-        <Image
-          name="background-image"
-          image={image}
-          x={imageX}
-          y={imageY}
-          width={displayedWidth}
-          height={displayedHeight}
-          listening={true}
+        {image ? (
+          <Image
+            name="background-image"
+            image={image}
+            x={imageX}
+            y={imageY}
+            width={displayedWidth}
+            height={displayedHeight}
+            listening={true}
           onMouseMove={(e) => {
             if (
               selectedShapeTool === PlacementShapeType.FREEFORM &&
@@ -2419,6 +2377,145 @@ export function LayoutCanvas({
             }
           }}
         />
+        ) : (
+          <Rect
+            name="background-image"
+            x={imageX}
+            y={imageY}
+            width={displayedWidth}
+            height={displayedHeight}
+            fill="#f3f4f6"
+            listening={true}
+            onMouseMove={(e) => {
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                freeformPath.length > 0
+              ) {
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y
+                  );
+                  setFreeformHoverPos(percentageCoords);
+                }
+              }
+            }}
+            onClick={(e) => {
+              if (ignoreClickRef.current) {
+                ignoreClickRef.current = false;
+                return;
+              }
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                onShapeDraw
+              ) {
+                e.cancelBubble = true;
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y
+                  );
+                  if (freeformPath.length >= 2) {
+                    const firstPoint = freeformPath[0];
+                    const distanceToStart = Math.sqrt(
+                      Math.pow(percentageCoords.x - firstPoint.x, 2) +
+                        Math.pow(percentageCoords.y - firstPoint.y, 2)
+                    );
+                    if (distanceToStart < 1.5) {
+                      const finalPath = [...freeformPath, firstPoint];
+                      const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                      const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                      const cx = sumX / finalPath.length;
+                      const cy = sumY / finalPath.length;
+                      const points: number[] = [];
+                      finalPath.forEach((point) => {
+                        points.push(point.x - cx, point.y - cy);
+                      });
+                      const shape: PlacementShape = {
+                        type: PlacementShapeType.FREEFORM,
+                        points,
+                      };
+                      onShapeDraw(shape, cx, cy);
+                      setFreeformPath([]);
+                      setFreeformHoverPos(null);
+                      return;
+                    }
+                  }
+                  setFreeformPath((prev) => {
+                    if (prev.length === 0) return [percentageCoords];
+                    const lastPoint = prev[prev.length - 1];
+                    const distanceInPercent = Math.sqrt(
+                      Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                        Math.pow(percentageCoords.y - lastPoint.y, 2)
+                    );
+                    if (distanceInPercent >= 0.1) return [...prev, percentageCoords];
+                    return prev;
+                  });
+                }
+                return;
+              }
+              const target = e.target;
+              if (
+                target &&
+                target.name() === "background-image" &&
+                !selectedShapeTool &&
+                !isDrawingShape
+              ) {
+                onDeselect?.();
+              }
+              if (onImageClick) {
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y
+                  );
+                  onImageClick(e, percentageCoords);
+                } else {
+                  onImageClick(e);
+                }
+              }
+            }}
+          onDblClick={(e) => {
+            if (
+              selectedShapeTool === PlacementShapeType.FREEFORM &&
+              freeformPath.length >= 2 &&
+              onShapeDraw
+            ) {
+              e.cancelBubble = true;
+              const finalPath = [...freeformPath, freeformPath[0]];
+              const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+              const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+              const cx = sumX / finalPath.length;
+              const cy = sumY / finalPath.length;
+              const points: number[] = [];
+              finalPath.forEach((point) => {
+                points.push(point.x - cx, point.y - cy);
+              });
+              const shape: PlacementShape = {
+                type: PlacementShapeType.FREEFORM,
+                points,
+              };
+              onShapeDraw(shape, cx, cy);
+              setFreeformPath([]);
+              setFreeformHoverPos(null);
+            }
+          }}
+          onTap={(e) => {
+            const target = e.target;
+            if (
+              target &&
+              target.name() === "background-image" &&
+              !selectedShapeTool &&
+              !isDrawingShape
+            ) {
+              onDeselect?.();
+            }
+          }}
+        />
+        )}
       </Layer>
 
       {/* Static Layer: Non-selected, non-dragged - redraws only on selection/drag-end */}
