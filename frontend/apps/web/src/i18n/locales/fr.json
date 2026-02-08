@@ -90,6 +90,7 @@
       "success": "Connexion réussie",
       "successDescription": "Bon retour !",
       "error": "Échec de la connexion",
+      "capsLockOn": "Vérrouillage des majuscules activé",
       "errors": {
         "usernameRequired": "Le nom d'utilisateur ou l'email est requis",
         "passwordRequired": "Le mot de passe est requis",

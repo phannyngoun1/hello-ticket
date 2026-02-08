@@ -90,6 +90,7 @@
       "success": "Inicio de sesión exitoso",
       "successDescription": "¡Bienvenido de nuevo!",
       "error": "Error al iniciar sesión",
+      "capsLockOn": "Bloq Mayús está activado",
       "errors": {
         "usernameRequired": "El usuario o correo electrónico es requerido",
         "passwordRequired": "La contraseña es requerida",

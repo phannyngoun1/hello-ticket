@@ -97,6 +97,7 @@
       "success": "Login successful",
       "successDescription": "Welcome back!",
       "error": "Login failed",
+      "capsLockOn": "Caps Lock is on",
       "errors": {
         "usernameRequired": "Username or email is required",
         "passwordRequired": "Password is required",

@@ -331,6 +331,7 @@ export function LoginPage() {
               error={Boolean(errors.password)}
               disabled={isLoading}
               autoComplete="current-password"
+              capsLockMessage={t("pages.login.capsLockOn")}
             />
           </FormFieldWrapper>
 
