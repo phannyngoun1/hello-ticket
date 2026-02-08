@@ -96,7 +96,15 @@ From `backend/env.example` you may also set:
 
 ## Database schema on Railway
 
-**Yes – tables are created automatically when the app starts.** The backend runs `create_db_and_tables()` and `create_platform_db_and_tables()` on startup (see `backend/app/startup.py`). So on first deploy, once the app starts and connects to PostgreSQL, all tables are created from the current models. You do **not** create the schema in the Railway PostgreSQL dashboard.
+**Fresh deploy:** If you see migration errors (e.g. "relation X does not exist"), reset the database once, then redeploy:
+
+```bash
+DATABASE_URL="<your-railway-postgres-url>" python tools/reset-db.py
+```
+
+Then deploy again. Migrations run before uvicorn in the Docker CMD.
+
+**Normal operation:** Migrations run before uvicorn (Dockerfile CMD). One initial migration creates all tables. The backend runs `create_db_and_tables()` and `create_platform_db_and_tables()` on startup (see `backend/app/startup.py`). So on first deploy, once the app starts and connects to PostgreSQL, all tables are created from the current models. You do **not** create the schema in the Railway PostgreSQL dashboard.
 
 **Two ways the schema is managed:**
 
