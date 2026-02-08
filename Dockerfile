@@ -30,11 +30,9 @@ ENV FRONTEND_DIST_DIR=/app/frontend_dist
 ENV PYTHONPATH=/app/backend
 ENV PORT=8000
 
-# Run from repo root so tools/migrate-db.py can be used in release phase
 WORKDIR /app
 EXPOSE 8000
 
-# Railway: run migrations before app startup (python tools/migrate-db.py upgrade), then start the app.
-# Tables are created at app startup (not in migrate). Migrate stamps Alembic version for future schema changes.
+# Start the app (run migrations manually: python tools/migrate-db.py upgrade, or from backend: alembic upgrade head).
 # Railway sets PORT at runtime; use it so the app listens on the right port.
-CMD ["sh", "-c", "python tools/migrate-db.py upgrade && cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
