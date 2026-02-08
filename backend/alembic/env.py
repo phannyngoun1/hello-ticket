@@ -69,10 +69,15 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Get database URL from environment variable
-database_url = os.getenv(
+# Get database URL from environment variable (normalize postgres:// for Railway etc.)
+_raw_url = os.getenv(
     "DATABASE_URL",
-    "postgresql://ticket:ticket_pass@localhost:5432/ticket"
+    "postgresql://ticket:ticket_pass@localhost:5432/ticket",
+)
+database_url = (
+    "postgresql://" + _raw_url[len("postgres://") :]
+    if _raw_url.startswith("postgres://")
+    else _raw_url
 )
 
 # Override sqlalchemy.url with environment variable

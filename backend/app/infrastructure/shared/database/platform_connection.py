@@ -26,10 +26,20 @@ logger = logging.getLogger(__name__)
 # Load environment variables from .env file
 load_dotenv()
 
+
+def _normalize_database_url(url: str) -> str:
+    """Normalize DB URL: Railway and others may provide postgres://; we need postgresql://."""
+    if url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://") :]
+    return url
+
+
 # Get database URL from environment - SAME as operational database
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://ticket:ticket_pass@localhost:5432/ticket"
+DATABASE_URL = _normalize_database_url(
+    os.getenv(
+        "DATABASE_URL",
+        "postgresql://ticket:ticket_pass@localhost:5432/ticket",
+    )
 )
 
 # For async operations, use asyncpg if available

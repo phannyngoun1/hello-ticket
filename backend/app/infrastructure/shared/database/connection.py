@@ -20,8 +20,7 @@ from app.infrastructure.shared.database.models import (
     UISchemaModel, UISchemaVersionModel, UIPageModel, UICustomComponentModel,
     # Audit
     AuditLogModel,
-    operational_metadata
-,
+    operational_metadata,
     # Sales master data
     BookingModel,
     # Ticketing master data
@@ -31,7 +30,8 @@ from app.infrastructure.shared.database.models import (
     # Ticketing master data
     VenueTypeModel,
     # Sales master data
-    EmployeeModel)
+    EmployeeModel,
+)
 
 # Load environment variables from .env file
 try:
@@ -40,11 +40,21 @@ except (OSError, PermissionError):
     # Ignore missing or unreadable .env files in constrained environments (e.g., tests)
     pass
 
+
+def _normalize_database_url(url: str) -> str:
+    """Normalize DB URL: Railway and others may provide postgres://; we need postgresql://."""
+    if url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://") :]
+    return url
+
+
 # Database URL from environment variable
 # Default to PostgreSQL with single database configuration
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://ticket:ticket_pass@localhost:5432/ticket"
+DATABASE_URL = _normalize_database_url(
+    os.getenv(
+        "DATABASE_URL",
+        "postgresql://ticket:ticket_pass@localhost:5432/ticket",
+    )
 )
 
 # Create engine with PostgreSQL optimizations
