@@ -934,11 +934,15 @@ export function SeatDesigner({
     if (!mainImageUrl) return;
     setIsDetectingSections(true);
     try {
-      const url = mainImageUrl.startsWith("http") ? mainImageUrl : `${window.location.origin}${mainImageUrl}`;
+      const url = mainImageUrl.startsWith("http")
+        ? mainImageUrl
+        : `${window.location.origin}${mainImageUrl}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load image");
       const blob = await res.blob();
-      const file = new File([blob], "floor-plan.png", { type: blob.type || "image/png" });
+      const file = new File([blob], "floor-plan.png", {
+        type: blob.type || "image/png",
+      });
       const data = await detectMarkers(file);
       const newMarkers: SectionMarker[] = (data.sections || []).map((s, i) => {
         const shapeType =
@@ -963,18 +967,31 @@ export function SeatDesigner({
       });
       if (newMarkers.length > 0) {
         setSectionMarkers((prev) => [...prev, ...newMarkers]);
-        toast.success(`Added ${newMarkers.length} suggested section(s). You can move or edit them.`);
+        toast({
+          title: `Added ${newMarkers.length} suggested section(s). You can move or edit them.`,
+          variant: "default",
+        });
       } else {
-        toast.info("No sections detected. Try a clearer floor plan image.");
+        toast({
+          title: "No sections detected. Try a clearer floor plan image.",
+          variant: "default",
+        });
       }
     } catch (err) {
       console.error("Detect sections failed:", err);
       if (err instanceof ApiError && err.status === 503) {
-        toast.error(
-          "AI section detection is not available. The server is not configured for AI features. Please contact your administrator."
-        );
+        toast({
+          title: "AI section detection is not available",
+          description:
+            "The server is not configured for AI features. Please contact your administrator.",
+          variant: "destructive",
+        });
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to detect sections");
+        toast({
+          title:
+            err instanceof Error ? err.message : "Failed to detect sections",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsDetectingSections(false);
@@ -987,11 +1004,15 @@ export function SeatDesigner({
     if (!imageUrl) return;
     setIsDetectingSeats(true);
     try {
-      const url = imageUrl.startsWith("http") ? imageUrl : `${window.location.origin}${imageUrl}`;
+      const url = imageUrl.startsWith("http")
+        ? imageUrl
+        : `${window.location.origin}${imageUrl}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load image");
       const blob = await res.blob();
-      const file = new File([blob], "floor-plan.png", { type: blob.type || "image/png" });
+      const file = new File([blob], "floor-plan.png", {
+        type: blob.type || "image/png",
+      });
       const sectionName = viewingSection?.name ?? undefined;
       const data = await detectSeats(file, sectionName);
       const seatValues = seatPlacementForm.getValues();
@@ -1017,18 +1038,30 @@ export function SeatDesigner({
       }));
       if (newSeats.length > 0) {
         setSeats((prev) => [...prev, ...newSeats]);
-        toast.success(`Added ${newSeats.length} suggested seat(s). You can move or edit them.`);
+        toast({
+          title: `Added ${newSeats.length} suggested seat(s). You can move or edit them.`,
+          variant: "default",
+        });
       } else {
-        toast.info("No seats detected. Try a clearer image of the seating area.");
+        toast({
+          title: "No seats detected. Try a clearer image of the seating area.",
+          variant: "default",
+        });
       }
     } catch (err) {
       console.error("Detect seats failed:", err);
       if (err instanceof ApiError && err.status === 503) {
-        toast.error(
-          "AI seat detection is not available. The server is not configured for AI features. Please contact your administrator."
-        );
+        toast({
+          title: "AI seat detection is not available",
+          description:
+            "The server is not configured for AI features. Please contact your administrato  r.",
+          variant: "destructive",
+        });
       } else {
-        toast.error(err instanceof Error ? err.message : "Failed to detect seats");
+        toast({
+          title: err instanceof Error ? err.message : "Failed to detect seats",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsDetectingSeats(false);
@@ -2867,9 +2900,13 @@ export function SeatDesigner({
             isPlacingSections={isPlacingSections}
             onClearAllPlacements={handleClearAllPlacements}
             onMainImageSelect={handleMainImageSelect}
-            onDetectSections={designMode === "section-level" ? handleDetectSections : undefined}
+            onDetectSections={
+              designMode === "section-level" ? handleDetectSections : undefined
+            }
             isDetectingSections={isDetectingSections}
-            onDetectSeats={venueType === "small" ? handleDetectSeats : undefined}
+            onDetectSeats={
+              venueType === "small" ? handleDetectSeats : undefined
+            }
             isDetectingSeats={isDetectingSeats}
           />
 
