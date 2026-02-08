@@ -1,11 +1,13 @@
-"""Initial migration - create all tables from current models (fresh DB)
+"""Initial migration - version stamp only (tables created at app startup)
 
 Revision ID: 0001_initial
 Revises:
 Create Date: 2026-02-08
 
-Single migration for fresh deployments. Creates all platform and operational tables
-from current SQLModel definitions. Use this when starting with an empty database.
+Tables are created at application startup via create_platform_db_and_tables()
+and create_db_and_tables() in the same process that serves requests. This
+migration only records the schema version for Alembic. Run the app once to
+create tables; "alembic upgrade head" is optional (e.g. for CI or future migrations).
 """
 from alembic import op
 
@@ -18,21 +20,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Create all tables from current models. Uses app's create_* functions
-    (own connections) to avoid Alembic transaction conflicts."""
-    from app.infrastructure.shared.database.platform_connection import create_platform_db_and_tables
-    from app.infrastructure.shared.database.connection import create_db_and_tables
-
-    create_platform_db_and_tables()
-    create_db_and_tables()
+    """No-op. Platform and operational tables are created at app startup."""
+    pass
 
 
 def downgrade() -> None:
-    """Drop all tables. Use only for development/reset - data will be lost."""
-    from app.infrastructure.shared.database.connection import engine
-    from app.infrastructure.shared.database.platform_connection import platform_engine
-    from app.infrastructure.shared.database.models import operational_metadata
-    from app.infrastructure.shared.database.platform_models import platform_metadata
-
-    operational_metadata.drop_all(bind=engine, checkfirst=True)
-    platform_metadata.drop_all(bind=platform_engine, checkfirst=True)
+    """No-op. Drop tables manually if needed for dev reset."""
+    pass

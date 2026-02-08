@@ -9,6 +9,7 @@ This module handles all startup tasks including:
 
 Author: Phanny
 """
+import asyncio
 import os
 import logging
 from typing import Optional
@@ -182,8 +183,8 @@ async def bootstrap_admin_user() -> bool:
     logger.info("👤 Checking default admin user...")
     
     # Check if required environment variables are set
-    admin_email = os.getenv("DEFAULT_ADMIN_EMAIL")
-    admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
+    admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
+    admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "ChangeMe123!")
     
     if not admin_email or not admin_password:
         logger.warning("⚠  Default admin user not created")
@@ -301,18 +302,24 @@ async def run_startup_tasks() -> None:
     # 0. Validate environment (dev-friendly, prod-strict)
     await validate_environment()
     
-    # 1. Initialize databases (migrations run before uvicorn in Docker CMD; create_all is fallback)
+    # 1. Initialize databases (tables created at startup)
     await initialize_platform_database()
-    await initialize_operational_database()
-    
-    # 2. Register domain event handlers
-    await register_event_handlers()
-    
-    # 3. Ensure default tenant exists
+    # 2. Insert default tenant immediately after platform tables exist
     default_tenant_id = os.getenv("DEFAULT_TENANT_ID", "default-tenant")
+    default_tenant_name = os.getenv("DEFAULT_TENANT_NAME", "Default Tenant")
     if default_tenant_id:
-        await ensure_default_tenant(default_tenant_id, "Default Tenant")
-    
+        tenant_ok = await ensure_default_tenant(default_tenant_id, default_tenant_name)
+        if not tenant_ok:
+            logger.warning("   Retrying default tenant creation in 2s...")
+            await asyncio.sleep(2)
+            tenant_ok = await ensure_default_tenant(default_tenant_id, default_tenant_name)
+        if not tenant_ok:
+            logger.error("   Default tenant could not be created; tenant operations may fail.")
+    await initialize_operational_database()
+
+    # 3. Register domain event handlers
+    await register_event_handlers()
+
     # 4. Sync system roles (if enabled)
     environment = os.getenv("ENVIRONMENT", "development")
     should_sync_roles = (

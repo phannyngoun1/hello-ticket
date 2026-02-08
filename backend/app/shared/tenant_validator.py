@@ -92,26 +92,22 @@ async def ensure_default_tenant_exists_async(tenant_id: str, tenant_name: str = 
     """
     try:
         if not tenant_id or not tenant_id.strip():
-            print(f"❌ Invalid tenant_id provided")
             logger.error("Invalid tenant_id provided")
             return False
-        
+
         repo = get_tenant_repository()
-        
+
         # Check if tenant already exists
-        print(f"🔍 Checking if tenant '{tenant_id}' exists...")
+        logger.info("Checking if default tenant '%s' exists...", tenant_id)
         existing_tenant = await repo.get_by_id(tenant_id)
-        
+
         if existing_tenant:
-            print(f"✓ Tenant '{tenant_id}' already exists")
-            logger.info(f"Default tenant '{tenant_id}' already exists")
+            logger.info("Default tenant '%s' already exists", tenant_id)
             _tenant_cache.add(tenant_id)
             return True
-        
-        # Create new default tenant
-        print(f"🏗️  Creating new tenant '{tenant_id}'...")
-        logger.info(f"Creating default tenant '{tenant_id}'...")
-        
+
+        # Create and insert default tenant record
+        logger.info("Creating default tenant '%s'...", tenant_id)
         default_tenant = Tenant(
             id=tenant_id,
             name=Name(tenant_name),
@@ -121,30 +117,27 @@ async def ensure_default_tenant_exists_async(tenant_id: str, tenant_name: str = 
             settings={
                 "max_users": 100,
                 "features": ["products", "orders", "users", "subscriptions"],
-                "default": True
-            }
+                "default": True,
+            },
         )
-        
-        print(f"💾 Saving tenant to repository...")
-        # Save tenant to repository
+
         saved_tenant = await repo.save(default_tenant)
-        
+
         if saved_tenant:
-            print(f"✅ Successfully created tenant '{tenant_id}'")
-            print(f"   - Name: {saved_tenant.name.value}")
-            print(f"   - Slug: {saved_tenant.slug}")
-            print(f"   - Strategy: {saved_tenant.database_strategy}")
-            logger.info(f"✓ Successfully created default tenant '{tenant_id}'")
+            logger.info(
+                "Default tenant inserted: id=%s name=%s slug=%s",
+                tenant_id,
+                saved_tenant.name.value,
+                saved_tenant.slug,
+            )
             _tenant_cache.add(tenant_id)
             return True
         else:
-            print(f"❌ Failed to save tenant '{tenant_id}'")
-            logger.error(f"Failed to save default tenant '{tenant_id}'")
+            logger.error("Failed to save default tenant '%s'", tenant_id)
             return False
-            
+
     except Exception as e:
-        print(f"❌ Error ensuring default tenant exists: {e}")
-        logger.error(f"Error ensuring default tenant exists: {e}", exc_info=True)
+        logger.error("Error ensuring default tenant exists: %s", e, exc_info=True)
         return False
 
 

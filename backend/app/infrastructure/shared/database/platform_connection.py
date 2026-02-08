@@ -68,13 +68,28 @@ else:
 
 
 def create_platform_db_and_tables():
-    """Create all platform database tables"""
+    """Create all platform database tables. Call this at app startup (single source of truth)."""
     from sqlalchemy.exc import ProgrammingError, OperationalError
     try:
         import psycopg2.errors
     except ImportError:
         psycopg2 = None
-    
+
+    # Ensure all platform models are registered with platform_metadata before create_all
+    # (SQLModel only adds tables to metadata when the model class is imported)
+    from app.infrastructure.shared.database.platform_models import (  # noqa: F401
+        TenantModel,
+        TenantSubscriptionModel,
+        UserModel,
+        SessionModel,
+        GroupModel,
+        UserGroupModel,
+        RoleModel,
+        UserRoleModel,
+        GroupRoleModel,
+        UserPreferenceModel,
+    )
+
     try:
         platform_metadata.create_all(platform_engine, checkfirst=True)
     except (ProgrammingError, OperationalError) as e:
