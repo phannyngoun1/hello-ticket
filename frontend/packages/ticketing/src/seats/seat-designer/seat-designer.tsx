@@ -42,11 +42,13 @@ import {
   InstructionsPanel,
   SectionFormSheet,
   SeatEditSheet,
-  SeatPlacementControls,
+  SeatEditControls,
   SectionDetailView,
   DatasheetView,
   SelectedSectionSheet,
   ManageSectionsSheet,
+  SeatDesignToolbar,
+  SeatDesignCanvas,
   ShapeToolbox,
   SectionCreationToolbar,
   DesignerHeader,
@@ -155,7 +157,8 @@ export function SeatDesigner({
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const [viewingSeat, setViewingSeat] = useState<SeatMarker | null>(null);
-  const [isEditingViewingSeat, setIsEditingViewingSeat] = useState(false);
+  /** Inline seat edit in toolbox (similar to section designer) */
+  const [isEditingSeat, setIsEditingSeat] = useState(false);
 
   // Copy/paste state
   const [copiedSeat, setCopiedSeat] = useState<SeatMarker | null>(null);
@@ -1497,13 +1500,42 @@ export function SeatDesigner({
   // Handle seat view from toolbox - opens the seat sheet in view mode
   const handleSeatView = (seat: SeatMarker) => {
     setViewingSeat(seat);
-    setIsEditingViewingSeat(false);
   };
 
-  // Handle seat edit from toolbox - opens the seat data sheet in edit mode
+  // Handle seat edit from toolbox - inline edit in toolbox (similar to section designer)
   const handleSeatEdit = (seat: SeatMarker) => {
-    setViewingSeat(seat);
-    setIsEditingViewingSeat(true);
+    setIsEditingSeat(true);
+    seatEditForm.reset({
+      section: seat.seat.section,
+      sectionId: seat.seat.sectionId,
+      row: seat.seat.row,
+      seatNumber: seat.seat.seatNumber,
+      seatType: seat.seat.seatType,
+    });
+  };
+
+  const handleSeatEditSave = (data: SeatFormData) => {
+    if (selectedSeat && !selectedSeat.isNew) {
+      updateSeatMutation.mutate(
+        { seatId: selectedSeat.id, data },
+        {
+          onSuccess: () => setIsEditingSeat(false),
+        }
+      );
+    } else if (selectedSeat && selectedSeat.isNew) {
+      setSeats((prev) =>
+        prev.map((s) =>
+          s.id === selectedSeat.id ? { ...s, seat: data } : s
+        )
+      );
+      setSelectedSeat(null);
+      setIsEditingSeat(false);
+      seatEditForm.reset();
+    }
+  };
+
+  const handleSeatEditCancel = () => {
+    setIsEditingSeat(false);
     seatEditForm.reset();
   };
 
@@ -1531,6 +1563,7 @@ export function SeatDesigner({
     setSelectedSectionMarker(null);
     setSelectedSeatIds([]);
     setSelectedSectionIds([]);
+    setIsEditingSeat(false);
   };
 
   // Apply drag-to-select result: set multi-selection and primary from first item
@@ -1584,18 +1617,10 @@ export function SeatDesigner({
     setSectionSelectValue(watchedSection || "");
   }, [watchedSection]);
 
-  // Sync seat edit form when viewingSeat changes (only when entering edit mode)
+  // Clear inline edit mode when selected seat changes or is deselected
   useEffect(() => {
-    if (viewingSeat && isEditingViewingSeat) {
-      seatEditForm.reset({
-        section: viewingSeat.seat.section,
-        sectionId: viewingSeat.seat.sectionId,
-        row: viewingSeat.seat.row,
-        seatNumber: viewingSeat.seat.seatNumber,
-        seatType: viewingSeat.seat.seatType,
-      });
-    }
-  }, [viewingSeat?.id, isEditingViewingSeat]);
+    setIsEditingSeat(false);
+  }, [selectedSeat?.id]);
 
   // Get unique sections using utility function
   const getUniqueSections = (): string[] => {
@@ -2476,7 +2501,6 @@ export function SeatDesigner({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
-      setIsEditingViewingSeat(false);
       seatEditForm.reset();
       setViewingSeat(null);
       setSelectedSeat(null);
@@ -2748,6 +2772,7 @@ export function SeatDesigner({
           onSeatClick={handleSeatClick}
           onSeatDragEnd={handleKonvaSeatDragEnd}
           onSeatShapeTransform={handleSeatShapeTransform}
+          onSeatShapeStyleChange={handleSeatShapeStyleChange}
           onImageClick={handleKonvaImageClick}
           onDeselect={handleDeselect}
           onWheel={handleKonvaWheel}
@@ -2765,7 +2790,7 @@ export function SeatDesigner({
           seats={seats}
           onDeleteSeat={handleDeleteSeat}
           onSetViewingSeat={setViewingSeat}
-          onSetIsEditingViewingSeat={setIsEditingViewingSeat}
+          onEditSeat={handleSeatEdit}
           onSetSelectedSeat={setSelectedSeat}
           seatEditFormReset={seatEditForm.reset}
           placementShape={placementShape}
@@ -2778,64 +2803,42 @@ export function SeatDesigner({
           onShapeOverlayClick={handleShapeOverlayClick}
           onDetectSeats={handleDetectSeats}
           isDetectingSeats={isDetectingSeats}
+          seatEditControls={
+            isEditingSeat && selectedSeat && !readOnly ? (
+              <SeatEditControls
+                form={seatEditForm}
+                uniqueSections={getUniqueSections()}
+                sectionsData={sectionsData}
+                sectionMarkers={sectionMarkers}
+                designMode={designMode}
+                viewingSection={viewingSection}
+                onSave={handleSeatEditSave}
+                onCancel={handleSeatEditCancel}
+                isUpdating={updateSeatMutation.isPending}
+              />
+            ) : undefined
+          }
         />
-        {/* Seat Edit Sheet - needed for section detail view */}
+        {/* Seat View Sheet - needed for section detail view, Edit happens in toolbox */}
         <SeatEditSheet
           viewingSeat={viewingSeat}
           isOpen={!!viewingSeat}
           onOpenChange={(open) => {
             if (!open) {
               setViewingSeat(null);
-              setIsEditingViewingSeat(false);
             }
           }}
-          isEditing={isEditingViewingSeat}
           isPlacingSeats={isPlacingSeats}
-          form={seatEditForm}
-          uniqueSections={getUniqueSections()}
-          sectionsData={sectionsData}
-          sectionMarkers={sectionMarkers}
-          designMode={designMode}
-          isUpdating={updateSeatMutation.isPending}
           isDeleting={deleteSeatMutation.isPending}
           onEdit={() => {
             if (viewingSeat) {
-              setIsEditingViewingSeat(true);
-              seatEditForm.reset({
-                section: viewingSeat.seat.section,
-                sectionId: viewingSeat.seat.sectionId,
-                row: viewingSeat.seat.row,
-                seatNumber: viewingSeat.seat.seatNumber,
-                seatType: viewingSeat.seat.seatType,
-              });
+              handleSeatEdit(viewingSeat);
             }
-          }}
-          onSave={(data) => {
-            if (viewingSeat && !viewingSeat.isNew) {
-              updateSeatMutation.mutate({
-                seatId: viewingSeat.id,
-                data,
-              });
-            } else if (viewingSeat && viewingSeat.isNew) {
-              // Update local state for new seats
-              setSeats((prev) =>
-                prev.map((s) =>
-                  s.id === viewingSeat.id ? { ...s, seat: data } : s
-                )
-              );
-              setViewingSeat(null);
-              setIsEditingViewingSeat(false);
-              seatEditForm.reset();
-            }
-          }}
-          onCancel={() => {
-            setViewingSeat(null);
-            setIsEditingViewingSeat(false);
-            seatEditForm.reset();
           }}
           onDelete={() => {
             if (viewingSeat) {
               handleDeleteSeat(viewingSeat);
+              setViewingSeat(null);
             }
           }}
         />
@@ -2913,7 +2916,7 @@ export function SeatDesigner({
           <div className="space-y-4">
             {/* Seat Placement Controls + Shape Toolbox (Small Venue) */}
             {venueType === "small" && (
-              <ShapeToolbox
+              <SeatDesignToolbar
                 selectedShapeType={selectedShapeTool}
                 onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
                 selectedSeat={selectedSeat}
@@ -2930,21 +2933,30 @@ export function SeatDesigner({
                 onSectionDelete={handleDeleteSection}
                 onSeatShapeStyleChange={handleSeatShapeStyleChange}
                 onSectionShapeStyleChange={handleSectionShapeStyleChange}
-                seatPlacementControls={
-                  !readOnly ? (
-                    <SeatPlacementControls
-                      compact
-                      form={seatPlacementForm}
+                seatPlacement={{
+                  form: seatPlacementForm,
+                  uniqueSections: getUniqueSections(),
+                  sectionsData,
+                  sectionSelectValue,
+                  onSectionSelectValueChange: setSectionSelectValue,
+                  onNewSection: () => {
+                    setIsSectionFormOpen(true);
+                    setEditingSectionId(null);
+                    sectionForm.reset({ name: "" });
+                  },
+                  onManageSections: () => setIsManageSectionsOpen(true),
+                }}
+                seatEditControls={
+                  isEditingSeat && selectedSeat && !readOnly ? (
+                    <SeatEditControls
+                      form={seatEditForm}
                       uniqueSections={getUniqueSections()}
                       sectionsData={sectionsData}
-                      sectionSelectValue={sectionSelectValue}
-                      onSectionSelectValueChange={setSectionSelectValue}
-                      onNewSection={() => {
-                        setIsSectionFormOpen(true);
-                        setEditingSectionId(null);
-                        sectionForm.reset({ name: "" });
-                      }}
-                      onManageSections={() => setIsManageSectionsOpen(true)}
+                      sectionMarkers={sectionMarkers}
+                      designMode={designMode}
+                      onSave={handleSeatEditSave}
+                      onCancel={handleSeatEditCancel}
+                      isUpdating={updateSeatMutation.isPending}
                     />
                   ) : undefined
                 }
@@ -2996,65 +3008,95 @@ export function SeatDesigner({
               </>
             )}
 
-            {/* Canvas Container */}
-            <div
-              ref={containerRef}
-              className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
-              style={{
-                height: "600px", // Fixed height to prevent resizing during zoom
-                width: "100%", // Fixed width to prevent resizing
-                touchAction: "none", // Prevent browser handling touch scroll/pan
-                overscrollBehavior: "contain", // Prevent scroll chaining to parent
-              }}
-            >
-              {dimensionsReady ? (
-                <LayoutCanvas
-                  imageUrl={mainImageUrl}
-                  seats={venueType === "small" ? displayedSeats : []}
-                  sections={venueType === "large" ? sectionMarkers : []}
-                  selectedSeatId={selectedSeat?.id || null}
-                  selectedSectionId={selectedSectionMarker?.id || null}
-                  selectedSeatIds={selectedSeatIds}
-                  selectedSectionIds={selectedSectionIds}
-                  onMarkersInRect={handleMarkersInRect}
-                  isPlacingSeats={venueType === "small" && isPlacingSeats}
-                  isPlacingSections={venueType === "large" && isPlacingSections}
-                  readOnly={readOnly}
-                  zoomLevel={zoomLevel}
-                  panOffset={panOffset}
-                  onSeatClick={handleSeatClick}
-                  onSectionClick={handleKonvaSectionClick}
-                  onSectionDragEnd={handleKonvaSectionDragEnd}
-                  onSeatDragEnd={handleKonvaSeatDragEnd}
-                  onSeatShapeTransform={handleSeatShapeTransform}
-                  onSectionShapeTransform={handleSectionShapeTransform}
-                  shapeOverlays={displayedShapeOverlays}
-                  onImageClick={handleKonvaImageClick}
-                  onDeselect={handleDeselect}
-                  onShapeDraw={handleShapeDraw}
-                  onShapeOverlayClick={handleShapeOverlayClick}
-                  onWheel={handleKonvaWheel}
-                  onPan={handlePan}
-                  containerWidth={containerDimensions.width}
-                  containerHeight={containerDimensions.height}
-                  venueType={venueType}
-                  selectedShapeTool={selectedShapeTool}
-                  selectedOverlayId={selectedOverlayId}
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
-                  Initializing canvas...
-                </div>
-              )}
-              {/* Zoom Controls */}
-              <ZoomControls
+            {/* Canvas Container - Seat-level uses SeatDesignCanvas, section-level uses LayoutCanvas */}
+            {venueType === "small" ? (
+              <SeatDesignCanvas
+                imageUrl={mainImageUrl}
+                containerRef={containerRef}
+                dimensionsReady={dimensionsReady}
+                containerDimensions={containerDimensions}
+                containerStyle="fixed"
+                seats={displayedSeats}
+                selectedSeatId={selectedSeat?.id ?? null}
+                isPlacingSeats={isPlacingSeats}
+                readOnly={readOnly}
                 zoomLevel={zoomLevel}
                 panOffset={panOffset}
+                onSeatClick={handleSeatClick}
+                onSeatDragEnd={handleKonvaSeatDragEnd}
+                onSeatShapeTransform={handleSeatShapeTransform}
+                onImageClick={handleKonvaImageClick}
+                onDeselect={handleDeselect}
+                onShapeDraw={handleShapeDraw}
+                onShapeOverlayClick={handleShapeOverlayClick}
+                onWheel={handleKonvaWheel}
+                onPan={handlePan}
                 onZoomIn={handleZoomIn}
                 onZoomOut={handleZoomOut}
                 onResetZoom={handleResetZoom}
+                selectedShapeTool={selectedShapeTool}
+                shapeOverlays={displayedShapeOverlays}
+                selectedOverlayId={selectedOverlayId}
               />
-            </div>
+            ) : (
+              <div
+                ref={containerRef}
+                className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
+                style={{
+                  height: "600px",
+                  width: "100%",
+                  touchAction: "none",
+                  overscrollBehavior: "contain",
+                }}
+              >
+                {dimensionsReady ? (
+                  <LayoutCanvas
+                    imageUrl={mainImageUrl}
+                    seats={[]}
+                    sections={sectionMarkers}
+                    selectedSeatId={null}
+                    selectedSectionId={selectedSectionMarker?.id || null}
+                    selectedSeatIds={[]}
+                    selectedSectionIds={selectedSectionIds}
+                    onMarkersInRect={handleMarkersInRect}
+                    isPlacingSeats={false}
+                    isPlacingSections={isPlacingSections}
+                    readOnly={readOnly}
+                    zoomLevel={zoomLevel}
+                    panOffset={panOffset}
+                    onSeatClick={handleSeatClick}
+                    onSectionClick={handleKonvaSectionClick}
+                    onSectionDragEnd={handleKonvaSectionDragEnd}
+                    onSeatDragEnd={handleKonvaSeatDragEnd}
+                    onSeatShapeTransform={handleSeatShapeTransform}
+                    onSectionShapeTransform={handleSectionShapeTransform}
+                    shapeOverlays={displayedShapeOverlays}
+                    onImageClick={handleKonvaImageClick}
+                    onDeselect={handleDeselect}
+                    onShapeDraw={handleShapeDraw}
+                    onShapeOverlayClick={handleShapeOverlayClick}
+                    onWheel={handleKonvaWheel}
+                    onPan={handlePan}
+                    containerWidth={containerDimensions.width}
+                    containerHeight={containerDimensions.height}
+                    venueType={venueType}
+                    selectedShapeTool={selectedShapeTool}
+                    selectedOverlayId={selectedOverlayId}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
+                    Initializing canvas...
+                  </div>
+                )}
+                <ZoomControls
+                  zoomLevel={zoomLevel}
+                  panOffset={panOffset}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onResetZoom={handleResetZoom}
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -3087,13 +3129,13 @@ export function SeatDesigner({
         onEditSectionFromSheet={handleEditSectionFromSheet}
         onDeleteSection={handleDeleteSection}
         onSetViewingSeat={setViewingSeat}
-        onSetIsEditingViewingSeat={setIsEditingViewingSeat}
+        onEditSeat={handleSeatEdit}
         onSetSelectedSeat={setSelectedSeat}
         onSetIsDatasheetOpen={setIsDatasheetOpen}
         seatEditFormReset={seatEditForm.reset}
       />
 
-      {/* Seat View Sheet - View/Delete/Edit seat */}
+      {/* Seat View Sheet - View/Delete, Edit happens in toolbox */}
       <SeatEditSheet
         viewingSeat={viewingSeat}
         isOpen={!!viewingSeat}
@@ -3101,54 +3143,14 @@ export function SeatDesigner({
           if (!open) {
             setViewingSeat(null);
             setSelectedSeat(null);
-            setIsEditingViewingSeat(false);
-            seatEditForm.reset();
           }
         }}
-        isEditing={isEditingViewingSeat}
         isPlacingSeats={isPlacingSeats}
-        form={seatEditForm}
-        uniqueSections={getUniqueSections()}
-        sectionsData={sectionsData}
-        sectionMarkers={sectionMarkers}
-        designMode={designMode}
-        isUpdating={updateSeatMutation.isPending}
         isDeleting={deleteSeatMutation.isPending}
         onEdit={() => {
           if (viewingSeat) {
-            setIsEditingViewingSeat(true);
-            seatEditForm.reset({
-              section: viewingSeat.seat.section,
-              sectionId: viewingSeat.seat.sectionId,
-              row: viewingSeat.seat.row,
-              seatNumber: viewingSeat.seat.seatNumber,
-              seatType: viewingSeat.seat.seatType,
-            });
+            handleSeatEdit(viewingSeat);
           }
-        }}
-        onSave={(data) => {
-          if (viewingSeat && !viewingSeat.isNew) {
-            updateSeatMutation.mutate({
-              seatId: viewingSeat.id,
-              data,
-            });
-          } else if (viewingSeat && viewingSeat.isNew) {
-            // Update local state for new seats
-            setSeats((prev) =>
-              prev.map((s) =>
-                s.id === viewingSeat.id ? { ...s, seat: data } : s
-              )
-            );
-            setViewingSeat(null);
-            setSelectedSeat(null);
-            setIsEditingViewingSeat(false);
-            seatEditForm.reset();
-          }
-        }}
-        onCancel={() => {
-          setViewingSeat(null);
-          setIsEditingViewingSeat(false);
-          seatEditForm.reset();
         }}
         onDelete={() => {
           if (viewingSeat) {

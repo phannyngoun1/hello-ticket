@@ -24,13 +24,10 @@ import {
   ArrowLeft,
   ScanSearch,
 } from "lucide-react";
-import { LayoutCanvas } from "../layout-canvas";
 import {
-  ImageUploadCard,
-  SeatPlacementControls,
-  ZoomControls,
   DatasheetView,
-  ShapeToolbox,
+  SeatDesignCanvas,
+  SeatDesignToolbar,
 } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
@@ -65,6 +62,10 @@ export interface SectionDetailViewProps {
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
+  onSeatShapeStyleChange?: (
+    seatId: string,
+    style: { fillColor?: string; strokeColor?: string }
+  ) => void;
   onImageClick: (e: any, coords?: { x: number; y: number }) => void;
   onDeselect?: () => void;
   onWheel: (e: any, isSpacePressed: boolean) => void;
@@ -78,7 +79,7 @@ export interface SectionDetailViewProps {
   seats: SeatMarker[];
   onDeleteSeat: (seat: SeatMarker) => void;
   onSetViewingSeat: (seat: SeatMarker | null) => void;
-  onSetIsEditingViewingSeat: (editing: boolean) => void;
+  onEditSeat?: (seat: SeatMarker) => void;
   onSetSelectedSeat: (seat: SeatMarker | null) => void;
   seatEditFormReset: (data: any) => void;
   placementShape: PlacementShape;
@@ -91,6 +92,8 @@ export interface SectionDetailViewProps {
   onShapeOverlayClick: (overlayId: string) => void;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
+  /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
+  seatEditControls?: React.ReactNode;
 }
 
 export function SectionDetailView({
@@ -118,6 +121,7 @@ export function SectionDetailView({
   onSeatClick,
   onSeatDragEnd,
   onSeatShapeTransform,
+  onSeatShapeStyleChange,
   onImageClick,
   onDeselect,
   onWheel,
@@ -130,7 +134,7 @@ export function SectionDetailView({
   seats,
   onDeleteSeat,
   onSetViewingSeat,
-  onSetIsEditingViewingSeat,
+  onEditSeat,
   onSetSelectedSeat,
   seatEditFormReset,
   selectedShapeTool,
@@ -141,6 +145,7 @@ export function SectionDetailView({
   onShapeOverlayClick,
   onDetectSeats,
   isDetectingSeats = false,
+  seatEditControls,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   return (
@@ -244,111 +249,68 @@ export function SectionDetailView({
 
         {/* Shape Toolbox with compact seat placement controls */}
         {onShapeToolSelect && (
-          <ShapeToolbox
+          <SeatDesignToolbar
             selectedShapeType={selectedShapeTool || null}
             onShapeTypeSelect={onShapeToolSelect}
             selectedSeat={selectedSeat}
             onSeatView={(seat) => {
               onSetViewingSeat(seat);
-              onSetIsEditingViewingSeat(false);
             }}
             onSeatEdit={(seat) => {
-              onSetViewingSeat(seat);
-              onSetIsEditingViewingSeat(true);
-              seatEditFormReset({
-                section: seat.seat.section,
-                sectionId: seat.seat.sectionId,
-                row: seat.seat.row,
-                seatNumber: seat.seat.seatNumber,
-                seatType: seat.seat.seatType,
-              });
+              onEditSeat?.(seat);
             }}
             onSeatDelete={onDeleteSeat}
-            seatPlacementControls={
-              !readOnly ? (
-                <SeatPlacementControls
-                  compact
-                  form={seatPlacementForm}
-                  uniqueSections={uniqueSections}
-                  sectionsData={sectionsData}
-                  sectionSelectValue={sectionSelectValue}
-                  onSectionSelectValueChange={onSectionSelectValueChange}
-                  viewingSection={viewingSection}
-                  onNewSection={onNewSection}
-                />
-              ) : undefined
-            }
+            onSeatShapeStyleChange={onSeatShapeStyleChange}
+            seatPlacement={{
+              form: seatPlacementForm,
+              uniqueSections,
+              sectionsData,
+              sectionSelectValue,
+              onSectionSelectValueChange,
+              viewingSection,
+              onNewSection,
+            }}
+            seatEditControls={seatEditControls}
             readOnly={readOnly}
           />
         )}
 
-        {/* Section Image Upload */}
-        {!viewingSection.imageUrl && (
-          <ImageUploadCard
-            id={`section-image-${viewingSection.id}`}
-            label={`Upload Floor Plan Image for ${viewingSection.name}`}
-            isUploading={isUploadingImage}
-            onFileSelect={(e) => onSectionImageSelect(viewingSection.id, e)}
+        {/* Section Image Upload + Seat Design Canvas */}
+        <div className="space-y-4">
+          <SeatDesignCanvas
+            imageUrl={viewingSection.imageUrl ?? ""}
+            showImageUpload
+            imageUploadId={`section-image-${viewingSection.id}`}
+            imageUploadLabel={`Upload Floor Plan Image for ${viewingSection.name}`}
+            onImageUpload={(e) => onSectionImageSelect(viewingSection.id, e)}
+            isUploadingImage={isUploadingImage}
+            containerRef={containerRef}
+            dimensionsReady={dimensionsReady}
+            containerDimensions={containerDimensions}
+            containerStyle="flex"
+            seats={displayedSeats}
+            selectedSeatId={selectedSeat?.id ?? null}
+            isPlacingSeats={isPlacingSeats}
+            readOnly={readOnly}
+            zoomLevel={zoomLevel}
+            panOffset={panOffset}
+            onSeatClick={onSeatClick}
+            onSeatDragEnd={onSeatDragEnd}
+            onSeatShapeTransform={onSeatShapeTransform}
+            onImageClick={onImageClick}
+            onDeselect={onDeselect}
+            onShapeDraw={onShapeDraw}
+            onShapeOverlayClick={onShapeOverlayClick}
+            onWheel={onWheel}
+            onPan={onPan}
+            onZoomIn={onZoomIn}
+            onZoomOut={onZoomOut}
+            onResetZoom={onResetZoom}
+            selectedShapeTool={selectedShapeTool ?? null}
+            shapeOverlays={shapeOverlays}
+            selectedOverlayId={selectedOverlayId}
           />
-        )}
-
-        {/* Section Image with Seat Markers */}
-        {viewingSection.imageUrl && (
-          <div className="space-y-4">
-            {/* Canvas Container */}
-            <div
-              ref={containerRef}
-              className="relative border rounded-lg overflow-hidden bg-gray-100 flex-1"
-              style={{
-                minHeight: "600px",
-                minWidth: 0,
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-              }}
-            >
-              {dimensionsReady ? (
-                <LayoutCanvas
-                  imageUrl={viewingSection.imageUrl}
-                  seats={displayedSeats}
-                  selectedSeatId={selectedSeat?.id || null}
-                  isPlacingSeats={isPlacingSeats}
-                  isPlacingSections={false}
-                  readOnly={readOnly}
-                  zoomLevel={zoomLevel}
-                  panOffset={panOffset}
-                  onSeatClick={onSeatClick}
-                  onSeatDragEnd={onSeatDragEnd}
-                  onSeatShapeTransform={onSeatShapeTransform}
-                  onImageClick={onImageClick}
-                  onDeselect={onDeselect}
-                  onShapeDraw={onShapeDraw}
-                  onShapeOverlayClick={onShapeOverlayClick}
-                  onWheel={onWheel}
-                  onPan={onPan}
-                  containerWidth={containerDimensions.width}
-                  containerHeight={containerDimensions.height}
-                  venueType="small"
-                  selectedShapeTool={selectedShapeTool || null}
-                  shapeOverlays={shapeOverlays}
-                  selectedOverlayId={selectedOverlayId}
-                />
-              ) : (
-                <div className="flex items-center justify-center w-full h-full py-12 text-muted-foreground">
-                  Initializing canvas...
-                </div>
-              )}
-              {/* Zoom Controls */}
-              <ZoomControls
-                zoomLevel={zoomLevel}
-                panOffset={panOffset}
-                onZoomIn={onZoomIn}
-                onZoomOut={onZoomOut}
-                onResetZoom={onResetZoom}
-              />
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       {/* Seat List Datasheet */}
@@ -379,7 +341,7 @@ export function SectionDetailView({
         onEditSectionFromSheet={() => {}}
         onDeleteSection={() => {}}
         onSetViewingSeat={onSetViewingSeat}
-        onSetIsEditingViewingSeat={onSetIsEditingViewingSeat}
+        onEditSeat={onEditSeat}
         onSetSelectedSeat={onSetSelectedSeat}
         onSetIsDatasheetOpen={setIsDatasheetOpen}
         seatEditFormReset={seatEditFormReset}

@@ -47,7 +47,7 @@ export interface DatasheetViewProps {
   onEditSectionFromSheet: (section: SectionMarker) => void;
   onDeleteSection: (section: SectionMarker) => void;
   onSetViewingSeat: (seat: SeatMarker | null) => void;
-  onSetIsEditingViewingSeat: (editing: boolean) => void;
+  onEditSeat?: (seat: SeatMarker) => void;
   onSetSelectedSeat: (seat: SeatMarker | null) => void;
   onSetIsDatasheetOpen: (open: boolean) => void;
   seatEditFormReset: (data: SeatFormData) => void;
@@ -78,7 +78,7 @@ export function DatasheetView({
   onEditSectionFromSheet,
   onDeleteSection,
   onSetViewingSeat,
-  onSetIsEditingViewingSeat,
+  onEditSeat,
   onSetSelectedSeat,
   onSetIsDatasheetOpen,
   seatEditFormReset,
@@ -146,19 +146,12 @@ export function DatasheetView({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSetViewingSeat(seat);
-                            onSetIsEditingViewingSeat(true);
-                            seatEditFormReset({
-                              section: seat.seat.section,
-                              sectionId: seat.seat.sectionId,
-                              row: seat.seat.row,
-                              seatNumber: seat.seat.seatNumber,
-                              seatType: seat.seat.seatType,
-                            });
+                            onSetSelectedSeat(seat);
+                            onEditSeat?.(seat);
                             onSetIsDatasheetOpen(false);
                           }}
                           className="h-6 w-6 p-0"
-                          title="Edit seat"
+                          title="Edit seat in toolbox"
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -361,19 +354,12 @@ export function DatasheetView({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSetViewingSeat(seat);
-                            onSetIsEditingViewingSeat(true);
-                            seatEditFormReset({
-                              section: seat.seat.section,
-                              sectionId: seat.seat.sectionId,
-                              row: seat.seat.row,
-                              seatNumber: seat.seat.seatNumber,
-                              seatType: seat.seat.seatType,
-                            });
+                            onSetSelectedSeat(seat);
+                            onEditSeat?.(seat);
                             onSetIsDatasheetOpen(false);
                           }}
                           className="h-6 w-6 p-0"
-                          title="Edit seat"
+                          title="Edit seat in toolbox"
                         >
                           <Edit className="h-3 w-3" />
                         </Button>

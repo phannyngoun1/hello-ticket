@@ -44,6 +44,8 @@ export interface ShapeToolboxProps {
   ) => void;
   /** Compact seat placement controls rendered after shapes and seat info */
   seatPlacementControls?: React.ReactNode;
+  /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
+  seatEditControls?: React.ReactNode;
   className?: string;
   readOnly?: boolean;
 }
@@ -62,6 +64,7 @@ export function ShapeToolbox({
   onSeatShapeStyleChange,
   onSectionShapeStyleChange,
   seatPlacementControls,
+  seatEditControls,
   className,
   readOnly = false,
 }: ShapeToolboxProps) {
@@ -268,8 +271,12 @@ export function ShapeToolbox({
           </div>
         )}
 
-        {/* Selected marker name with view, edit and delete actions */}
-        {selectedMarker && markerName && (
+        {/* Inline seat edit controls - replaces marker name when editing seat */}
+        {selectedSeat && seatEditControls ? (
+          seatEditControls
+        ) : (
+        /* Selected marker name with view, edit and delete actions */
+        selectedMarker && markerName && (
           <div className="flex items-center gap-1.5 ml-auto">
             <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
               {markerName}
@@ -320,7 +327,8 @@ export function ShapeToolbox({
               </button>
             )}
           </div>
-        )}
+        ))
+        }
       </div>
     </Card>
   );
