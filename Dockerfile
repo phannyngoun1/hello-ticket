@@ -34,5 +34,6 @@ ENV PORT=8000
 WORKDIR /app
 EXPOSE 8000
 
+# Run migrations before uvicorn so server starts quickly (avoids health-check timeout restart loop)
 # Railway sets PORT at runtime; use it so the app listens on the right port
-CMD ["sh", "-c", "cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python tools/migrate-db.py upgrade && cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
