@@ -38,18 +38,24 @@ class AdminBootstrapService:
         try:
             # Get admin configuration from environment
             admin_username = os.getenv("DEFAULT_ADMIN_USERNAME", "admin")
-            admin_email = os.getenv("DEFAULT_ADMIN_EMAIL")
-            admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD")
+            admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
+            admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "ChangeMe123!")
             admin_name = os.getenv("DEFAULT_ADMIN_NAME", "System Administrator")
             tenant_id = os.getenv("DEFAULT_TENANT_ID", "default-tenant")
             
-            # Validate required environment variables
+            # Validate required environment variables (set in .env locally or in Railway/host env)
             if not admin_email:
-                logger.warning("DEFAULT_ADMIN_EMAIL not set in .env - skipping admin creation")
+                logger.warning(
+                    "DEFAULT_ADMIN_EMAIL not set - skipping admin creation. "
+                    "Set it in .env (local) or in your deployment environment (e.g. Railway Variables)."
+                )
                 return False
-            
+
             if not admin_password:
-                logger.warning("DEFAULT_ADMIN_PASSWORD not set in .env - skipping admin creation")
+                logger.warning(
+                    "DEFAULT_ADMIN_PASSWORD not set - skipping admin creation. "
+                    "Set it in .env (local) or in your deployment environment (e.g. Railway Variables)."
+                )
                 return False
             
             # Check if admin already exists (by username or email)
