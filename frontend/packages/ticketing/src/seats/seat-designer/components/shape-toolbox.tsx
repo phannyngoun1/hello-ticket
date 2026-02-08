@@ -137,9 +137,13 @@ export function ShapeToolbox({
     onStyleChange &&
     (selectedSeat || (selectedSection && selectedSection.shape));
 
+  /** When in edit mode (seat edit controls shown), hide shapes, placement, and color controls */
+  const isEditMode = !!(selectedSeat && seatEditControls);
+
   return (
     <Card className={cn("px-3 py-2.5", className)}>
       <div className="flex items-center gap-3 flex-wrap w-full">
+        {!isEditMode && (
         <div className="flex items-center gap-2">
           <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
             Shapes:
@@ -191,16 +195,17 @@ export function ShapeToolbox({
             })}
           </div>
         </div>
+        )}
 
         {/* Compact seat placement controls - right after shapes so always visible in seat-level */}
-        {seatPlacementControls && (
+        {!isEditMode && seatPlacementControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             {seatPlacementControls}
           </div>
         )}
 
         {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
-        {showColorControls && (
+        {!isEditMode && showColorControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             <div className="flex items-center gap-1">
               <Label className="text-xs text-muted-foreground shrink-0 w-7">Fill</Label>

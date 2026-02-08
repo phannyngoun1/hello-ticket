@@ -22,6 +22,8 @@ export interface SeatEditControlsProps {
   onSave: (data: SeatFormData) => void;
   onCancel: () => void;
   isUpdating?: boolean;
+  /** When true, no left border (edit mode is the only thing in toolbox) */
+  standalone?: boolean;
 }
 
 export function SeatEditControls({
@@ -34,6 +36,7 @@ export function SeatEditControls({
   onSave,
   onCancel,
   isUpdating = false,
+  standalone = false,
 }: SeatEditControlsProps) {
   const handleSectionChange = (value: string) => {
     form.setValue("section", value);
@@ -43,7 +46,7 @@ export function SeatEditControls({
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap border-l pl-2.5">
+    <div className={cn("flex items-center gap-2 flex-wrap", !standalone && "border-l pl-2.5")}>
       <span className="text-xs font-medium text-muted-foreground whitespace-nowrap shrink-0">
         Edit:
       </span>

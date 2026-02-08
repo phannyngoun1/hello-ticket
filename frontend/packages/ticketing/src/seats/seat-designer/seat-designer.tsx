@@ -2815,6 +2815,7 @@ export function SeatDesigner({
                 onSave={handleSeatEditSave}
                 onCancel={handleSeatEditCancel}
                 isUpdating={updateSeatMutation.isPending}
+                standalone
               />
             ) : undefined
           }
@@ -2957,6 +2958,7 @@ export function SeatDesigner({
                       onSave={handleSeatEditSave}
                       onCancel={handleSeatEditCancel}
                       isUpdating={updateSeatMutation.isPending}
+                      standalone
                     />
                   ) : undefined
                 }
