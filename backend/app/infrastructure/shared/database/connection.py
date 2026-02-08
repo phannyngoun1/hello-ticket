@@ -126,7 +126,8 @@ def create_db_and_tables() -> None:
         FileUploadModel,
         AttachmentLinkModel,
     )
-    # Create in dependency-friendly order (no-FK / base tables first, then FKs)
+    # Create in dependency-friendly order: referenced tables before tables that FK them.
+    # file_uploads must exist before layouts, sections, show_images, attachment_links.
     operational_tables = [
         CustomerTypeModel.__table__,
         CustomerGroupModel.__table__,
@@ -134,6 +135,7 @@ def create_db_and_tables() -> None:
         VenueTypeModel.__table__,
         OrganizerModel.__table__,
         VenueModel.__table__,
+        FileUploadModel.__table__,  # before Layout (layouts.file_id), Section, ShowImage, AttachmentLink
         LayoutModel.__table__,
         SectionModel.__table__,
         SeatModel.__table__,
@@ -156,7 +158,6 @@ def create_db_and_tables() -> None:
         UICustomComponentModel.__table__,
         AuditLogModel.__table__,
         SequenceModel.__table__,
-        FileUploadModel.__table__,
         AttachmentLinkModel.__table__,
     ]
     for table in operational_tables:
