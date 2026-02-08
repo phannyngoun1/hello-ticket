@@ -31,6 +31,18 @@ from app.infrastructure.shared.database.models import (
     VenueTypeModel,
     # Sales master data
     EmployeeModel,
+    # Shared module - file uploads (must be imported for FK dependencies)
+    FileUploadModel,
+    ShowImageModel,
+    EventSeatModel,
+    TicketModel,
+    BookingItemModel,
+    PaymentModel,
+    CustomerModel,
+    TagModel,
+    TagLinkModel,
+    SequenceModel,
+    AttachmentLinkModel,
 )
 
 # Load environment variables from .env file
@@ -165,11 +177,6 @@ def create_db_and_tables() -> None:
         SequenceModel.__table__,
         AttachmentLinkModel.__table__,
     ]
-    # Guarantee file_uploads exists before any table that references it (layouts, etc.).
-    # Create it first in a dedicated connection and commit so it is visible to subsequent DDL.
-    with engine.connect() as conn:
-        _create_table_safe(conn, FileUploadModel.__table__, exc_codes_ok=True)
-        conn.commit()
     for table in operational_tables:
         _create_table_safe(engine, table, exc_codes_ok=True)
 
