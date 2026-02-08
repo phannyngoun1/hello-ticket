@@ -107,61 +107,29 @@ def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
 
 
 def create_db_and_tables() -> None:
-    """Create operational database tables using metadata's topological sort
-    to ensure proper foreign key dependency order.
+    """Verify operational database is accessible.
+
+    NOTE: Tables should be created via Alembic migrations:
+        alembic upgrade head
+
+    This function only verifies database connectivity. Table creation is
+    handled by migrations to avoid transaction/visibility issues with FK constraints.
     """
     import logging
+    import sqlalchemy as sa
     logger = logging.getLogger(__name__)
 
-    # Import all models to ensure they're registered in metadata
-    from app.infrastructure.shared.database.models import (
-        CustomerTypeModel,
-        CustomerGroupModel,
-        EmployeeModel,
-        VenueTypeModel,
-        OrganizerModel,
-        VenueModel,
-        FileUploadModel,
-        LayoutModel,
-        SectionModel,
-        SeatModel,
-        EventTypeModel,
-        ShowModel,
-        EventModel,
-        ShowImageModel,
-        EventSeatModel,
-        TicketModel,
-        BookingModel,
-        BookingItemModel,
-        PaymentModel,
-        CustomerModel,
-        TagModel,
-        TagLinkModel,
-        UserCacheModel,
-        UISchemaModel,
-        UISchemaVersionModel,
-        UIPageModel,
-        UICustomComponentModel,
-        AuditLogModel,
-        SequenceModel,
-        AttachmentLinkModel,
-        operational_metadata,
-    )
+    logger.info("Verifying operational database connection...")
 
-    # Use SQLAlchemy's topological sort to get proper dependency order
-    # This automatically handles FK dependencies
-    sorted_tables = operational_metadata.sorted_tables
-
-    logger.info(f"Creating {len(sorted_tables)} operational tables in dependency order...")
-
-    for table in sorted_tables:
-        logger.info(f"Creating table: {table.name}")
-        try:
-            _create_table_safe(engine, table, exc_codes_ok=True)
-            logger.info(f"✓ Successfully created table: {table.name}")
-        except Exception as e:
-            logger.error(f"✗ Failed to create table {table.name}: {e}")
-            raise
+    # Simple connection test
+    try:
+        with engine.connect() as conn:
+            conn.execute(sa.text("SELECT 1"))
+        logger.info("✓ Operational database connection successful")
+        logger.info("💡 Tables are managed by Alembic migrations. Run 'alembic upgrade head' if tables are missing.")
+    except Exception as e:
+        logger.error(f"✗ Failed to connect to operational database: {e}")
+        raise
 
 
 def get_session() -> Generator[Session, None, None]:
