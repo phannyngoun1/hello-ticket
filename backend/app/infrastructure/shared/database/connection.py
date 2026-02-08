@@ -69,12 +69,13 @@ engine = create_engine(
 
 def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
     """Create one table; swallow only errors that mean 'this table already exists'.
-    Do not swallow generic 'already exists' or 'duplicate' (e.g. index/constraint),
-    so we never skip creating a table and then fail on a dependent table.
+    Use checkfirst=False so we always attempt CREATE TABLE (avoids dialect.has_table()
+    incorrectly skipping creation e.g. on Railway). DuplicateTable / already-exists
+    for this table are swallowed below.
     """
     from sqlalchemy.exc import ProgrammingError, OperationalError
     try:
-        table.create(eng, checkfirst=True)
+        table.create(eng, checkfirst=False)
     except (ProgrammingError, OperationalError) as e:
         err_str = str(e).lower()
         if exc_codes_ok and hasattr(e, "orig"):
