@@ -242,20 +242,7 @@ export function SectionDetailView({
           </div>
         </div>
 
-        {/* Seat Placement Controls Panel - On Top */}
-        {!readOnly && (
-          <SeatPlacementControls
-            form={seatPlacementForm}
-            uniqueSections={uniqueSections}
-            sectionsData={sectionsData}
-            sectionSelectValue={sectionSelectValue}
-            onSectionSelectValueChange={onSectionSelectValueChange}
-            viewingSection={viewingSection}
-            onNewSection={onNewSection}
-          />
-        )}
-
-        {/* Shape Toolbox - Always show when available */}
+        {/* Shape Toolbox with compact seat placement controls */}
         {onShapeToolSelect && (
           <ShapeToolbox
             selectedShapeType={selectedShapeTool || null}
@@ -277,6 +264,20 @@ export function SectionDetailView({
               });
             }}
             onSeatDelete={onDeleteSeat}
+            seatPlacementControls={
+              !readOnly ? (
+                <SeatPlacementControls
+                  compact
+                  form={seatPlacementForm}
+                  uniqueSections={uniqueSections}
+                  sectionsData={sectionsData}
+                  sectionSelectValue={sectionSelectValue}
+                  onSectionSelectValueChange={onSectionSelectValueChange}
+                  viewingSection={viewingSection}
+                  onNewSection={onNewSection}
+                />
+              ) : undefined
+            }
             readOnly={readOnly}
           />
         )}
