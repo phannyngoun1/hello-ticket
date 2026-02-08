@@ -119,7 +119,7 @@ From `backend/env.example` you may also set:
 | **SECRET_KEY** | Set in Variables (strong, random). |
 | **ENVIRONMENT** | `production`. |
 | **ALLOWED_ORIGINS** | Your app URL (no trailing slash). |
-| **Schema** | Tables created on app startup; optional Release Command: `python tools/migrate-db.py upgrade` for migrations. |
+| **Schema** | Migrations and tables created automatically on app startup. |
 | **Admin password** | Set `DEFAULT_ADMIN_PASSWORD` and change after first login. |
 
 ---

@@ -16,6 +16,28 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+async def run_database_migrations() -> None:
+    """Run Alembic migrations to create/update all tables on startup."""
+    import sys
+    from pathlib import Path
+
+    # manage_migrations expects to be run from backend dir; ensure correct path
+    backend_dir = Path(__file__).resolve().parent.parent
+    if str(backend_dir) not in sys.path:
+        sys.path.insert(0, str(backend_dir))
+
+    logger.info("🔄 Running database migrations...")
+    try:
+        from manage_migrations import upgrade_migration
+        upgrade_migration("head")
+        logger.info("✓  Migrations applied")
+    except Exception as e:
+        logger.error("❌ Migration failed: %s", e)
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
+
+
 async def initialize_platform_database() -> None:
     """Initialize platform database tables (tenants, users, roles, etc.)."""
     from app.infrastructure.shared.database.platform_connection import create_platform_db_and_tables
@@ -301,19 +323,22 @@ async def run_startup_tasks() -> None:
     # 0. Validate environment (dev-friendly, prod-strict)
     await validate_environment()
     
-    # 1. Initialize databases
+    # 1. Run migrations (creates/updates all tables)
+    await run_database_migrations()
+    
+    # 2. Initialize databases (create any missing tables from models - fallback)
     await initialize_platform_database()
     await initialize_operational_database()
     
-    # 2. Register domain event handlers
+    # 3. Register domain event handlers
     await register_event_handlers()
     
-    # 3. Ensure default tenant exists
+    # 4. Ensure default tenant exists
     default_tenant_id = os.getenv("DEFAULT_TENANT_ID", "default-tenant")
     if default_tenant_id:
         await ensure_default_tenant(default_tenant_id, "Default Tenant")
     
-    # 4. Sync system roles (if enabled)
+    # 5. Sync system roles (if enabled)
     environment = os.getenv("ENVIRONMENT", "development")
     should_sync_roles = (
         environment == "development" or 
@@ -325,7 +350,7 @@ async def run_startup_tasks() -> None:
     else:
         logger.info(f"ℹ️  Skipping role sync (ENVIRONMENT={environment})")
     
-    # 5. Bootstrap admin user
+    # 6. Bootstrap admin user
     await bootstrap_admin_user()
     
     logger.info("=" * 60)
