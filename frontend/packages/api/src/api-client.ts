@@ -293,7 +293,16 @@ export async function apiClient<T>(
     return response.json()
 }
 
-export const api = {
+export type ApiClient = {
+    get: <T>(endpoint: string, options?: RequestOptions) => Promise<T>;
+    post: <T>(endpoint: string, data?: unknown, options?: RequestOptions) => Promise<T>;
+    patch: <T>(endpoint: string, data?: unknown, options?: RequestOptions) => Promise<T>;
+    put: <T>(endpoint: string, data?: unknown, options?: RequestOptions) => Promise<T>;
+    delete: <T>(endpoint: string, options?: RequestOptions) => Promise<T>;
+    postForm: <T>(endpoint: string, formData: FormData, options?: RequestOptions) => Promise<T>;
+};
+
+export const api: ApiClient = {
     get: <T>(endpoint: string, options?: RequestOptions) =>
         apiClient<T>(endpoint, { ...options, method: 'GET' }),
 

@@ -2,7 +2,6 @@
  * Common types shared across ticketing components
  */
 
-import type { Pagination, PaginatedResponse } from '@truths/shared';
 
 export interface TicketingProps {
     className?: string;

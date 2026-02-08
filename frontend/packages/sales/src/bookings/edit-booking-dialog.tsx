@@ -38,15 +38,8 @@ export function EditBookingDialog({
   const defaultValues = useMemo(() => {
     if (!booking) return undefined;
     return {
-
-
-      code: booking.code ?? "",
-
-
-
-      name: booking.name ?? "",
-
-
+      code: booking.booking_number ?? "",
+      name: booking.booking_number ?? "",
     };
   }, [booking]);
 
@@ -66,19 +59,9 @@ export function EditBookingDialog({
     setShowConfirmDialog(true);
   };
 
-  // Build payload excludes timestamp fields (created_at, updated_at) - backend manages these
+  // Build payload - map form data to UpdateBookingInput
   const buildPayload = useMemo(() => {
-    return (data: BookingFormData): UpdateBookingInput => ({
-
-
-      code: undefined,
-
-
-
-      name: data.name,
-
-
-    });
+    return (_data: BookingFormData): UpdateBookingInput => ({});
   }, []);
 
   const handleConfirmSubmit = async () => {

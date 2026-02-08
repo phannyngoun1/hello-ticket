@@ -1,6 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-    BASE_URL: (import.meta as ImportMeta & { env: { [key: string]: string } }).env.VITE_API_BASE_URL || 'http://localhost:8000',
+    // Use ?? so empty string (same-origin for combined deploy) is respected; || would fall back to localhost
+    BASE_URL: (import.meta as ImportMeta & { env: { [key: string]: string } }).env.VITE_API_BASE_URL ?? 'http://localhost:8000',
     TIMEOUT: 30000,
     ENDPOINTS: {
         HEALTH: '/health/',

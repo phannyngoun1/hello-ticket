@@ -22,8 +22,9 @@ export * from './seats';
 // Layouts Management
 export * from './layouts';
 
-// Sections Management
-export * from './sections';
+// Sections Management (Section from layouts vs sections - use explicit exports to avoid conflict)
+export { sectionService } from './sections';
+export type { Section as VenueSection, CreateSectionInput, UpdateSectionInput } from './sections/types';
 
 // Shows Management
 export * from './shows';

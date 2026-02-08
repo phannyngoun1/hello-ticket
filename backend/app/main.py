@@ -7,6 +7,7 @@ import os
 import logging
 import warnings
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -245,6 +246,29 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # Mount static files for uploads
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
+# Frontend dist path for combined production deployment (backend serves SPA)
+# Set FRONTEND_DIST_DIR to override (e.g. in Docker: /app/frontend/dist)
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+FRONTEND_DIST_DIR = os.getenv("FRONTEND_DIST_DIR") or str(_BACKEND_ROOT.parent / "frontend" / "apps" / "web" / "dist")
+_frontend_path = Path(FRONTEND_DIST_DIR)
+_serve_frontend = _frontend_path.is_dir() and (_frontend_path / "index.html").is_file()
+
+if _serve_frontend:
+    _assets_dir = _frontend_path / "assets"
+    if _assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=str(_assets_dir)), name="frontend_assets")
+    _spa_excluded_prefixes = ("api/", "api", "uploads/", "uploads", "docs", "redoc", "openapi.json", ".well-known/", ".well-known", "health/", "health")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """Serve SPA index.html for non-API routes (client-side routing)."""
+        if any(full_path == p or full_path.startswith(p + "/") for p in _spa_excluded_prefixes):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not Found")
+        return FileResponse(_frontend_path / "index.html", media_type="text/html")
+else:
+    logger.info("Frontend dist not found at %s; running API-only mode. Set FRONTEND_DIST_DIR or build frontend for combined serve.", FRONTEND_DIST_DIR)
+
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json")
 async def chrome_devtools():
@@ -252,45 +276,46 @@ async def chrome_devtools():
     return {}
 
 
-@app.get("/")
-async def root():
-    """Root endpoint with getting started guide"""
-    return {
-        "message": "Welcome to Hello Ticket API",
-        "version": "0.1.0",
-        "status": "running",
-        "project": "hello-ticket",
-        "database": "hello-ticket",
-        "docs": "/docs",
-        "openid_config": "/api/v1/auth/.well-known/openid-configuration",
-        "getting_started": {
-            "step_1": "View API documentation at /docs",
-            "step_2": "Register a user at POST /api/v1/auth/register",
-            "step_3": "Login at POST /api/v1/auth/token to get access token",
-            "step_4": "Click 'Authorize' button in Swagger UI and enter your credentials",
-            "step_5": "Test protected endpoints",
-            "note": "Authentication is required for most endpoints"
-        },
-        "quick_test": {
-            "register": {
-                "method": "POST",
-                "url": "/api/v1/auth/register",
-                "body": {
-                    "username": "testuser",
-                    "email": "test@example.com",
-                    "password": "Test123!",
-                    "name": "Test User",
-                    "role": "user"
-                }
+if not _serve_frontend:
+    @app.get("/")
+    async def root():
+        """Root endpoint with getting started guide (API-only mode)."""
+        return {
+            "message": "Welcome to Hello Ticket API",
+            "version": "0.1.0",
+            "status": "running",
+            "project": "hello-ticket",
+            "database": "hello-ticket",
+            "docs": "/docs",
+            "openid_config": "/api/v1/auth/.well-known/openid-configuration",
+            "getting_started": {
+                "step_1": "View API documentation at /docs",
+                "step_2": "Register a user at POST /api/v1/auth/register",
+                "step_3": "Login at POST /api/v1/auth/token to get access token",
+                "step_4": "Click 'Authorize' button in Swagger UI and enter your credentials",
+                "step_5": "Test protected endpoints",
+                "note": "Authentication is required for most endpoints"
             },
-            "login": {
-                "method": "POST",
-                "url": "/api/v1/auth/token",
-                "body": "username=testuser&password=Test123!",
-                "content_type": "application/x-www-form-urlencoded"
+            "quick_test": {
+                "register": {
+                    "method": "POST",
+                    "url": "/api/v1/auth/register",
+                    "body": {
+                        "username": "testuser",
+                        "email": "test@example.com",
+                        "password": "Test123!",
+                        "name": "Test User",
+                        "role": "user"
+                    }
+                },
+                "login": {
+                    "method": "POST",
+                    "url": "/api/v1/auth/token",
+                    "body": "username=testuser&password=Test123!",
+                    "content_type": "application/x-www-form-urlencoded"
+                }
             }
         }
-    }
 
 
 if __name__ == "__main__":

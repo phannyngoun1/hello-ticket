@@ -18,7 +18,7 @@ export const customerGroupService = new CustomerGroupService({
 // Export components
 export * from "./customer-group-management";
 export * from "./customer-group-list-container";
-export * from "./customer-group-tree";
+export { CustomerGroupTree } from "./customer-group-tree";
 export * from "./create-customer-group-dialog";
 export * from "./edit-customer-group-dialog";
 export * from "./customer-group-provider";
@@ -26,5 +26,11 @@ export * from "./customer-group-provider";
 // Export hooks
 export * from "./use-customer-groups";
 
-// Export types
-export * from "./types";
+// Export types (CustomerGroupTree type from ./types - use for type annotations)
+export type {
+  CustomerGroup,
+  CustomerGroupHierarchy,
+  CreateCustomerGroupInput,
+  UpdateCustomerGroupInput,
+  CustomerGroupFilter,
+} from "./types";

@@ -24,7 +24,6 @@ export function CreateCustomer({
 }: CreateCustomerProps) {
   const handleSubmit = async (data: CustomerFormData) => {
     const payload: CreateCustomerInput = {
-      code: data.code,
       name: data.name,
       status: 'active',
       business_name: '',

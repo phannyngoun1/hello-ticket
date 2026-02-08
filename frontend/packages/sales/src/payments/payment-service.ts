@@ -5,7 +5,7 @@
  */
 
 import type { ApiClient } from "@truths/api";
-import type { Payment, CreatePaymentInput } from "./types";
+import type { Payment, CreatePaymentInput, PaymentMethod, PaymentStatus } from "./types";
 
 export interface PaymentServiceConfig {
   apiClient: ApiClient;
@@ -57,7 +57,7 @@ export class PaymentService {
         baseEndpoint,
         { requiresAuth: true }
       );
-      return response.items.map((item) => this.transformPayment(item));
+      return response.items.map((item: PaymentDTO) => this.transformPayment(item));
     } catch (error) {
       console.error("Error fetching all payments:", error);
       throw error;
@@ -74,7 +74,7 @@ export class PaymentService {
         `${baseEndpoint}/booking/${bookingId}`,
         { requiresAuth: true }
       );
-      return response.items.map((item) => this.transformPayment(item));
+      return response.items.map((item: PaymentDTO) => this.transformPayment(item));
     } catch (error) {
       console.error(`Error fetching payments for booking ${bookingId}:`, error);
       throw error;

@@ -98,7 +98,7 @@ export function CreateCustomerGroupDialog({
     try {
       const input: CreateCustomerGroupInput = {
         code: data.code,
-        name: data.name || undefined,
+        name: data.name || "",
         // Only include parent_id if it has a value (not empty string)
         parent_id:
           data.parent_id && data.parent_id.trim()

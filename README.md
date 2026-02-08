@@ -90,6 +90,33 @@ npm run lint
 
 ---
 
+## 🚀 Production deployment (combined backend + frontend)
+
+To run a single process that serves both the API and the React app:
+
+**1. Build the frontend with same-origin API** (so the app calls the same host):
+
+```bash
+cd frontend
+npm install
+VITE_API_BASE_URL= npm run build
+```
+
+**2. Start the backend** (from project root, with DB running):
+
+```bash
+./start.sh   # if not already
+cd backend
+source venv/bin/activate
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+The backend will detect `frontend/apps/web/dist` and serve the SPA at `/` and assets at `/assets`. API and docs stay at `/api/v1`, `/docs`, etc.
+
+**Override frontend path:** set `FRONTEND_DIST_DIR` in `backend/.env` (e.g. in Docker: `FRONTEND_DIST_DIR=/app/frontend/dist`).
+
+---
+
 ## 🧪 Development Workflow
 
 ### Daily Development

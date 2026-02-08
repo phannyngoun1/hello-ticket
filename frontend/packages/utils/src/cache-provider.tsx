@@ -8,7 +8,8 @@
 
 import { useEffect, ReactNode } from 'react';
 import { QueryClient } from '@tanstack/react-query';
-import { cacheManager, initializeCacheRegistry } from './cache-manager';
+import { cacheManager } from './cache-manager';
+import { initializeCacheRegistry } from './cache-registry';
 
 interface CacheProviderProps {
     children: ReactNode;

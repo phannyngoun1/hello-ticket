@@ -116,6 +116,7 @@ export function WebcamTicketReader({
         rafRef.current = requestAnimationFrame(tick);
         return;
       }
+      if (!ctx) return;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0);

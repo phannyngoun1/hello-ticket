@@ -24,7 +24,6 @@ export function EditCustomer({
 }: EditCustomerProps) {
   const handleSubmit = async (data: CustomerFormData) => {
     const payload: UpdateCustomerInput = {
-      code: data.code,
       name: data.name,
     };
 
@@ -32,7 +31,6 @@ export function EditCustomer({
   };
 
   const formDefaultValues: Partial<CustomerFormData> = {
-    code: customer.code ?? "",
     name: customer.name ?? "",
   };
 

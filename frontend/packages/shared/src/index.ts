@@ -24,7 +24,6 @@ export * from './utils/types';
 export * from './services';
 export * from './tags/tag-service';
 export * from './attachments/attachment-service';
-export * from './attachments/types';
 
 // Audit
 export * from './audit';

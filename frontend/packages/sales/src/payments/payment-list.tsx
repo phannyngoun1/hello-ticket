@@ -171,13 +171,11 @@ export function PaymentList({
         data={tableData}
         columns={columns}
         loading={loading}
-        error={error}
         manualPagination={false}
         serverPagination={tablePagination}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         onSearch={onSearch}
-        searchPlaceholder="Search payments..."
       />
     </div>
   );

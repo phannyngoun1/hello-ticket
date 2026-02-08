@@ -33,6 +33,7 @@ const venueFormInputSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   venue_type: z.string().optional(),
+  capacity: z.coerce.number().optional(),
   parking_info: z.string().optional(),
   accessibility: z.string().optional(),
   amenities: z.string().optional(),
@@ -62,7 +63,7 @@ export type VenueFormData = z.infer<typeof venueFormSchema>;
 export type VenueFormInputData = z.infer<typeof venueFormInputSchema>;
 
 export interface VenueFormProps {
-  defaultValues?: Partial<VenueFormData>;
+  defaultValues?: Partial<VenueFormData | VenueFormInputData>;
   onSubmit: (data: VenueFormData) => Promise<void> | void;
   isLoading?: boolean;
   venueTypes?: { id: string; name: string; code?: string }[];
