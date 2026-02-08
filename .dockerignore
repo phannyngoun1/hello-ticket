@@ -1,0 +1,43 @@
+# Dependencies and caches
+backend/venv
+backend/__pycache__
+backend/**/__pycache__
+backend/.env
+backend/*.db
+backend/logs
+frontend/node_modules
+frontend/apps/web/node_modules
+frontend/packages/*/node_modules
+frontend/.pnpm-store
+.npm-cache
+.pnpm-store
+
+# Build outputs (we build inside Docker)
+frontend/apps/web/dist
+frontend/.tanstack
+
+# Git and IDE
+.git
+.gitignore
+.vscode
+.idea
+*.md
+!backend/README.md
+
+# Env and local
+.env
+.env.*
+!.env.example
+
+# Tests and tools (keep tools/ for migrate-db.py)
+backend/tests
+**/tests
+**/*.pyc
+**/.pytest_cache
+**/coverage.xml
+**/.mypy_cache
+
+# Misc
+*.log
+.DS_Store
+.project-summary.txt

@@ -115,6 +115,18 @@ The backend will detect `frontend/apps/web/dist` and serve the SPA at `/` and as
 
 **Override frontend path:** set `FRONTEND_DIST_DIR` in `backend/.env` (e.g. in Docker: `FRONTEND_DIST_DIR=/app/frontend/dist`).
 
+### Deploy on Railway
+
+The repo includes a root **Dockerfile** that builds the frontend and runs the backend in one image (combined deploy).
+
+1. **New project:** [Railway](https://railway.app) → New Project → Deploy from GitHub (this repo).
+2. **Add PostgreSQL:** In the project → New → Database → PostgreSQL. Link it to your service so `DATABASE_URL` is set.
+3. **Configure the service:**
+   - **Settings → Build:** Builder = **Dockerfile**, Dockerfile path = **Dockerfile** (root).
+   - **Variables:** Add `ENVIRONMENT=production`, `SECRET_KEY=<generate a long random secret>`, `ALLOWED_ORIGINS=https://<your-app>.up.railway.app` (use your Railway URL or custom domain). `DATABASE_URL` is set automatically if Postgres is linked.
+   - **Settings → Deploy → Release Command:** `python tools/migrate-db.py upgrade` (runs migrations before each deploy).
+4. Deploy; the app and API docs will be at `https://<your-service>.up.railway.app` and `.../docs`.
+
 ---
 
 ## 🧪 Development Workflow
