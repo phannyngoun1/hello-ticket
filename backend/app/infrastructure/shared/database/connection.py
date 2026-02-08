@@ -107,11 +107,13 @@ def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
 
 
 def create_db_and_tables() -> None:
-    """Create operational database tables. Uses a fixed explicit order so that
-    tables with no FKs (or whose refs exist) are created first. Never use
-    operational_metadata.sorted_tables here—with SQLModel + custom metadata
-    it can order tables wrong (e.g. attachment_links before file_uploads).
+    """Create operational database tables using metadata's topological sort
+    to ensure proper foreign key dependency order.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Import all models to ensure they're registered in metadata
     from app.infrastructure.shared.database.models import (
         CustomerTypeModel,
         CustomerGroupModel,
@@ -143,42 +145,23 @@ def create_db_and_tables() -> None:
         AuditLogModel,
         SequenceModel,
         AttachmentLinkModel,
+        operational_metadata,
     )
-    # Explicit order: file_uploads before layouts, sections, show_images, attachment_links
-    operational_tables = [
-        CustomerTypeModel.__table__,
-        CustomerGroupModel.__table__,
-        EmployeeModel.__table__,
-        VenueTypeModel.__table__,
-        OrganizerModel.__table__,
-        VenueModel.__table__,
-        FileUploadModel.__table__,
-        LayoutModel.__table__,
-        SectionModel.__table__,
-        SeatModel.__table__,
-        EventTypeModel.__table__,
-        ShowModel.__table__,
-        EventModel.__table__,
-        ShowImageModel.__table__,
-        EventSeatModel.__table__,
-        TicketModel.__table__,
-        BookingModel.__table__,
-        BookingItemModel.__table__,
-        PaymentModel.__table__,
-        CustomerModel.__table__,
-        TagModel.__table__,
-        TagLinkModel.__table__,
-        UserCacheModel.__table__,
-        UISchemaModel.__table__,
-        UISchemaVersionModel.__table__,
-        UIPageModel.__table__,
-        UICustomComponentModel.__table__,
-        AuditLogModel.__table__,
-        SequenceModel.__table__,
-        AttachmentLinkModel.__table__,
-    ]
-    for table in operational_tables:
-        _create_table_safe(engine, table, exc_codes_ok=True)
+
+    # Use SQLAlchemy's topological sort to get proper dependency order
+    # This automatically handles FK dependencies
+    sorted_tables = operational_metadata.sorted_tables
+
+    logger.info(f"Creating {len(sorted_tables)} operational tables in dependency order...")
+
+    for table in sorted_tables:
+        logger.info(f"Creating table: {table.name}")
+        try:
+            _create_table_safe(engine, table, exc_codes_ok=True)
+            logger.info(f"✓ Successfully created table: {table.name}")
+        except Exception as e:
+            logger.error(f"✗ Failed to create table {table.name}: {e}")
+            raise
 
 
 def get_session() -> Generator[Session, None, None]:
