@@ -106,30 +106,72 @@ def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
         raise
 
 
+def verify_db_connection() -> None:
+    """Verify database is accessible. Does not create tables (tables are created by migrations)."""
+    import logging
+    import sqlalchemy as sa
+    logger = logging.getLogger(__name__)
+    logger.info("Verifying database connection...")
+    try:
+        with engine.connect() as conn:
+            conn.execute(sa.text("SELECT 1"))
+        logger.info("✓ Database connection successful")
+    except Exception as e:
+        logger.error(f"✗ Failed to connect to database: {e}")
+        raise
+
+
 def create_db_and_tables() -> None:
-    """Verify operational database is accessible.
+    """Verify database is accessible and create all tables (single operational database).
 
-    NOTE: Tables should be created via Alembic migrations:
-        alembic upgrade head
-
-    This function only verifies database connectivity. Table creation is
-    handled by migrations to avoid transaction/visibility issues with FK constraints.
+    Creates both tenant/auth tables (tenants, users, sessions, roles, etc.) and
+    business tables (venues, events, bookings, etc.) in dependency order.
+    Used by scripts/tools when migrations are not run (e.g. local dev without Alembic).
     """
     import logging
     import sqlalchemy as sa
     logger = logging.getLogger(__name__)
 
-    logger.info("Verifying operational database connection...")
-
-    # Simple connection test
+    logger.info("Verifying database connection...")
     try:
         with engine.connect() as conn:
             conn.execute(sa.text("SELECT 1"))
-        logger.info("✓ Operational database connection successful")
-        logger.info("💡 Tables are managed by Alembic migrations. Run 'alembic upgrade head' if tables are missing.")
+        logger.info("✓ Database connection successful")
     except Exception as e:
-        logger.error(f"✗ Failed to connect to operational database: {e}")
+        logger.error(f"✗ Failed to connect to database: {e}")
         raise
+
+    # Create platform tables first (tenants, users, sessions, roles, etc.)
+    from app.infrastructure.shared.database.platform_models import (
+        TenantModel,
+        TenantSubscriptionModel,
+        UserModel,
+        SessionModel,
+        GroupModel,
+        UserGroupModel,
+        RoleModel,
+        UserRoleModel,
+        GroupRoleModel,
+        UserPreferenceModel,
+    )
+    platform_tables = [
+        TenantModel.__table__,
+        TenantSubscriptionModel.__table__,
+        UserModel.__table__,
+        SessionModel.__table__,
+        GroupModel.__table__,
+        UserGroupModel.__table__,
+        RoleModel.__table__,
+        UserRoleModel.__table__,
+        GroupRoleModel.__table__,
+        UserPreferenceModel.__table__,
+    ]
+    for table in platform_tables:
+        _create_table_safe(engine, table, exc_codes_ok=True)
+
+    # Create operational tables (venues, events, bookings, etc.)
+    operational_metadata.create_all(engine, checkfirst=True)
+    logger.info("✓ All tables ready")
 
 
 def get_session() -> Generator[Session, None, None]:

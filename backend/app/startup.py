@@ -2,10 +2,10 @@
 Application startup and initialization logic.
 
 This module handles all startup tasks including:
-- Database initialization
-- Default tenant setup
-- System roles synchronization
-- Admin user bootstrapping
+- Database connection verification (tables are created by migrations)
+- Default tenant setup (data population)
+- System roles synchronization (data population)
+- Admin user bootstrapping (data population)
 
 Author: Phanny
 """
@@ -17,66 +17,20 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-async def initialize_platform_database() -> None:
-    """Initialize platform database tables (tenants, users, roles, etc.)."""
-    from app.infrastructure.shared.database.platform_connection import create_platform_db_and_tables
+async def initialize_database() -> None:
+    """Verify database connection only. Tables are created by migrations (e.g. python tools/migrate-db.py upgrade)."""
+    from app.infrastructure.shared.database.connection import verify_db_connection
     from sqlalchemy.exc import OperationalError, ProgrammingError
     import traceback
     import sys
-    
-    logger.info("📊 Initializing platform tables...")
+
+    logger.info("📦 Verifying database connection...")
     try:
-        create_platform_db_and_tables()
-        logger.info("✓  Platform tables ready")
+        verify_db_connection()
+        logger.info("✓  Database connection ready")
     except (OperationalError, ProgrammingError) as e:
         logger.error("\n" + "=" * 70)
-        logger.error("❌ DATABASE CONNECTION FAILED - Platform Tables")
-        logger.error("=" * 70)
-        
-        # Extract the clean error message
-        error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
-        logger.error(f"\n📍 Root Cause:")
-        logger.error(f"   {error_msg.splitlines()[0]}")
-        
-        logger.error(f"\n💡 Quick Fix:")
-        logger.error("   1. Start PostgreSQL: docker compose up -d postgres")
-        logger.error("   2. Or manually: docker compose up -d")
-        logger.error("   3. Verify port 5432 is available")
-        logger.error("\n" + "=" * 70)
-        
-        # Print only relevant traceback (app code, not library internals)
-        logger.error("\n📋 Relevant Stack Trace:")
-        logger.error("-" * 70)
-        tb_lines = traceback.format_tb(e.__traceback__)
-        app_frames = [line for line in tb_lines if '/app/' in line or 'startup.py' in line]
-        if app_frames:
-            logger.error(''.join(app_frames).rstrip())
-        else:
-            # If no app frames, show last 3 frames
-            logger.error(''.join(tb_lines[-3:]).rstrip())
-        logger.error(f"\n{type(e).__name__}: {error_msg.splitlines()[0]}")
-        logger.error("-" * 70 + "\n")
-        
-        # Exit cleanly without re-raising to avoid FastAPI's verbose traceback
-        logger.error("❌ Application startup aborted due to database connection failure.\n")
-        sys.exit(1)
-
-
-
-async def initialize_operational_database() -> None:
-    """Initialize operational database tables (products, orders, inventory)."""
-    from app.infrastructure.shared.database.connection import create_db_and_tables
-    from sqlalchemy.exc import OperationalError, ProgrammingError
-    import traceback
-    import sys
-    
-    logger.info("📦 Initializing operational tables...")
-    try:
-        create_db_and_tables()
-        logger.info("✓  Operational tables ready")
-    except (OperationalError, ProgrammingError) as e:
-        logger.error("\n" + "=" * 70)
-        logger.error("❌ DATABASE CONNECTION FAILED - Operational Tables")
+        logger.error("❌ DATABASE CONNECTION FAILED")
         logger.error("=" * 70)
         
         # Extract the clean error message
@@ -305,9 +259,9 @@ async def run_startup_tasks() -> None:
     # 0. Validate environment (dev-friendly, prod-strict)
     await validate_environment()
     
-    # 1. Initialize databases (tables created at startup)
-    await initialize_platform_database()
-    # 2. Insert default tenant immediately after platform tables exist
+    # 1. Verify database connection (tables are created by migrations before app start)
+    await initialize_database()
+    # 2. Insert default tenant
     default_tenant_id = os.getenv("DEFAULT_TENANT_ID", "default-tenant")
     default_tenant_name = os.getenv("DEFAULT_TENANT_NAME", "Default Tenant")
     if default_tenant_id:
@@ -318,7 +272,6 @@ async def run_startup_tasks() -> None:
             tenant_ok = await ensure_default_tenant(default_tenant_id, default_tenant_name)
         if not tenant_ok:
             logger.error("   Default tenant could not be created; tenant operations may fail.")
-    await initialize_operational_database()
 
     # 3. Register domain event handlers
     await register_event_handlers()

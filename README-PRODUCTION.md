@@ -104,12 +104,12 @@ DATABASE_URL="<your-railway-postgres-url>" python tools/reset-db.py
 
 Then deploy again. Migrations run before uvicorn in the Docker CMD.
 
-**Normal operation:** Migrations run before uvicorn (Dockerfile CMD). One initial migration creates all tables. The backend runs `create_db_and_tables()` and `create_platform_db_and_tables()` on startup (see `backend/app/startup.py`). So on first deploy, once the app starts and connects to PostgreSQL, all tables are created from the current models. You do **not** create the schema in the Railway PostgreSQL dashboard.
+**Normal operation:** Migrations run before uvicorn (Dockerfile CMD). One initial migration creates all tables. The backend runs `create_db_and_tables()` on startup (see `backend/app/startup.py`), which creates all tables (tenants, users, roles, and business data) in a single operational database. On first deploy, once the app starts and connects to PostgreSQL, all tables are created from the current models. You do **not** create the schema in the Railway PostgreSQL dashboard.
 
 **Two ways the schema is managed:**
 
 1. **On startup (automatic)**  
-   When the app boots, it creates any missing tables from the Python models (`operational_metadata.create_all(engine, checkfirst=True)` and platform metadata). So the initial schema is created without running any migration command.
+   When the app boots, it creates any missing tables from the Python models (single operational database). So the initial schema is created without running any migration command.
 
 2. **Migrations (optional but recommended for changes)**  
    Use the **Release Command** `python tools/migrate-db.py upgrade` when you have Alembic migrations (e.g. after adding a column or index via a migration). That runs before each deploy and applies pending migrations. For a brand‑new DB with no migrations, you can omit the Release Command and rely on startup; for ongoing schema changes, keep the Release Command.

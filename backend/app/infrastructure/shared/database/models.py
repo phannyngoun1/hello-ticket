@@ -1,11 +1,9 @@
 """
-SQLModel database models - OPERATIONAL database ONLY
+SQLModel database models - single operational database.
 
-Security: This database contains ONLY business/operational data
-Authentication data (users, sessions) and platform data (tenants, subscriptions) 
-are in a SEPARATE platform database
-
-See: platform_models.py for platform-level data (tenants, subscriptions, users, sessions)
+All data (tenants, users, sessions, roles, and business data) lives in one
+database. Platform-level models are in platform_models.py (same DB).
+Connection: app.infrastructure.shared.database.connection.
 """
 from datetime import datetime, timezone, timedelta, date
 from typing import Optional, List, Dict, Any
@@ -15,7 +13,7 @@ from sqlalchemy.dialects.postgresql import INET, JSONB
 from decimal import Decimal
 from app.shared.utils import generate_id
 from app.shared.enums import ItemTypeEnum, ItemUsageEnum, TrackingScopeEnum, UoMContextEnum, VehicleTypeEnum, EventStatusEnum, ShowImageTypeEnum, EventConfigurationTypeEnum, EventSeatStatusEnum, TicketStatusEnum, BookingStatusEnum, BookingPaymentStatusEnum, PaymentStatusEnum, PaymentMethodEnum
-# Create separate metadata for operational models to avoid mixing with platform models
+# Single metadata for all models in the operational database
 operational_metadata = MetaData()
 
 

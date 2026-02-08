@@ -1,11 +1,8 @@
 """
-SQLModel database models for PLATFORM database ONLY
+SQLModel models for tenant/auth data in the operational database.
 
-This module defines models for platform-level data:
-- Tenants (registry of all tenants)
-- Subscriptions (billing and plan information)
-- Users (authentication and identity)
-- Sessions (session management and device tracking)
+Same database as business data; tables: tenants, users, sessions, roles, etc.
+Connection and table creation: app.infrastructure.shared.database.connection.
 """
 from datetime import datetime, timezone
 from typing import Optional

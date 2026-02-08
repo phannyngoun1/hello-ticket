@@ -34,6 +34,7 @@ ENV PORT=8000
 WORKDIR /app
 EXPOSE 8000
 
+# Railway: run migrations before app startup (python tools/migrate-db.py upgrade), then start the app.
 # Tables are created at app startup (not in migrate). Migrate stamps Alembic version for future schema changes.
 # Railway sets PORT at runtime; use it so the app listens on the right port.
 CMD ["sh", "-c", "python tools/migrate-db.py upgrade && cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
