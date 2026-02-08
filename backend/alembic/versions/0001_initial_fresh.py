@@ -19,6 +19,9 @@ depends_on = None
 
 def upgrade() -> None:
     """Create all operational tables using metadata."""
+    import sqlalchemy as sa
+    from sqlalchemy import inspect
+
     # Import models to register them in metadata
     from app.infrastructure.shared.database.models import (
         CustomerTypeModel, CustomerGroupModel, EmployeeModel,
@@ -32,9 +35,26 @@ def upgrade() -> None:
         SequenceModel, AttachmentLinkModel, operational_metadata
     )
 
-    # Use SQLAlchemy's create_all which properly handles FK dependencies
-    # checkfirst=True prevents errors if tables already exist
-    operational_metadata.create_all(bind=op.get_bind(), checkfirst=True)
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    # Create tables first (without indexes to avoid conflicts)
+    for table in operational_metadata.sorted_tables:
+        if table.name not in existing_tables:
+            table.create(bind, checkfirst=True)
+
+    # Then create indexes separately, handling duplicates gracefully
+    for table in operational_metadata.sorted_tables:
+        existing_indexes = {idx['name'] for idx in inspector.get_indexes(table.name)} if table.name in existing_tables else set()
+        for index in table.indexes:
+            if index.name not in existing_indexes:
+                try:
+                    index.create(bind)
+                except sa.exc.ProgrammingError as e:
+                    # Index might already exist, skip it
+                    if 'already exists' not in str(e):
+                        raise
 
 
 def downgrade() -> None:
