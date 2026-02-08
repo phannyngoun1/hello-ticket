@@ -81,13 +81,16 @@ async def initialize_operational_database() -> None:
         
         # Extract the clean error message
         error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
+        error_first = error_msg.splitlines()[0]
         logger.error(f"\n📍 Root Cause:")
-        logger.error(f"   {error_msg.splitlines()[0]}")
+        logger.error(f"   {error_first}")
         
         logger.error(f"\n💡 Quick Fix:")
         logger.error("   1. Start PostgreSQL: docker compose up -d postgres")
         logger.error("   2. Or manually: docker compose up -d")
         logger.error("   3. Verify port 5432 is available")
+        if "does not exist" in error_msg.lower():
+            logger.error("   4. If a relation/table is missing: ensure dependency tables were created; check logs for errors when creating file_uploads or other tables earlier in startup.")
         logger.error("\n" + "=" * 70)
         
         # Print only relevant traceback (app code, not library internals)
@@ -100,7 +103,7 @@ async def initialize_operational_database() -> None:
         else:
             # If no app frames, show last 3 frames
             logger.error(''.join(tb_lines[-3:]).rstrip())
-        logger.error(f"\n{type(e).__name__}: {error_msg.splitlines()[0]}")
+        logger.error(f"\n{type(e).__name__}: {error_first}")
         logger.error("-" * 70 + "\n")
         
         # Exit cleanly without re-raising to avoid FastAPI's verbose traceback

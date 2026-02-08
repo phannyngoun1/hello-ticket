@@ -68,7 +68,10 @@ engine = create_engine(
 
 
 def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
-    """Create one table; swallow duplicate/already-exists errors."""
+    """Create one table; swallow only errors that mean 'this table already exists'.
+    Do not swallow generic 'already exists' or 'duplicate' (e.g. index/constraint),
+    so we never skip creating a table and then fail on a dependent table.
+    """
     from sqlalchemy.exc import ProgrammingError, OperationalError
     try:
         table.create(eng, checkfirst=True)
@@ -77,15 +80,16 @@ def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
         if exc_codes_ok and hasattr(e, "orig"):
             try:
                 import psycopg2.errors
-                if isinstance(
-                    e.orig,
-                    (psycopg2.errors.DuplicateTable, psycopg2.errors.DuplicateObject),
-                ):
+                if isinstance(e.orig, psycopg2.errors.DuplicateTable):
                     return
             except ImportError:
                 pass
-        if "already exists" in err_str or "duplicate" in err_str:
-            return
+        # Only swallow when the message clearly says this table already exists
+        # (e.g. relation "file_uploads" already exists), not index/constraint.
+        if "already exists" in err_str:
+            name_lower = table.name.lower()
+            if f'"{name_lower}"' in err_str or f"'{name_lower}'" in err_str:
+                return
         raise
 
 
