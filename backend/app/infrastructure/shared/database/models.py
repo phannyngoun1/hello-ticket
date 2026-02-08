@@ -1180,8 +1180,8 @@ class AuditLogModel(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=True)
     )
 
-    # Event Classification
-    event_type: str = Field(index=True, max_length=50)
+    # Event Classification (event_type not indexed alone; covered by ix_audit_logs_event_type composite)
+    event_type: str = Field(max_length=50)
     severity: str = Field(index=True, max_length=20)
     
     # Entity Information
