@@ -90,11 +90,12 @@ def _create_table_safe(eng, table, exc_codes_ok: bool) -> None:
 
 
 def create_db_and_tables() -> None:
-    """Create operational database tables. Uses explicit per-table creation (same approach
-    as platform) so tables are created even when custom metadata does not register for create_all.
+    """Create operational database tables. Uses explicit per-table creation in
+    topological order (operational_metadata.sorted_tables) so FKs are respected.
     """
-    # Import all operational models so we can create each table explicitly in dependency order
+    # Import all operational models so operational_metadata has every table
     from app.infrastructure.shared.database.models import (
+        operational_metadata,
         CustomerTypeModel,
         CustomerGroupModel,
         EmployeeModel,
@@ -126,41 +127,43 @@ def create_db_and_tables() -> None:
         FileUploadModel,
         AttachmentLinkModel,
     )
-    # Create in dependency-friendly order: referenced tables before tables that FK them.
-    # file_uploads must exist before layouts, sections, show_images, attachment_links.
-    operational_tables = [
-        CustomerTypeModel.__table__,
-        CustomerGroupModel.__table__,
-        EmployeeModel.__table__,
-        VenueTypeModel.__table__,
-        OrganizerModel.__table__,
-        VenueModel.__table__,
-        FileUploadModel.__table__,  # before Layout (layouts.file_id), Section, ShowImage, AttachmentLink
-        LayoutModel.__table__,
-        SectionModel.__table__,
-        SeatModel.__table__,
-        EventTypeModel.__table__,
-        ShowModel.__table__,
-        EventModel.__table__,
-        ShowImageModel.__table__,
-        EventSeatModel.__table__,
-        TicketModel.__table__,
-        BookingModel.__table__,
-        BookingItemModel.__table__,
-        PaymentModel.__table__,
-        CustomerModel.__table__,
-        TagModel.__table__,
-        TagLinkModel.__table__,
-        UserCacheModel.__table__,
-        UISchemaModel.__table__,
-        UISchemaVersionModel.__table__,
-        UIPageModel.__table__,
-        UICustomComponentModel.__table__,
-        AuditLogModel.__table__,
-        SequenceModel.__table__,
-        AttachmentLinkModel.__table__,
-    ]
-    for table in operational_tables:
+    # Use metadata's topological order so file_uploads (and all deps) are created before layouts etc.
+    tables = list(operational_metadata.sorted_tables)
+    if not tables:
+        # Fallback if custom metadata doesn't register tables: explicit order with file_uploads first
+        tables = [
+            CustomerTypeModel.__table__,
+            CustomerGroupModel.__table__,
+            EmployeeModel.__table__,
+            VenueTypeModel.__table__,
+            OrganizerModel.__table__,
+            VenueModel.__table__,
+            FileUploadModel.__table__,
+            LayoutModel.__table__,
+            SectionModel.__table__,
+            SeatModel.__table__,
+            EventTypeModel.__table__,
+            ShowModel.__table__,
+            EventModel.__table__,
+            ShowImageModel.__table__,
+            EventSeatModel.__table__,
+            TicketModel.__table__,
+            BookingModel.__table__,
+            BookingItemModel.__table__,
+            PaymentModel.__table__,
+            CustomerModel.__table__,
+            TagModel.__table__,
+            TagLinkModel.__table__,
+            UserCacheModel.__table__,
+            UISchemaModel.__table__,
+            UISchemaVersionModel.__table__,
+            UIPageModel.__table__,
+            UICustomComponentModel.__table__,
+            AuditLogModel.__table__,
+            SequenceModel.__table__,
+            AttachmentLinkModel.__table__,
+        ]
+    for table in tables:
         _create_table_safe(engine, table, exc_codes_ok=True)
 
 
