@@ -2977,6 +2977,7 @@ export function SeatDesigner({
                             ?.name || ""
                         : ""
                     }
+                    isEditing={!!editingSectionId}
                     selectedShapeType={selectedShapeTool}
                     onShapeTypeSelect={(type) => {
                       setSelectedShapeTool(type);
