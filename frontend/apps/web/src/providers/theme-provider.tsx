@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useLayoutEffect } from "react";
 import { storage } from "@truths/utils";
 import { Theme, ThemeProviderContext } from "./theme-context";
 
@@ -8,39 +8,57 @@ type ThemeProviderProps = {
   storageKey?: string;
 };
 
+// Helper function to apply theme to DOM
+const applyTheme = (themeValue: Theme) => {
+  if (typeof window === "undefined") return;
+  
+  const root = window.document.documentElement;
+
+  root.classList.remove("light", "dark");
+
+  if (themeValue === "system") {
+    const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      .matches
+      ? "dark"
+      : "light";
+
+    root.classList.add(systemTheme);
+    return;
+  }
+
+  root.classList.add(themeValue);
+};
+
 export function ThemeProvider({
   children,
   defaultTheme = "system",
   storageKey = "ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => storage.get<Theme>(storageKey) || defaultTheme
-  );
+  // Get initial theme from storage or default
+  const initialTheme = (() => {
+    if (typeof window === "undefined") return defaultTheme;
+    const stored = storage.get<Theme>(storageKey);
+    const theme = stored || defaultTheme;
+    // Apply theme immediately during initialization (before first render)
+    applyTheme(theme);
+    return theme;
+  })();
 
-  useEffect(() => {
-    const root = window.document.documentElement;
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
-    root.classList.remove("light", "dark");
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
+  // Apply theme synchronously before paint (useLayoutEffect runs before useEffect)
+  useLayoutEffect(() => {
+    applyTheme(theme);
   }, [theme]);
 
   const value = {
     theme,
-    setTheme: (theme: Theme) => {
-      storage.set(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme) => {
+      storage.set(storageKey, newTheme);
+      // Apply theme immediately to DOM before state update
+      applyTheme(newTheme);
+      setTheme(newTheme);
     },
   };
 

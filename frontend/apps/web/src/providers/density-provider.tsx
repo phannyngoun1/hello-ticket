@@ -10,7 +10,7 @@ type DensityProviderProps = {
 
 export function DensityProvider({
   children,
-  defaultDensity = "compact",
+  defaultDensity = "normal",
   storageKey = "ui-density",
   ...props
 }: DensityProviderProps) {

@@ -8,7 +8,7 @@ export type DensityProviderState = {
 };
 
 const initialState: DensityProviderState = {
-  density: "compact",
+  density: "normal",
   setDensity: () => null,
 };
 

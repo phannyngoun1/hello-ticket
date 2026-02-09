@@ -246,3 +246,43 @@ MIT License - See LICENSE file for details
 - **Issues**: GitHub Issues
 
 ---
+
+# From project root
+
+# 1. Reset the database (drop all tables + alembic_version)
+
+python tools/reset-db.py
+
+# 2. Remove the old migration file(s)
+
+rm backend/alembic/versions/0001_initial_fresh.py
+
+# If you have more: rm backend/alembic/versions/\*.py (keep **init**.py if present)
+
+# 3. Generate one new initial migration from current models
+
+python tools/migrate-db.py create-initial
+
+# 4. Apply it
+
+python tools.migrate-db.py upgrade
+
+# From project root
+
+# 1. Reset the database (drop all tables + alembic_version)
+
+python tools/reset-db.py
+
+# 2. Remove the old migration file(s)
+
+rm backend/alembic/versions/0001_initial_fresh.py
+
+# If you have more: rm backend/alembic/versions/\*.py (keep **init**.py if present)
+
+# 3. Generate one new initial migration from current models
+
+python tools/migrate-db.py create-initial
+
+# 4. Apply it
+
+python tools.migrate-db.py upgrade

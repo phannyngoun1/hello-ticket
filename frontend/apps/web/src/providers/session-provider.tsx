@@ -6,7 +6,7 @@ import { SessionContext } from "./session-context";
 import { SessionProviderProps } from "./session.types";
 import { createSessionMonitor, getSessionMonitor, SessionMonitor } from "../services/session-monitor";
 import { authService } from "../services/auth-service";
-import { userPreferences } from "@truths/utils";
+import { userPreferences, storage } from "@truths/utils";
 import { toast } from "@truths/ui";
 
 export function SessionProvider({ children }: SessionProviderProps) {
@@ -16,6 +16,16 @@ export function SessionProvider({ children }: SessionProviderProps) {
   const monitorRef = useRef<SessionMonitor | null>(null);
 
   const showSessionExpiredDialog = useCallback(() => {
+    // Check if there was a previous login by checking for last_username
+    // If no previous login, redirect to login page instead of showing dialog
+    const lastUsername = storage.get<string>("last_username");
+    if (!lastUsername) {
+      // No previous login - redirect to login page
+      // Use window.location.href for reliable redirect outside React Router context
+      window.location.href = "/login";
+      return;
+    }
+    // Previous login exists - show session expired dialog
     setIsDialogOpen(true);
   }, []);
 

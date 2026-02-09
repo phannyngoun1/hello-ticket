@@ -34,7 +34,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <SessionProvider>
           <DomainProviders>
             <ThemeProvider defaultTheme="system" storageKey="ui-theme">
-              <DensityProvider defaultDensity="compact" storageKey="ui-density">
+              <DensityProvider defaultDensity="normal" storageKey="ui-density">
                 <I18nProvider>
                   <RouterProvider router={router} />
                   <ReactQueryDevtools initialIsOpen={false} />
