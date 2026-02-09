@@ -16,12 +16,12 @@ const STORAGE_KEY = "ui-density";
  * Uses the storage utility which handles JSON parsing
  */
 function getDensityFromStorage(): UIDensity {
-  if (typeof window === "undefined") return "compact";
+  if (typeof window === "undefined") return "normal";
   try {
     // Use the storage utility which handles JSON parsing
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored || stored === "undefined" || stored === "null") {
-      return "compact";
+      return "normal";
     }
     // Try to parse as JSON first (since storage.set() uses JSON.stringify)
     let value: string;
@@ -37,7 +37,7 @@ function getDensityFromStorage(): UIDensity {
   } catch {
     // localStorage not available
   }
-  return "compact";
+  return "normal";
 }
 
 /**
