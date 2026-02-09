@@ -610,7 +610,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           ? "cursor-grab"
                           : "cursor-pointer",
                         activeTabId === tab.id
-                          ? "bg-blue-100 text-blue-900 border-blue-300 shadow-sm ring-1 ring-blue-200"
+                          ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border-primary/30 dark:border-primary/50 shadow-sm ring-1 ring-primary/20 dark:ring-primary/30"
                           : "bg-transparent hover:bg-accent/50 border-transparent hover:border-border/50 text-muted-foreground hover:text-foreground",
                         draggedTabId === tab.id ? "opacity-50 scale-95" : "",
                         dragOverTabId === tab.id && draggedTabId !== tab.id
