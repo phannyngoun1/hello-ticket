@@ -27,6 +27,9 @@ email-validator>=2.0.0  # Required for Pydantic EmailStr
 pydantic-settings==2.1.0
 punq>=0.6.2  # Dependency injection container
 
+# AI/ML
+openai>=1.0.0  # OpenAI API client for AI features
+
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1
