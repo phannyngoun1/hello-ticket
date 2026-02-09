@@ -371,6 +371,8 @@ export function CreateGroupDialog({
         showClearButton
         onClear={handleClear}
         shortcuts={keyboardShortcuts}
+        autoSubmitShortcut={false}
+        autoClearShortcut={false}
         footer={
           <>
             <Button

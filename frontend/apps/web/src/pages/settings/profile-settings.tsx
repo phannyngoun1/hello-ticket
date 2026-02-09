@@ -21,7 +21,7 @@ export function ProfileSettingsPage() {
     <div className={cn("space-y-6", density.spacingFormSection)}>
       <Card>
         <CardHeader className={density.spacingFormItem}>
-          <CardTitle className={cn(density.textSize === "text-sm" ? "text-lg" : "text-xl", "font-semibold")}>
+          <CardTitle className={cn(density.textSizeCardTitle, "font-semibold")}>
             {t("pages.settings.profile.title")}
           </CardTitle>
           <CardDescription className={density.textSizeSmall}>

@@ -175,7 +175,7 @@ export function AccountSettingsPage() {
         <CardHeader className={density.spacingFormItem}>
           <CardTitle
             className={cn(
-              density.textSize === "text-sm" ? "text-lg" : "text-xl",
+              density.textSizeCardTitle,
               "font-semibold"
             )}
           >
@@ -222,7 +222,7 @@ export function AccountSettingsPage() {
           <CardTitle
             className={cn(
               "flex items-center gap-2",
-              density.textSize === "text-sm" ? "text-lg" : "text-xl",
+              density.textSizeCardTitle,
               "font-semibold"
             )}
           >
@@ -316,7 +316,7 @@ export function AccountSettingsPage() {
           <CardTitle
             className={cn(
               "text-destructive flex items-center gap-2",
-              density.textSize === "text-sm" ? "text-lg" : "text-xl",
+              density.textSizeCardTitle,
               "font-semibold"
             )}
           >

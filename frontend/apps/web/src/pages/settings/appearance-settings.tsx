@@ -11,6 +11,7 @@ import {
 } from "@truths/ui";
 import { useTheme } from "../../providers/use-theme";
 import { useDensity } from "../../providers/use-density";
+import { useDensityStyles } from "@truths/utils";
 import {
   Moon,
   Sun,
@@ -31,6 +32,7 @@ export function AppearanceSettingsPage() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { density, setDensity } = useDensity();
+  const densityStyles = useDensityStyles();
   const [enableTabs, setEnableTabs] = useState<boolean>(() => {
     const saved = storage.get<boolean>(ENABLE_TABS_STORAGE_KEY);
     return saved ?? true; // Default to enabled
@@ -98,15 +100,17 @@ export function AppearanceSettingsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", densityStyles.spacingFormSection)}>
       <Card>
-        <CardHeader>
-          <CardTitle>{t("pages.settings.appearance.title")}</CardTitle>
-          <CardDescription>
+        <CardHeader className={densityStyles.spacingFormItem}>
+          <CardTitle className={cn(densityStyles.textSizeCardTitle, "font-semibold")}>
+            {t("pages.settings.appearance.title")}
+          </CardTitle>
+          <CardDescription className={densityStyles.textSizeCardDescription}>
             {t("pages.settings.appearance.description")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className={cn(densityStyles.paddingContainer, densityStyles.spacingFormSection)}>
           <div className="space-y-3">
             <Label>{t("pages.settings.appearance.themeMode")}</Label>
             <div className="grid grid-cols-3 gap-3">
@@ -167,16 +171,16 @@ export function AppearanceSettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Layout className="h-5 w-5" />
+        <CardHeader className={densityStyles.spacingFormItem}>
+          <CardTitle className={cn("flex items-center gap-2", densityStyles.textSizeCardTitle, "font-semibold")}>
+            <Layout className={cn("h-5 w-5", densityStyles.iconSize)} />
             {t("pages.settings.appearance.interfaceSettings")}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className={densityStyles.textSizeCardDescription}>
             {t("pages.settings.appearance.interfaceSettingsDesc")}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className={cn(densityStyles.paddingContainer, densityStyles.spacingFormSection)}>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="enable-tabs">

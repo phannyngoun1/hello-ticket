@@ -30,7 +30,7 @@ export function LanguageSettingsPage() {
         <CardHeader className={density.spacingFormItem}>
           <CardTitle
             className={cn(
-              density.textSize === "text-sm" ? "text-lg" : "text-xl",
+              density.textSizeCardTitle,
               "font-semibold"
             )}
           >

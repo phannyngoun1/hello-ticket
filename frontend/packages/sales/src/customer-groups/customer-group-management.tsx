@@ -18,6 +18,7 @@ import { Plus, Search, Filter } from "lucide-react";
 import { toast } from "@truths/ui";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
+import { useDensityStyles } from "@truths/utils";
 import { CustomerGroupTree as CustomerGroupTreeView } from "./customer-group-tree";
 import { CreateCustomerGroupDialog } from "./create-customer-group-dialog";
 import { EditCustomerGroupDialog } from "./edit-customer-group-dialog";
@@ -45,6 +46,7 @@ export function CustomerGroupManagement({
   autoOpenCreate = false,
   onCreateDialogClose,
 }: CustomerGroupManagementProps) {
+  const density = useDensityStyles();
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -185,14 +187,14 @@ export function CustomerGroupManagement({
 
   return (
     <div className={className}>
-      <div className="space-y-4">
+      <div className={cn("space-y-4", density.spacingFormSection)}>
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className={cn("flex items-center justify-between", density.gapCard)}>
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">
+            <h2 className={cn("font-bold tracking-tight", density.textSizeCardTitle)}>
               CustomerGroups
             </h2>
-            <p className="text-muted-foreground">
+            <p className={cn("text-muted-foreground", density.textSizeCardDescription)}>
               Manage customerGroups hierarchically
             </p>
           </div>
@@ -210,16 +212,16 @@ export function CustomerGroupManagement({
 
         {/* Tree View */}
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
+          <CardHeader className={density.spacingFormItem}>
+            <div className={cn("flex items-center justify-between", density.gapForm)}>
               <div>
-                <CardDescription>
+                <CardDescription className={density.textSizeCardDescription}>
                   Click on items to expand/collapse. Right-click for more
                   options.
                 </CardDescription>
               </div>
             </div>
-            <div className="flex gap-4 mt-4">
+            <div className={cn("flex mt-4", density.gapForm)}>
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
                 <Input

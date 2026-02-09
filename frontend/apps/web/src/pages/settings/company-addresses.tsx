@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  cn,
 } from "@truths/ui";
 import { Plus, MapPin } from "lucide-react";
 import { AddressManagement } from "@truths/custom-ui";
@@ -14,11 +15,13 @@ import { CompanyAddressService } from "@truths/shared";
 import { CompanyAddressServiceAdapter } from "../../services/company-addresses";
 import { api } from "@truths/api";
 import { useState } from "react";
+import { useDensityStyles } from "@truths/utils";
 
 type CompanyAddressType = "default" | "billing" | "shipping";
 
 export function CompanyAddressesPage() {
   const { t } = useTranslation();
+  const density = useDensityStyles();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   // Initialize company address service
@@ -64,19 +67,19 @@ export function CompanyAddressesPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", density.spacingFormSection)}>
       <Card>
-        <CardHeader>
+        <CardHeader className={density.spacingFormItem}>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
+              <CardTitle className={cn("flex items-center gap-2", density.textSizeCardTitle, "font-semibold")}>
+                <MapPin className={cn("h-5 w-5", density.iconSize)} />
                 {t(
                   "pages.settings.companyAddresses.title",
                   "Company Addresses"
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className={density.textSizeCardDescription}>
                 {t(
                   "pages.settings.companyAddresses.description",
                   "Manage your company addresses. You can have one default address, multiple billing addresses, and multiple shipping addresses."
@@ -92,7 +95,7 @@ export function CompanyAddressesPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className={cn(density.paddingContainer)}>
           <AddressManagement
             entityId="company" // Not used for company addresses (tenant-scoped)
             service={serviceAdapter}

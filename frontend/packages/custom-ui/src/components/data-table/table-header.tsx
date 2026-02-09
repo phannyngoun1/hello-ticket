@@ -2,6 +2,7 @@ import { CardTitle, CardDescription, cn } from "@truths/ui";
 import { TableToolbar, type TableToolbarRef } from "./table-toolbar";
 import { Table } from "@tanstack/react-table";
 import React, { forwardRef } from "react";
+import { useDensityStyles } from "@truths/utils";
 
 interface TableHeaderProps<TData> {
   title: string;
@@ -48,13 +49,15 @@ export const TableHeader = forwardRef<TableToolbarRef, TableHeaderProps<any>>(
     },
     ref
   ) {
-    const titleSize = compact ? "text-sm" : "text-base";
-    const descSize = compact ? "text-xs" : "text-sm";
+    const densityStyles = useDensityStyles();
+    // Use density styles for consistent sizing
+    const titleSize = densityStyles.textSizeCardTitle;
+    const descSize = densityStyles.textSizeCardDescription;
 
     return (
-      <div className="flex flex-col gap-3 mt-4  ">
-        <div className="flex items-center gap-2">
-          <CardTitle className={titleSize}>{title}</CardTitle>
+      <div className={cn("flex flex-col mt-4", densityStyles.gapCard)}>
+        <div className={cn("flex items-center", densityStyles.gapCard)}>
+          <CardTitle className={cn(titleSize, "font-semibold")}>{title}</CardTitle>
           {description && (
             <CardDescription className={cn(descSize, "text-muted-foreground")}>
               {description}

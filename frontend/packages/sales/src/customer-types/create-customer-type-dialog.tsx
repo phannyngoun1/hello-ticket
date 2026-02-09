@@ -220,6 +220,8 @@ export function CreateCustomerTypeDialog({
         showClearButton
         onClear={handleClear}
         shortcuts={keyboardShortcuts}
+        autoSubmitShortcut={false}
+        autoClearShortcut={false}
         footer={[
           {
             label: t("common.cancel", "Cancel"),

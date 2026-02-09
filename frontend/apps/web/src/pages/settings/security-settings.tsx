@@ -21,7 +21,7 @@ export function SecuritySettingsPage() {
     <div className={cn("space-y-6", density.spacingFormSection)}>
       <Card>
         <CardHeader className={density.spacingFormItem}>
-          <CardTitle className={cn("flex items-center gap-2", density.textSize === "text-sm" ? "text-lg" : "text-xl", "font-semibold")}>
+          <CardTitle className={cn("flex items-center gap-2", density.textSizeCardTitle, "font-semibold")}>
             <Key className={density.iconSize} />
             {t("pages.settings.security.changePassword")}
           </CardTitle>
@@ -57,7 +57,7 @@ export function SecuritySettingsPage() {
 
       <Card>
         <CardHeader className={density.spacingFormItem}>
-          <CardTitle className={cn("flex items-center gap-2", density.textSize === "text-sm" ? "text-lg" : "text-xl", "font-semibold")}>
+          <CardTitle className={cn("flex items-center gap-2", density.textSizeCardTitle, "font-semibold")}>
             <Shield className={density.iconSize} />
             {t("pages.settings.security.twoFactor")}
           </CardTitle>

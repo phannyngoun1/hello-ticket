@@ -419,6 +419,8 @@ export function EditGroupDialog({
         showClearButton
         onClear={handleClear}
         shortcuts={keyboardShortcuts}
+        autoSubmitShortcut={false}
+        autoClearShortcut={false}
         footer={
           <>
             <Button
