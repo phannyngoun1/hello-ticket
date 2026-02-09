@@ -70,9 +70,9 @@ def migrate_upgrade_or_stamp(args):
         except Exception as e:
             err_msg = str(e)
             if "Can't locate revision" in err_msg or "No such revision" in err_msg:
-                print("Database has an unknown revision; stamping to head then upgrading...")
+                print("Database has an unknown revision; clearing alembic_version then stamping to head...")
+                migrations.clear_version_table()
                 migrations.stamp_migration("head")
-                migrations.upgrade_migration("head")
             else:
                 raise
     finally:
@@ -148,6 +148,17 @@ def migrate_stamp(args):
         migrations = setup_migration_functions()
         revision = args.revision if args.revision else "head"
         migrations.stamp_migration(revision)
+    finally:
+        os.chdir(original_cwd)
+
+
+def migrate_clear_version(args):
+    """Delete the alembic_version row so stamp/upgrade can run (when DB has unknown revision)."""
+    original_cwd = os.getcwd()
+    os.chdir(str(backend_dir))
+    try:
+        migrations = setup_migration_functions()
+        migrations.clear_version_table()
     finally:
         os.chdir(original_cwd)
 
@@ -320,6 +331,13 @@ Examples:
     )
     stamp_parser.set_defaults(func=migrate_stamp)
     
+    # Migrate clear-version
+    clear_version_parser = migrate_subparsers.add_parser(
+        "clear-version",
+        help="Delete alembic_version row (run this when stamp fails with 'Can't locate revision')"
+    )
+    clear_version_parser.set_defaults(func=migrate_clear_version)
+    
     # Direct commands (without "migrate" prefix for convenience)
     upgrade_direct = subparsers.add_parser(
         "upgrade",
@@ -402,6 +420,12 @@ Examples:
         help="Revision to stamp (default: head)"
     )
     stamp_direct.set_defaults(func=migrate_stamp)
+    
+    clear_version_direct = subparsers.add_parser(
+        "clear-version",
+        help="Delete alembic_version row (when stamp fails with 'Can't locate revision')"
+    )
+    clear_version_direct.set_defaults(func=migrate_clear_version)
     
     args = parser.parse_args()
     

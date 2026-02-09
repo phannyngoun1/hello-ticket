@@ -7,6 +7,7 @@ Usage:
     python manage_migrations.py upgrade [revision]
     python manage_migrations.py downgrade [revision]
     python manage_migrations.py stamp [revision]   # set DB revision without running migrations
+    python manage_migrations.py clear-version      # delete alembic_version row (then run stamp or upgrade)
     python manage_migrations.py current
     python manage_migrations.py history
 """
@@ -155,6 +156,31 @@ def stamp_migration(revision: str = "head"):
     print(f"✅ Database stamped to {revision}!")
 
 
+def get_database_url():
+    """Return DATABASE_URL with postgres:// normalized to postgresql://."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    raw = os.getenv("DATABASE_URL", "postgresql://ticket:ticket_pass@localhost:5432/ticket")
+    if raw.startswith("postgres://"):
+        return "postgresql://" + raw[len("postgres://"):]
+    return raw
+
+
+def clear_version_table():
+    """Remove the row from alembic_version so stamp/upgrade can run (fixes 'Can't locate revision')."""
+    from dotenv import load_dotenv
+    load_dotenv()
+    from sqlalchemy import create_engine, text
+    database_url = get_database_url()
+    engine = create_engine(database_url)
+    with engine.connect() as conn:
+        conn.execute(text("DELETE FROM alembic_version"))
+        conn.commit()
+    print("✅ Cleared alembic_version table.")
+    print("   Next: run 'python tools/migrate-db.py stamp head' (if schema is up to date)")
+    print("         or 'python tools/migrate-db.py upgrade' to apply migrations.")
+
+
 def show_current():
     """Show current database revision"""
     alembic_cfg = get_alembic_config()
@@ -221,6 +247,9 @@ def main():
         elif command_name == "stamp":
             revision = sys.argv[2] if len(sys.argv) > 2 else "head"
             stamp_migration(revision)
+        
+        elif command_name == "clear-version":
+            clear_version_table()
         
         elif command_name == "current":
             show_current()

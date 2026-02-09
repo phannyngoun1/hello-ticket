@@ -205,10 +205,10 @@ python tools/migrate-db.py status
 # Edit the migration file and replace sqlmodel.sql.sqltypes.AutoString() with sa.String()
 
 # 5. If you see "Can't locate revision identified by '...'" (e.g. on Railway):
-# The DB has an old revision ID that no longer exists (e.g. after squashing migrations).
-# If the DB schema is already up to date with the code, stamp to current head:
-python tools/migrate-db.py stamp head
-# Then future deploys can run: python tools/migrate-db.py upgrade
+# The DB has an old revision ID that no longer exists. Clear it then stamp:
+python tools/migrate-db.py clear-version    # deletes the alembic_version row
+python tools/migrate-db.py stamp head       # set DB to current head (if schema is already up to date)
+# Or use one command that does both when needed: python tools/migrate-db.py upgrade-or-stamp
 ```
 
 ---
