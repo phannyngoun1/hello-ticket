@@ -3,6 +3,7 @@ import { Badge } from "@truths/ui";
 import { Button } from "@truths/ui";
 import { Edit, Trash2} from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
+import { useDensityStyles } from "@truths/utils";
 import { DataListItem, BadgeConfig, StatConfig } from "./types";
 
 interface ListViewProps<T extends DataListItem> {
@@ -28,9 +29,10 @@ export function ListView<T extends DataListItem>({
   badges = [],
   stats = [],
 }: ListViewProps<T>) {
+  const density = useDensityStyles();
 
   return (
-    <div className="space-y-3">
+    <div className={density.spacingCard}>
       {items.map((item) => {
         // Use custom renderer if provided
         if (renderItem) {
@@ -44,21 +46,22 @@ export function ListView<T extends DataListItem>({
           <div
             key={item.id}
             className={cn(
-              "group rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50",
+              "group rounded-lg border bg-card transition-colors hover:bg-accent/50",
+              density.paddingCard,
               onItemClick && "cursor-pointer"
             )}
             onClick={() => onItemClick?.(item)}
           >
-            <div className="flex items-start justify-between gap-4">
+            <div className={cn("flex items-start justify-between", density.gapForm)}>
               {/* Left side: Name, Description, Badges */}
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="text-sm font-medium text-foreground">
+              <div className={cn("flex-1 min-w-0", density.spacingFormItem)}>
+                <div className={cn("flex items-start justify-between mb-1", density.gapCard)}>
+                  <h4 className={cn("font-medium text-foreground", density.textSize)}>
                     {item.name}
                   </h4>
                   {/* Render badges */}
                   {badges.some((badge) => badge.condition(item)) && (
-                    <div className="flex items-center gap-1.5 flex-wrap flex-shrink-0">
+                    <div className={cn("flex items-center flex-wrap flex-shrink-0", density.gapFormItem)}>
                       {badges
                         .filter((badge) => badge.condition(item))
                         .map((badge) => (
@@ -74,26 +77,26 @@ export function ListView<T extends DataListItem>({
                   )}
                 </div>
                 {item.description && (
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className={cn("text-muted-foreground mb-2", density.textSize)}>
                     {item.description}
                   </p>
                 )}
                 {/* Stats & Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
+                <div className={cn("flex flex-wrap items-center justify-between pt-2 border-t border-border/40", density.gapCard)}>
                   {/* Stats */}
                   {stats.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className={cn("flex flex-wrap items-center text-muted-foreground", density.gapCard, density.textSizeSmall)}>
                       {stats
                         .filter((stat) => stat.show !== false)
                         .map((stat) => (
                           <div
                             key={stat.key}
-                            className="flex items-center gap-1.5"
+                            className={cn("flex items-center", density.gapFormItem)}
                           >
-                            <span className="text-sm font-semibold text-foreground">
+                            <span className={cn("font-semibold text-foreground", density.textSize)}>
                               {stat.value(item)}
                             </span>
-                            <span className="text-xs text-muted-foreground font-normal">
+                            <span className={cn("text-muted-foreground font-normal", density.textSizeSmall)}>
                               {stat.label}
                             </span>
                           </div>

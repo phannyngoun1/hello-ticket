@@ -32,6 +32,8 @@ import {
   type ActionButtonItem,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
+import { useDensityStyles } from "@truths/utils";
+import { cn } from "@truths/ui/lib/utils";
 import type { Event, EventStatus } from "./types";
 import { EventStatus as EventStatusEnum } from "./types";
 import { useEventSeatStatistics } from "./use-events";
@@ -137,6 +139,7 @@ export function EventList({
   showShowNameInTitle = false,
   isDeleting = false,
 }: EventListProps) {
+  const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
@@ -352,11 +355,11 @@ export function EventList({
           className="group rounded-lg border bg-card transition-all hover:shadow-md hover:border-primary/20 cursor-pointer overflow-hidden"
           onClick={() => handleItemClick(item)}
         >
-          <div className="flex gap-3 p-3">
+          <div className={cn("flex", density.gapCard, density.paddingCard)}>
             {/* Date Badge */}
             <div className="flex-shrink-0">
               <div className="flex flex-col items-center justify-center w-16 h-16 rounded bg-muted/50 border border-border/50">
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase leading-tight tracking-wide">
+                <span className={cn("font-semibold text-muted-foreground uppercase leading-tight tracking-wide", density.textSizeSmall)}>
                   {dateInfo.month}
                 </span>
                 <span className="text-xl font-bold text-foreground leading-none mt-0.5">
@@ -366,10 +369,10 @@ export function EventList({
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            <div className={cn("flex-1 min-w-0 flex flex-col", density.gapFormItem)}>
               {/* Header: Title and Status */}
-              <div className="flex items-start justify-between gap-2">
-                <h4 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug flex-1">
+              <div className={cn("flex items-start justify-between", density.gapCard)}>
+                <h4 className={cn("font-semibold text-foreground line-clamp-2 leading-snug flex-1", density.textSize)}>
                   {showShowNameInTitle && item.event.show
                     ? `${item.event.show.name} - ${item.name}`
                     : item.name}
@@ -380,27 +383,27 @@ export function EventList({
               </div>
 
               {/* Time, Location, Duration - First Row */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 flex-shrink-0" />
-                  <span className="font-medium text-foreground">
+              <div className={cn("flex items-center text-muted-foreground flex-wrap", density.gapCard, density.textSizeSmall)}>
+                <div className={cn("flex items-center", density.gapFormItem)}>
+                  <Clock className={cn("flex-shrink-0", density.iconSize)} />
+                  <span className={cn("font-medium text-foreground", density.textSizeSmall)}>
                     {timeInfo.dayOfWeek}
                   </span>
                   <span>{timeInfo.time}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                <div className={cn("flex items-center", density.gapFormItem)}>
+                  <MapPin className={cn("flex-shrink-0", density.iconSize)} />
                   <span className="truncate">
                     {item.event.venue?.name || "Venue TBD"}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className={cn("flex items-center", density.gapFormItem)}>
                   <span>{formatDuration(item.event.duration_minutes)}</span>
                 </div>
               </div>
 
               {/* Statistics and Actions - Second Row */}
-              <div className="flex items-center justify-between gap-2">
+              <div className={cn("flex items-center justify-between", density.gapCard)}>
                 <EventStatisticsDisplay eventId={item.event.id} />
                 <ActionButtonList
                   item={item}
@@ -426,6 +429,8 @@ export function EventList({
     customActions,
     onEventClick,
     statusOptions,
+    density,
+    showShowNameInTitle,
   ]);
 
   const handleDeleteConfirmChange = (open: boolean) => {

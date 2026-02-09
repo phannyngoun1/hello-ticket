@@ -12,6 +12,8 @@ export interface DensityStyles {
   textSize: string;
   textSizeSmall: string;
   textSizeLabel: string;
+  textSizeCardTitle: string;
+  textSizeCardDescription: string;
 
   // Input/Button heights
   inputHeight: string;
@@ -24,15 +26,21 @@ export interface DensityStyles {
   paddingForm: string;
   paddingCell: string;
   paddingRow: string;
+  paddingCard: string;
+  paddingCardHeader: string;
+  paddingCardContent: string;
+  paddingCardFooter: string;
 
   // Gaps
   gapForm: string;
   gapFormItem: string;
   gapButtonGroup: string;
+  gapCard: string;
 
   // Spacing
   spacingFormSection: string;
   spacingFormItem: string;
+  spacingCard: string;
 
   // Icon sizes
   iconSize: string;
@@ -50,6 +58,8 @@ export function useDensityStyles(): DensityStyles {
     textSize: isCompact ? "text-xs" : "text-sm",
     textSizeSmall: isCompact ? "text-xs" : "text-sm",
     textSizeLabel: isCompact ? "text-xs" : "text-sm",
+    textSizeCardTitle: isCompact ? "text-lg" : "text-2xl",
+    textSizeCardDescription: isCompact ? "text-xs" : "text-sm",
 
     // Input/Button heights
     inputHeight: isCompact ? "h-7" : "h-10",
@@ -64,15 +74,21 @@ export function useDensityStyles(): DensityStyles {
     paddingForm: isCompact ? "p-4" : "p-6",
     paddingCell: isCompact ? "px-2" : "px-3",
     paddingRow: isCompact ? "py-1" : "py-2",
+    paddingCard: isCompact ? "p-4" : "p-6",
+    paddingCardHeader: isCompact ? "p-4" : "p-6",
+    paddingCardContent: isCompact ? "p-4 pt-0" : "p-6 pt-0",
+    paddingCardFooter: isCompact ? "p-4 pt-0" : "p-6 pt-0",
 
     // Gaps
     gapForm: isCompact ? "gap-4" : "gap-6",
     gapFormItem: isCompact ? "gap-1.5" : "gap-2",
     gapButtonGroup: isCompact ? "gap-2" : "gap-3",
+    gapCard: isCompact ? "gap-2" : "gap-3",
 
     // Spacing
     spacingFormSection: isCompact ? "space-y-4" : "space-y-6",
     spacingFormItem: isCompact ? "space-y-1.5" : "space-y-2",
+    spacingCard: isCompact ? "space-y-2" : "space-y-3",
 
     // Icon sizes
     iconSize: isCompact ? "h-3 w-3" : "h-4 w-4",

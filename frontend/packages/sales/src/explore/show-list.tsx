@@ -7,6 +7,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@truths/ui";
+import { useDensityStyles } from "@truths/utils";
+import { cn } from "@truths/ui/lib/utils";
 import { 
   type Event,
   type Show,
@@ -33,6 +35,8 @@ export function ShowList({
   onClearFilters,
   onShowClick,
 }: ShowListProps) {
+  const density = useDensityStyles();
+  
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString(undefined, {
       year: "numeric",
@@ -62,8 +66,8 @@ export function ShowList({
         <CardContent className="pt-6">
           <div className="text-center py-12">
             <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No shows found</h3>
-            <p className="text-muted-foreground">
+            <h3 className={cn("font-semibold mb-2", density.textSizeCardTitle)}>No shows found</h3>
+            <p className={cn("text-muted-foreground", density.textSizeCardDescription)}>
               {hasActiveFilters
                 ? "Try adjusting your filters to see more shows."
                 : "No shows with upcoming events available at the moment."}
@@ -113,14 +117,14 @@ export function ShowList({
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-2xl mb-2">{show.name}</CardTitle>
+                  <CardTitle className={cn("mb-2", density.textSizeCardTitle)}>{show.name}</CardTitle>
                   {show.code && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className={cn("text-muted-foreground", density.textSizeCardDescription)}>
                       Code: {show.code}
                     </p>
                   )}
                   {show.started_date && show.ended_date && (
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <p className={cn("text-muted-foreground mt-1", density.textSizeCardDescription)}>
                       {formatDate(new Date(show.started_date))} -{" "}
                       {formatDate(new Date(show.ended_date))}
                     </p>
@@ -145,7 +149,7 @@ export function ShowList({
 
             {!hasEvents && (
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className={cn("text-muted-foreground", density.textSizeCardDescription)}>
                   No events available for this show.
                 </p>
               </CardContent>

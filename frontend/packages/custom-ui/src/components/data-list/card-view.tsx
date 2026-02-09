@@ -3,6 +3,7 @@ import { Badge } from "@truths/ui";
 import { Button } from "@truths/ui";
 import { Edit, Trash2, Users, FileText, Database } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
+import { useDensityStyles } from "@truths/utils";
 import { DataListItem, BadgeConfig, StatConfig } from "./types";
 
 interface CardViewProps<T extends DataListItem> {
@@ -30,6 +31,8 @@ export function CardView<T extends DataListItem>({
   badges = [],
   stats = [],
 }: CardViewProps<T>) {
+  const density = useDensityStyles();
+  
   // Helper function to get icon for stat based on key
   const getStatIcon = (statKey: string) => {
     const key = statKey.toLowerCase();
@@ -60,28 +63,29 @@ export function CardView<T extends DataListItem>({
           <div
             key={item.id}
             className={cn(
-              "group flex flex-col rounded-lg border bg-card p-4 transition-colors hover:bg-accent/50",
+              "group flex flex-col rounded-lg border bg-card transition-colors hover:bg-accent/50",
+              density.paddingCard,
               onItemClick && "cursor-pointer"
             )}
             onClick={() => onItemClick?.(item)}
           >
             {/* Main Content */}
-            <div className="flex-1 space-y-3">
+            <div className={cn("flex-1", density.spacingCard)}>
               {/* Item Header */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0 space-y-1">
-                  <h4 className="text-sm font-medium text-foreground">
+              <div className={cn("flex items-start justify-between", density.gapCard)}>
+                <div className={cn("flex-1 min-w-0", density.spacingFormItem)}>
+                  <h4 className={cn("font-medium text-foreground", density.textSize)}>
                     {item.name}
                   </h4>
                   {item.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className={cn("text-muted-foreground line-clamp-2", density.textSize)}>
                       {item.description}
                     </p>
                   )}
                 </div>
                 {/* Badges */}
                 {badges.some((badge) => badge.condition(item)) && (
-                  <div className="flex items-center gap-1.5 flex-wrap flex-shrink-0">
+                  <div className={cn("flex items-center flex-wrap flex-shrink-0", density.gapFormItem)}>
                     {badges
                       .filter((badge) => badge.condition(item))
                       .map((badge) => (
@@ -99,10 +103,10 @@ export function CardView<T extends DataListItem>({
 
               {/* Stats & Actions Footer */}
               {(stats.length > 0 || hasActions) && (
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
+                <div className={cn("flex flex-wrap items-center justify-between pt-2 border-t border-border/40", density.gapCard)}>
                   {/* Stats */}
                   {stats.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className={cn("flex flex-wrap items-center text-muted-foreground", density.gapCard, density.textSizeSmall)}>
                       {stats
                         .filter((stat) => stat.show !== false)
                         .map((stat, index) => {
@@ -110,15 +114,15 @@ export function CardView<T extends DataListItem>({
                           return (
                             <div
                               key={stat.key}
-                              className="flex items-center gap-1.5"
+                              className={cn("flex items-center", density.gapFormItem)}
                             >
                               {icon && (
                                 <span className="flex-shrink-0">{icon}</span>
                               )}
-                              <span className="text-sm font-semibold text-foreground">
+                              <span className={cn("font-semibold text-foreground", density.textSize)}>
                                 {stat.value(item)}
                               </span>
-                              <span className="text-xs text-muted-foreground font-normal">
+                              <span className={cn("text-muted-foreground font-normal", density.textSizeSmall)}>
                                 {stat.label}
                               </span>
                               {index <

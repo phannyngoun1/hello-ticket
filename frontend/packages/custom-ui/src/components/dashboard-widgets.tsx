@@ -1,4 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@truths/ui";
+import { useDensityStyles } from "@truths/utils";
+import { cn } from "@truths/ui/lib/utils";
 import {
   TrendingUp,
   TrendingDown,
@@ -38,6 +40,8 @@ export function MetricCard({
   description,
   className = "",
 }: MetricCardProps) {
+  const density = useDensityStyles();
+  
   const getChangeColor = () => {
     switch (changeType) {
       case "positive":
@@ -63,13 +67,13 @@ export function MetricCard({
   return (
     <Card className={className}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className={cn("font-medium", density.textSizeCardDescription)}>{title}</CardTitle>
         {icon}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className={cn("font-bold", density.textSizeCardTitle)}>{value}</div>
         {change !== undefined && (
-          <div className={`flex items-center text-xs ${getChangeColor()}`}>
+          <div className={cn("flex items-center", density.textSizeSmall, getChangeColor())}>
             {getChangeIcon()}
             <span className="ml-1">
               {change > 0 ? "+" : ""}
@@ -78,7 +82,7 @@ export function MetricCard({
           </div>
         )}
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className={cn("text-muted-foreground mt-1", density.textSizeSmall)}>{description}</p>
         )}
       </CardContent>
     </Card>
@@ -100,6 +104,8 @@ export function StatusCard({
   description,
   className = "",
 }: StatusCardProps) {
+  const density = useDensityStyles();
+  
   const getStatusConfig = () => {
     switch (status) {
       case "online":
@@ -139,22 +145,22 @@ export function StatusCard({
     <Card className={`${className} ${config.bgColor} ${config.borderColor}`}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle className={cn("font-medium", density.textSizeCardDescription)}>{title}</CardTitle>
           <div className={`flex items-center ${config.color}`}>
             {config.icon}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className={density.spacingCard}>
           <Badge variant="outline" className={config.color}>
             {status.toUpperCase()}
           </Badge>
           {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className={cn("text-muted-foreground", density.textSizeSmall)}>{description}</p>
           )}
           {lastUpdated && (
-            <p className="text-xs text-muted-foreground">
+            <p className={cn("text-muted-foreground", density.textSizeSmall)}>
               Last updated: {lastUpdated}
             </p>
           )}
@@ -186,6 +192,8 @@ export function ActivityFeed({
   maxItems = 10,
   className = "",
 }: ActivityFeedProps) {
+  const density = useDensityStyles();
+  
   const getActivityIcon = (type: ActivityItem["type"]) => {
     switch (type) {
       case "success":
@@ -204,28 +212,28 @@ export function ActivityFeed({
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className={cn("font-medium", density.textSizeCardDescription)}>{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className={density.spacingFormSection}>
           {displayActivities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
+            <div key={activity.id} className={cn("flex items-start", density.gapCard)}>
               <div className="flex-shrink-0 mt-0.5">
                 {getActivityIcon(activity.type)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{activity.title}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className={cn("font-medium", density.textSize)}>{activity.title}</p>
+                <p className={cn("text-muted-foreground", density.textSizeSmall)}>
                   {activity.description}
                 </p>
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className="text-xs text-muted-foreground">
+                <div className={cn("flex items-center mt-1", density.gapCard)}>
+                  <span className={cn("text-muted-foreground", density.textSizeSmall)}>
                     {activity.timestamp}
                   </span>
                   {activity.user && (
                     <>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className={cn("text-muted-foreground", density.textSizeSmall)}>•</span>
+                      <span className={cn("text-muted-foreground", density.textSizeSmall)}>
                         {activity.user}
                       </span>
                     </>
