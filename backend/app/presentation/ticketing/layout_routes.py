@@ -195,6 +195,24 @@ async def get_layout_with_seats(
             # Build section map for seat responses
             section_map = {section.id: section.name for section in sections}
             
+            # Get seat counts for all sections
+            from app.infrastructure.shared.database.models import SeatModel
+            from sqlmodel import func
+            section_ids = [s.id for s in sections]
+            seat_counts = {}
+            if section_ids:
+                seat_count_statement = select(
+                    SeatModel.section_id,
+                    func.count(SeatModel.id).label("count")
+                ).where(
+                    SeatModel.section_id.in_(section_ids),
+                    SeatModel.tenant_id == tenant_id,
+                    SeatModel.is_deleted == False
+                ).group_by(SeatModel.section_id)
+                seat_count_results = session.exec(seat_count_statement).all()
+                # Access result as tuple: (section_id, count)
+                seat_counts = {row[0]: row[1] for row in seat_count_results}
+            
             # Build section responses using the helper function to properly convert shape
             for section in sections:
                 section_image_url = None
@@ -203,7 +221,8 @@ async def get_layout_with_seats(
                     if section_file_upload:
                         section_image_url = section_file_upload.url
                 
-                section_responses.append(section_model_to_response(section, section_image_url))
+                seat_count = seat_counts.get(section.id, 0)
+                section_responses.append(section_model_to_response(section, section_image_url, seat_count))
         
         seat_responses = []
         for seat in seats:

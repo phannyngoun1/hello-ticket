@@ -62,6 +62,7 @@ class SectionResponse(BaseModel):
     image_url: Optional[str] = None  # URL to the section image file (from file_id)
     shape: Optional[str] = None  # JSON string storing PlacementShape data
     is_active: bool
+    seat_count: Optional[int] = None  # Number of seats attached to this section
     created_at: datetime
     updated_at: datetime
 

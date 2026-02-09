@@ -15,6 +15,7 @@ export interface Section {
     image_url?: string | null;
     shape?: string | null; // JSON string storing PlacementShape data
     is_active: boolean;
+    seat_count?: number | null; // Number of seats attached to this section
     created_at: Date;
     updated_at: Date;
 }

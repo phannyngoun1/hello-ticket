@@ -29,7 +29,11 @@ VIEW_PERMISSION = Permission.VIEW_TICKETING_VENUE
 router = APIRouter(prefix="/ticketing/sections", tags=["ticketing"])
 
 
-def section_model_to_response(section: SectionModel, image_url: str | None = None) -> SectionResponse:
+def section_model_to_response(
+    section: SectionModel, 
+    image_url: str | None = None,
+    seat_count: int | None = None
+) -> SectionResponse:
     """Convert SectionModel to SectionResponse"""
     # Convert shape dict (from JSONB) to JSON string for API response
     shape_str = None
@@ -53,6 +57,7 @@ def section_model_to_response(section: SectionModel, image_url: str | None = Non
         image_url=image_url,
         shape=shape_str,  # Return as JSON string for API compatibility
         is_active=section.is_active,
+        seat_count=seat_count,
         created_at=section.created_at,
         updated_at=section.updated_at,
     )
@@ -125,7 +130,8 @@ async def create_section(
                 if file_upload:
                     image_url = file_upload.url
             
-            return section_model_to_response(section, image_url)
+            # New section has 0 seats
+            return section_model_to_response(section, image_url, seat_count=0)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
@@ -150,6 +156,24 @@ async def list_sections_by_layout(
             )
             sections = session.exec(statement).all()
             
+            # Get seat counts for all sections
+            from app.infrastructure.shared.database.models import SeatModel
+            from sqlmodel import func
+            section_ids = [s.id for s in sections]
+            seat_counts = {}
+            if section_ids:
+                seat_count_statement = select(
+                    SeatModel.section_id,
+                    func.count(SeatModel.id).label("count")
+                ).where(
+                    SeatModel.section_id.in_(section_ids),
+                    SeatModel.tenant_id == current_user.tenant_id,
+                    SeatModel.is_deleted == False
+                ).group_by(SeatModel.section_id)
+                seat_count_results = session.exec(seat_count_statement).all()
+                # Access result as tuple: (section_id, count)
+                seat_counts = {row[0]: row[1] for row in seat_count_results}
+            
             # Fetch file URLs for all sections
             items = []
             for section in sections:
@@ -158,7 +182,8 @@ async def list_sections_by_layout(
                     file_upload = await file_upload_repo.get_by_id(section.file_id)
                     if file_upload:
                         image_url = file_upload.url
-                items.append(section_model_to_response(section, image_url))
+                seat_count = seat_counts.get(section.id, 0)
+                items.append(section_model_to_response(section, image_url, seat_count))
             
             return SectionListResponse(items=items)
     except NotFoundError as exc:
@@ -185,6 +210,16 @@ async def get_section(
             if not section:
                 raise NotFoundError(f"Section {section_id} not found")
             
+            # Get seat count for this section
+            from app.infrastructure.shared.database.models import SeatModel
+            from sqlmodel import func
+            seat_count_statement = select(func.count(SeatModel.id)).where(
+                SeatModel.section_id == section_id,
+                SeatModel.tenant_id == current_user.tenant_id,
+                SeatModel.is_deleted == False
+            )
+            seat_count = session.exec(seat_count_statement).one()
+            
             # Fetch file URL if file_id exists
             image_url = None
             if section.file_id:
@@ -192,7 +227,7 @@ async def get_section(
                 if file_upload:
                     image_url = file_upload.url
             
-            return section_model_to_response(section, image_url)
+            return section_model_to_response(section, image_url, seat_count)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -261,6 +296,16 @@ async def update_section(
             session.commit()
             session.refresh(section)
             
+            # Get seat count for this section
+            from app.infrastructure.shared.database.models import SeatModel
+            from sqlmodel import func
+            seat_count_statement = select(func.count(SeatModel.id)).where(
+                SeatModel.section_id == section_id,
+                SeatModel.tenant_id == current_user.tenant_id,
+                SeatModel.is_deleted == False
+            )
+            seat_count = session.exec(seat_count_statement).one()
+            
             # Fetch file URL if file_id exists
             image_url = None
             if section.file_id:
@@ -268,7 +313,7 @@ async def update_section(
                 if file_upload:
                     image_url = file_upload.url
             
-            return section_model_to_response(section, image_url)
+            return section_model_to_response(section, image_url, seat_count)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
@@ -280,7 +325,7 @@ async def delete_section(
     section_id: str,
     current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
 ):
-    """Delete a section (soft delete) and all its related seats"""
+    """Delete a section (soft delete) - only allowed when no seats are attached"""
     try:
         set_tenant_context(current_user.tenant_id)
         
@@ -294,25 +339,24 @@ async def delete_section(
             if not section:
                 raise NotFoundError(f"Section {section_id} not found")
             
-            # Soft delete all seats associated with this section
+            # Check if there are any seats attached to this section
             from app.infrastructure.shared.database.models import SeatModel
-            seat_statement = select(SeatModel).where(
+            from sqlmodel import func
+            seat_count_statement = select(func.count(SeatModel.id)).where(
                 SeatModel.section_id == section_id,
                 SeatModel.tenant_id == current_user.tenant_id,
                 SeatModel.is_deleted == False
             )
-            seats = session.exec(seat_statement).all()
+            seat_count = session.exec(seat_count_statement).one()
             
+            if seat_count > 0:
+                raise BusinessRuleError(
+                    f"Cannot delete section '{section.name}' because it has {seat_count} seat(s) attached. "
+                    "Please remove all seats from this section before deleting it."
+                )
+            
+            # Soft delete the section (no seats to delete)
             deleted_at = datetime.now(timezone.utc)
-            
-            # Soft delete all related seats
-            for seat in seats:
-                seat.is_deleted = True
-                seat.deleted_at = deleted_at
-                seat.updated_at = deleted_at
-                session.add(seat)
-            
-            # Soft delete the section
             section.is_deleted = True
             section.deleted_at = deleted_at
             section.version += 1

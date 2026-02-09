@@ -1597,9 +1597,14 @@ export function SeatDesigner({
   const handleEditSectionFromData = (section: { id: string; name: string }) => {
     setEditingSectionId(section.id);
     sectionForm.reset({ name: section.name });
-    setIsSectionFormOpen(true);
-    setIsManageSectionsOpen(false);
+    // Keep ManageSectionsSheet open - it will switch to edit mode
     setPendingSectionCoordinates(null); // Clear any pending coordinates
+  };
+
+  // Cancel edit in ManageSectionsSheet
+  const handleCancelEditSection = () => {
+    setEditingSectionId(null);
+    sectionForm.reset({ name: "" });
   };
 
   // Sync sectionSelectValue with seat placement form section
@@ -2629,7 +2634,7 @@ export function SeatDesigner({
   });
 
   // Delete section handlers
-  const handleDeleteSection = (section: { id: string; isNew?: boolean }) => {
+  const handleDeleteSection = (section: { id: string; isNew?: boolean; seat_count?: number | null }) => {
     if (section.isNew) {
       // Unsaved section: only remove from local state
       const sectionId = section.id;
@@ -2646,6 +2651,16 @@ export function SeatDesigner({
       if (viewingSection?.id === sectionId) setViewingSection(null);
       toast({ title: "Section removed" });
     } else {
+      // Check seat count before attempting deletion
+      const seatCount = section.seat_count ?? 0;
+      if (seatCount > 0) {
+        toast({
+          title: "Cannot delete section",
+          description: `This section has ${seatCount} seat${seatCount === 1 ? "" : "s"} attached. Please remove all seats before deleting the section.`,
+          variant: "destructive",
+        });
+        return;
+      }
       deleteSectionMutation.mutate(section.id);
     }
   };
@@ -3329,18 +3344,12 @@ export function SeatDesigner({
           sections={sectionsData}
           onEdit={handleEditSectionFromData}
           onDelete={handleDeleteSection}
-          onNewSection={() => {
-            setEditingSectionId(null);
-            // Default shape/tool for new section
-            setPlacementShape({
-              type: PlacementShapeType.RECTANGLE,
-              width: 10,
-              height: 10,
-            });
-            setIsSectionCreationPending(true);
-            setIsManageSectionsOpen(false);
-          }}
           isDeleting={deleteSectionMutation.isPending}
+          form={sectionForm}
+          editingSectionId={editingSectionId}
+          isUpdating={updateSectionMutation.isPending}
+          onSave={handleSaveSectionForm}
+          onCancelEdit={handleCancelEditSection}
         />
       )}
 
