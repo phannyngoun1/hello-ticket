@@ -253,6 +253,8 @@ export function EditEventTypeDialog({
         showClearButton
         onClear={handleClear}
         shortcuts={keyboardShortcuts}
+        autoSubmitShortcut={false}
+        autoClearShortcut={false}
         footer={[
           {
             label: t("common.cancel", "Cancel"),
