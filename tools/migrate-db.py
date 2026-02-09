@@ -6,6 +6,7 @@ Command-line interface for managing database migrations using Alembic.
 
 Usage:
     python tools/migrate-db.py upgrade [revision]
+    python tools/migrate-db.py upgrade-or-stamp           # Recommended for Railway: upgrade, or stamp then upgrade if DB has unknown revision
     python tools/migrate-db.py downgrade [revision]
     python tools/migrate-db.py current
     python tools/migrate-db.py history
@@ -53,6 +54,27 @@ def migrate_upgrade(args):
         migrations = setup_migration_functions()
         revision = args.revision if args.revision else "head"
         migrations.upgrade_migration(revision)
+    finally:
+        os.chdir(original_cwd)
+
+
+def migrate_upgrade_or_stamp(args):
+    """Upgrade to head; if DB has an unknown revision (e.g. after squashing migrations), stamp then upgrade.
+    Use this as the Railway release command so the first deploy after a history change self-heals."""
+    original_cwd = os.getcwd()
+    os.chdir(str(backend_dir))
+    try:
+        migrations = setup_migration_functions()
+        try:
+            migrations.upgrade_migration("head")
+        except Exception as e:
+            err_msg = str(e)
+            if "Can't locate revision" in err_msg or "No such revision" in err_msg:
+                print("Database has an unknown revision; stamping to head then upgrading...")
+                migrations.stamp_migration("head")
+                migrations.upgrade_migration("head")
+            else:
+                raise
     finally:
         os.chdir(original_cwd)
 
@@ -220,6 +242,13 @@ Examples:
     )
     upgrade_parser.set_defaults(func=migrate_upgrade)
     
+    # Migrate upgrade-or-stamp (for Railway: self-heals when DB has unknown revision)
+    upgrade_or_stamp_parser = migrate_subparsers.add_parser(
+        "upgrade-or-stamp",
+        help="Upgrade to head; if 'Can't locate revision', stamp head then upgrade (use as Railway release command)"
+    )
+    upgrade_or_stamp_parser.set_defaults(func=migrate_upgrade_or_stamp)
+    
     # Migrate downgrade
     downgrade_parser = migrate_subparsers.add_parser(
         "downgrade",
@@ -303,6 +332,12 @@ Examples:
         help="Target revision (default: head)"
     )
     upgrade_direct.set_defaults(func=migrate_upgrade)
+    
+    upgrade_or_stamp_direct = subparsers.add_parser(
+        "upgrade-or-stamp",
+        help="Upgrade to head; if DB has unknown revision, stamp then upgrade (Railway release command)"
+    )
+    upgrade_or_stamp_direct.set_defaults(func=migrate_upgrade_or_stamp)
     
     downgrade_direct = subparsers.add_parser(
         "downgrade",

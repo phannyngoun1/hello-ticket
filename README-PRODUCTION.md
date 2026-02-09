@@ -69,10 +69,10 @@ The repo includes a root **Dockerfile** that builds the frontend and runs the ba
 - **Settings → Deploy → Release Command** (optional but recommended if you use migrations):
 
   ```bash
-  python tools/migrate-db.py upgrade
+  python tools/migrate-db.py upgrade-or-stamp
   ```
 
-  Runs Alembic migrations before each deploy. If you see **"Can't locate revision identified by '...'"**, the DB has an old revision ID (e.g. after squashing migrations). Run once: `python tools/migrate-db.py stamp head` (only if the schema is already up to date); then `upgrade` will work on future deploys. Tables are also created automatically on app startup (see “Database schema on Railway” below); use this when you have migration files for schema changes.
+  Upgrades to the latest migration. If the DB has an unknown revision (e.g. "Can't locate revision" after you squashed migrations and pushed new versions), it stamps to head then upgrades so you don't need a manual one-off. Tables are also created automatically on app startup (see “Database schema on Railway” below); use this when you have migration files for schema changes.
 
 ### 4. Deploy
 
