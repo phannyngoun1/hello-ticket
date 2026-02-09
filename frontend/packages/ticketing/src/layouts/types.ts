@@ -13,6 +13,7 @@ export interface Layout {
   image_url?: string; // Deprecated: use file_id instead
   file_id?: string;
   design_mode?: "seat-level" | "section-level";
+  canvas_background_color?: string; // When no image (hex e.g. #e5e7eb)
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -25,6 +26,7 @@ export interface CreateLayoutInput {
   image_url?: string; // Deprecated: use file_id instead
   file_id?: string;
   design_mode?: "seat-level" | "section-level";
+  canvas_background_color?: string;
 }
 
 export interface UpdateLayoutInput {
@@ -32,6 +34,7 @@ export interface UpdateLayoutInput {
   description?: string;
   image_url?: string; // Deprecated: use file_id instead
   file_id?: string;
+  canvas_background_color?: string;
 }
 
 export interface Section {

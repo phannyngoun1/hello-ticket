@@ -17,6 +17,7 @@ interface LayoutDTO {
   image_url?: string | null; // URL to the layout image file (from file_id)
   file_id?: string | null;
   design_mode?: string | null;
+  canvas_background_color?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -33,6 +34,7 @@ function transformLayout(dto: LayoutDTO): Layout {
     image_url: dto.image_url || undefined, // Now populated from backend when file_id exists
     file_id: dto.file_id || undefined,
     design_mode: (dto.design_mode || "seat-level") as "seat-level" | "section-level",
+    canvas_background_color: dto.canvas_background_color || undefined,
     is_active: dto.is_active,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : new Date(),

@@ -120,11 +120,18 @@ function SeatDesignerContent({
         initialSeats={layoutWithSeats?.seats}
         initialSections={layoutWithSeats?.sections}
         fileId={layoutWithSeats?.layout.file_id}
+        initialCanvasBackgroundColor={layoutWithSeats?.layout.canvas_background_color}
         readOnly={isReadOnly}
         onRemoveImage={async () => {
           await updateLayoutMutation.mutateAsync({
             id: effectiveLayoutId,
             input: { file_id: "" },
+          });
+        }}
+        onCanvasBackgroundColorChange={(color) => {
+          updateLayoutMutation.mutate({
+            id: effectiveLayoutId,
+            input: { canvas_background_color: color },
           });
         }}
       />

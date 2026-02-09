@@ -63,6 +63,8 @@ import type {
 import { PlacementShapeType, type PlacementShape } from "./types";
 export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
 
+const DEFAULT_CANVAS_BACKGROUND_COLOR = "#e5e7eb";
+
 export function SeatDesigner({
   venueId,
   layoutId,
@@ -74,6 +76,8 @@ export function SeatDesigner({
   initialSections,
   onImageUpload,
   onRemoveImage,
+  initialCanvasBackgroundColor,
+  onCanvasBackgroundColorChange,
   className,
   fileId: initialFileId,
 }: SeatDesignerProps & { fileId?: string }) {
@@ -85,6 +89,10 @@ export function SeatDesigner({
   const [mainImageUrl, setMainImageUrl] = useState<string | undefined>(
     initialImageUrl
   );
+  /** Canvas background color when no image (simple floor mode) */
+  const [canvasBackgroundColor, setCanvasBackgroundColor] = useState<string>(
+    initialCanvasBackgroundColor || DEFAULT_CANVAS_BACKGROUND_COLOR
+  );
   // Store file_id for the main image
   const [mainImageFileId, setMainImageFileId] = useState<string | undefined>(
     initialFileId
@@ -95,6 +103,21 @@ export function SeatDesigner({
     // Always update when initialImageUrl changes, even if it's undefined (to clear)
     setMainImageUrl(initialImageUrl);
   }, [initialImageUrl]);
+
+  // Sync canvas background color from layout when it loads or changes
+  useEffect(() => {
+    if (initialCanvasBackgroundColor) {
+      setCanvasBackgroundColor(initialCanvasBackgroundColor);
+    }
+  }, [initialCanvasBackgroundColor]);
+
+  const handleCanvasBackgroundColorChange = useCallback(
+    (color: string) => {
+      setCanvasBackgroundColor(color);
+      onCanvasBackgroundColorChange?.(color);
+    },
+    [onCanvasBackgroundColorChange]
+  );
 
   // Large venue: sections placed on main floor plan
   const [sectionMarkers, setSectionMarkers] = useState<SectionMarker[]>([]);
@@ -3001,6 +3024,10 @@ export function SeatDesigner({
             }
             isDetectingSeats={isDetectingSeats}
             onRemoveImage={mainImageUrl ? handleRemoveMainImage : undefined}
+            canvasBackgroundColor={canvasBackgroundColor}
+            onCanvasBackgroundColorChange={
+              !mainImageUrl ? handleCanvasBackgroundColorChange : undefined
+            }
           />
 
           <div className="space-y-4">
@@ -3110,6 +3137,7 @@ export function SeatDesigner({
             {venueType === "small" ? (
               <SeatDesignCanvas
                 imageUrl={mainImageUrl}
+                canvasBackgroundColor={canvasBackgroundColor}
                 containerRef={containerRef}
                 dimensionsReady={dimensionsReady}
                 containerDimensions={containerDimensions}
@@ -3140,18 +3168,20 @@ export function SeatDesigner({
               <div
                 ref={containerRef}
                 className={`relative border rounded-lg overflow-hidden select-none w-full ${
-                  mainImageUrl ? "bg-gray-100" : "bg-blue-50"
+                  mainImageUrl ? "bg-gray-100" : ""
                 }`}
                 style={{
                   height: "600px",
                   width: "100%",
                   touchAction: "none",
                   overscrollBehavior: "contain",
+                  ...(mainImageUrl ? {} : { backgroundColor: canvasBackgroundColor }),
                 }}
               >
                 {dimensionsReady ? (
                   <LayoutCanvas
                     imageUrl={mainImageUrl}
+                    canvasBackgroundColor={canvasBackgroundColor}
                     seats={[]}
                     sections={sectionMarkers}
                     selectedSeatId={null}

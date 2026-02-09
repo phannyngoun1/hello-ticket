@@ -21,6 +21,7 @@ class Layout(AggregateRoot):
         description: Optional[str] = None,
         file_id: Optional[str] = None,
         design_mode: str = "seat-level",
+        canvas_background_color: Optional[str] = "#e5e7eb",
         is_active: bool = True,
         attributes: Optional[Dict[str, Any]] = None,
         created_at: Optional[datetime] = None,
@@ -36,6 +37,7 @@ class Layout(AggregateRoot):
         self.description = description
         self.file_id = file_id
         self.design_mode = self._validate_design_mode(design_mode)
+        self.canvas_background_color = canvas_background_color or "#e5e7eb"
         self.is_active = is_active
         self.attributes = attributes or {}
         self._version = version
@@ -50,6 +52,7 @@ class Layout(AggregateRoot):
         name: Optional[str] = None,
         description: Optional[str] = None,
         file_id: Optional[str] = None,
+        canvas_background_color: Optional[str] = None,
     ) -> None:
         """Update layout details with validation."""
         if name is not None:
@@ -58,6 +61,8 @@ class Layout(AggregateRoot):
             self.description = description
         if file_id is not None:
             self.file_id = file_id
+        if canvas_background_color is not None:
+            self.canvas_background_color = canvas_background_color or "#e5e7eb"
 
         self._validate()
         self._touch()

@@ -291,7 +291,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
               y={0}
               width={noImageWidth}
               height={noImageHeight}
-              fill="#e0f2fe"
+              fill="#e5e7eb"
             />
             {seatsWithShapes.map((seat) => {
               if (!seat.x_coordinate || !seat.y_coordinate) return null;

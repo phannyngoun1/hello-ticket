@@ -70,6 +70,8 @@ export interface SeatDesignCanvasProps {
     isPlacement?: boolean;
   }>;
   selectedOverlayId?: string | null;
+  /** Background color when no image (simple floor mode). Default #e5e7eb */
+  canvasBackgroundColor?: string;
 }
 
 export function SeatDesignCanvas({
@@ -104,6 +106,7 @@ export function SeatDesignCanvas({
   selectedShapeTool,
   shapeOverlays,
   selectedOverlayId,
+  canvasBackgroundColor = "#e5e7eb",
 }: SeatDesignCanvasProps) {
   if (showImageUpload && !imageUrl) {
     return (
@@ -138,9 +141,13 @@ export function SeatDesignCanvas({
     <div
       ref={containerRef}
       className={`relative border rounded-lg overflow-hidden select-none w-full ${
-        imageUrl ? "bg-gray-100" : "bg-blue-50"
+        imageUrl ? "bg-gray-100" : ""
       }`}
-      style={containerStyleProps}
+      style={
+        imageUrl
+          ? containerStyleProps
+          : { ...containerStyleProps, backgroundColor: canvasBackgroundColor }
+      }
     >
       {dimensionsReady ? (
         <>
@@ -169,6 +176,7 @@ export function SeatDesignCanvas({
             selectedShapeTool={selectedShapeTool ?? null}
             shapeOverlays={shapeOverlays}
             selectedOverlayId={selectedOverlayId}
+            canvasBackgroundColor={canvasBackgroundColor}
           />
           <ZoomControls
             zoomLevel={zoomLevel}

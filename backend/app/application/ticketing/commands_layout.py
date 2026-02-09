@@ -12,6 +12,7 @@ class CreateLayoutCommand:
     description: Optional[str] = None
     file_id: Optional[str] = None
     design_mode: Optional[str] = "seat-level"
+    canvas_background_color: Optional[str] = None
 
 
 @dataclass
@@ -22,6 +23,7 @@ class UpdateLayoutCommand:
     name: Optional[str] = None
     description: Optional[str] = None
     file_id: Optional[str] = None
+    canvas_background_color: Optional[str] = None
 
 
 @dataclass

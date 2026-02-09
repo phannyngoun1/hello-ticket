@@ -57,6 +57,7 @@ class LayoutCommandHandler:
             description=command.description,
             file_id=command.file_id,
             design_mode=command.design_mode or "seat-level",
+            canvas_background_color=command.canvas_background_color or "#e5e7eb",
         )
 
         saved = await self._layout_repository.save(layout)
@@ -97,7 +98,9 @@ class LayoutCommandHandler:
             update_kwargs['description'] = command.description
         if command.file_id is not None:
             update_kwargs['file_id'] = command.file_id
-        
+        if command.canvas_background_color is not None:
+            update_kwargs['canvas_background_color'] = command.canvas_background_color
+
         layout.update_details(**update_kwargs)
 
         saved = await self._layout_repository.save(layout)

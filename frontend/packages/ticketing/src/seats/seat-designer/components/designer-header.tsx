@@ -47,6 +47,10 @@ export interface DesignerHeaderProps {
   isDetectingSections?: boolean;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
+  /** Canvas background color when no image; shown only when !mainImageUrl */
+  canvasBackgroundColor?: string;
+  /** Called when user changes canvas background color; only relevant when no image */
+  onCanvasBackgroundColorChange?: (color: string) => void;
 }
 
 export function DesignerHeader({
@@ -74,6 +78,8 @@ export function DesignerHeader({
   isDetectingSections = false,
   onDetectSeats,
   isDetectingSeats = false,
+  canvasBackgroundColor = "#e5e7eb",
+  onCanvasBackgroundColorChange,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle
   const showDatasheetButton =
@@ -164,6 +170,16 @@ export function DesignerHeader({
           )}
         </Button>
         
+        {!mainImageUrl && !readOnly && onCanvasBackgroundColorChange && (
+          <input
+            type="color"
+            aria-label="Canvas background color"
+            title="Canvas background color"
+            value={canvasBackgroundColor}
+            onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+            className="h-7 w-8 cursor-pointer rounded border border-input"
+          />
+        )}
         {!mainImageUrl && !readOnly && onMainImageSelect && (
           <Label htmlFor="add-floor-plan-image" className="cursor-pointer">
             <Button variant="outline" size="sm" className="h-7 px-2" asChild>

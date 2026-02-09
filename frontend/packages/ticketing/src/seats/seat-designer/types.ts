@@ -65,6 +65,10 @@ export interface SeatDesignerProps {
   onImageUpload?: (url: string) => void;
   /** Called when user removes the floor plan image (switch to simple floor). Parent should persist via layout update. */
   onRemoveImage?: () => Promise<void>;
+  /** Initial canvas background color when no image (from layout). */
+  initialCanvasBackgroundColor?: string;
+  /** Called when user changes canvas background color. Parent should persist via layout update. */
+  onCanvasBackgroundColorChange?: (color: string) => void;
   className?: string;
   fileId?: string;
 }

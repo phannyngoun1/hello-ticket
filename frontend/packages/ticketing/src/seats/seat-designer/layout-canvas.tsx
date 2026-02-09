@@ -241,6 +241,8 @@ interface LayoutCanvasProps {
     isPlacement?: boolean;
   }>;
   selectedOverlayId?: string | null;
+  /** Background color when no image (simple floor mode). Default #e5e7eb */
+  canvasBackgroundColor?: string;
 }
 
 // Shape Overlay Component with hover effects
@@ -1373,6 +1375,7 @@ export function LayoutCanvas({
   selectedShapeTool,
   shapeOverlays = [],
   selectedOverlayId,
+  canvasBackgroundColor = "#e5e7eb",
 }: LayoutCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
@@ -1545,20 +1548,27 @@ export function LayoutCanvas({
     }
   };
 
-  // Use shape fill/stroke when both set, otherwise type-based seat color
+  // Use shape fill/stroke when set; fall back to type-based default for the other
   const getSeatMarkerColors = (seat: SeatMarker) => {
+    const defaults = getSeatColor(seat.seat.seatType);
     const fill = seat.shape?.fillColor?.trim();
     const stroke = seat.shape?.strokeColor?.trim();
-    if (fill && stroke) return { fill, stroke };
-    return getSeatColor(seat.seat.seatType);
+    return {
+      fill: fill || defaults.fill,
+      stroke: stroke || defaults.stroke,
+    };
   };
 
-  // Use shape fill/stroke when both set, otherwise default section blue
+  // Use shape fill/stroke when set; fall back to default for the other
   const getSectionMarkerColors = (section: SectionMarker) => {
+    const defaultFill = "#60a5fa";
+    const defaultStroke = "#2563eb";
     const fill = section.shape?.fillColor?.trim();
     const stroke = section.shape?.strokeColor?.trim();
-    if (fill && stroke) return { fill, stroke };
-    return { fill: "#60a5fa", stroke: "#2563eb" };
+    return {
+      fill: fill || defaultFill,
+      stroke: stroke || defaultStroke,
+    };
   };
 
   // Compute display dimensions for coordinate conversion (no-image = use container)
@@ -1800,7 +1810,7 @@ export function LayoutCanvas({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#e0f2fe",
+          backgroundColor: canvasBackgroundColor,
           borderRadius: "0.5rem",
         }}
       >
@@ -2384,7 +2394,7 @@ export function LayoutCanvas({
             y={imageY}
             width={displayedWidth}
             height={displayedHeight}
-            fill="#e0f2fe"
+            fill={canvasBackgroundColor}
             listening={true}
             onMouseMove={(e) => {
               if (

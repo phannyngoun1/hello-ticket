@@ -85,6 +85,7 @@ class TicketingApiMapper:
             file_id=layout.file_id,
             image_url=image_url,
             design_mode=layout.design_mode,
+            canvas_background_color=layout.canvas_background_color or "#e5e7eb",
             is_active=layout.is_active,
             created_at=layout.created_at,
             updated_at=layout.updated_at,

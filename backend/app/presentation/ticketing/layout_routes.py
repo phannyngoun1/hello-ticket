@@ -56,6 +56,7 @@ async def create_layout(
             description=request.description,
             file_id=request.file_id,
             design_mode=request.design_mode or "seat-level",
+            canvas_background_color=request.canvas_background_color,
         )
         layout = await mediator.send(command)
         
@@ -256,6 +257,7 @@ async def update_layout(
             name=request.name,
             description=request.description,
             file_id=request.file_id,
+            canvas_background_color=request.canvas_background_color,
         )
         layout = await mediator.send(command)
         
