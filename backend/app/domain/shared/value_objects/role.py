@@ -186,6 +186,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.CREATE_SALES_CUSTOMER, Permission.VIEW_SALES_CUSTOMER,
         # Sales - Customer Types
         Permission.CREATE_SALES_CUSTOMER_TYPE, Permission.VIEW_SALES_CUSTOMER_TYPE, Permission.MANAGE_SALES_CUSTOMER_TYPE,
+        # Sales - Customer Groups
+        Permission.CREATE_SALES_CUSTOMER_GROUP, Permission.VIEW_SALES_CUSTOMER_GROUP, Permission.MANAGE_SALES_CUSTOMER_GROUP,
 
 
         # Inventory - Goods Receipts
@@ -255,6 +257,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.CREATE_SALES_CUSTOMER, Permission.VIEW_SALES_CUSTOMER,
         # Sales - Customer Types
         Permission.VIEW_SALES_CUSTOMER_TYPE, Permission.MANAGE_SALES_CUSTOMER_TYPE,
+        # Sales - Customer Groups
+        Permission.CREATE_SALES_CUSTOMER_GROUP, Permission.VIEW_SALES_CUSTOMER_GROUP, Permission.MANAGE_SALES_CUSTOMER_GROUP,
     },
     UserRole.USER: {
         # Regular user can read some resources
@@ -265,6 +269,8 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
         Permission.VIEW_SALES_CUSTOMER,
         # Sales - Customer Types
         Permission.VIEW_SALES_CUSTOMER_TYPE,
+        # Sales - Customer Groups
+        Permission.VIEW_SALES_CUSTOMER_GROUP,
     },
     UserRole.GUEST: {
         # Guest has no special permissions
