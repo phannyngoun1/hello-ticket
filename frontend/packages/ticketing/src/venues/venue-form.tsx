@@ -40,7 +40,17 @@ const venueFormInputSchema = z.object({
   opening_hours: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
+  website: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val || val === "") return true;
+        if (z.string().url().safeParse(val).success) return true;
+        return /^www\.[\w.-]+\.[\w.-]+$/.test(val);
+      },
+      { message: "Invalid URL (use https://example.com or www.example.com)" }
+    ),
   street_address: z.string().optional(),
   city: z.string().optional(),
   state_province: z.string().optional(),
@@ -293,7 +303,7 @@ export const VenueForm = forwardRef<HTMLFormElement, VenueFormProps>(
               <Input
                 id="website"
                 type="url"
-                placeholder="https://example.com"
+                placeholder="https://example.com or www.example.com"
                 {...register("website")}
                 disabled={isLoading}
                 className={cn(errors.website && "border-destructive")}
