@@ -281,7 +281,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
     };
     return (
       <div
-        className="relative border rounded-lg overflow-hidden bg-gray-100"
+        className="relative border rounded-lg overflow-hidden bg-blue-50"
         style={{ width: noImageWidth, height: noImageHeight }}
       >
         <Stage width={noImageWidth} height={noImageHeight}>
@@ -291,7 +291,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
               y={0}
               width={noImageWidth}
               height={noImageHeight}
-              fill="#f3f4f6"
+              fill="#e0f2fe"
             />
             {seatsWithShapes.map((seat) => {
               if (!seat.x_coordinate || !seat.y_coordinate) return null;

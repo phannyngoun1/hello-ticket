@@ -1800,7 +1800,7 @@ export function LayoutCanvas({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#f3f4f6",
+          backgroundColor: "#e0f2fe",
           borderRadius: "0.5rem",
         }}
       >
@@ -2384,7 +2384,7 @@ export function LayoutCanvas({
             y={imageY}
             width={displayedWidth}
             height={displayedHeight}
-            fill="#f3f4f6"
+            fill="#e0f2fe"
             listening={true}
             onMouseMove={(e) => {
               if (

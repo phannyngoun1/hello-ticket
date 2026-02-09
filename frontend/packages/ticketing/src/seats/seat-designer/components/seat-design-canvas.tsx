@@ -137,7 +137,9 @@ export function SeatDesignCanvas({
   return (
     <div
       ref={containerRef}
-      className="relative border rounded-lg overflow-hidden bg-gray-100 select-none w-full"
+      className={`relative border rounded-lg overflow-hidden select-none w-full ${
+        imageUrl ? "bg-gray-100" : "bg-blue-50"
+      }`}
       style={containerStyleProps}
     >
       {dimensionsReady ? (

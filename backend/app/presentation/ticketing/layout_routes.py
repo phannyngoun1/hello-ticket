@@ -206,7 +206,7 @@ async def get_layout_with_seats(
                     func.count(SeatModel.id).label("count")
                 ).where(
                     SeatModel.section_id.in_(section_ids),
-                    SeatModel.tenant_id == tenant_id,
+                    SeatModel.tenant_id == current_user.tenant_id,
                     SeatModel.is_deleted == False
                 ).group_by(SeatModel.section_id)
                 seat_count_results = session.exec(seat_count_statement).all()
