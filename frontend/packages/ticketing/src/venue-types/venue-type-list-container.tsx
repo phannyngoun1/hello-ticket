@@ -212,10 +212,13 @@ export function VenueTypeListContainer({
         )}
         description={vtToDelete
             ? t("pages.settings.ticketing.vt.confirmDelete", {
+                defaultValue: `Are you sure you want to delete "${vtToDelete.name || vtToDelete.id}"? This action cannot be undone.`,
                 name: vtToDelete.name || vtToDelete.id,
               })
             : ""
         }
+        confirmText="delete"
+        confirmTextLabel={t("common.typeToConfirm", "Type 'delete' to confirm")}
         confirmAction={{label: t("common.delete", "Delete"),
             variant: "destructive",
             onClick: confirmDelete,

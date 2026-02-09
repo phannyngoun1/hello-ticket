@@ -9,7 +9,6 @@ import { SessionProvider } from "./providers/session-provider";
 import { QueryProvider } from "./providers/query-provider";
 import { HealthCheckProvider } from "./providers/health-check-provider";
 import { DomainProviders } from "./providers/domain-providers";
-import { Toaster } from "@truths/ui";
 import { routeTree } from "./routeTree.gen";
 import "./styles/globals.css";
 import "./i18n/config";
@@ -42,7 +41,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               </DensityProvider>
             </ThemeProvider>
           </DomainProviders>
-          <Toaster />
         </SessionProvider>
       </QueryProvider>
     </HealthCheckProvider>

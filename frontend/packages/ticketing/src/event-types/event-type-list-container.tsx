@@ -212,10 +212,13 @@ export function EventTypeListContainer({
         )}
         description={etToDelete
             ? t("pages.settings.ticketing.et.confirmDelete", {
+                defaultValue: `Are you sure you want to delete "${etToDelete.name || etToDelete.id}"? This action cannot be undone.`,
                 name: etToDelete.name || etToDelete.id,
               })
             : ""
         }
+        confirmText="delete"
+        confirmTextLabel={t("common.typeToConfirm", "Type 'delete' to confirm")}
         confirmAction={{label: t("common.delete", "Delete"),
             variant: "destructive",
             onClick: confirmDelete,

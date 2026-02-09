@@ -214,10 +214,13 @@ export function CustomerTypeListContainer({
         )}
         description={ctToDelete
             ? t("pages.settings.sales.ct.confirmDelete", {
+                defaultValue: `Are you sure you want to delete "${ctToDelete.name || ctToDelete.id}"? This action cannot be undone.`,
                 name: ctToDelete.name || ctToDelete.id,
               })
             : ""
         }
+        confirmText="delete"
+        confirmTextLabel={t("common.typeToConfirm", "Type 'delete' to confirm")}
         confirmAction={{label: t("common.delete", "Delete"),
             variant: "destructive",
             onClick: confirmDelete,

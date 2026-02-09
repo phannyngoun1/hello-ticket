@@ -142,7 +142,6 @@ export function EventList({
   const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [statusChangeConfirmOpen, setStatusChangeConfirmOpen] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     event: Event;
@@ -437,7 +436,6 @@ export function EventList({
     setDeleteConfirmOpen(open);
     if (!open) {
       setSelectedEvent(null);
-      setDeleteConfirmationText("");
     }
   };
 
@@ -452,7 +450,6 @@ export function EventList({
   const handleDeleteCancel = () => {
     setDeleteConfirmOpen(false);
     setSelectedEvent(null);
-    setDeleteConfirmationText("");
   };
 
   const deleteConfirmAction = {
@@ -460,7 +457,7 @@ export function EventList({
     onClick: handleDeleteConfirm,
     variant: "destructive" as const,
     loading: isDeleting,
-    disabled: deleteConfirmationText.toLowerCase() !== "delete" || isDeleting,
+    disabled: isDeleting,
   };
 
   const deleteCancelAction = {
@@ -507,32 +504,12 @@ export function EventList({
         onOpenChange={handleDeleteConfirmChange}
         title="Delete Event"
         description={
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {selectedEvent
-                ? `Are you sure you want to delete "${selectedEvent.title}"? This action cannot be undone.`
-                : "Are you sure you want to delete this event? This action cannot be undone."}
-            </p>
-            <div className="space-y-2">
-              <Label
-                htmlFor="delete-event-confirmation"
-                className="text-sm font-medium"
-              >
-                Type <span className="font-mono font-semibold">delete</span> to
-                confirm:
-              </Label>
-              <Input
-                id="delete-event-confirmation"
-                value={deleteConfirmationText}
-                onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                placeholder="Type 'delete' to confirm"
-                disabled={isDeleting}
-                autoFocus
-                className="font-mono"
-              />
-            </div>
-          </div>
+          selectedEvent
+            ? `Are you sure you want to delete "${selectedEvent.title}"? This action cannot be undone.`
+            : "Are you sure you want to delete this event? This action cannot be undone."
         }
+        confirmText="delete"
+        confirmTextLabel="Type 'delete' to confirm"
         confirmAction={deleteConfirmAction}
         cancelAction={deleteCancelAction}
       />

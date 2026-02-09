@@ -380,6 +380,8 @@ export function AddressManagement<
             </div>
           ) : undefined
         }
+        confirmText="delete"
+        confirmTextLabel="Type 'delete' to confirm"
         confirmAction={{
           label: "Delete",
           variant: "destructive",

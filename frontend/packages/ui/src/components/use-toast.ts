@@ -70,6 +70,28 @@ const addToRemoveQueue = (toastId: string) => {
 export const reducer = (state: State, action: Action): State => {
     switch (action.type) {
         case 'ADD_TOAST':
+            // Check if a toast with the same content already exists (within last 2 seconds)
+            // This prevents rapid duplicate toasts from being shown
+            const now = Date.now()
+            const isDuplicate = state.toasts.some((existingToast) => {
+                // Compare string representations of title and description
+                const existingTitle = String(existingToast.title || '')
+                const existingDesc = String(existingToast.description || '')
+                const newTitle = String(action.toast.title || '')
+                const newDesc = String(action.toast.description || '')
+                
+                return (
+                    existingTitle === newTitle &&
+                    existingDesc === newDesc &&
+                    existingToast.variant === action.toast.variant
+                )
+            })
+            
+            // If duplicate, don't add it
+            if (isDuplicate) {
+                return state
+            }
+            
             return {
                 ...state,
                 toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
@@ -169,7 +191,7 @@ function useToast() {
                 listeners.splice(index, 1)
             }
         }
-    }, [state])
+    }, []) // Empty dependency array - only register listener once
 
     return {
         ...state,

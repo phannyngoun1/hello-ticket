@@ -316,6 +316,8 @@ export function CustomerGroupManagement({
               ? `Are you sure you want to delete "${itemToDelete.name || itemToDelete.code}"? This action cannot be undone.`
               : ""
           }
+          confirmText="delete"
+          confirmTextLabel="Type 'delete' to confirm"
           confirmAction={{
             label: "Delete",
             variant: "destructive",

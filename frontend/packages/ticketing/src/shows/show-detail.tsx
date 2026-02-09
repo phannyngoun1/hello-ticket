@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Button, Card, Input, Label } from "@truths/ui";
+import { Button, Card } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import {
   ConfirmationDialog,
@@ -82,10 +82,7 @@ export function ShowDetail({
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [deleteImageId, setDeleteImageId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deleteShowConfirmationText, setDeleteShowConfirmationText] =
-    useState("");
   const [isDeletingShow, setIsDeletingShow] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCreateEventDialog, setShowCreateEventDialog] = useState(false);
@@ -136,7 +133,6 @@ export function ShowDetail({
       const updatedImages = images.filter((img) => img.id !== deleteImageId);
       setImages(updatedImages);
       setDeleteImageId(null);
-      setDeleteConfirmationText("");
     } catch (error) {
       console.error("Failed to delete image:", error);
       alert("Failed to delete image. Please try again.");
@@ -148,7 +144,6 @@ export function ShowDetail({
   const handleDeleteDialogChange = useCallback((open: boolean) => {
     if (!open) {
       setDeleteImageId(null);
-      setDeleteConfirmationText("");
     }
   }, []);
 
@@ -220,7 +215,6 @@ export function ShowDetail({
     try {
       await service.deleteShow(data.id);
       setShowDeleteDialog(false);
-      setDeleteShowConfirmationText("");
       // Navigate back to shows list
       window.location.href = "/ticketing/shows";
     } catch (error) {
@@ -692,45 +686,20 @@ export function ShowDetail({
         open={!!deleteImageId}
         onOpenChange={handleDeleteDialogChange}
         title="Delete Image"
-        description={
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete this image? This action cannot be
-              undone.
-            </p>
-            <div className="space-y-2">
-              <Label
-                htmlFor="delete-confirmation"
-                className="text-sm font-medium"
-              >
-                Type <span className="font-mono font-semibold">delete</span> to
-                confirm:
-              </Label>
-              <Input
-                id="delete-confirmation"
-                value={deleteConfirmationText}
-                onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                placeholder="Type 'delete' to confirm"
-                disabled={isDeleting}
-                autoFocus
-                className="font-mono"
-              />
-            </div>
-          </div>
-        }
+        description="Are you sure you want to delete this image? This action cannot be undone."
+        confirmText="delete"
+        confirmTextLabel="Type 'delete' to confirm"
         confirmAction={{
           label: "Delete",
           variant: "destructive",
           onClick: confirmDeleteImage,
           loading: isDeleting,
-          disabled:
-            deleteConfirmationText.toLowerCase() !== "delete" || isDeleting,
+          disabled: isDeleting,
         }}
         cancelAction={{
           label: "Cancel",
           onClick: () => {
             setDeleteImageId(null);
-            setDeleteConfirmationText("");
           },
           disabled: isDeleting,
         }}
@@ -741,51 +710,22 @@ export function ShowDetail({
         open={showDeleteDialog}
         onOpenChange={(open) => {
           setShowDeleteDialog(open);
-          if (!open) {
-            setDeleteShowConfirmationText("");
-          }
         }}
         title="Delete Show"
-        description={
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Are you sure you want to delete this show? This action cannot be
-              undone.
-            </p>
-            <div className="space-y-2">
-              <Label
-                htmlFor="delete-show-confirmation"
-                className="text-sm font-medium"
-              >
-                Type <span className="font-mono font-semibold">delete</span> to
-                confirm:
-              </Label>
-              <Input
-                id="delete-show-confirmation"
-                value={deleteShowConfirmationText}
-                onChange={(e) => setDeleteShowConfirmationText(e.target.value)}
-                placeholder="Type 'delete' to confirm"
-                disabled={isDeletingShow}
-                autoFocus
-                className="font-mono"
-              />
-            </div>
-          </div>
-        }
+        description="Are you sure you want to delete this show? This action cannot be undone."
+        confirmText="delete"
+        confirmTextLabel="Type 'delete' to confirm"
         confirmAction={{
           label: "Delete",
           variant: "destructive",
           onClick: handleConfirmDeleteShow,
           loading: isDeletingShow,
-          disabled:
-            deleteShowConfirmationText.toLowerCase() !== "delete" ||
-            isDeletingShow,
+          disabled: isDeletingShow,
         }}
         cancelAction={{
           label: "Cancel",
           onClick: () => {
             setShowDeleteDialog(false);
-            setDeleteShowConfirmationText("");
           },
           disabled: isDeletingShow,
         }}
