@@ -203,6 +203,12 @@ python tools/migrate-db.py status
 
 # 4. If migration fails with "sqlmodel not defined" error:
 # Edit the migration file and replace sqlmodel.sql.sqltypes.AutoString() with sa.String()
+
+# 5. If you see "Can't locate revision identified by '...'" (e.g. on Railway):
+# The DB has an old revision ID that no longer exists (e.g. after squashing migrations).
+# If the DB schema is already up to date with the code, stamp to current head:
+python tools/migrate-db.py stamp head
+# Then future deploys can run: python tools/migrate-db.py upgrade
 ```
 
 ---

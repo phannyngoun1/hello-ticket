@@ -11,6 +11,7 @@ Usage:
     python tools/migrate-db.py history
     python tools/migrate-db.py create "Migration description"
     python tools/migrate-db.py create-initial [message]  # Create initial migration (bypasses up-to-date check)
+    python tools/migrate-db.py stamp [revision]           # Set DB revision without running migrations (fix Railway "Can't locate revision")
     python tools/migrate-db.py status
     
     # All commands can also be used with "migrate" prefix:
@@ -117,6 +118,18 @@ def migrate_create(args):
         os.chdir(original_cwd)
 
 
+def migrate_stamp(args):
+    """Set database revision without running migrations (fixes 'Can't locate revision' on Railway etc.)."""
+    original_cwd = os.getcwd()
+    os.chdir(str(backend_dir))
+    try:
+        migrations = setup_migration_functions()
+        revision = args.revision if args.revision else "head"
+        migrations.stamp_migration(revision)
+    finally:
+        os.chdir(original_cwd)
+
+
 def migrate_status(args):
     """Show migration status (pending migrations)"""
     original_cwd = os.getcwd()
@@ -169,6 +182,9 @@ Examples:
 
   # Create initial migration (first time setup)
   python tools/migrate-db.py create-initial
+
+  # Fix "Can't locate revision" (e.g. on Railway after migration history change)
+  python tools/migrate-db.py stamp head
 
   # Downgrade one revision
   python tools/migrate-db.py downgrade
@@ -262,6 +278,19 @@ Examples:
     )
     status_parser.set_defaults(func=migrate_status)
     
+    # Migrate stamp
+    stamp_parser = migrate_subparsers.add_parser(
+        "stamp",
+        help="Set DB revision without running migrations (fix 'Can't locate revision' e.g. on Railway)"
+    )
+    stamp_parser.add_argument(
+        "revision",
+        nargs="?",
+        default="head",
+        help="Revision to stamp (default: head)"
+    )
+    stamp_parser.set_defaults(func=migrate_stamp)
+    
     # Direct commands (without "migrate" prefix for convenience)
     upgrade_direct = subparsers.add_parser(
         "upgrade",
@@ -326,6 +355,18 @@ Examples:
         help="Migration description message (default: 'Initial migration - create all tables')"
     )
     create_initial_direct.set_defaults(func=migrate_create_initial)
+    
+    stamp_direct = subparsers.add_parser(
+        "stamp",
+        help="Set DB revision without running migrations (fix 'Can't locate revision' e.g. on Railway)"
+    )
+    stamp_direct.add_argument(
+        "revision",
+        nargs="?",
+        default="head",
+        help="Revision to stamp (default: head)"
+    )
+    stamp_direct.set_defaults(func=migrate_stamp)
     
     args = parser.parse_args()
     

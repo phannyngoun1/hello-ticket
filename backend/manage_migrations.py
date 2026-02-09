@@ -6,6 +6,7 @@ Usage:
     python manage_migrations.py create "Migration description"
     python manage_migrations.py upgrade [revision]
     python manage_migrations.py downgrade [revision]
+    python manage_migrations.py stamp [revision]   # set DB revision without running migrations
     python manage_migrations.py current
     python manage_migrations.py history
 """
@@ -141,6 +142,19 @@ def downgrade_migration(revision: str = "-1"):
     print(f"✅ Database downgraded!")
 
 
+def stamp_migration(revision: str = "head"):
+    """Set the database's current revision without running migrations.
+
+    Use this when the DB has an orphan revision (e.g. after squashing migrations
+    or deploying with different history). Example: "Can't locate revision 'f3d9b47c00fa'".
+    Only run if the database schema already matches the target revision.
+    """
+    print(f"Stamping database to revision: {revision}")
+    alembic_cfg = get_alembic_config()
+    command.stamp(alembic_cfg, revision)
+    print(f"✅ Database stamped to {revision}!")
+
+
 def show_current():
     """Show current database revision"""
     alembic_cfg = get_alembic_config()
@@ -203,6 +217,10 @@ def main():
         elif command_name == "downgrade":
             revision = sys.argv[2] if len(sys.argv) > 2 else "-1"
             downgrade_migration(revision)
+        
+        elif command_name == "stamp":
+            revision = sys.argv[2] if len(sys.argv) > 2 else "head"
+            stamp_migration(revision)
         
         elif command_name == "current":
             show_current()
