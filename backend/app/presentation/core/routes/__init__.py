@@ -20,6 +20,7 @@ from .workflow_routes import router as workflow_router
 from .external_api_routes import router as external_api_router
 from .upload_routes import router as upload_router
 from .ai_routes import router as ai_router
+from .company_address_routes import router as company_address_router
 from .rbac import role_router, group_router
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "external_api_router",
     "upload_router",
     "ai_router",
+    "company_address_router",
     "role_router",
     "group_router",
 ]

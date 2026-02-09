@@ -559,7 +559,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       <div
         className={cn(
           "flex items-center",
-          inline ? "gap-1.5" : "gap-0.5 h-8 px-4 sm:px-6"
+          inline ? "gap-1.5" : "container gap-0.5 h-8 px-4 sm:px-6"
         )}
       >
         <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">

@@ -21,6 +21,7 @@ from .routes import (
     external_api_router,
     upload_router,
     ai_router,
+    company_address_router,
     role_router,
     group_router,
 ) 
@@ -43,6 +44,7 @@ __all__ = [
     "external_api_router",
     "upload_router",
     "ai_router",
+    "company_address_router",
     "role_router",
     "group_router",
     "sales_router",

@@ -23,6 +23,7 @@ from app.presentation.core import (
     external_api_router,
     upload_router,
     ai_router,
+    company_address_router,
 )
 from app.presentation.sales import sales_router
 from app.presentation.shared.dependencies import get_mediator_dependency    
@@ -51,6 +52,7 @@ ROUTERS = [
     cache_router,
     audit_router,  # Audit logs and user activity
     user_preferences_router,  # User preferences management
+    company_address_router,  # Company address management
     navigation_router,  # Centralized navigation
     enum_router,  # Enum values and options for frontend
     tag_router,  # Tag management (shared)
