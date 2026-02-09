@@ -16,7 +16,7 @@ interface HeaderWithTabsProps {
 
 export function HeaderWithTabs({ onCommandPaletteOpen }: HeaderWithTabsProps) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   // location not needed here; used within CentralizedNavGrid
 
   const [tabPosition, setTabPosition] = useState<"separate" | "inline">(() => {
@@ -41,7 +41,13 @@ export function HeaderWithTabs({ onCommandPaletteOpen }: HeaderWithTabsProps) {
   }, []);
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    // If theme is "system", switch to the opposite of the resolved theme
+    // Otherwise, toggle between dark and light
+    if (theme === "system") {
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    } else {
+      setTheme(theme === "dark" ? "light" : "dark");
+    }
   };
 
   // Detect OS for keyboard shortcut display
@@ -108,7 +114,7 @@ export function HeaderWithTabs({ onCommandPaletteOpen }: HeaderWithTabsProps) {
               onClick={toggleTheme}
               aria-label={t("theme.toggle")}
             >
-              {theme === "dark" ? (
+              {resolvedTheme === "dark" ? (
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />
@@ -167,7 +173,7 @@ export function HeaderWithTabs({ onCommandPaletteOpen }: HeaderWithTabsProps) {
               onClick={toggleTheme}
               aria-label={t("theme.toggle")}
             >
-              {theme === "dark" ? (
+              {resolvedTheme === "dark" ? (
                 <Sun className="h-4 w-4" />
               ) : (
                 <Moon className="h-4 w-4" />

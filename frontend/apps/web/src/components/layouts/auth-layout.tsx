@@ -9,10 +9,16 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children }: AuthLayoutProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    // If theme is "system", switch to the opposite of the resolved theme
+    // Otherwise, toggle between dark and light
+    if (theme === "system") {
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    } else {
+      setTheme(theme === "dark" ? "light" : "dark");
+    }
   };
 
   return (
@@ -35,7 +41,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             className="h-9 w-9"
             onClick={toggleTheme}
           >
-            {theme === "dark" ? (
+            {resolvedTheme === "dark" ? (
               <Sun className="h-4 w-4" />
             ) : (
               <Moon className="h-4 w-4" />

@@ -29,7 +29,7 @@ interface HeaderProps {
 
 export function Header({ onCommandPaletteOpen }: HeaderProps) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const navigate = useNavigate();
   // location hook not needed in parent after centralization
   const { toast } = useToast();
@@ -39,7 +39,13 @@ export function Header({ onCommandPaletteOpen }: HeaderProps) {
   // Tabs position listener removed; handled within tabs module
 
   const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+    // If theme is "system", switch to the opposite of the resolved theme
+    // Otherwise, toggle between dark and light
+    if (theme === "system") {
+      setTheme(resolvedTheme === "dark" ? "light" : "dark");
+    } else {
+      setTheme(theme === "dark" ? "light" : "dark");
+    }
   };
 
   const handleLogout = async () => {
@@ -143,7 +149,7 @@ export function Header({ onCommandPaletteOpen }: HeaderProps) {
             onClick={toggleTheme}
             aria-label={t("theme.toggle")}
           >
-            {theme === "dark" ? (
+            {resolvedTheme === "dark" ? (
               <Sun className="h-4 w-4" />
             ) : (
               <Moon className="h-4 w-4" />
