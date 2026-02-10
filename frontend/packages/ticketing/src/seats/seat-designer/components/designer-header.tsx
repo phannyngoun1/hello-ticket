@@ -21,6 +21,7 @@ import {
   BrushCleaning,
   Palette,
   Grid3x3,
+  Eye,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -66,6 +67,8 @@ export interface DesignerHeaderProps {
   showGrid?: boolean;
   /** Called when user toggles show grid */
   onShowGridChange?: (enabled: boolean) => void;
+  /** Called when user clicks preview button to see booking view */
+  onPreview?: () => void;
 }
 
 export function DesignerHeader({
@@ -101,6 +104,7 @@ export function DesignerHeader({
   onGridSizeChange,
   showGrid = false,
   onShowGridChange,
+  onPreview,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
@@ -348,6 +352,18 @@ export function DesignerHeader({
           >
             <Save className="h-3.5 w-3.5 mr-1" />
             Save
+          </Button>
+        )}
+        {onPreview && (
+          <Button
+            variant="outline"
+            onClick={onPreview}
+            size="sm"
+            className="h-7 px-2"
+            title="Preview how this layout will appear during booking"
+          >
+            <Eye className="h-3.5 w-3.5 mr-1" />
+            Preview
           </Button>
         )}
         <Button

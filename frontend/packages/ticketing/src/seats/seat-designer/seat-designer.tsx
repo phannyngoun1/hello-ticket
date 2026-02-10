@@ -51,6 +51,7 @@ import {
   ShapeToolbox,
   SectionCreationToolbar,
   DesignerHeader,
+  LayoutPreviewDialog,
 } from "./components";
 
 // Import types from the seat-designer folder
@@ -285,6 +286,7 @@ export function SeatDesigner({
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(5); // 5% grid spacing
   const [showGrid, setShowGrid] = useState(false); // Show grid lines on canvas
+  const [showPreview, setShowPreview] = useState(false); // Show booking preview dialog
 
   // When in section detail view, the canvas only mounts after section has an image (else ImageUploadCard shows).
   // Reset dimensions so we re-measure the canvas container when it mounts and the image shows like seat-level.
@@ -3311,6 +3313,7 @@ export function SeatDesigner({
           onGridSizeChange={setGridSize}
           showGrid={showGrid}
           onShowGridChange={setShowGrid}
+          onPreview={() => setShowPreview(true)}
         />
 
         <div
@@ -3709,6 +3712,7 @@ export function SeatDesigner({
         onCanvasBackgroundColorChange={handleSectionCanvasBackgroundColorChange}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleFullscreen}
+        onPreview={() => setShowPreview(true)}
         showGrid={showGrid}
         gridSize={gridSize}
         seatEditControls={
@@ -3860,6 +3864,57 @@ export function SeatDesigner({
         isUpdating={updateSectionMutation.isPending}
         onSave={handleSaveSectionForm}
         onCancel={handleCancelSectionForm}
+      />
+
+      {/* Layout Preview Dialog - Shows how layout appears during booking */}
+      <LayoutPreviewDialog
+        open={showPreview}
+        onOpenChange={setShowPreview}
+        layout={
+          {
+            id: layoutId,
+            name: layoutName || "Layout",
+            image_url: mainImageUrl,
+            canvas_background_color: canvasBackgroundColor,
+            design_mode: designMode,
+          } as unknown as import("../../layouts/types").Layout
+        }
+        layoutSeats={(venueType === "large" && viewingSection
+          ? displayedSeats
+          : seats
+        ).map(
+          (marker) =>
+            ({
+              id: marker.id,
+              layout_id: layoutId,
+              section_id: marker.seat.sectionId || "",
+              section_name: marker.seat.section,
+              row: marker.seat.row,
+              seat_number: marker.seat.seatNumber,
+              seat_type: marker.seat.seatType,
+              x_coordinate: marker.x,
+              y_coordinate: marker.y,
+              shape: marker.shape ? JSON.stringify(marker.shape) : undefined,
+            }) as unknown as import("../../seats/types").Seat,
+        )}
+        sections={sectionMarkers.map(
+          (marker) =>
+            ({
+              id: marker.id,
+              layout_id: layoutId,
+              name: marker.name,
+              x_coordinate: marker.x,
+              y_coordinate: marker.y,
+              image_url: marker.imageUrl,
+              canvas_background_color: marker.canvasBackgroundColor,
+              shape: marker.shape ? JSON.stringify(marker.shape) : undefined,
+            }) as unknown as import("../../layouts/types").Section,
+        )}
+        imageUrl={
+          venueType === "large" && viewingSection
+            ? viewingSection.imageUrl || mainImageUrl
+            : mainImageUrl
+        }
       />
     </>
   );

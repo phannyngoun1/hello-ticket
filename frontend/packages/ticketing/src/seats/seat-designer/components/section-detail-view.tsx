@@ -27,6 +27,7 @@ import {
   Maximize,
   Palette,
   BrushCleaning,
+  Eye,
 } from "lucide-react";
 import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -118,6 +119,8 @@ export interface SectionDetailViewProps {
   gridSize?: number;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  /** Called when user clicks preview button to see booking view */
+  onPreview?: () => void;
 }
 
 export function SectionDetailView({
@@ -182,6 +185,7 @@ export function SectionDetailView({
   gridSize = 5,
   isFullscreen = false,
   onToggleFullscreen,
+  onPreview,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const effectiveCanvasColor =
@@ -325,6 +329,18 @@ export function SectionDetailView({
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 Save
+              </Button>
+            )}
+            {onPreview && (
+              <Button
+                variant="outline"
+                onClick={onPreview}
+                size="sm"
+                className="h-7 px-2"
+                title="Preview how this section will appear during booking"
+              >
+                <Eye className="h-3.5 w-3.5 mr-1" />
+                Preview
               </Button>
             )}
             {onToggleFullscreen && (

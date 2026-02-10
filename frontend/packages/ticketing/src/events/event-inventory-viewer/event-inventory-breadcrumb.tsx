@@ -20,20 +20,20 @@ export function EventInventoryBreadcrumb({
   return (
     <div
       className={cn(
-        "z-10 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md",
-        className
+        "z-10 bg-background/95 backdrop-blur-sm rounded-full px-2 py-1 shadow-md border border-border",
+        className,
       )}
     >
       <div className="flex items-center gap-2">
         <button
           onClick={onBack}
-          className="flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
           title="Back to Sections"
         >
-          <ArrowLeft className="h-4 w-4 text-gray-700" />
+          <ArrowLeft className="h-3.5 w-3.5" />
         </button>
-        <div className="text-sm font-medium text-gray-900">
-          Section: {section.name}
+        <div className="text-xs font-medium text-foreground">
+          {section.name}
         </div>
       </div>
     </div>
