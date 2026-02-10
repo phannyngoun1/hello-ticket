@@ -62,9 +62,15 @@ import type {
   SeatMarker,
 } from "./types";
 import { PlacementShapeType, type PlacementShape } from "./types";
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  DEFAULT_SHAPE_FILL,
+  DEFAULT_SHAPE_STROKE,
+} from "./colors";
+
 export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
 
-const DEFAULT_CANVAS_BACKGROUND_COLOR = "#e5e7eb";
+const DEFAULT_CANVAS_BACKGROUND_COLOR = DEFAULT_CANVAS_BACKGROUND;
 
 export function SeatDesigner({
   venueId,
@@ -155,6 +161,21 @@ export function SeatDesigner({
   const [viewingSection, setViewingSection] = useState<SectionMarker | null>(
     null,
   );
+
+  // Update canvas background color when drilling down into a section
+  useEffect(() => {
+    if (viewingSection) {
+      // Use section's canvas background color if available
+      const sectionColor =
+        viewingSection.canvasBackgroundColor || DEFAULT_CANVAS_BACKGROUND_COLOR;
+      setCanvasBackgroundColor(sectionColor);
+    } else {
+      // Restore layout's canvas background color when returning to main view
+      const layoutColor =
+        initialCanvasBackgroundColor || DEFAULT_CANVAS_BACKGROUND_COLOR;
+      setCanvasBackgroundColor(layoutColor);
+    }
+  }, [viewingSection, initialCanvasBackgroundColor]);
 
   // Seats (for small venue: all seats, for large venue: seats in viewingSection)
   const [seats, setSeats] = useState<SeatMarker[]>([]);
@@ -1769,34 +1790,34 @@ export function SeatDesigner({
         [PlacementShapeType.CIRCLE]: {
           type: PlacementShapeType.CIRCLE,
           radius: 2,
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          fillColor: DEFAULT_SHAPE_FILL,
+          strokeColor: DEFAULT_SHAPE_STROKE,
         },
         [PlacementShapeType.RECTANGLE]: {
           type: PlacementShapeType.RECTANGLE,
           width: 4,
           height: 3,
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          fillColor: DEFAULT_SHAPE_FILL,
+          strokeColor: DEFAULT_SHAPE_STROKE,
         },
         [PlacementShapeType.ELLIPSE]: {
           type: PlacementShapeType.ELLIPSE,
           width: 4,
           height: 3,
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          fillColor: DEFAULT_SHAPE_FILL,
+          strokeColor: DEFAULT_SHAPE_STROKE,
         },
         [PlacementShapeType.POLYGON]: {
           type: PlacementShapeType.POLYGON,
           points: [-1.5, -1, 1.5, -1, 2, 1, 0, 2, -2, 1],
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          fillColor: DEFAULT_SHAPE_FILL,
+          strokeColor: DEFAULT_SHAPE_STROKE,
         },
         [PlacementShapeType.FREEFORM]: {
           type: PlacementShapeType.FREEFORM,
           points: [0, 0, 2, 0, 3, 2, 2, 3, 0, 3, -1, 2],
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          fillColor: DEFAULT_SHAPE_FILL,
+          strokeColor: DEFAULT_SHAPE_STROKE,
         },
       };
 

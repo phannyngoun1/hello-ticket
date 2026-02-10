@@ -138,18 +138,16 @@ export function SeatMarker({
   const isHover = isHovered || isHoveredState;
   const fillColor = isSelected
     ? SELECTED_FILL
-    : ((isHover ? hoverColors.fill : shapeCodeColors.fill) ??
-      statusColors.fill);
+    : (hoverColors.fill ?? statusColors.fill);
   const strokeColor = isSelected
     ? SELECTED_STROKE
-    : ((isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
-      statusColors.stroke);
+    : (hoverColors.stroke ?? statusColors.stroke);
 
   const isAvailableForSelection = eventSeat?.status === "available";
 
-  const baseOpacity = 0.3;
-  const hoverOpacity = isAvailableForSelection ? 0.8 : 0.5;
-  const selectedOpacity = 0.95;
+  const baseOpacity = 1;
+  const hoverOpacity = 1;
+  const selectedOpacity = 1;
 
   const currentOpacity = isSelected
     ? selectedOpacity
@@ -254,7 +252,7 @@ export function SeatMarker({
             imageWidth,
             imageHeight,
             0,
-            1
+            1,
           )}
         </Group>
       )}
@@ -270,7 +268,7 @@ export function SeatMarker({
           imageHeight,
           strokeWidth,
           1,
-          { hoverColors, isHover }
+          { hoverColors, isHover },
         )}
       </Group>
     </Group>

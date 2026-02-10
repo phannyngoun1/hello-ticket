@@ -32,6 +32,12 @@ import {
   Text,
 } from "react-konva";
 import { PlacementShapeType, type PlacementShape } from "./types";
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  GRAY_FILL,
+  GRAY_STROKE,
+  getSeatTypeColors,
+} from "./colors";
 
 export interface SeatViewerProps {
   venueId: string;
@@ -270,14 +276,13 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
     const noImageHeight = 600;
     const noImageScale = 1;
     const getSeatColorNoImage = (seatType: SeatType) => {
-      switch (seatType) {
-        case SeatType.VIP:
-          return { fill: "#fbbf24", stroke: "#d97706" };
-        case SeatType.WHEELCHAIR:
-          return { fill: "#34d399", stroke: "#059669" };
-        default:
-          return { fill: "#d1d5db", stroke: "#6b7280" };
+      // Use centralized color constants for consistency
+      const colors = getSeatTypeColors(seatType);
+      // Override default (Standard) to use gray for no-image mode
+      if (seatType === SeatType.STANDARD) {
+        return { fill: GRAY_FILL, stroke: GRAY_STROKE };
       }
+      return colors;
     };
     return (
       <div
@@ -291,7 +296,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
               y={0}
               width={noImageWidth}
               height={noImageHeight}
-              fill="#e5e7eb"
+              fill={DEFAULT_CANVAS_BACKGROUND}
             />
             {seatsWithShapes.map((seat) => {
               if (!seat.x_coordinate || !seat.y_coordinate) return null;
@@ -299,70 +304,86 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
               const y = (seat.y_coordinate / 100) * noImageHeight;
               const colors = getSeatColorNoImage(seat.seat_type as SeatType);
               const markerLabel = `${seat.section_name || "?"} ${seat.row}-${seat.seat_number}`;
-              const shapeEl =
-                seat.parsedShape ? (
-                  (() => {
-                    const s = seat.parsedShape!;
-                    const bp = {
-                      fill: colors.fill,
-                      stroke: colors.stroke,
-                      strokeWidth: 2,
-                      opacity: 0.8,
-                    };
-                    if (s.type === PlacementShapeType.CIRCLE) {
-                      const r = s.radius
-                        ? (s.radius / 100) * Math.min(noImageWidth, noImageHeight) * noImageScale
-                        : 6 * noImageScale;
-                      return <Circle {...bp} radius={Math.max(1, r)} />;
-                    }
-                    if (s.type === PlacementShapeType.RECTANGLE) {
-                      const w = s.width
-                        ? (s.width / 100) * noImageWidth * noImageScale
-                        : 24;
-                      const h = s.height
-                        ? (s.height / 100) * noImageHeight * noImageScale
-                        : 24;
-                      return (
-                        <Rect
-                          {...bp}
-                          x={-w / 2}
-                          y={-h / 2}
-                          width={w}
-                          height={h}
-                          cornerRadius={s.cornerRadius ? Math.min((s.cornerRadius / 100) * noImageWidth, Math.min(w, h) / 2) : 0}
-                        />
-                      );
-                    }
-                    if (s.type === PlacementShapeType.ELLIPSE) {
-                      const rx = s.width ? ((s.width / 100) * noImageWidth) / 2 : 12;
-                      const ry = s.height ? ((s.height / 100) * noImageHeight) / 2 : 12;
-                      return <Ellipse {...bp} radiusX={rx} radiusY={ry} />;
-                    }
-                    if ((s.type === PlacementShapeType.POLYGON || s.type === PlacementShapeType.FREEFORM) && (s.points?.length ?? 0) >= 4) {
-                      const pts = (s.points ?? []).map((p, i) =>
-                        i % 2 === 0
-                          ? (p / 100) * noImageWidth * noImageScale
-                          : (p / 100) * noImageHeight * noImageScale
-                      );
-                      return <Line {...bp} points={pts} closed tension={0} />;
-                    }
+              const shapeEl = seat.parsedShape ? (
+                (() => {
+                  const s = seat.parsedShape!;
+                  const bp = {
+                    fill: colors.fill,
+                    stroke: colors.stroke,
+                    strokeWidth: 2,
+                    opacity: 0.8,
+                  };
+                  if (s.type === PlacementShapeType.CIRCLE) {
+                    const r = s.radius
+                      ? (s.radius / 100) *
+                        Math.min(noImageWidth, noImageHeight) *
+                        noImageScale
+                      : 6 * noImageScale;
+                    return <Circle {...bp} radius={Math.max(1, r)} />;
+                  }
+                  if (s.type === PlacementShapeType.RECTANGLE) {
+                    const w = s.width
+                      ? (s.width / 100) * noImageWidth * noImageScale
+                      : 24;
+                    const h = s.height
+                      ? (s.height / 100) * noImageHeight * noImageScale
+                      : 24;
                     return (
-                      <Circle
-                        radius={6 * noImageScale}
-                        fill={colors.fill}
-                        stroke={colors.stroke}
-                        strokeWidth={2}
+                      <Rect
+                        {...bp}
+                        x={-w / 2}
+                        y={-h / 2}
+                        width={w}
+                        height={h}
+                        cornerRadius={
+                          s.cornerRadius
+                            ? Math.min(
+                                (s.cornerRadius / 100) * noImageWidth,
+                                Math.min(w, h) / 2,
+                              )
+                            : 0
+                        }
                       />
                     );
-                  })()
-                ) : (
-                  <Circle
-                    radius={6 * noImageScale}
-                    fill={colors.fill}
-                    stroke={colors.stroke}
-                    strokeWidth={2}
-                  />
-                );
+                  }
+                  if (s.type === PlacementShapeType.ELLIPSE) {
+                    const rx = s.width
+                      ? ((s.width / 100) * noImageWidth) / 2
+                      : 12;
+                    const ry = s.height
+                      ? ((s.height / 100) * noImageHeight) / 2
+                      : 12;
+                    return <Ellipse {...bp} radiusX={rx} radiusY={ry} />;
+                  }
+                  if (
+                    (s.type === PlacementShapeType.POLYGON ||
+                      s.type === PlacementShapeType.FREEFORM) &&
+                    (s.points?.length ?? 0) >= 4
+                  ) {
+                    const pts = (s.points ?? []).map((p, i) =>
+                      i % 2 === 0
+                        ? (p / 100) * noImageWidth * noImageScale
+                        : (p / 100) * noImageHeight * noImageScale,
+                    );
+                    return <Line {...bp} points={pts} closed tension={0} />;
+                  }
+                  return (
+                    <Circle
+                      radius={6 * noImageScale}
+                      fill={colors.fill}
+                      stroke={colors.stroke}
+                      strokeWidth={2}
+                    />
+                  );
+                })()
+              ) : (
+                <Circle
+                  radius={6 * noImageScale}
+                  fill={colors.fill}
+                  stroke={colors.stroke}
+                  strokeWidth={2}
+                />
+              );
               return (
                 <Group key={seat.id} x={x} y={y}>
                   {shapeEl}
@@ -411,7 +432,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
     colors: { fill: string; stroke: string },
     imgWidth: number,
     imgHeight: number,
-    defaultRadius: number = 6
+    defaultRadius: number = 6,
   ) => {
     if (!shape) {
       return (
@@ -457,7 +478,7 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
         const cornerRadius = shape.cornerRadius
           ? Math.min(
               (shape.cornerRadius / 100) * imgWidth * scale,
-              Math.min(validWidth, validHeight) / 2
+              Math.min(validWidth, validHeight) / 2,
             )
           : 0;
         return (

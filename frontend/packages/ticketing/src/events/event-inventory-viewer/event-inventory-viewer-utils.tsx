@@ -78,22 +78,22 @@ export function getSeatStatusTransparency(status: EventSeatStatus): number {
 
   switch (statusUpper) {
     case "AVAILABLE":
-      return 0.4;
+      return 1;
     case "SOLD":
-      return 0.7;
+      return 1;
     case "HELD":
-      return 0.6;
+      return 1;
     case "BLOCKED":
-      return 0.8;
+      return 0;
     case "RESERVED":
-      return 0.5;
+      return 1;
     default:
-      return 0.3;
+      return 1;
   }
 }
 
 export function parseShape(
-  shapeString?: string | null
+  shapeString?: string | null,
 ): PlacementShape | undefined {
   if (!shapeString) return undefined;
   try {
@@ -127,7 +127,7 @@ export function renderShape(
   imageHeight: number,
   strokeWidth: number = 2.5,
   opacity: number = 1,
-  options?: { hoverColors?: ShapeColors; isHover?: boolean }
+  options?: { hoverColors?: ShapeColors; isHover?: boolean },
 ) {
   const activeColors =
     options?.isHover && options?.hoverColors ? options.hoverColors : colors;
@@ -166,7 +166,7 @@ export function renderShape(
       const maxCornerRadius = Math.min(validWidth, validHeight) / 2;
       const validCornerRadius = Math.max(
         0,
-        Math.min(Math.abs(rawCornerRadius), maxCornerRadius)
+        Math.min(Math.abs(rawCornerRadius), maxCornerRadius),
       );
       return (
         <Rect

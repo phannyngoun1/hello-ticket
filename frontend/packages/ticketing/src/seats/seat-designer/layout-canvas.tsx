@@ -40,6 +40,7 @@ import {
   MARQUEE_STROKE,
   SELECTED_FILL,
   SELECTED_STROKE,
+  getSeatTypeColors,
 } from "./colors";
 
 // Types are now imported from ./types
@@ -1622,16 +1623,9 @@ export function LayoutCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
-  // Get seat color based on type - more vibrant colors for visibility
+  // Get seat color based on type using centralized color constants
   const getSeatColor = (seatType: SeatType) => {
-    switch (seatType) {
-      case SeatType.VIP:
-        return { fill: "#fbbf24", stroke: "#d97706" }; // vibrant yellow/gold
-      case SeatType.WHEELCHAIR:
-        return { fill: "#34d399", stroke: "#059669" }; // vibrant green
-      default:
-        return { fill: "#60a5fa", stroke: "#2563eb" }; // vibrant blue (instead of gray)
-    }
+    return getSeatTypeColors(seatType);
   };
 
   // Use shape fill/stroke when set; fall back to type-based default for the other

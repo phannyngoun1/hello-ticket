@@ -85,7 +85,7 @@ async def get_current_user(
         
         # Load permissions from roles and groups
         try:
-            platform_session = get_platform_session()
+            platform_session = await get_platform_session()
             role_repository = RoleRepository(platform_session)
             group_repository = GroupRepository(platform_session)
             permission_service = UserPermissionService(role_repository, group_repository)
@@ -226,7 +226,7 @@ async def get_current_user_from_request(
         
         # Load permissions from roles and groups
         try:
-            platform_session = get_platform_session()
+            platform_session = await get_platform_session()
             role_repository = RoleRepository(platform_session)
             group_repository = GroupRepository(platform_session)
             permission_service = UserPermissionService(role_repository, group_repository)
