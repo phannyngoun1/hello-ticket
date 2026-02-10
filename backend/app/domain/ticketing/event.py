@@ -29,6 +29,9 @@ class Event(AggregateRoot):
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
         version: int = 0,
+        # Optional display fields (not persisted)
+        venue_name: Optional[str] = None,
+        venue_code: Optional[str] = None,
     ):
         super().__init__()
         now = datetime.now(timezone.utc)
@@ -46,6 +49,9 @@ class Event(AggregateRoot):
         self._version = version
         self.created_at = created_at or now
         self.updated_at = updated_at or now
+        # Optional display fields
+        self.venue_name = venue_name
+        self.venue_code = venue_code
 
         self._validate()
 

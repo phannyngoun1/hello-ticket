@@ -19,16 +19,23 @@ import { cn } from "@truths/ui/lib/utils";
 import { EventStatus, EventConfigurationType } from "./types";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
-const eventFormSchema = z
-  .object({
-    title: z.string().min(1, "Title is required").max(200, "Title cannot exceed 200 characters"),
-    start_dt: z.string().min(1, "Start datetime is required"),
-    duration_minutes: z.number().min(1, "Duration must be at least 1 minute").max(1440, "Duration cannot exceed 1440 minutes (24 hours)"),
-    venue_id: z.string().min(1, "Venue is required"),
-    layout_id: z.string().optional(),
-    status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
-    configuration_type: z.nativeEnum(EventConfigurationType).default(EventConfigurationType.SEAT_SETUP),
-  });
+const eventFormSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title is required")
+    .max(200, "Title cannot exceed 200 characters"),
+  start_dt: z.string().min(1, "Start datetime is required"),
+  duration_minutes: z
+    .number()
+    .min(1, "Duration must be at least 1 minute")
+    .max(1440, "Duration cannot exceed 1440 minutes (24 hours)"),
+  venue_id: z.string().min(1, "Venue is required"),
+  layout_id: z.string().optional(),
+  status: z.nativeEnum(EventStatus).default(EventStatus.DRAFT),
+  configuration_type: z
+    .nativeEnum(EventConfigurationType)
+    .default(EventConfigurationType.SEAT_SETUP),
+});
 
 export type EventFormData = {
   title: string;
@@ -61,7 +68,7 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
       layouts = [],
       onVenueChange,
     },
-    ref
+    ref,
   ) => {
     // Use variables to satisfy lints
     void mode;
@@ -90,7 +97,7 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
 
     const selectedVenueId = watch("venue_id");
     const availableLayouts = layouts.filter(
-      (layout) => !selectedVenueId || layout.venue_id === selectedVenueId
+      (layout) => !selectedVenueId || layout.venue_id === selectedVenueId,
     );
 
     // Notify parent when venue changes
@@ -106,7 +113,7 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
       if (isSubmitted && Object.keys(errors).length > 0) {
         const firstErrorField = Object.keys(errors)[0];
         const errorElement = document.querySelector(
-          `[name="${firstErrorField}"], #${firstErrorField}`
+          `[name="${firstErrorField}"], #${firstErrorField}`,
         ) as HTMLElement | null;
 
         if (errorElement) {
@@ -127,14 +134,16 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
 
     const statusOptions = Object.values(EventStatus).map((status) => ({
       value: status,
-      label: status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
+      label:
+        status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
     }));
 
     const configTypeOptions = [
       {
         value: EventConfigurationType.SEAT_SETUP,
         label: "Seat Setup (Standard)",
-        description: "Define seat layout first, tickets created during booking.",
+        description:
+          "Define seat layout first, tickets created during booking.",
       },
       {
         value: EventConfigurationType.TICKET_IMPORT,
@@ -161,97 +170,88 @@ export const EventForm = forwardRef<HTMLFormElement, EventFormProps>(
           className={cn("space-y-6")}
           noValidate
         >
-        <div className="flex justify-end">
-          <AIAssistFormButton
-            formType="event"
-            currentValues={eventCurrentValues}
-            onSuggest={(values) => {
-              Object.entries(values).forEach(([key, value]) => {
-                if (value === undefined || value === null) return;
-                if (key === "duration_minutes") {
-                  setValue(key, Number(value) || 0);
-                } else {
-                  setValue(key as keyof EventFormData, value);
-                }
-              });
-            }}
+          <div className="flex justify-end">
+            <AIAssistFormButton
+              formType="event"
+              currentValues={eventCurrentValues}
+              onSuggest={(values) => {
+                Object.entries(values).forEach(([key, value]) => {
+                  if (value === undefined || value === null) return;
+                  if (key === "duration_minutes") {
+                    setValue(key, Number(value) || 0);
+                  } else {
+                    setValue(key as keyof EventFormData, value);
+                  }
+                });
+              }}
+              disabled={isLoading}
+            />
+          </div>
+          <div ref={firstErrorRef} />
+
+          <TextInputField
+            name="title"
+            label="Title"
+            placeholder="Enter event title"
+            required
             disabled={isLoading}
           />
-        </div>
-        <div ref={firstErrorRef} />
 
-        <TextInputField
-          name="title"
-          label="Title"
-          placeholder="Enter event title"
-          required
-          disabled={isLoading}
-        />
+          <DateTimeInputField
+            name="start_dt"
+            label="Start Date & Time"
+            required
+            disabled={isLoading}
+            helperText="When the event begins"
+          />
 
-        <DateTimeInputField
-          name="start_dt"
-          label="Start Date & Time"
-          required
-          disabled={isLoading}
-          helperText="When the event begins"
-        />
+          <NumberInputField
+            name="duration_minutes"
+            label="Duration (minutes)"
+            placeholder="120"
+            required
+            min={1}
+            max={1440}
+            disabled={isLoading}
+            helperText="Duration of the event in minutes (1-1440)"
+          />
 
-        <NumberInputField
-          name="duration_minutes"
-          label="Duration (minutes)"
-          placeholder="120"
-          required
-          min={1}
-          max={1440}
-          disabled={isLoading}
-          helperText="Duration of the event in minutes (1-1440)"
-        />
-
-        <SelectInputField
-          name="venue_id"
-          label="Venue"
-          placeholder="Select a venue"
-          required
-          disabled={isLoading}
-          options={venues.map((venue) => ({
-            value: venue.id,
-            label: venue.name,
-          }))}
-        />
-
-        {selectedVenueId && availableLayouts.length > 0 && (
           <SelectInputField
-            name="layout_id"
-            label="Layout (Optional)"
-            placeholder="Select a layout"
+            name="venue_id"
+            label="Venue"
+            placeholder="Select a venue"
+            required
             disabled={isLoading}
-            options={availableLayouts.map((layout) => ({
-              value: layout.id,
-              label: layout.name,
+            options={venues.map((venue) => ({
+              value: venue.id,
+              label: venue.name,
             }))}
-            helperText="Select a layout for this event's seating arrangement"
           />
-        )}
 
-        <SelectInputField
-          name="configuration_type"
-          label="Configuration Type"
-          required
-          disabled={isLoading}
-          options={configTypeOptions}
-          helperText="Choose how tickets and seats are managed"
-        />
+          {selectedVenueId && availableLayouts.length > 0 && (
+            <SelectInputField
+              name="layout_id"
+              label="Layout (Optional)"
+              placeholder="Select a layout"
+              disabled={isLoading}
+              options={availableLayouts.map((layout) => ({
+                value: layout.id,
+                label: layout.name,
+              }))}
+              helperText="Select a layout for this event's seating arrangement"
+            />
+          )}
 
-        <SelectInputField
-          name="status"
-          label="Status"
-          required
-          disabled={isLoading}
-          options={statusOptions}
-        />
+          <SelectInputField
+            name="configuration_type"
+            label="Configuration Type"
+            required
+            disabled={isLoading}
+            options={configTypeOptions}
+            helperText="Choose how tickets and seats are managed"
+          />
         </form>
       </FormProvider>
     );
-  }
+  },
 );
-

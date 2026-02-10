@@ -55,6 +55,7 @@ export interface ShowDetailProps {
   onDelete?: (data: Show) => void;
   onAddImage?: (data: Show) => void;
   onNavigateToInventory?: (eventId: string) => void;
+  onNavigateToVenue?: (venueId: string) => void;
 
   customActions?: (data: Show) => React.ReactNode;
 }
@@ -71,6 +72,7 @@ export function ShowDetail({
   onDelete,
   onAddImage,
   onNavigateToInventory,
+  onNavigateToVenue,
 
   customActions,
 }: ShowDetailProps) {
@@ -164,7 +166,7 @@ export function ShowDetail({
             ? updatedImage
             : newBannerValue && img.is_banner
               ? { ...img, is_banner: false }
-              : img
+              : img,
         );
         setImages(updatedImages);
       } catch (error) {
@@ -172,7 +174,7 @@ export function ShowDetail({
         alert("Failed to update banner status. Please try again.");
       }
     },
-    [data?.id, images, service]
+    [data?.id, images, service],
   );
 
   // Internal handlers for actions when callbacks aren't provided
@@ -193,7 +195,7 @@ export function ShowDetail({
       // Trigger file input click after a short delay to ensure tab is visible
       setTimeout(() => {
         const fileInput = document.getElementById(
-          "show-image-upload-input"
+          "show-image-upload-input",
         ) as HTMLInputElement;
         fileInput?.click();
       }, 100);
@@ -231,7 +233,7 @@ export function ShowDetail({
       setShowEditDialog(false);
       // The query will be invalidated by the mutation, so data will refresh automatically
     },
-    [updateShowMutation]
+    [updateShowMutation],
   );
 
   const handleImageUpload = useCallback(
@@ -288,7 +290,7 @@ export function ShowDetail({
       // Reset file input
       e.target.value = "";
     },
-    [data?.id, images, service]
+    [data?.id, images, service],
   );
 
   // All hooks must be called before any early returns
@@ -464,7 +466,11 @@ export function ShowDetail({
               {/* Events Tab */}
               {activeTab === "events" && data?.id && (
                 <div className="space-y-6">
-                  <EventListContainer showId={data.id} onNavigateToInventory={onNavigateToInventory} />
+                  <EventListContainer
+                    showId={data.id}
+                    onNavigateToInventory={onNavigateToInventory}
+                    onNavigateToVenue={onNavigateToVenue}
+                  />
                 </div>
               )}
 
@@ -573,7 +579,7 @@ export function ShowDetail({
                             "absolute bottom-0 right-0 flex items-center justify-end gap-1 p-1 transition-opacity duration-200",
                             isHovered
                               ? "opacity-100"
-                              : "opacity-0 pointer-events-none"
+                              : "opacity-0 pointer-events-none",
                           )}
                         >
                           <Button
@@ -584,7 +590,7 @@ export function ShowDetail({
                               e.stopPropagation();
                               handleToggleBanner(
                                 image.id,
-                                image.isBanner ?? false
+                                image.isBanner ?? false,
                               );
                             }}
                             className="h-8 w-8 p-0 bg-background hover:bg-background border border-border shadow-md pointer-events-auto"
@@ -595,7 +601,7 @@ export function ShowDetail({
                             <Star
                               className={cn(
                                 "h-4 w-4",
-                                image.isBanner && "fill-current"
+                                image.isBanner && "fill-current",
                               )}
                             />
                           </Button>

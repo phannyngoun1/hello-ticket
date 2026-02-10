@@ -17,6 +17,8 @@ interface EventDTO {
   start_dt: string;
   duration_minutes: number;
   venue_id: string;
+  venue_name?: string | null;
+  venue_code?: string | null;
   layout_id?: string | null;
   status: string;
   configuration_type: string;
@@ -53,6 +55,8 @@ function transformEvent(dto: EventDTO): Event {
     start_dt: new Date(dto.start_dt),
     duration_minutes: dto.duration_minutes,
     venue_id: dto.venue_id,
+    venue_name: dto.venue_name || undefined,
+    venue_code: dto.venue_code || undefined,
     layout_id: dto.layout_id || undefined,
     status: dto.status as EventStatus,
     configuration_type: dto.configuration_type as EventConfigurationType,

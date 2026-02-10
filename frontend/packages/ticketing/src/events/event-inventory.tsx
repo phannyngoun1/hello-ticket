@@ -34,6 +34,7 @@ import {
   X,
   Pause,
   ScanBarcode,
+  Edit3,
 } from "lucide-react";
 import { WebcamTicketReader } from "../ticket-scanner";
 import { useEventService } from "./event-provider";
@@ -50,6 +51,7 @@ import {
   useUnblockEventSeats,
   useBlockEventSeats,
   useEventSeatStatistics,
+  useUpdateEvent,
 } from "./use-events";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat } from "./types";
@@ -57,6 +59,7 @@ import { EventSeatStatus, EventStatus } from "./types";
 import { EventInventoryViewer } from "./event-inventory-viewer";
 import { EventSeatList } from "./event-seat-list";
 import { HoldBlockSeatsDialog } from "./hold-block-seats-dialog";
+import { ChangeEventStatusDialog } from "./change-event-status-dialog";
 
 // Event status-based permissions helper functions
 const getEventStatusPermissions = (eventStatus: EventStatus) => {
@@ -134,16 +137,17 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     useState(false);
   const [createSeatDialogOpen, setCreateSeatDialogOpen] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [holdBlockDialogOpen, setHoldBlockDialogOpen] = useState(false);
   const [holdBlockAction, setHoldBlockAction] = useState<
     "hold" | "unhold" | "unblock" | "block"
   >("hold");
   const [scanSheetOpen, setScanSheetOpen] = useState(false);
+  const [changeStatusDialogOpen, setChangeStatusDialogOpen] = useState(false);
 
   // Fetch event data
   const {
@@ -169,7 +173,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   // Fetch event seat statistics
   const { data: eventSeatStatistics } = useEventSeatStatistics(
     eventService,
-    eventId
+    eventId,
   );
 
   const initializeSeatsMutation = useInitializeEventSeats(eventService);
@@ -180,6 +184,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
   const unholdSeatsMutation = useUnholdEventSeats(eventService);
   const unblockSeatsMutation = useUnblockEventSeats(eventService);
   const blockSeatsMutation = useBlockEventSeats(eventService);
+  const updateEventMutation = useUpdateEvent(eventService);
 
   const eventSeats = eventSeatsData?.data || [];
   const totalSeats = eventSeatsData?.pagination.total || 0;
@@ -325,7 +330,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
   const handleCreateTickets = async (
     seatIds: string[],
-    ticketPrice: number
+    ticketPrice: number,
   ) => {
     if (!event?.id || seatIds.length === 0) return;
     try {
@@ -343,7 +348,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
   const handleSeatListHoldSeats = async (
     seatIds: string[],
-    reason?: string
+    reason?: string,
   ) => {
     if (!event?.id || seatIds.length === 0) return;
     try {
@@ -389,7 +394,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
   const handleSeatListBlockSeats = async (
     seatIds: string[],
-    reason?: string
+    reason?: string,
   ) => {
     if (!event?.id || seatIds.length === 0) return;
     try {
@@ -444,7 +449,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
     if (availableEventSeatIds.length === 0) {
       throw new Error(
-        "No available seats selected. Only available seats can be held."
+        "No available seats selected. Only available seats can be held.",
       );
     }
 
@@ -509,7 +514,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
     if (blockedEventSeatIds.length === 0) {
       throw new Error(
-        "No blocked seats selected. Only blocked seats can be unblocked."
+        "No blocked seats selected. Only blocked seats can be unblocked.",
       );
     }
 
@@ -543,7 +548,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
     if (availableEventSeatIds.length === 0) {
       throw new Error(
-        "No available seats selected. Only available seats can be blocked."
+        "No available seats selected. Only available seats can be blocked.",
       );
     }
 
@@ -612,6 +617,21 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
       handleUnblockSeats();
     } else {
       handleBlockSeats(reason);
+    }
+  };
+
+  const handleChangeEventStatus = async (newStatus: EventStatus) => {
+    if (!event?.id) return;
+    try {
+      await updateEventMutation.mutateAsync({
+        id: event.id,
+        input: { status: newStatus },
+      });
+      // Refetch event data to get updated status
+      await refetchSeats();
+    } catch (err) {
+      console.error("Failed to change event status:", err);
+      throw err;
     }
   };
 
@@ -711,6 +731,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
         <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-xl font-semibold">{event.title}</h1>
+
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -728,41 +749,32 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               )}
             </div>
           </div>
+
           <div className="flex items-center gap-1 flex-wrap">
-            {hasSeats && (
-              <div className="flex items-center flex-wrap gap-x-1 gap-y-1">
-                <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
-                  style={{ backgroundColor: "#10b981", borderColor: "#059669" }}
-                >
-                  Available {statusCounts.available}
-                </span>
-                <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
-                  style={{ backgroundColor: "#eab308", borderColor: "#ca8a04" }}
-                >
-                  Reserved {statusCounts.reserved}
-                </span>
-                <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
-                  style={{ backgroundColor: "#3b82f6", borderColor: "#2563eb" }}
-                >
-                  Sold {statusCounts.sold}
-                </span>
-                <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
-                  style={{ backgroundColor: "#a855f7", borderColor: "#9333ea" }}
-                >
-                  Held {statusCounts.held}
-                </span>
-                <span
-                  className="inline-flex items-center rounded-full border font-medium text-xs py-0.5 px-1.5 text-white"
-                  style={{ backgroundColor: "#ef4444", borderColor: "#dc2626" }}
-                >
-                  Blocked {statusCounts.blocked}
-                </span>
-              </div>
-            )}
+            <Button
+              onClick={() => setChangeStatusDialogOpen(true)}
+              variant="outline"
+              size="sm"
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium",
+                event.status === EventStatus.DRAFT &&
+                  "bg-gray-100 text-gray-800 border-gray-300",
+                event.status === EventStatus.PUBLISHED &&
+                  "bg-blue-100 text-blue-800 border-blue-300",
+                event.status === EventStatus.ON_SALE &&
+                  "bg-green-100 text-green-800 border-green-300",
+                event.status === EventStatus.SOLD_OUT &&
+                  "bg-yellow-100 text-yellow-800 border-yellow-300",
+                event.status === EventStatus.CANCELLED &&
+                  "bg-red-100 text-red-800 border-red-300",
+                event.status === EventStatus.COMPLETED &&
+                  "bg-purple-100 text-purple-800 border-purple-300",
+              )}
+              title="Change event status"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              {event.status.replace("_", " ").toUpperCase()}
+            </Button>
             {(needsInitialization || hasMissingSeats) &&
               permissions.canAddSeats && (
                 <Button
@@ -774,7 +786,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                   <RefreshCw
                     className={cn(
                       "h-3.5 w-3.5",
-                      initializeSeatsMutation.isPending && "animate-spin"
+                      initializeSeatsMutation.isPending && "animate-spin",
                     )}
                   />
                   {needsInitialization ? "Initialize Seats" : "Add Seats"}
@@ -821,7 +833,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
                           return (
                             eventSeat?.status === EventSeatStatus.AVAILABLE
                           );
-                        }
+                        },
                       ).length;
                       const totalCount = selectedSeatIds.size;
                       return availableCount === totalCount
@@ -1005,7 +1017,10 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
 
       {/* Scan Tickets Sheet */}
       <Sheet open={scanSheetOpen} onOpenChange={setScanSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-lg flex flex-col p-0 overflow-hidden">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg flex flex-col p-0 overflow-hidden"
+        >
           <SheetHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
             <SheetTitle>Scan tickets</SheetTitle>
           </SheetHeader>
@@ -1068,7 +1083,7 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
               return holdBlockAction === "unhold"
                 ? eventSeat?.status === EventSeatStatus.HELD
                 : eventSeat?.status === EventSeatStatus.AVAILABLE;
-            })
+            }),
           )
         }
         action={holdBlockAction}
@@ -1078,6 +1093,16 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           unholdSeatsMutation.isPending ||
           blockSeatsMutation.isPending
         }
+      />
+
+      {/* Change Event Status Dialog */}
+      <ChangeEventStatusDialog
+        open={changeStatusDialogOpen}
+        onOpenChange={setChangeStatusDialogOpen}
+        currentStatus={event.status}
+        onConfirm={handleChangeEventStatus}
+        loading={updateEventMutation.isPending}
+        eventTitle={event.title}
       />
     </div>
   );

@@ -16,16 +16,19 @@ import { api } from "@truths/api";
 function ShowDetailContent({ id }: { id: string | undefined }) {
   const navigate = useNavigate();
   const service = useShowService();
-  const {
-    data,
-    isLoading,
-    error,
-  } = useShow(service, id ?? null);
+  const { data, isLoading, error } = useShow(service, id ?? null);
 
   const handleNavigateToInventory = (eventId: string) => {
     navigate({
       to: "/ticketing/events/$eventId/inventory",
       params: { eventId },
+    });
+  };
+
+  const handleNavigateToVenue = (venueId: string) => {
+    navigate({
+      to: "/ticketing/venues/$id",
+      params: { id: venueId },
     });
   };
 
@@ -39,7 +42,7 @@ function ShowDetailContent({ id }: { id: string | undefined }) {
           title,
           iconName: "Users",
         },
-      })
+      }),
     );
   }, [id, data]);
 
@@ -50,6 +53,7 @@ function ShowDetailContent({ id }: { id: string | undefined }) {
       error={error as Error | null}
       editable={true}
       onNavigateToInventory={handleNavigateToInventory}
+      onNavigateToVenue={handleNavigateToVenue}
     />
   );
 }
@@ -113,4 +117,3 @@ export function ViewShowPage() {
     </ShowProvider>
   );
 }
-
