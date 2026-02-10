@@ -21,7 +21,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
-  
+
   const updateMutation = useUpdateEmployee(service);
   const { data, isLoading, error, refetch } = useEmployee(service, id ?? null);
 
@@ -35,7 +35,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
           entityTags: "/api/v1/shared/tags/entity",
         },
       }),
-    []
+    [],
   );
 
   const attachmentService = useMemo(
@@ -48,7 +48,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
           profilePhoto: "/api/v1/shared/attachments/entity",
         },
       }),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -59,9 +59,8 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
         detail: {
           path: `/sales/employees/${id}`,
           title,
-          iconName: "Users",
         },
-      })
+      }),
     );
   }, [id, data]);
 
@@ -71,7 +70,7 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
 
   const handleEditSubmit = async (
     employeeId: string,
-    input: UpdateEmployeeInput
+    input: UpdateEmployeeInput,
   ) => {
     try {
       await updateMutation.mutateAsync({ id: employeeId, input });
@@ -92,21 +91,21 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
   };
 
   const handleSaveAttachments = async () => {
-      // Just refetch to get updated list in detail view if needed, 
-      // but usually the dialog handles uploads itself and we just close it
-      // The local document list in EmployeeDetail will fetch on its own when tab is active
-      setAttachmentsDialogOpen(false);
+    // Just refetch to get updated list in detail view if needed,
+    // but usually the dialog handles uploads itself and we just close it
+    // The local document list in EmployeeDetail will fetch on its own when tab is active
+    setAttachmentsDialogOpen(false);
   };
 
   const handlePhotoChange = useCallback(() => {
     // Determine if we need to update local state or just refetch
-     // Ideally we update the data.user.profile_photo_url if that structure exists, 
-     // but 'Employee' type might not have photo URL field explicitly in 'data'. 
-     // Employee might have a linked user or we just added photo ability. 
-     // If the Employee model doesn't have a photo URL field, we rely on the component dealing with it?
-     // Actually EmployeeDetail doesn't show photo unless we pass it or it's in data. 
-     // We are passing `profilePhotoComponent` which manages its own preview state. 
-     // But we should probably refetch to ensure consistency if other parts use it.
+    // Ideally we update the data.user.profile_photo_url if that structure exists,
+    // but 'Employee' type might not have photo URL field explicitly in 'data'.
+    // Employee might have a linked user or we just added photo ability.
+    // If the Employee model doesn't have a photo URL field, we rely on the component dealing with it?
+    // Actually EmployeeDetail doesn't show photo unless we pass it or it's in data.
+    // We are passing `profilePhotoComponent` which manages its own preview state.
+    // But we should probably refetch to ensure consistency if other parts use it.
     refetch();
   }, [refetch]);
 
@@ -128,20 +127,20 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
             <EmployeeProfilePhotoUpload
               employee={data}
               attachmentService={attachmentService}
-              // We need to pass current photo if available. 
-              // Assuming we can fetch it or derive it. 
+              // We need to pass current photo if available.
+              // Assuming we can fetch it or derive it.
               // For now we might not have it in 'data' if backend doesn't return it on Employee object.
               // But let's assume `data.profile_photo` or similar if it existed.
               // Since we don't have it in type, we might pass null and let component fetch?
-              // The component uses `currentPhoto` prop. 
+              // The component uses `currentPhoto` prop.
               // Without it, it might show initial logic.
-              // Let's check Employee type again. It doesn't have profile_picture. 
+              // Let's check Employee type again. It doesn't have profile_picture.
               // So we might need to fetch it separately or rely on it being fetched.
               // However, ProfilePhotoUpload usually takes a FileUpload object (url, id).
               // If Employee doesn't have it, we might need to rely on the side effect of upload.
               // Or maybe we should add profile_photo to Employee type if backend supports it.
               // For now, passing undefined.
-              currentPhoto={null} 
+              currentPhoto={null}
               onPhotoChange={handlePhotoChange}
             />
           ) : undefined
@@ -165,11 +164,11 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
             onSave={handleSaveTags}
           />
           <EmployeeAttachmentsDialog
-             open={attachmentsDialogOpen}
-             onOpenChange={setAttachmentsDialogOpen}
-             employee={data}
-             attachmentService={attachmentService}
-             onSave={handleSaveAttachments}
+            open={attachmentsDialogOpen}
+            onOpenChange={setAttachmentsDialogOpen}
+            employee={data}
+            attachmentService={attachmentService}
+            onSave={handleSaveAttachments}
           />
         </>
       )}
@@ -180,12 +179,15 @@ function EmployeeDetailContent({ id }: { id: string | undefined }) {
 export function ViewEmployeePage() {
   const { id } = useParams({ from: "/sales/employees/$id" });
 
-  const serviceConfig = useMemo(() => ({
-    apiClient: api,
-    endpoints: {
-      employees: "/api/v1/sales/employees",
-    },
-  }), []);
+  const serviceConfig = useMemo(
+    () => ({
+      apiClient: api,
+      endpoints: {
+        employees: "/api/v1/sales/employees",
+      },
+    }),
+    [],
+  );
 
   return (
     <EmployeeProvider config={serviceConfig}>

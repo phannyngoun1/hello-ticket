@@ -18,12 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 
 function OrganizerDetailContent({ id }: { id: string | undefined }) {
   const service = useOrganizerService();
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useOrganizer(service, id ?? null);
+  const { data, isLoading, error, refetch } = useOrganizer(service, id ?? null);
 
   // Debug: log the raw organizer data
   React.useEffect(() => {
@@ -37,7 +32,7 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [organizerToEdit, setOrganizerToEdit] = useState<any>(null);
-  
+
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<FileUpload | null>(null);
@@ -50,9 +45,9 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
       tags: "/api/v1/shared/tags",
     },
   });
-  
-  const attachmentService = new AttachmentService({ 
-    apiClient: api, 
+
+  const attachmentService = new AttachmentService({
+    apiClient: api,
     endpoints: {
       attachments: "/api/v1/shared/attachments",
       entityAttachments: "/api/v1/shared/attachments/entity",
@@ -64,9 +59,7 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
   const { data: profilePhotoData, refetch: refetchProfilePhoto } = useQuery({
     queryKey: ["profilePhoto", id, "organizer"],
     queryFn: () =>
-      id
-        ? attachmentService.getProfilePhoto("organizer", id)
-        : null,
+      id ? attachmentService.getProfilePhoto("organizer", id) : null,
     enabled: !!id,
   });
 
@@ -75,11 +68,17 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
   }, [profilePhotoData]);
 
   // Load documents
-  const { data: documents, isLoading: loadingDocuments, refetch: refetchDocuments } = useQuery({
+  const {
+    data: documents,
+    isLoading: loadingDocuments,
+    refetch: refetchDocuments,
+  } = useQuery({
     queryKey: ["organizer-documents", id],
-    queryFn: () => 
-      id 
-        ? attachmentService.getAttachmentsForEntity("organizer", id, "document").then(res => res.items)
+    queryFn: () =>
+      id
+        ? attachmentService
+            .getAttachmentsForEntity("organizer", id, "document")
+            .then((res) => res.items)
         : Promise.resolve([]),
     enabled: !!id,
   });
@@ -92,19 +91,22 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
   const handleEditSubmit = async (organizerId: string, input: any) => {
     try {
       await updateMutation.mutateAsync({ id: organizerId, input });
-      toast({ title: "Success", description: "Organizer updated successfully" });
+      toast({
+        title: "Success",
+        description: "Organizer updated successfully",
+      });
       setEditDialogOpen(false);
       setOrganizerToEdit(null);
     } catch (err) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update organizer",
+        description:
+          err instanceof Error ? err.message : "Failed to update organizer",
         variant: "destructive",
       });
       throw err;
     }
   };
-
 
   const handleManageTags = (_organizer: any) => {
     setTagsDialogOpen(true);
@@ -127,7 +129,8 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
       console.error("Failed to save tags:", err);
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update tags",
+        description:
+          err instanceof Error ? err.message : "Failed to update tags",
         variant: "destructive",
       });
     }
@@ -158,9 +161,8 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
         detail: {
           path: `/ticketing/organizers/${id}`,
           title,
-          iconName: "Users",
         },
-      })
+      }),
     );
   }, [id, data]);
 
@@ -172,11 +174,9 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
         error={error as Error | null}
         editable={true}
         onEdit={handleEdit}
-
         onManageTags={handleManageTags}
         onManageAttachments={handleManageAttachments}
         attachmentService={attachmentService}
-
         profilePhotoComponent={
           data ? (
             <OrganizerProfilePhotoUpload
@@ -200,7 +200,7 @@ function OrganizerDetailContent({ id }: { id: string | undefined }) {
         onSubmit={handleEditSubmit}
         organizer={organizerToEdit}
       />
-      
+
       {data && (
         <>
           <OrganizerTagsDialog
@@ -240,4 +240,3 @@ export function ViewOrganizerPage() {
     </OrganizerProvider>
   );
 }
-

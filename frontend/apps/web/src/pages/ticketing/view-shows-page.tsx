@@ -40,7 +40,6 @@ function ShowDetailContent({ id }: { id: string | undefined }) {
         detail: {
           path: `/ticketing/shows/${id}`,
           title,
-          iconName: "Users",
         },
       }),
     );

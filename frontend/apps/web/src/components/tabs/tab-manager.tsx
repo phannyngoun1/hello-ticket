@@ -10,6 +10,16 @@ import {
   Settings,
   FileText,
   Package,
+  Calendar,
+  CreditCard,
+  Search,
+  MapPin,
+  LayoutGrid,
+  Play,
+  Palette,
+  Bell,
+  Globe,
+  Shield,
   type LucideIcon,
   ChevronDown,
   GripVertical,
@@ -83,14 +93,14 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     (path: string): TabMetadata | null => {
       return getTabMetadata(tabConfiguration, path);
     },
-    []
+    [],
   );
 
   // Clean up tabs on mount to remove any undefined/null entries (from corrupted localStorage)
   useEffect(() => {
     setTabs((prevTabs) => {
       const cleanedTabs = prevTabs.filter(
-        (tab): tab is AppTab => tab != null && !!tab.id && !!tab.path
+        (tab): tab is AppTab => tab != null && !!tab.id && !!tab.path,
       );
       // Only update if we actually removed some tabs
       if (cleanedTabs.length !== prevTabs.length) {
@@ -104,7 +114,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   useEffect(() => {
     // Only save valid tabs
     const validTabs = tabs.filter(
-      (tab): tab is AppTab => tab != null && !!tab.id && !!tab.path
+      (tab): tab is AppTab => tab != null && !!tab.id && !!tab.path,
     );
     storage.set(TABS_STORAGE_KEY, validTabs);
   }, [tabs]);
@@ -113,7 +123,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     (path: string): { title: string; iconName: string } => {
       return getTitleAndIconFromConfig(tabConfiguration, path);
     },
-    []
+    [],
   );
 
   // Get or create tab for current route
@@ -213,19 +223,19 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         prev.map((t) =>
           t.path === path
             ? { ...t, title, iconName: iconName ?? t.iconName }
-            : t
-        )
+            : t,
+        ),
       );
     };
 
     window.addEventListener(
       "update-tab-title",
-      handleUpdateTitle as EventListener
+      handleUpdateTitle as EventListener,
     );
     return () => {
       window.removeEventListener(
         "update-tab-title",
-        handleUpdateTitle as EventListener
+        handleUpdateTitle as EventListener,
       );
     };
   }, []);
@@ -242,6 +252,16 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       Settings,
       FileText,
       Package,
+      Calendar,
+      CreditCard,
+      Search,
+      MapPin,
+      LayoutGrid,
+      Play,
+      Palette,
+      Bell,
+      Globe,
+      Shield,
     };
     return iconName ? iconMap[iconName] : null;
   };
@@ -256,7 +276,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         search: searchParams ? Object.fromEntries(searchParams) : undefined,
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const handleTabClick = useCallback(
@@ -270,7 +290,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       // Reset the flag after a short delay
       setTimeout(() => setUserInitiatedTabChange(false), 100);
     },
-    [navigateToTabPath, onTabChange]
+    [navigateToTabPath, onTabChange],
   );
 
   const handleTabClose = useCallback(
@@ -291,7 +311,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         }
       }
     },
-    [tabs, activeTabId, navigate]
+    [tabs, activeTabId, navigate],
   );
 
   const handleCloseOthers = useCallback(() => {
@@ -335,7 +355,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
 
       setTabs((prevTabs) => {
         const draggedIndex = prevTabs.findIndex(
-          (tab) => tab.id === draggedTabId
+          (tab) => tab.id === draggedTabId,
         );
         const dropIndex = prevTabs.findIndex((tab) => tab.id === dropTabId);
 
@@ -351,7 +371,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       setDraggedTabId(null);
       setDragOverTabId(null);
     },
-    [draggedTabId]
+    [draggedTabId],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -385,7 +405,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     return () => {
       window.removeEventListener(
         "tabs-preference-changed",
-        handlePreferenceChange
+        handlePreferenceChange,
       );
     };
   }, []);
@@ -401,7 +421,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     return () => {
       window.removeEventListener(
         "tab-position-changed",
-        handleTabPositionChange
+        handleTabPositionChange,
       );
     };
   }, []);
@@ -437,7 +457,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const handleTogglePin = useCallback((tab: AppTab) => {
     setTabs((prev) => {
       const updated = prev.map((t) =>
-        t.id === tab.id ? { ...t, pinned: !t.pinned } : t
+        t.id === tab.id ? { ...t, pinned: !t.pinned } : t,
       );
       return sortTabsWithPins(updated);
     });
@@ -475,7 +495,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         return prev;
       });
     },
-    [getTabMetadataForPath]
+    [getTabMetadataForPath],
   );
 
   const handleGroupTabs = useCallback(() => {
@@ -533,15 +553,12 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       acc[module].push(tab);
       return acc;
     },
-    {} as Record<string, AppTab[]>
+    {} as Record<string, AppTab[]>,
   );
 
   // Hide tabs if disabled by user preference
   // Also hide if inline mode is requested but tab position is separate
-  if (
-    !tabsEnabled ||
-    (inline && tabPosition !== "inline")
-  ) {
+  if (!tabsEnabled || (inline && tabPosition !== "inline")) {
     return null;
   }
 
@@ -559,14 +576,14 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       <div
         className={cn(
           "flex items-center",
-          inline ? "gap-1.5" : "container gap-0.5 h-8 px-4 sm:px-6"
+          inline ? "gap-1.5" : "container gap-0.5 h-8 px-4 sm:px-6",
         )}
       >
         <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">
           <div
             className={cn(
               "flex items-center scroll-smooth tab-container",
-              inline ? "gap-1.5" : "gap-0.5"
+              inline ? "gap-1.5" : "gap-0.5",
             )}
             ref={scrollViewportRef}
           >
@@ -604,7 +621,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                               "min-w-0",
                               inline
                                 ? "max-w-[140px] text-[11px]"
-                                : "max-w-[200px]"
+                                : "max-w-[200px]",
                             ),
                         hoveredGripTabId === tab.id
                           ? "cursor-grab"
@@ -619,7 +636,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                         // Group highlighting for tabs in the same group as active tab
                         isInSameGroup
                           ? "bg-accent/90 text-accent-foreground border-border shadow-sm"
-                          : ""
+                          : "",
                       )}
                       title={tab.title}
                     >
@@ -642,7 +659,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                           />
                           {(() => {
                             const IconComponent = getIconComponent(
-                              tab.iconName
+                              tab.iconName,
                             );
                             return IconComponent ? (
                               <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />
@@ -667,7 +684,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                             "opacity-0 group-hover:opacity-100 transition-all duration-150",
                             "hover:bg-red-500/10 dark:hover:bg-red-500/20 rounded p-0.5 -mr-0.5",
                             "shrink-0 ml-1",
-                            activeTabId === tab.id ? "opacity-100" : ""
+                            activeTabId === tab.id ? "opacity-100" : "",
                           )}
                           aria-label={`Close ${tab.title}`}
                           title={`Close ${tab.title}`}
@@ -735,7 +752,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
               size="sm"
               className={cn(
                 "h-[26px] w-[26px] p-0 border border-transparent rounded-md hover:bg-accent/50 shrink-0 ml-1",
-                "text-muted-foreground hover:text-foreground"
+                "text-muted-foreground hover:text-foreground",
               )}
               aria-label="List all tabs"
               title="List all tabs"
@@ -764,7 +781,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                         className={cn(
                           "text-xs flex items-center justify-between gap-2 pl-4",
                           activeTabId === tab.id &&
-                            "bg-accent text-accent-foreground font-medium"
+                            "bg-accent text-accent-foreground font-medium",
                         )}
                       >
                         <div className="flex items-center gap-2 overflow-hidden">

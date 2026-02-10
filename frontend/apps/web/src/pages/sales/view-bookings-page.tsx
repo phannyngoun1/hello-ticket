@@ -10,11 +10,7 @@ import { api } from "@truths/api";
 
 function BookingDetailContent({ id }: { id: string | undefined }) {
   const service = useBookingService();
-  const {
-    data,
-    isLoading,
-    error,
-  } = useBooking(service, id ?? null);
+  const { data, isLoading, error } = useBooking(service, id ?? null);
 
   useEffect(() => {
     if (!data) return;
@@ -24,9 +20,8 @@ function BookingDetailContent({ id }: { id: string | undefined }) {
         detail: {
           path: `/sales/bookings/${id}`,
           title,
-          iconName: "ShoppingCart",
         },
-      })
+      }),
     );
   }, [id, data]);
 
@@ -56,4 +51,3 @@ export function ViewBookingPage() {
     </BookingProvider>
   );
 }
-

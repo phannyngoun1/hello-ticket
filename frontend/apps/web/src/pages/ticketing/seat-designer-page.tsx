@@ -28,7 +28,7 @@ function SeatDesignerContent({
   const eventService = useEventService();
   const { data: venue, isLoading: venueLoading } = useVenue(
     venueService,
-    id ?? null
+    id ?? null,
   );
   const {
     data: layouts,
@@ -55,13 +55,13 @@ function SeatDesignerContent({
             is_active: true, // Only care about active events in general
           },
         }
-      : undefined
+      : undefined,
   );
 
   const isReadOnly = eventsData?.data.some(
     (event) =>
       event.status !== EventStatus.COMPLETED &&
-      event.status !== EventStatus.CANCELLED
+      event.status !== EventStatus.CANCELLED,
   );
 
   // Update tab title with layout name when available
@@ -78,9 +78,8 @@ function SeatDesignerContent({
         detail: {
           path: tabPath,
           title,
-          iconName: "MapPin",
         },
-      })
+      }),
     );
   }, [id, effectiveLayoutId, layoutWithSeats?.layout.name]);
 
@@ -120,7 +119,9 @@ function SeatDesignerContent({
         initialSeats={layoutWithSeats?.seats}
         initialSections={layoutWithSeats?.sections}
         fileId={layoutWithSeats?.layout.file_id}
-        initialCanvasBackgroundColor={layoutWithSeats?.layout.canvas_background_color}
+        initialCanvasBackgroundColor={
+          layoutWithSeats?.layout.canvas_background_color
+        }
         readOnly={isReadOnly}
         onImageUpload={(_url, fileId) => {
           if (fileId) {

@@ -45,7 +45,7 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
           profilePhoto: "/api/v1/shared/attachments/entity",
         },
       }),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -56,9 +56,8 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
         detail: {
           path: `/ticketing/venues/${id}`,
           title,
-          iconName: "Users",
         },
-      })
+      }),
     );
   }, [id, data, isDesignerRoute]);
 
@@ -66,7 +65,10 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
     setEditDialogOpen(true);
   };
 
-  const handleUpdateVenue = async (venueId: string, input: UpdateVenueInput) => {
+  const handleUpdateVenue = async (
+    venueId: string,
+    input: UpdateVenueInput,
+  ) => {
     try {
       await updateMutation.mutateAsync({ id: venueId, input });
       toast({
@@ -77,7 +79,8 @@ function VenueDetailContent({ id }: { id: string | undefined }) {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update venue",
+        description:
+          error instanceof Error ? error.message : "Failed to update venue",
         variant: "destructive",
       });
       throw error;
