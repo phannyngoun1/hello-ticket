@@ -84,6 +84,9 @@ export interface SectionDetailViewProps {
   onEditSeat?: (seat: SeatMarker) => void;
   onSetSelectedSeat: (seat: SeatMarker | null) => void;
   seatEditFormReset: (data: any) => void;
+  /** Multi-selection: all selected seat ids */
+  selectedSeatIds?: string[];
+  onSelectSeatIds?: (ids: string[]) => void;
   placementShape: PlacementShape;
   onPlacementShapeChange: (shape: PlacementShape) => void;
   selectedShapeTool?: PlacementShapeType | null;
@@ -94,6 +97,10 @@ export interface SectionDetailViewProps {
   onShapeOverlayClick: (overlayId: string) => void;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
+  /** Called when user aligns multiple selected markers */
+  onAlign?: (
+    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
+  ) => void;
   /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
   seatEditControls?: React.ReactNode;
   /** Canvas background color when no section image (image has priority). Section-level or fallback from layout. */
@@ -158,6 +165,9 @@ export function SectionDetailView({
   onShapeOverlayClick,
   onDetectSeats,
   isDetectingSeats = false,
+  selectedSeatIds = [],
+  onSelectSeatIds,
+  onAlign,
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
@@ -467,6 +477,8 @@ export function SectionDetailView({
               }}
               onSeatDelete={onDeleteSeat}
               onSeatShapeStyleChange={onSeatShapeStyleChange}
+              onAlign={onAlign}
+              selectedSeatCount={selectedSeatIds.length}
               seatPlacement={{
                 form: seatPlacementForm,
                 uniqueSections,
