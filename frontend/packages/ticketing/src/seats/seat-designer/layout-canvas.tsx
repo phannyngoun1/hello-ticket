@@ -452,6 +452,7 @@ interface SeatMarkerComponentProps {
   selectedShapeTool?: PlacementShapeType | null;
   onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
+  onSeatDragMove?: (seatId: string, stageX: number, stageY: number) => void;
   onShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   colors: { fill: string; stroke: string };
   imageWidth: number;
@@ -460,6 +461,8 @@ interface SeatMarkerComponentProps {
   disableHoverAnimation?: boolean;
   onSeatDragStart?: (seatId: string) => void;
   useLowDetail?: boolean;
+  /** When true, marker is draggable even if not selected (e.g. when shown in drag layer) */
+  forceDraggable?: boolean;
 }
 
 function SeatMarkerComponent({
@@ -474,6 +477,7 @@ function SeatMarkerComponent({
   selectedShapeTool,
   onSeatClick,
   onSeatDragEnd,
+  onSeatDragMove,
   onShapeTransform,
   colors,
   imageWidth,
@@ -482,6 +486,7 @@ function SeatMarkerComponent({
   disableHoverAnimation = false,
   onSeatDragStart,
   useLowDetail = false,
+  forceDraggable = false,
 }: SeatMarkerComponentProps) {
   const shapeRef = useRef<Konva.Shape>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -670,8 +675,9 @@ function SeatMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && isPlacingSeats && isSelected}
+        draggable={!readOnly && (forceDraggable || (isPlacingSeats && isSelected))}
         onDragStart={!readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined}
+        onDragMove={!readOnly && onSeatDragMove ? (e) => onSeatDragMove(seat.id, e.target.x(), e.target.y()) : undefined}
         onDragEnd={!readOnly ? (e) => onSeatDragEnd(seat.id, e) : undefined}
         onTransformEnd={!readOnly ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
@@ -877,6 +883,7 @@ interface SectionMarkerComponentProps {
   ) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
+  onSectionDragMove?: (sectionId: string, stageX: number, stageY: number) => void;
   onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   imageWidth: number;
   readOnly?: boolean;
@@ -885,6 +892,8 @@ interface SectionMarkerComponentProps {
   onSectionDragStart?: (sectionId: string) => void;
   useLowDetail?: boolean;
   colors: { fill: string; stroke: string };
+  /** When true, marker is draggable even if not selected (e.g. when shown in drag layer) */
+  forceDraggable?: boolean;
 }
 
 function SectionMarkerComponent({
@@ -900,6 +909,7 @@ function SectionMarkerComponent({
   onSectionClick,
   onSectionDoubleClick,
   onSectionDragEnd,
+  onSectionDragMove,
   onShapeTransform,
   imageWidth,
   imageHeight,
@@ -1083,8 +1093,9 @@ function SectionMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && isPlacingSections && isSelected}
+        draggable={!readOnly && (forceDraggable || (isPlacingSections && isSelected))}
         onDragStart={!readOnly && onSectionDragStart ? () => onSectionDragStart(section.id) : undefined}
+        onDragMove={!readOnly && onSectionDragMove ? (e) => onSectionDragMove(section.id, e.target.x(), e.target.y()) : undefined}
         onDragEnd={!readOnly ? (e) => {
           if (!onSectionDragEnd) return;
           const node = e.target;
@@ -1405,6 +1416,8 @@ export function LayoutCanvas({
   // Drag layer optimization: track which item is being dragged
   const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  // Live position during drag so the marker follows the cursor (percentage coords)
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Drag-to-select marquee (stage coordinates)
   const [selectionStart, setSelectionStart] = useState<{
@@ -1662,6 +1675,7 @@ export function LayoutCanvas({
       const node = e.target;
       const { x, y } = stageToPercentage(node.x(), node.y());
       setDraggedSeatId(null);
+      setDragPosition(null);
       onSeatDragEnd(seatId, x, y);
     },
     [onSeatDragEnd, stageToPercentage]
@@ -1669,11 +1683,22 @@ export function LayoutCanvas({
 
   const handleSeatDragStart = useCallback((seatId: string) => {
     setDraggedSeatId(seatId);
-  }, []);
+    const seat = seats.find((s) => s.id === seatId);
+    if (seat) setDragPosition({ x: seat.x, y: seat.y });
+  }, [seats]);
+
+  const handleSeatDragMove = useCallback(
+    (seatId: string, stageX: number, stageY: number) => {
+      const { x, y } = stageToPercentage(stageX, stageY);
+      setDragPosition({ x, y });
+    },
+    [stageToPercentage]
+  );
 
   const handleSectionDragEnd = useCallback(
     (sectionId: string, stageX: number, stageY: number) => {
       setDraggedSectionId(null);
+      setDragPosition(null);
       const { x, y } = stageToPercentage(stageX, stageY);
       onSectionDragEnd?.(sectionId, x, y);
     },
@@ -1682,7 +1707,17 @@ export function LayoutCanvas({
 
   const handleSectionDragStart = useCallback((sectionId: string) => {
     setDraggedSectionId(sectionId);
-  }, []);
+    const section = sections.find((s) => s.id === sectionId);
+    if (section) setDragPosition({ x: section.x, y: section.y });
+  }, [sections]);
+
+  const handleSectionDragMove = useCallback(
+    (sectionId: string, stageX: number, stageY: number) => {
+      const { x, y } = stageToPercentage(stageX, stageY);
+      setDragPosition({ x, y });
+    },
+    [stageToPercentage]
+  );
 
   // Ensure container dimensions are valid
   const validWidth = containerWidth > 0 ? containerWidth : 800;
@@ -2609,12 +2644,16 @@ export function LayoutCanvas({
         })}
       </Layer>
 
-      {/* Interactive Layer: Selected seat/section + Transformer */}
+      {/* Interactive Layer: Selected seat/section + Transformer; position follows cursor during drag via dragPosition */}
       <Layer {...layerTransform} listening={true}>
         {selectedSeat && (
           <>
             {(() => {
-              const { x, y } = percentageToStage(selectedSeat.x, selectedSeat.y);
+              const pos =
+                draggedSeatId === selectedSeat.id && dragPosition
+                  ? dragPosition
+                  : { x: selectedSeat.x, y: selectedSeat.y };
+              const { x, y } = percentageToStage(pos.x, pos.y);
               const colors = getSeatMarkerColors(selectedSeat);
               return (
                 <MemoizedSeatMarkerComponent
@@ -2630,6 +2669,7 @@ export function LayoutCanvas({
                   selectedShapeTool={selectedShapeTool}
                   onSeatClick={onSeatClick}
                   onSeatDragStart={handleSeatDragStart}
+                  onSeatDragMove={handleSeatDragMove}
                   onSeatDragEnd={handleSeatDragEnd}
                   onShapeTransform={onSeatShapeTransform}
                   colors={colors}
@@ -2646,10 +2686,11 @@ export function LayoutCanvas({
         {venueType === "large" &&
           selectedSection && (
             (() => {
-              const { x, y } = percentageToStage(
-                selectedSection.x,
-                selectedSection.y
-              );
+              const pos =
+                draggedSectionId === selectedSection.id && dragPosition
+                  ? dragPosition
+                  : { x: selectedSection.x, y: selectedSection.y };
+              const { x, y } = percentageToStage(pos.x, pos.y);
               return (
                 <MemoizedSectionMarkerComponent
                   key={selectedSection.id}
@@ -2664,6 +2705,7 @@ export function LayoutCanvas({
                   onSectionClick={onSectionClick}
                   onSectionDoubleClick={onSectionDoubleClick}
                   onSectionDragEnd={handleSectionDragEnd}
+                  onSectionDragMove={handleSectionDragMove}
                   onSectionDragStart={handleSectionDragStart}
                   selectedShapeTool={selectedShapeTool}
                   onShapeTransform={onSectionShapeTransform}
@@ -2679,11 +2721,12 @@ export function LayoutCanvas({
           )}
       </Layer>
 
-      {/* Drag Layer: Currently dragged shape - only this redraws during drag */}
+      {/* Drag Layer: Dragged shape when different from selected (selected one moves in Interactive Layer via dragPosition) */}
       <Layer {...layerTransform} listening={true}>
-        {draggedSeat && (
+        {draggedSeat && (!selectedSeat || selectedSeat.id !== draggedSeatId) && (
           (() => {
-            const { x, y } = percentageToStage(draggedSeat.x, draggedSeat.y);
+            const pos = dragPosition ?? { x: draggedSeat.x, y: draggedSeat.y };
+            const { x, y } = percentageToStage(pos.x, pos.y);
             const colors = getSeatMarkerColors(draggedSeat);
             return (
               <MemoizedSeatMarkerComponent
@@ -2699,6 +2742,7 @@ export function LayoutCanvas({
                 selectedShapeTool={selectedShapeTool}
                 onSeatClick={onSeatClick}
                 onSeatDragStart={handleSeatDragStart}
+                onSeatDragMove={handleSeatDragMove}
                 onSeatDragEnd={handleSeatDragEnd}
                 onShapeTransform={onSeatShapeTransform}
                 colors={colors}
@@ -2707,17 +2751,17 @@ export function LayoutCanvas({
                 readOnly={readOnly}
                 disableHoverAnimation={disableHoverAnimation}
                 useLowDetail={false}
+                forceDraggable={true}
               />
             );
           })()
         )}
         {venueType === "large" &&
-          draggedSection && (
+          draggedSection &&
+          (!selectedSection || selectedSection.id !== draggedSectionId) && (
             (() => {
-              const { x, y } = percentageToStage(
-                draggedSection.x,
-                draggedSection.y
-              );
+              const pos = dragPosition ?? { x: draggedSection.x, y: draggedSection.y };
+              const { x, y } = percentageToStage(pos.x, pos.y);
               return (
                 <MemoizedSectionMarkerComponent
                   key={draggedSection.id}
@@ -2732,6 +2776,7 @@ export function LayoutCanvas({
                   onSectionClick={onSectionClick}
                   onSectionDoubleClick={onSectionDoubleClick}
                   onSectionDragEnd={handleSectionDragEnd}
+                  onSectionDragMove={handleSectionDragMove}
                   onSectionDragStart={handleSectionDragStart}
                   selectedShapeTool={selectedShapeTool}
                   onShapeTransform={onSectionShapeTransform}
@@ -2741,6 +2786,7 @@ export function LayoutCanvas({
                   readOnly={readOnly}
                   disableHoverAnimation={disableHoverAnimation}
                   useLowDetail={false}
+                  forceDraggable={true}
                 />
               );
             })()
