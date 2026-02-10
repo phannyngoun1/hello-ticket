@@ -3366,6 +3366,7 @@ export function SeatDesigner({
           onCanvasBackgroundColorChange={
             !mainImageUrl ? handleCanvasBackgroundColorChange : undefined
           }
+          markerFillTransparency={markerFillTransparency}
           onMarkerFillTransparencyChange={
             !readOnly ? handleMarkerFillTransparencyChange : undefined
           }
