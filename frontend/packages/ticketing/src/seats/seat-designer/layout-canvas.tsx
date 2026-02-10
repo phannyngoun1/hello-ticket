@@ -330,7 +330,7 @@ function ShapeOverlayComponent({
       ? "#2563eb"
       : "#3b82f6";
 
-  const strokeWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
+  const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 1;
 
   // Animate opacity on hover/selection change (skip when disabled for performance)
   useEffect(() => {
@@ -439,7 +439,7 @@ function ShapeOverlayComponent({
           verticalAlign="middle"
           backgroundFill={`rgba(255, 255, 255, ${isHovered || isSelected ? 0.98 : 0.9})`}
           backgroundStroke={strokeColor}
-          backgroundStrokeWidth={isHovered || isSelected ? 1.5 : 1}
+          backgroundStrokeWidth={isHovered || isSelected ? 1 : 0.75}
           cornerRadius={2}
           x={-20}
           y={-8}
@@ -459,6 +459,7 @@ interface SeatMarkerComponentProps {
   x: number;
   y: number;
   isSelected: boolean;
+  isAnchor?: boolean;
   isPlacingSeats: boolean;
   isPanning: boolean;
   isSpacePressed: boolean;
@@ -580,7 +581,7 @@ function SeatMarkerComponent({
 
     shapeNode.to({
       stroke: hoverStrokeColor,
-      strokeWidth: isHovered ? 2.5 : 2, // More visible border
+      strokeWidth: isHovered ? 1 : 0.75, // More visible border
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
@@ -599,7 +600,7 @@ function SeatMarkerComponent({
     : isSelected
       ? colors.stroke
       : colors.stroke;
-  const strokeWidth = isAnchor ? 4 : isSelected ? 2.5 : 2; // Thicker border for anchor
+  const strokeWidth = isAnchor ? 1 : isSelected ? 1.5 : 1; // Thicker border for anchor
   const fillOpacity = isAnchor ? 0.6 : isSelected ? 0.5 : 0.35; // More visible opacity
 
   // Handle transform end - convert back to percentage coordinates
@@ -758,7 +759,7 @@ function SeatMarkerComponent({
               radius={3}
               fill={fillColor}
               stroke={strokeColor}
-              strokeWidth={1}
+              strokeWidth={strokeWidth}
               opacity={fillOpacity}
               perfectDrawEnabled={false}
             />
@@ -793,10 +794,10 @@ function SeatMarkerComponent({
           resizeEnabled={true}
           borderEnabled={true}
           borderStroke="#3b82f6"
-          borderStrokeWidth={2}
+          borderStrokeWidth={1.5}
           anchorFill="#ffffff"
           anchorStroke="#3b82f6"
-          anchorStrokeWidth={2}
+          anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
           ignoreStroke={false}
@@ -1112,7 +1113,7 @@ function SectionMarkerComponent({
     const shapeNode = shapeRef.current;
     if (!shapeNode || !isPlacingSections || isSelected) return;
 
-    const hoverStrokeWidth = isHovered ? 2.5 : 2;
+    const hoverStrokeWidth = isHovered ? 1 : 0.75;
     shapeNode.to({
       stroke: colors.stroke,
       strokeWidth: hoverStrokeWidth,
@@ -1220,7 +1221,7 @@ function SectionMarkerComponent({
                 radius={4}
                 fill={isAnchor ? "#f97316" : colors.fill}
                 stroke={isAnchor ? "#ea580c" : colors.stroke}
-                strokeWidth={isAnchor ? 2 : 1}
+                strokeWidth={isAnchor ? 1 : 0.75}
                 opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
                 perfectDrawEnabled={false}
               />
@@ -1229,7 +1230,7 @@ function SectionMarkerComponent({
                 shape={shape}
                 fill={isAnchor ? "#f97316" : colors.fill}
                 stroke={isAnchor ? "#ea580c" : colors.stroke}
-                strokeWidth={isAnchor ? 4 : isSelected ? 2.5 : 2}
+                strokeWidth={isAnchor ? 1 : isSelected ? 1.5 : 1}
                 imageWidth={imageWidth}
                 imageHeight={imageHeight}
                 opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
@@ -1243,7 +1244,7 @@ function SectionMarkerComponent({
             radius={isSelected ? 12 : 10}
             fill={isAnchor ? "#f97316" : colors.fill}
             stroke={isAnchor ? "#ea580c" : colors.stroke}
-            strokeWidth={isAnchor ? 4 : isSelected ? 2.5 : 2}
+            strokeWidth={isAnchor ? 2 : isSelected ? 1.5 : 1}
             x={0}
             y={0}
             opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
@@ -1268,10 +1269,10 @@ function SectionMarkerComponent({
           resizeEnabled={true}
           borderEnabled={true}
           borderStroke="#3b82f6"
-          borderStrokeWidth={2}
+          borderStrokeWidth={1.5}
           anchorFill="#ffffff"
           anchorStroke="#3b82f6"
-          anchorStrokeWidth={2}
+          anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
           ignoreStroke={false}
@@ -3261,7 +3262,7 @@ export function LayoutCanvas({
                     x={line.x}
                     y={line.y}
                     stroke="#3b82f6"
-                    strokeWidth={2.5}
+                    strokeWidth={1.5}
                     opacity={0.8}
                     dash={index === lines.length - 1 ? [5, 5] : undefined} // Dashed for preview line
                   />
@@ -3348,7 +3349,7 @@ export function LayoutCanvas({
                     shape={previewShape}
                     fill="rgba(59, 130, 246, 0.15)"
                     stroke="#3b82f6"
-                    strokeWidth={2.5}
+                    strokeWidth={1.5}
                     imageWidth={displayedWidth}
                     imageHeight={displayedHeight}
                     opacity={0.8}
@@ -3370,7 +3371,7 @@ export function LayoutCanvas({
             width={Math.abs(selectionCurrent.x - selectionStart.x)}
             height={Math.abs(selectionCurrent.y - selectionStart.y)}
             stroke="#2563eb"
-            strokeWidth={2}
+            strokeWidth={1}
             dash={[6, 4]}
             fill="rgba(37, 99, 235, 0.08)"
           />
