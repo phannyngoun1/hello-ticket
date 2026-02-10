@@ -652,17 +652,21 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
                       ) : (
                         // Regular tabs: left side content with flexible layout
                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                          <GripVertical
-                            className="h-2.5 w-2.5 flex-shrink-0 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-                            onMouseEnter={() => handleGripMouseEnter(tab.id)}
-                            onMouseLeave={handleGripMouseLeave}
-                          />
                           {(() => {
                             const IconComponent = getIconComponent(
                               tab.iconName,
                             );
                             return IconComponent ? (
-                              <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />
+                              <div className="relative h-3.5 w-3.5 flex-shrink-0">
+                                <IconComponent className="h-3.5 w-3.5 opacity-100 group-hover:opacity-0 transition-opacity duration-300" />
+                                <GripVertical
+                                  className="h-3.5 w-3.5 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-grab active:cursor-grabbing"
+                                  onMouseEnter={() =>
+                                    handleGripMouseEnter(tab.id)
+                                  }
+                                  onMouseLeave={handleGripMouseLeave}
+                                />
+                              </div>
                             ) : null;
                           })()}
                           <div className="flex items-center gap-1 min-w-0 flex-1">
