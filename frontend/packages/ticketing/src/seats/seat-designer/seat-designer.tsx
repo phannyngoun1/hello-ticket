@@ -3256,6 +3256,7 @@ export function SeatDesigner({
                 containerStyle={isFullscreen ? "flex" : "fixed"}
                 seats={displayedSeats}
                 selectedSeatId={selectedSeat?.id ?? null}
+                selectedSeatIds={selectedSeatIds}
                 isPlacingSeats={isPlacingSeats}
                 readOnly={readOnly}
                 zoomLevel={zoomLevel}
@@ -3269,6 +3270,7 @@ export function SeatDesigner({
                 onShapeOverlayClick={handleShapeOverlayClick}
                 onWheel={handleKonvaWheel}
                 onPan={handlePan}
+                onMarkersInRect={handleMarkersInRect}
                 onZoomIn={handleZoomIn}
                 onZoomOut={handleZoomOut}
                 onResetZoom={handleResetZoom}
@@ -3475,6 +3477,7 @@ export function SeatDesigner({
         onSectionImageSelect={handleSectionImageSelect}
         onRemoveSectionImage={handleRemoveSectionImage}
         onSeatClick={handleSeatClick}
+        selectedSeatIds={selectedSeatIds}
         onSeatDragEnd={handleKonvaSeatDragEnd}
         onSeatShapeTransform={handleSeatShapeTransform}
         onSeatShapeStyleChange={handleSeatShapeStyleChange}
@@ -3482,6 +3485,7 @@ export function SeatDesigner({
         onDeselect={handleDeselect}
         onWheel={handleKonvaWheel}
         onPan={handlePan}
+        onMarkersInRect={handleMarkersInRect}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onResetZoom={handleResetZoom}

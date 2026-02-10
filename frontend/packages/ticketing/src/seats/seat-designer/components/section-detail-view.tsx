@@ -97,7 +97,7 @@ export interface SectionDetailViewProps {
   onShapeOverlayClick: (overlayId: string) => void;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
-  /** Called when user aligns multiple selected markers */
+  onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;  /** Called when user aligns multiple selected markers */
   onAlign?: (
     alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
   ) => void;
@@ -165,7 +165,7 @@ export function SectionDetailView({
   onShapeOverlayClick,
   onDetectSeats,
   isDetectingSeats = false,
-  selectedSeatIds = [],
+  onMarkersInRect,  selectedSeatIds = [],
   onSelectSeatIds,
   onAlign,
   seatEditControls,
@@ -514,7 +514,7 @@ export function SectionDetailView({
             canvasBackgroundColor={effectiveCanvasColor}
             seats={displayedSeats}
             selectedSeatId={selectedSeat?.id ?? null}
-            isPlacingSeats={isPlacingSeats}
+            selectedSeatIds={selectedSeatIds}            isPlacingSeats={isPlacingSeats}
             readOnly={readOnly}
             zoomLevel={zoomLevel}
             panOffset={panOffset}
@@ -525,8 +525,8 @@ export function SectionDetailView({
             onDeselect={onDeselect}
             onShapeDraw={onShapeDraw}
             onShapeOverlayClick={onShapeOverlayClick}
-            onWheel={onWheel}
-            onPan={onPan}
+            onMarkersInRect={onMarkersInRect}
+            onWheel={onWheel}            onPan={onPan}
             onZoomIn={onZoomIn}
             onZoomOut={onZoomOut}
             onResetZoom={onResetZoom}

@@ -51,6 +51,7 @@ export interface SeatDesignCanvasProps {
     height?: number,
   ) => void;
   onShapeOverlayClick?: (overlayId: string) => void;
+  onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
   onWheel?: (
     e: Konva.KonvaEventObject<WheelEvent>,
     isSpacePressed: boolean,
@@ -105,6 +106,7 @@ export function SeatDesignCanvas({
   onDeselect,
   onShapeDraw,
   onShapeOverlayClick,
+  onMarkersInRect,
   onWheel,
   onPan,
   onZoomIn,
@@ -274,6 +276,7 @@ export function SeatDesignCanvas({
             onShapeOverlayClick={onShapeOverlayClick}
             onWheel={onWheel}
             onPan={onPan}
+            onMarkersInRect={onMarkersInRect}
             containerWidth={containerDimensions.width}
             containerHeight={containerDimensions.height}
             venueType="small"
