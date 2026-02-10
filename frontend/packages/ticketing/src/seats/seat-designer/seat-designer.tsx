@@ -279,6 +279,9 @@ export function SeatDesigner({
   });
   const [dimensionsReady, setDimensionsReady] = useState(false);
   const [dragOverActive, setDragOverActive] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [gridSize, setGridSize] = useState(5); // 5% grid spacing
+  const [showGrid, setShowGrid] = useState(false); // Show grid lines on canvas
 
   // When in section detail view, the canvas only mounts after section has an image (else ImageUploadCard shows).
   // Reset dimensions so we re-measure the canvas container when it mounts and the image shows like seat-level.
@@ -1164,6 +1167,18 @@ export function SeatDesigner({
     setPanOffset({ x: 0, y: 0 });
   };
 
+  // Helper function to snap coordinates to grid
+  const snapToGridCoordinates = (
+    x: number,
+    y: number,
+  ): { x: number; y: number } => {
+    if (!snapToGrid) return { x, y };
+    return {
+      x: Math.round(x / gridSize) * gridSize,
+      y: Math.round(y / gridSize) * gridSize,
+    };
+  };
+
   // Handle shape drawing from canvas - creates section (section-level) or seat (seat-level)
   const handleShapeDraw = useCallback(
     (
@@ -1173,8 +1188,10 @@ export function SeatDesigner({
       width?: number,
       height?: number,
     ) => {
-      const clampedX = Math.max(0, Math.min(100, x));
-      const clampedY = Math.max(0, Math.min(100, y));
+      // Apply snap to grid if enabled
+      const { x: snappedX, y: snappedY } = snapToGridCoordinates(x, y);
+      const clampedX = Math.max(0, Math.min(100, snappedX));
+      const clampedY = Math.max(0, Math.min(100, snappedY));
 
       const finalShape: PlacementShape = {
         ...shape,
@@ -1428,19 +1445,26 @@ export function SeatDesigner({
   // Handle seat drag end from Konva
   const handleKonvaSeatDragEnd = useCallback(
     (seatId: string, newX: number, newY: number) => {
+      // Apply snap to grid if enabled
+      let snappedX = newX;
+      let snappedY = newY;
+      if (snapToGrid) {
+        snappedX = Math.round(newX / gridSize) * gridSize;
+        snappedY = Math.round(newY / gridSize) * gridSize;
+      }
       setSeats((prev) =>
         prev.map((seat) =>
           seat.id === seatId
             ? {
                 ...seat,
-                x: Math.max(0, Math.min(100, newX)),
-                y: Math.max(0, Math.min(100, newY)),
+                x: Math.max(0, Math.min(100, snappedX)),
+                y: Math.max(0, Math.min(100, snappedY)),
               }
             : seat,
         ),
       );
     },
-    [],
+    [snapToGrid],
   );
 
   // Handle seat shape transform (resize/rotate)
@@ -1488,19 +1512,26 @@ export function SeatDesigner({
   // Handle section drag end from Konva
   const handleKonvaSectionDragEnd = useCallback(
     (sectionId: string, newX: number, newY: number) => {
+      // Apply snap to grid if enabled
+      let snappedX = newX;
+      let snappedY = newY;
+      if (snapToGrid) {
+        snappedX = Math.round(newX / gridSize) * gridSize;
+        snappedY = Math.round(newY / gridSize) * gridSize;
+      }
       setSectionMarkers((prev) =>
         prev.map((section) =>
           section.id === sectionId
             ? {
                 ...section,
-                x: Math.max(0, Math.min(100, newX)),
-                y: Math.max(0, Math.min(100, newY)),
+                x: Math.max(0, Math.min(100, snappedX)),
+                y: Math.max(0, Math.min(100, snappedY)),
               }
             : section,
         ),
       );
     },
-    [],
+    [snapToGrid, gridSize, gridSize],
   );
 
   // Handle section click from Konva
@@ -3093,6 +3124,12 @@ export function SeatDesigner({
           onCanvasBackgroundColorChange={
             !mainImageUrl ? handleCanvasBackgroundColorChange : undefined
           }
+          snapToGrid={snapToGrid}
+          onSnapToGridChange={setSnapToGrid}
+          gridSize={gridSize}
+          onGridSizeChange={setGridSize}
+          showGrid={showGrid}
+          onShowGridChange={setShowGrid}
         />
 
         <div
@@ -3238,6 +3275,8 @@ export function SeatDesigner({
                 selectedShapeTool={selectedShapeTool}
                 shapeOverlays={displayedShapeOverlays}
                 selectedOverlayId={selectedOverlayId}
+                showGrid={showGrid}
+                gridSize={gridSize}
               />
             </div>
           ) : (
@@ -3472,6 +3511,8 @@ export function SeatDesigner({
         onCanvasBackgroundColorChange={handleSectionCanvasBackgroundColorChange}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleFullscreen}
+        showGrid={showGrid}
+        gridSize={gridSize}
         seatEditControls={
           isEditingSeat && selectedSeat && !readOnly ? (
             <SeatEditControls

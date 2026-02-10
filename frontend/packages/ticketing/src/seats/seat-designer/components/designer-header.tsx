@@ -20,6 +20,7 @@ import {
   ScanSearch,
   BrushCleaning,
   Palette,
+  Grid3x3,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -53,6 +54,18 @@ export interface DesignerHeaderProps {
   canvasBackgroundColor?: string;
   /** Called when user changes canvas background color; only relevant when no image */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Enable/disable snap to grid */
+  snapToGrid?: boolean;
+  /** Called when user toggles snap to grid */
+  onSnapToGridChange?: (enabled: boolean) => void;
+  /** Current grid size in percentage */
+  gridSize?: number;
+  /** Called when user changes grid size */
+  onGridSizeChange?: (size: number) => void;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Called when user toggles show grid */
+  onShowGridChange?: (enabled: boolean) => void;
 }
 
 export function DesignerHeader({
@@ -82,6 +95,12 @@ export function DesignerHeader({
   isDetectingSeats = false,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
+  snapToGrid = false,
+  onSnapToGridChange,
+  gridSize = 5,
+  onGridSizeChange,
+  showGrid = false,
+  onShowGridChange,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
@@ -174,12 +193,96 @@ export function DesignerHeader({
           </DropdownMenuItem>
         </>
       ),
+
+      !readOnly && onSnapToGridChange && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onSnapToGridChange(!snapToGrid)}>
+            <Grid3x3 className="h-4 w-4 mr-2" />
+            <span className="flex-1">Snap to Grid</span>
+            {snapToGrid && <span className="text-xs text-primary">✓</span>}
+          </DropdownMenuItem>
+          {snapToGrid && onGridSizeChange && (
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+              <label className="flex flex-col cursor-pointer items-start gap-3 px-2 py-1.5">
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-xs text-muted-foreground w-16 flex-shrink-0">
+                    Grid size:
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={gridSize}
+                    onChange={(e) =>
+                      onGridSizeChange(
+                        Math.max(1, parseInt(e.target.value) || 5),
+                      )
+                    }
+                    className="h-6 w-12 px-1 text-xs border rounded"
+                    title="Grid size in percentage"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                {onShowGridChange && (
+                  <div
+                    className="flex items-center gap-2 w-full pl-16 cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onShowGridChange(!showGrid);
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showGrid}
+                      onChange={() => {}}
+                      className="h-4 w-4 rounded cursor-pointer"
+                      title="Toggle grid visibility"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Show grid lines
+                    </span>
+                  </div>
+                )}
+              </label>
+            </DropdownMenuItem>
+          )}
+          {!snapToGrid && onShowGridChange && (
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+              <label
+                className="flex items-center gap-2 cursor-pointer px-2 py-1.5"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onShowGridChange(!showGrid);
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={showGrid}
+                  onChange={() => {}}
+                  className="h-4 w-4 rounded cursor-pointer"
+                  title="Toggle grid visibility"
+                />
+                <span className="text-xs">Show grid lines</span>
+              </label>
+            </DropdownMenuItem>
+          )}
+        </>
+      ),
     ];
   }, [
     onClearAllPlacements,
     onMainImageSelect,
     onCanvasBackgroundColorChange,
     onRemoveImage,
+    onSnapToGridChange,
+    snapToGrid,
+    gridSize,
+    onGridSizeChange,
+    showGrid,
+    onShowGridChange,
   ]);
 
   return (

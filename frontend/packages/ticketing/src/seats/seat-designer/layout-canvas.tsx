@@ -249,6 +249,10 @@ interface LayoutCanvasProps {
   selectedOverlayId?: string | null;
   /** Background color when no image (simple floor mode). Default #e5e7eb */
   canvasBackgroundColor?: string;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Grid size in percentage */
+  gridSize?: number;
 }
 
 // Shape Overlay Component with hover effects
@@ -1422,6 +1426,8 @@ export function LayoutCanvas({
   shapeOverlays = [],
   selectedOverlayId,
   canvasBackgroundColor = "#e5e7eb",
+  showGrid = false,
+  gridSize = 5,
 }: LayoutCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
@@ -2312,6 +2318,64 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
+      {/* Grid Layer - renders behind everything when grid is enabled */}
+      {showGrid && gridSize > 0 && (
+        <Layer {...layerTransform} listening={false}>
+          {(() => {
+            const gridLines: Array<{
+              x1: number;
+              y1: number;
+              x2: number;
+              y2: number;
+              isVertical: boolean;
+            }> = [];
+
+            // Generate vertical grid lines
+            for (
+              let percentage = gridSize;
+              percentage < 100;
+              percentage += gridSize
+            ) {
+              const x = (percentage / 100) * containerWidth;
+              gridLines.push({
+                x1: x,
+                y1: 0,
+                x2: x,
+                y2: containerHeight,
+                isVertical: true,
+              });
+            }
+
+            // Generate horizontal grid lines
+            for (
+              let percentage = gridSize;
+              percentage < 100;
+              percentage += gridSize
+            ) {
+              const y = (percentage / 100) * containerHeight;
+              gridLines.push({
+                x1: 0,
+                y1: y,
+                x2: containerWidth,
+                y2: y,
+                isVertical: false,
+              });
+            }
+
+            return gridLines.map((line, index) => (
+              <Line
+                key={`grid-line-${index}`}
+                points={[line.x1, line.y1, line.x2, line.y2]}
+                stroke="rgba(100, 150, 255, 0.2)"
+                strokeWidth={1}
+                perfectDrawEnabled={false}
+                dash={[2, 2]}
+              />
+            ));
+          })()}
+        </Layer>
+      )}
+
       {/* Background Layer: Image takes priority; canvas background color only when no image (simple floor) */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
         {image ? (

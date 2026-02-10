@@ -73,6 +73,10 @@ export interface SeatDesignCanvasProps {
   selectedOverlayId?: string | null;
   /** Background color when no image (simple floor mode). Default #e5e7eb */
   canvasBackgroundColor?: string;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Grid size in percentage */
+  gridSize?: number;
 }
 
 export function SeatDesignCanvas({
@@ -108,6 +112,8 @@ export function SeatDesignCanvas({
   shapeOverlays,
   selectedOverlayId,
   canvasBackgroundColor = "#e5e7eb",
+  showGrid = false,
+  gridSize = 5,
 }: SeatDesignCanvasProps) {
   const [dragOverActive, setDragOverActive] = useState(false);
 
@@ -272,6 +278,8 @@ export function SeatDesignCanvas({
             shapeOverlays={shapeOverlays}
             selectedOverlayId={selectedOverlayId}
             canvasBackgroundColor={canvasBackgroundColor}
+            showGrid={showGrid}
+            gridSize={gridSize}
           />
           <ZoomControls
             zoomLevel={zoomLevel}

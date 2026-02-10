@@ -100,6 +100,10 @@ export interface SectionDetailViewProps {
   canvasBackgroundColor?: string;
   /** Called when user changes canvas background color. Parent should persist via section update. */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Grid size in percentage */
+  gridSize?: number;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
 }
@@ -157,6 +161,8 @@ export function SectionDetailView({
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
+  showGrid = false,
+  gridSize = 5,
   isFullscreen = false,
   onToggleFullscreen,
 }: SectionDetailViewProps) {
@@ -515,6 +521,8 @@ export function SectionDetailView({
             selectedShapeTool={selectedShapeTool ?? null}
             shapeOverlays={shapeOverlays}
             selectedOverlayId={selectedOverlayId}
+            showGrid={showGrid}
+            gridSize={gridSize}
           />
         </div>
       </div>
