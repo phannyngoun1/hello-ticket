@@ -134,20 +134,17 @@ export function SeatDesigner({
     }
   }, [initialMarkerFillTransparency]);
 
-  const handleCanvasBackgroundColorChange = useCallback(
-    (color: string) => {
-      setCanvasBackgroundColor(color);
-      onCanvasBackgroundColorChange?.(color);
-    },
-    [onCanvasBackgroundColorChange],
-  );
+  const handleCanvasBackgroundColorChange = useCallback((color: string) => {
+    setCanvasBackgroundColor(color);
+    // Don't save immediately - will be saved when save button is clicked
+  }, []);
 
   const handleMarkerFillTransparencyChange = useCallback(
     (transparency: number) => {
       setMarkerFillTransparency(transparency);
-      onMarkerFillTransparencyChange?.(transparency);
+      // Don't save immediately - will be saved when save button is clicked
     },
-    [onMarkerFillTransparencyChange],
+    [],
   );
 
   // Large venue: sections placed on main floor plan
@@ -2851,6 +2848,10 @@ export function SeatDesigner({
 
   const handleConfirmSave = async () => {
     setShowSaveConfirmDialog(false);
+
+    // Save layout properties (transparency and canvas background color) first
+    onMarkerFillTransparencyChange?.(markerFillTransparency);
+    onCanvasBackgroundColorChange?.(canvasBackgroundColor);
 
     // For section-level layout, save sections first, then seats
     if (designMode === "section-level" && venueType === "large") {
