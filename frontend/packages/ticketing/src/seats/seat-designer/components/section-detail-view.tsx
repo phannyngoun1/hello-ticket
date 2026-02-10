@@ -27,11 +27,7 @@ import {
   Maximize,
   Palette,
 } from "lucide-react";
-import {
-  DatasheetView,
-  SeatDesignCanvas,
-  SeatDesignToolbar,
-} from "./index";
+import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
@@ -60,7 +56,7 @@ export interface SectionDetailViewProps {
   onClearSectionSeats: () => void;
   onSectionImageSelect: (
     sectionId: string,
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => void;
   /** Called when user removes the section floor plan image (file_id becomes optional/empty) */
   onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
@@ -69,7 +65,7 @@ export interface SectionDetailViewProps {
   onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
   onSeatShapeStyleChange?: (
     seatId: string,
-    style: { fillColor?: string; strokeColor?: string }
+    style: { fillColor?: string; strokeColor?: string },
   ) => void;
   onImageClick: (e: any, coords?: { x: number; y: number }) => void;
   onDeselect?: () => void;
@@ -164,7 +160,8 @@ export function SectionDetailView({
   onToggleFullscreen,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
-  const effectiveCanvasColor = viewingSection.canvasBackgroundColor ?? canvasBackgroundColor ?? "#e5e7eb";
+  const effectiveCanvasColor =
+    viewingSection.canvasBackgroundColor ?? canvasBackgroundColor ?? "#e5e7eb";
   const innerClassName = isFullscreen
     ? "flex flex-col flex-1 min-h-0 p-6 space-y-4"
     : "p-6 space-y-4";
@@ -279,16 +276,22 @@ export function SectionDetailView({
                       </Label>
                       {onCanvasBackgroundColorChange && (
                         <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                          <DropdownMenuItem
+                            onSelect={(e) => e.preventDefault()}
+                            asChild
+                          >
                             <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
                               <Palette className="h-4 w-4 shrink-0" />
-                              <span className="flex-1">Canvas background color</span>
+                              <span className="flex-1">
+                                Canvas background color
+                              </span>
                               <input
                                 type="color"
                                 aria-label="Canvas background color"
                                 value={effectiveCanvasColor}
-                                onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+                                onChange={(e) =>
+                                  onCanvasBackgroundColorChange(e.target.value)
+                                }
                                 className="h-6 w-8 cursor-pointer rounded border border-input"
                               />
                             </label>
@@ -326,7 +329,9 @@ export function SectionDetailView({
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => onRemoveSectionImage(viewingSection.id)}
+                            onClick={() =>
+                              onRemoveSectionImage(viewingSection.id)
+                            }
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -345,35 +350,39 @@ export function SectionDetailView({
         {/* Shape Toolbox with compact seat placement controls */}
         {onShapeToolSelect && (
           <div className="shrink-0">
-          <SeatDesignToolbar
-            selectedShapeType={selectedShapeTool || null}
-            onShapeTypeSelect={onShapeToolSelect}
-            selectedSeat={selectedSeat}
-            onSeatView={(seat) => {
-              onSetViewingSeat(seat);
-            }}
-            onSeatEdit={(seat) => {
-              onEditSeat?.(seat);
-            }}
-            onSeatDelete={onDeleteSeat}
-            onSeatShapeStyleChange={onSeatShapeStyleChange}
-            seatPlacement={{
-              form: seatPlacementForm,
-              uniqueSections,
-              sectionsData,
-              sectionSelectValue,
-              onSectionSelectValueChange,
-              viewingSection,
-              onNewSection,
-            }}
-            seatEditControls={seatEditControls}
-            readOnly={readOnly}
-          />
+            <SeatDesignToolbar
+              selectedShapeType={selectedShapeTool || null}
+              onShapeTypeSelect={onShapeToolSelect}
+              selectedSeat={selectedSeat}
+              onSeatView={(seat) => {
+                onSetViewingSeat(seat);
+              }}
+              onSeatEdit={(seat) => {
+                onEditSeat?.(seat);
+              }}
+              onSeatDelete={onDeleteSeat}
+              onSeatShapeStyleChange={onSeatShapeStyleChange}
+              seatPlacement={{
+                form: seatPlacementForm,
+                uniqueSections,
+                sectionsData,
+                sectionSelectValue,
+                onSectionSelectValueChange,
+                viewingSection,
+                onNewSection,
+              }}
+              seatEditControls={seatEditControls}
+              readOnly={readOnly}
+            />
           </div>
         )}
 
         {/* Seat Design Canvas - same as seat-level: always show canvas; no image = canvas background color, image = image (add/change/remove via dropdown) */}
-        <div className={isFullscreen ? "flex-1 min-h-0 flex flex-col" : "space-y-4"}>
+        <div
+          className={
+            isFullscreen ? "flex-1 min-h-0 flex flex-col" : "space-y-4"
+          }
+        >
           <SeatDesignCanvas
             imageUrl={viewingSection.imageUrl ?? ""}
             showImageUpload={false}
