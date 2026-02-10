@@ -1710,7 +1710,10 @@ export function SeatDesigner({
           ? (sectionMarkers.find((s) => s.id === sectionIds[0]) ?? null)
           : null,
       );
-      setViewingSection(null);
+      // Note: Do NOT call setViewingSection(null) here.
+      // This callback is also invoked from SectionDetailView's canvas (drag-to-select seats
+      // within a section). Clearing viewingSection would incorrectly exit the drill-down.
+      // When on the main canvas, viewingSection is already null so the call was a no-op anyway.
     },
     [seats, sectionMarkers],
   );
@@ -3701,6 +3704,7 @@ export function SeatDesigner({
         onShapeOverlayClick={handleShapeOverlayClick}
         onDetectSeats={handleDetectSeats}
         isDetectingSeats={isDetectingSeats}
+        onAlign={handleAlign}
         canvasBackgroundColor={canvasBackgroundColor}
         onCanvasBackgroundColorChange={handleSectionCanvasBackgroundColorChange}
         isFullscreen={isFullscreen}
