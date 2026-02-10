@@ -87,6 +87,8 @@ export interface SectionDetailViewProps {
   /** Multi-selection: all selected seat ids */
   selectedSeatIds?: string[];
   onSelectSeatIds?: (ids: string[]) => void;
+  /** Anchor seat ID for alignment reference */
+  anchorSeatId?: string | null;
   placementShape: PlacementShape;
   onPlacementShapeChange: (shape: PlacementShape) => void;
   selectedShapeTool?: PlacementShapeType | null;
@@ -171,6 +173,7 @@ export function SectionDetailView({
   onMarkersInRect,
   selectedSeatIds = [],
   onSelectSeatIds,
+  anchorSeatId,
   onAlign,
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
@@ -523,6 +526,8 @@ export function SectionDetailView({
             seats={displayedSeats}
             selectedSeatId={selectedSeat?.id ?? null}
             selectedSeatIds={selectedSeatIds}
+            anchorSeatId={anchorSeatId}
+            anchorSectionId={null}
             isPlacingSeats={isPlacingSeats}
             readOnly={readOnly}
             zoomLevel={zoomLevel}

@@ -15,9 +15,9 @@ import {
   Trash2,
   Eye,
   RotateCcw,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
   AlignStartVertical,
   AlignCenterVertical,
   AlignEndVertical,
@@ -254,7 +254,7 @@ export function ShapeToolbox({
                 )}
                 title="Align left"
               >
-                <AlignLeft className="h-3.5 w-3.5" />
+                <AlignStartVertical className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -266,7 +266,7 @@ export function ShapeToolbox({
                 )}
                 title="Align center"
               >
-                <AlignCenter className="h-3.5 w-3.5" />
+                <AlignCenterVertical className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -278,7 +278,7 @@ export function ShapeToolbox({
                 )}
                 title="Align right"
               >
-                <AlignRight className="h-3.5 w-3.5" />
+                <AlignEndVertical className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -290,7 +290,7 @@ export function ShapeToolbox({
                 )}
                 title="Align top"
               >
-                <AlignStartVertical className="h-3.5 w-3.5" />
+                <AlignStartHorizontal className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -302,7 +302,7 @@ export function ShapeToolbox({
                 )}
                 title="Align middle"
               >
-                <AlignCenterVertical className="h-3.5 w-3.5" />
+                <AlignCenterHorizontal className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
@@ -314,7 +314,7 @@ export function ShapeToolbox({
                 )}
                 title="Align bottom"
               >
-                <AlignEndVertical className="h-3.5 w-3.5" />
+                <AlignEndHorizontal className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>

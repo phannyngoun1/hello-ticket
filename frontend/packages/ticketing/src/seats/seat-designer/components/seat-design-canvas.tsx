@@ -31,6 +31,8 @@ export interface SeatDesignCanvasProps {
   seats: SeatMarker[];
   selectedSeatId?: string | null;
   selectedSeatIds?: string[];
+  anchorSeatId?: string | null;
+  anchorSectionId?: string | null;
   isPlacingSeats: boolean;
   readOnly?: boolean;
   zoomLevel: number;
@@ -95,6 +97,8 @@ export function SeatDesignCanvas({
   seats,
   selectedSeatId,
   selectedSeatIds = [],
+  anchorSeatId,
+  anchorSectionId,
   isPlacingSeats,
   readOnly,
   zoomLevel,
@@ -262,6 +266,8 @@ export function SeatDesignCanvas({
             sections={[]}
             selectedSeatId={selectedSeatId ?? null}
             selectedSeatIds={selectedSeatIds}
+            anchorSeatId={anchorSeatId ?? null}
+            anchorSectionId={anchorSectionId ?? null}
             isPlacingSeats={isPlacingSeats}
             isPlacingSections={false}
             readOnly={readOnly}

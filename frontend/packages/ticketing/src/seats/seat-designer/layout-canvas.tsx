@@ -194,6 +194,10 @@ interface LayoutCanvasProps {
   selectedSeatIds?: string[];
   /** Multi-selection: all selected section ids (used for highlight + Delete). */
   selectedSectionIds?: string[];
+  /** Anchor seat ID - reference object for alignment */
+  anchorSeatId?: string | null;
+  /** Anchor section ID - reference object for alignment */
+  anchorSectionId?: string | null;
   /** Called when user finishes a drag-to-select marquee with markers inside the rect. */
   onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
   isPlacingSeats: boolean;
@@ -480,6 +484,7 @@ function SeatMarkerComponent({
   x,
   y,
   isSelected,
+  isAnchor = false,
   isPlacingSeats,
   isPanning,
   isSpacePressed,
@@ -583,10 +588,19 @@ function SeatMarkerComponent({
 
   // Make markers more visible with better colors
   // Use seat type colors but make them more vibrant and visible
-  const fillColor = isSelected ? colors.fill : colors.fill;
-  const strokeColor = isSelected ? colors.stroke : colors.stroke;
-  const strokeWidth = isSelected ? 2.5 : 2; // More visible border
-  const fillOpacity = isSelected ? 0.5 : 0.35; // More visible opacity
+  // Anchor gets special orange styling
+  const fillColor = isAnchor
+    ? "#f97316"
+    : isSelected
+      ? colors.fill
+      : colors.fill;
+  const strokeColor = isAnchor
+    ? "#ea580c"
+    : isSelected
+      ? colors.stroke
+      : colors.stroke;
+  const strokeWidth = isAnchor ? 4 : isSelected ? 2.5 : 2; // Thicker border for anchor
+  const fillOpacity = isAnchor ? 0.6 : isSelected ? 0.5 : 0.35; // More visible opacity
 
   // Handle transform end - convert back to percentage coordinates
   const handleTransformEnd = useCallback(() => {
@@ -887,6 +901,7 @@ interface SectionMarkerComponentProps {
   x: number;
   y: number;
   isSelected: boolean;
+  isAnchor?: boolean;
   isPlacingSections: boolean;
   isPanning: boolean;
   isSpacePressed: boolean;
@@ -920,6 +935,7 @@ function SectionMarkerComponent({
   x,
   y,
   isSelected,
+  isAnchor = false,
   isPlacingSections,
   isPanning,
   isSpacePressed,
@@ -1202,21 +1218,21 @@ function SectionMarkerComponent({
             {useLowDetail ? (
               <Circle
                 radius={4}
-                fill={colors.fill}
-                stroke={colors.stroke}
-                strokeWidth={1}
-                opacity={isSelected ? 0.5 : 0.35}
+                fill={isAnchor ? "#f97316" : colors.fill}
+                stroke={isAnchor ? "#ea580c" : colors.stroke}
+                strokeWidth={isAnchor ? 2 : 1}
+                opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
                 perfectDrawEnabled={false}
               />
             ) : (
               <ShapeRenderer
                 shape={shape}
-                fill={colors.fill}
-                stroke={colors.stroke}
-                strokeWidth={isSelected ? 2.5 : 2}
+                fill={isAnchor ? "#f97316" : colors.fill}
+                stroke={isAnchor ? "#ea580c" : colors.stroke}
+                strokeWidth={isAnchor ? 4 : isSelected ? 2.5 : 2}
                 imageWidth={imageWidth}
                 imageHeight={imageHeight}
-                opacity={isSelected ? 0.5 : 0.35}
+                opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
               />
             )}
           </Group>
@@ -1225,12 +1241,12 @@ function SectionMarkerComponent({
         {!section.shape && (
           <Circle
             radius={isSelected ? 12 : 10}
-            fill={colors.fill}
-            stroke={colors.stroke}
-            strokeWidth={isSelected ? 2.5 : 2}
+            fill={isAnchor ? "#f97316" : colors.fill}
+            stroke={isAnchor ? "#ea580c" : colors.stroke}
+            strokeWidth={isAnchor ? 4 : isSelected ? 2.5 : 2}
             x={0}
             y={0}
-            opacity={isSelected ? 0.5 : 0.35}
+            opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
           />
         )}
       </Group>
@@ -1398,6 +1414,8 @@ export function LayoutCanvas({
   selectedSectionId,
   selectedSeatIds: selectedSeatIdsProp,
   selectedSectionIds: selectedSectionIdsProp,
+  anchorSeatId,
+  anchorSectionId,
   onMarkersInRect,
   isPlacingSeats,
   isPlacingSections,
@@ -2671,6 +2689,11 @@ export function LayoutCanvas({
               x={x}
               y={y}
               isSelected={selectedSeatIdSet.has(seat.id)}
+              isAnchor={
+                anchorSeatId === seat.id &&
+                selectedSeatIdsProp &&
+                selectedSeatIdsProp.length > 1
+              }
               isPlacingSeats={isPlacingSeats}
               isPanning={isPanning}
               isSpacePressed={isSpacePressed}
@@ -2699,6 +2722,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={selectedSectionIdSet.has(section.id)}
+                isAnchor={
+                  anchorSectionId === section.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2758,6 +2786,11 @@ export function LayoutCanvas({
                   x={x}
                   y={y}
                   isSelected={true}
+                  isAnchor={
+                    anchorSeatId === selectedSeat.id &&
+                    selectedSeatIdsProp &&
+                    selectedSeatIdsProp.length > 1
+                  }
                   isPlacingSeats={isPlacingSeats}
                   isPanning={isPanning}
                   isSpacePressed={isSpacePressed}
@@ -2794,6 +2827,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={true}
+                isAnchor={
+                  anchorSectionId === selectedSection.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2831,6 +2869,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={false}
+                isAnchor={
+                  anchorSeatId === draggedSeat.id &&
+                  selectedSeatIdsProp &&
+                  selectedSeatIdsProp.length > 1
+                }
                 isPlacingSeats={isPlacingSeats}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2867,6 +2910,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={false}
+                isAnchor={
+                  anchorSectionId === draggedSection.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}

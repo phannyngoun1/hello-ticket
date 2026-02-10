@@ -162,6 +162,9 @@ export function SeatDesigner({
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
   /** Multi-selection: all selected section ids (for highlight + Delete key). */
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
+  /** Anchor for alignment - the object to align others to (last clicked object) */
+  const [anchorSeatId, setAnchorSeatId] = useState<string | null>(null);
+  const [anchorSectionId, setAnchorSectionId] = useState<string | null>(null);
   // Always in placement mode - simplified
   const isPlacingSeats = true;
 
@@ -800,6 +803,16 @@ export function SeatDesigner({
       : viewingSection
         ? seats.filter((s) => s.seat.section === viewingSection.name)
         : [];
+
+  // Clear anchor when it's no longer in the selected items
+  useEffect(() => {
+    if (anchorSeatId && !selectedSeatIds.includes(anchorSeatId)) {
+      setAnchorSeatId(null);
+    }
+    if (anchorSectionId && !selectedSectionIds.includes(anchorSectionId)) {
+      setAnchorSectionId(null);
+    }
+  }, [anchorSeatId, anchorSectionId, selectedSeatIds, selectedSectionIds]);
 
   // Handle main image upload
   const handleMainImageSelect = async (
@@ -1553,11 +1566,17 @@ export function SeatDesigner({
           ? (sectionMarkers.find((marker) => marker.id === primaryId) ?? null)
           : null;
         setSelectedSectionMarker(primarySection);
+        // Set the clicked section as the anchor
+        setAnchorSectionId(section.id);
+        setAnchorSeatId(null);
         return;
       }
 
       setSelectedSectionIds([section.id]);
       setSelectedSectionMarker(section);
+      // Set the clicked section as the anchor
+      setAnchorSectionId(section.id);
+      setAnchorSeatId(null);
     },
     [sectionMarkers, selectedSectionIds],
   );
@@ -1602,6 +1621,9 @@ export function SeatDesigner({
       setSelectedSeat(seat);
       setSelectedSectionIds([]);
     }
+    // Set the clicked seat as the anchor for alignment
+    setAnchorSeatId(seat.id);
+    setAnchorSectionId(null);
   };
 
   // Handle seat view from toolbox - opens the seat sheet in view mode
@@ -1668,6 +1690,8 @@ export function SeatDesigner({
     setSelectedSectionMarker(null);
     setSelectedSeatIds([]);
     setSelectedSectionIds([]);
+    setAnchorSeatId(null);
+    setAnchorSectionId(null);
     setIsEditingSeat(false);
   };
 
@@ -2118,6 +2142,8 @@ export function SeatDesigner({
           });
           setSelectedSeatIds([]);
           setSelectedSectionIds([]);
+          setAnchorSeatId(null);
+          setAnchorSectionId(null);
           setSelectedSeat(null);
           setSelectedSectionMarker(null);
           return;
@@ -3014,70 +3040,215 @@ export function SeatDesigner({
       const sectionItems = sectionMarkers.filter((s) =>
         selectedSectionIds.includes(s.id),
       );
-      const allX = [
-        ...seatItems.map((s) => s.x),
-        ...sectionItems.map((s) => s.x),
-      ];
-      const allY = [
-        ...seatItems.map((s) => s.y),
-        ...sectionItems.map((s) => s.y),
-      ];
-      if (allX.length === 0 && allY.length === 0) return;
+      const allItems = [...seatItems, ...sectionItems];
+      if (allItems.length === 0) return;
 
-      const minX = Math.min(...allX);
-      const maxX = Math.max(...allX);
-      const minY = Math.min(...allY);
-      const maxY = Math.max(...allY);
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-
-      const getNewX = () => {
-        if (alignment === "left") return minX;
-        if (alignment === "right") return maxX;
-        if (alignment === "center") return centerX;
-        return undefined;
+      // Helper to get shape dimension
+      const getShapeWidth = (
+        item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+      ): number => {
+        if (item.shape?.width) return item.shape.width;
+        if (item.shape?.radius) return item.shape.radius * 2;
+        return 0;
       };
-      const getNewY = () => {
-        if (alignment === "top") return minY;
-        if (alignment === "bottom") return maxY;
-        if (alignment === "middle") return centerY;
-        return undefined;
+      const getShapeHeight = (
+        item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+      ): number => {
+        if (item.shape?.height) return item.shape.height;
+        if (item.shape?.radius) return item.shape.radius * 2;
+        return 0;
       };
 
-      const newX = getNewX();
-      const newY = getNewY();
+      // Find the anchor object
+      let anchorItem: (typeof seatItems)[0] | (typeof sectionItems)[0] | null =
+        null;
+      if (anchorSeatId) {
+        anchorItem = seatItems.find((s) => s.id === anchorSeatId) || null;
+      } else if (anchorSectionId) {
+        anchorItem = sectionItems.find((s) => s.id === anchorSectionId) || null;
+      }
 
-      if (seatItems.length > 0 && (newX !== undefined || newY !== undefined)) {
+      // If no anchor, fall back to using min/max of all selected items
+      if (!anchorItem) {
+        let minLeftEdge = Infinity;
+        let maxRightEdge = -Infinity;
+        let minX = Infinity;
+        let maxX = -Infinity;
+        let minTopEdge = Infinity;
+        let maxBottomEdge = -Infinity;
+        let minY = Infinity;
+        let maxY = -Infinity;
+
+        allItems.forEach((item) => {
+          const width = getShapeWidth(item);
+          const height = getShapeHeight(item);
+          const leftEdge = item.x - width / 2;
+          const rightEdge = item.x + width / 2;
+          const topEdge = item.y - height / 2;
+          const bottomEdge = item.y + height / 2;
+
+          minLeftEdge = Math.min(minLeftEdge, leftEdge);
+          maxRightEdge = Math.max(maxRightEdge, rightEdge);
+          minX = Math.min(minX, item.x);
+          maxX = Math.max(maxX, item.x);
+
+          minTopEdge = Math.min(minTopEdge, topEdge);
+          maxBottomEdge = Math.max(maxBottomEdge, bottomEdge);
+          minY = Math.min(minY, item.y);
+          maxY = Math.max(maxY, item.y);
+        });
+
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        const getNewX = (
+          item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+        ): number | undefined => {
+          if (alignment === "left") {
+            const width = getShapeWidth(item);
+            return minLeftEdge + width / 2;
+          }
+          if (alignment === "right") {
+            const width = getShapeWidth(item);
+            return maxRightEdge - width / 2;
+          }
+          if (alignment === "center") return centerX;
+          return undefined;
+        };
+
+        const getNewY = (
+          item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+        ): number | undefined => {
+          if (alignment === "top") {
+            const height = getShapeHeight(item);
+            return minTopEdge + height / 2;
+          }
+          if (alignment === "bottom") {
+            const height = getShapeHeight(item);
+            return maxBottomEdge - height / 2;
+          }
+          if (alignment === "middle") return centerY;
+          return undefined;
+        };
+
+        if (seatItems.length > 0) {
+          setSeats((prev) =>
+            prev.map((s) => {
+              if (!selectedSeatIds.includes(s.id)) return s;
+              const newX = getNewX(s);
+              const newY = getNewY(s);
+              return {
+                ...s,
+                x: newX !== undefined ? newX : s.x,
+                y: newY !== undefined ? newY : s.y,
+              };
+            }),
+          );
+        }
+
+        if (sectionItems.length > 0) {
+          setSectionMarkers((prev) =>
+            prev.map((s) => {
+              if (!selectedSectionIds.includes(s.id)) return s;
+              const newX = getNewX(s);
+              const newY = getNewY(s);
+              return {
+                ...s,
+                x: newX !== undefined ? newX : s.x,
+                y: newY !== undefined ? newY : s.y,
+              };
+            }),
+          );
+        }
+        return;
+      }
+
+      // Use anchor object as reference
+      const anchorWidth = getShapeWidth(anchorItem);
+      const anchorHeight = getShapeHeight(anchorItem);
+      const anchorLeftEdge = anchorItem.x - anchorWidth / 2;
+      const anchorRightEdge = anchorItem.x + anchorWidth / 2;
+      const anchorTopEdge = anchorItem.y - anchorHeight / 2;
+      const anchorBottomEdge = anchorItem.y + anchorHeight / 2;
+
+      const getNewX = (
+        item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+      ): number | undefined => {
+        // Skip the anchor item itself
+        if (item.id === anchorItem!.id) return undefined;
+
+        if (alignment === "left") {
+          // Align to anchor's left edge
+          const width = getShapeWidth(item);
+          return anchorLeftEdge + width / 2;
+        }
+        if (alignment === "right") {
+          // Align to anchor's right edge
+          const width = getShapeWidth(item);
+          return anchorRightEdge - width / 2;
+        }
+        if (alignment === "center") return anchorItem!.x;
+        return undefined;
+      };
+
+      const getNewY = (
+        item: (typeof seatItems)[0] | (typeof sectionItems)[0],
+      ): number | undefined => {
+        // Skip the anchor item itself
+        if (item.id === anchorItem!.id) return undefined;
+
+        if (alignment === "top") {
+          // Align to anchor's top edge
+          const height = getShapeHeight(item);
+          return anchorTopEdge + height / 2;
+        }
+        if (alignment === "bottom") {
+          // Align to anchor's bottom edge
+          const height = getShapeHeight(item);
+          return anchorBottomEdge - height / 2;
+        }
+        if (alignment === "middle") return anchorItem!.y;
+        return undefined;
+      };
+
+      if (seatItems.length > 0) {
         setSeats((prev) =>
-          prev.map((s) =>
-            selectedSeatIds.includes(s.id)
-              ? {
-                  ...s,
-                  x: newX !== undefined ? newX : s.x,
-                  y: newY !== undefined ? newY : s.y,
-                }
-              : s,
-          ),
+          prev.map((s) => {
+            if (!selectedSeatIds.includes(s.id)) return s;
+            const newX = getNewX(s);
+            const newY = getNewY(s);
+            return {
+              ...s,
+              x: newX !== undefined ? newX : s.x,
+              y: newY !== undefined ? newY : s.y,
+            };
+          }),
         );
       }
-      if (
-        sectionItems.length > 0 &&
-        (newX !== undefined || newY !== undefined)
-      ) {
+
+      if (sectionItems.length > 0) {
         setSectionMarkers((prev) =>
-          prev.map((s) =>
-            selectedSectionIds.includes(s.id)
-              ? {
-                  ...s,
-                  x: newX !== undefined ? newX : s.x,
-                  y: newY !== undefined ? newY : s.y,
-                }
-              : s,
-          ),
+          prev.map((s) => {
+            if (!selectedSectionIds.includes(s.id)) return s;
+            const newX = getNewX(s);
+            const newY = getNewY(s);
+            return {
+              ...s,
+              x: newX !== undefined ? newX : s.x,
+              y: newY !== undefined ? newY : s.y,
+            };
+          }),
         );
       }
     },
-    [seats, sectionMarkers, selectedSeatIds, selectedSectionIds],
+    [
+      seats,
+      sectionMarkers,
+      selectedSeatIds,
+      selectedSectionIds,
+      anchorSeatId,
+      anchorSectionId,
+    ],
   );
 
   const designerContent = (
@@ -3270,6 +3441,8 @@ export function SeatDesigner({
                 seats={displayedSeats}
                 selectedSeatId={selectedSeat?.id ?? null}
                 selectedSeatIds={selectedSeatIds}
+                anchorSeatId={anchorSeatId}
+                anchorSectionId={anchorSectionId}
                 isPlacingSeats={isPlacingSeats}
                 readOnly={readOnly}
                 zoomLevel={zoomLevel}
@@ -3325,6 +3498,8 @@ export function SeatDesigner({
                   selectedSectionId={selectedSectionMarker?.id || null}
                   selectedSeatIds={[]}
                   selectedSectionIds={selectedSectionIds}
+                  anchorSeatId={anchorSeatId}
+                  anchorSectionId={anchorSectionId}
                   onMarkersInRect={handleMarkersInRect}
                   isPlacingSeats={false}
                   isPlacingSections={isPlacingSections}
@@ -3492,6 +3667,7 @@ export function SeatDesigner({
         onRemoveSectionImage={handleRemoveSectionImage}
         onSeatClick={handleSeatClick}
         selectedSeatIds={selectedSeatIds}
+        anchorSeatId={anchorSeatId}
         onSeatDragEnd={handleKonvaSeatDragEnd}
         onSeatShapeTransform={handleSeatShapeTransform}
         onSeatShapeStyleChange={handleSeatShapeStyleChange}
