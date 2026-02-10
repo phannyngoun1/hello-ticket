@@ -121,7 +121,7 @@ export function EventInventoryViewer({
     sections.forEach((section) => {
       // Get all seats in this section
       const sectionSeats = layoutSeats.filter(
-        (seat) => seat.section_id === section.id
+        (seat) => seat.section_id === section.id,
       );
 
       // Get all event seats for this section
@@ -179,10 +179,22 @@ export function EventInventoryViewer({
     return sections.find((s) => s.id === selectedSectionId) || null;
   }, [selectedSectionId, sections]);
 
+  // Get canvas background color (use section's color when drilled down, otherwise layout's)
+  const canvasBackgroundColor = useMemo(() => {
+    if (selectedSection?.canvas_background_color) {
+      return selectedSection.canvas_background_color;
+    }
+    if (layout.canvas_background_color) {
+      return layout.canvas_background_color;
+    }
+    return "#e5e7eb";
+  }, [selectedSection, layout.canvas_background_color]);
+
   // Get image URL - use section image if in drill-down mode, otherwise use layout image
+  // When drilled into a section, only use that section's own image (don't fall back to layout image)
   const displayImageUrl = useMemo(() => {
-    if (selectedSection?.image_url) {
-      return selectedSection.image_url;
+    if (selectedSection) {
+      return selectedSection.image_url || undefined;
     }
     return imageUrl;
   }, [selectedSection, imageUrl]);
@@ -191,7 +203,7 @@ export function EventInventoryViewer({
   const displayedSeats = useMemo(() => {
     if (layout.design_mode === "section-level" && selectedSectionId) {
       return layoutSeats.filter(
-        (seat) => seat.section_id === selectedSectionId
+        (seat) => seat.section_id === selectedSectionId,
       );
     }
     return layoutSeats;
@@ -344,7 +356,7 @@ export function EventInventoryViewer({
         y: newPanY,
       });
     },
-    [zoomLevel, panOffset, containerSize]
+    [zoomLevel, panOffset, containerSize],
   );
 
   const handleMouseDown = useCallback(
@@ -362,7 +374,7 @@ export function EventInventoryViewer({
         return;
       }
     },
-    [isSpacePressed]
+    [isSpacePressed],
   );
 
   const handleMouseMove = useCallback(
@@ -386,7 +398,7 @@ export function EventInventoryViewer({
         }));
       }
     },
-    [isPanning, isSpacePressed, panStartPos]
+    [isPanning, isSpacePressed, panStartPos],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -495,7 +507,7 @@ export function EventInventoryViewer({
         setHoveredSeatPosition({ x: screenX, y: screenY });
       }
     },
-    []
+    [],
   );
 
   // Ensure container dimensions are valid (same as layout designer)
@@ -542,7 +554,7 @@ export function EventInventoryViewer({
 
       return { x, y };
     },
-    [image, hasImage, containerSize]
+    [image, hasImage, containerSize],
   );
 
   // Show loading indicator only when image URL provided but not yet loaded
@@ -551,7 +563,7 @@ export function EventInventoryViewer({
       <div
         className={cn(
           "relative border rounded-lg overflow-hidden bg-gray-100",
-          className
+          className,
         )}
         ref={containerRef}
       >
@@ -586,9 +598,7 @@ export function EventInventoryViewer({
     displayedWidth = displayedHeight / imageAspectRatio;
   } else {
     displayedWidth = validWidth;
-    displayedHeight = hasImage
-      ? validWidth * imageAspectRatio
-      : validHeight;
+    displayedHeight = hasImage ? validWidth * imageAspectRatio : validHeight;
   }
 
   const imageX = hasImage ? (validWidth - displayedWidth) / 2 : 0;
@@ -602,7 +612,7 @@ export function EventInventoryViewer({
     <div
       className={cn(
         "relative border rounded-lg overflow-hidden bg-gray-100",
-        className
+        className,
       )}
     >
       <EventInventoryStage
@@ -648,6 +658,7 @@ export function EventInventoryViewer({
         setZoomLevel={setZoomLevel}
         setPanOffset={setPanOffset}
         onSeatClick={onSeatClick}
+        canvasBackgroundColor={canvasBackgroundColor}
       />
 
       {layout.design_mode === "section-level" &&
@@ -691,7 +702,7 @@ export function EventInventoryViewer({
             x={hoveredSeatPosition.x}
             y={hoveredSeatPosition.y}
           />,
-          document.body
+          document.body,
         )}
 
       {(layout.design_mode !== "section-level" || selectedSectionId) &&
@@ -710,7 +721,7 @@ export function EventInventoryViewer({
             x={hoveredSeatPosition.x}
             y={hoveredSeatPosition.y}
           />,
-          document.body
+          document.body,
         )}
     </div>
   );

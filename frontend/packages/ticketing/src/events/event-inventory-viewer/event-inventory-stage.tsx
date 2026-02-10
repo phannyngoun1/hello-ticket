@@ -50,11 +50,11 @@ export interface EventInventoryStageProps {
   hoveredSectionId: string | null;
   percentageToStage: (
     xPercent: number,
-    yPercent: number
+    yPercent: number,
   ) => { x: number; y: number };
   onWheel: (
     e: Konva.KonvaEventObject<WheelEvent>,
-    isSpacePressed: boolean
+    isSpacePressed: boolean,
   ) => void;
   onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMove: (e: Konva.KonvaEventObject<MouseEvent>) => void;
@@ -67,18 +67,20 @@ export interface EventInventoryStageProps {
       seatCount: number;
       eventSeatCount: number;
       statusSummary: Record<string, number>;
-    } | null
+    } | null,
   ) => void;
   setHoveredSeatPosition: (pos: { x: number; y: number } | null) => void;
   setHoveredSeatId: (id: string | null) => void;
   setHoveredSeatData: (
-    data: { seat: Seat; eventSeat?: EventSeat } | null
+    data: { seat: Seat; eventSeat?: EventSeat } | null,
   ) => void;
   updatePopoverPosition: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   setSelectedSectionId: (id: string | null) => void;
   setZoomLevel: (zoom: number) => void;
   setPanOffset: (offset: { x: number; y: number }) => void;
   onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
+  /** Canvas background color when no image (simple floor mode) */
+  canvasBackgroundColor?: string;
 }
 
 export function EventInventoryStage({
@@ -124,6 +126,7 @@ export function EventInventoryStage({
   setZoomLevel,
   setPanOffset,
   onSeatClick,
+  canvasBackgroundColor = "#e5e7eb",
 }: EventInventoryStageProps) {
   function renderSectionMarkers() {
     return sections.map((section) => {
@@ -133,7 +136,7 @@ export function EventInventoryStage({
 
       const { x, y } = percentageToStage(
         section.x_coordinate,
-        section.y_coordinate
+        section.y_coordinate,
       );
 
       return (
@@ -295,7 +298,7 @@ export function EventInventoryStage({
               y={imageY}
               width={displayedWidth}
               height={displayedHeight}
-              fill="#f3f4f6"
+              fill={canvasBackgroundColor}
               listening={true}
             />
           )}
