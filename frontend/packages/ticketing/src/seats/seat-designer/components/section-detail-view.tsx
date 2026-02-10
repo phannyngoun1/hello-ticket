@@ -26,6 +26,7 @@ import {
   Minimize,
   Maximize,
   Palette,
+  BrushCleaning,
 } from "lucide-react";
 import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -244,8 +245,8 @@ export function SectionDetailView({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={onClearSectionSeats}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear All Seats
+                    <BrushCleaning className="h-4 w-4 mr-2" />
+                    Clear All Placements
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   {!viewingSection.imageUrl ? (

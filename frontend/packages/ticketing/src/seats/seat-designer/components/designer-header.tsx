@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Fragment, useMemo } from "react";
 import {
   Button,
   DropdownMenu,
@@ -18,6 +18,7 @@ import {
   Trash2,
   Image as ImageIcon,
   ScanSearch,
+  BrushCleaning,
   Palette,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
@@ -94,6 +95,92 @@ export function DesignerHeader({
     mainImageUrl &&
     !readOnly &&
     (isPlacingSeats || (venueType === "large" && isPlacingSections));
+
+  const dropdownMenuItems: React.ReactNode[] = useMemo(() => {
+    return [
+      <DropdownMenuItem onClick={onClearAllPlacements}>
+        <BrushCleaning className="h-4 w-4 mr-2" />
+        Clear All Placements
+      </DropdownMenuItem>,
+      <DropdownMenuSeparator />,
+
+      !readOnly && onMainImageSelect && !mainImageUrl && (
+        <Label htmlFor="add-floor-plan-image" className="cursor-pointer">
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+            <div>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Add floor plan image
+              <Input
+                id="add-floor-plan-image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  onMainImageSelect(e);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+            </div>
+          </DropdownMenuItem>
+        </Label>
+      ),
+
+      !readOnly && onCanvasBackgroundColorChange && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+            <Palette className="h-4 w-4 shrink-0" />
+            <span className="flex-1">Canvas background color</span>
+            <input
+              type="color"
+              aria-label="Canvas background color"
+              value={canvasBackgroundColor}
+              onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+              className="h-6 w-8 cursor-pointer rounded border border-input"
+            />
+          </label>
+        </DropdownMenuItem>
+      ),
+
+      !readOnly && mainImageUrl && (
+        <Label htmlFor="change-main-image" className="cursor-pointer">
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+            <div>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Change Image
+              <Input
+                id="change-main-image"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  onMainImageSelect(e);
+                  e.target.value = ""; // Reset input
+                }}
+                className="hidden"
+              />
+            </div>
+          </DropdownMenuItem>
+        </Label>
+      ),
+
+      !readOnly && onRemoveImage && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => onRemoveImage()}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove Image
+          </DropdownMenuItem>
+        </>
+      ),
+    ];
+  }, [
+    onClearAllPlacements,
+    onMainImageSelect,
+    onCanvasBackgroundColorChange,
+    onRemoveImage,
+  ]);
 
   return (
     <div className="flex items-center justify-between">
@@ -174,7 +261,22 @@ export function DesignerHeader({
           )}
         </Button>
         {/* Dropdown: no image = canvas color + add image; with image = clear / change / remove */}
-        {!readOnly &&
+        {!readOnly && dropdownMenuItems.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                <MoreVertical className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {dropdownMenuItems.map((item, index) => (
+                <Fragment key={index}>{item}</Fragment>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
+        {/* {!readOnly &&
           ((!mainImageUrl && onCanvasBackgroundColorChange) ||
             showImageMenu) && (
             <DropdownMenu>
@@ -186,6 +288,11 @@ export function DesignerHeader({
               <DropdownMenuContent align="end">
                 {!mainImageUrl ? (
                   <>
+                    <DropdownMenuItem onClick={onClearAllPlacements}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear All Placements
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     {onMainImageSelect && (
                       <Label
                         htmlFor="add-floor-plan-image"
@@ -212,7 +319,7 @@ export function DesignerHeader({
                         </DropdownMenuItem>
                       </Label>
                     )}
-                    {onCanvasBackgroundColorChange && <DropdownMenuSeparator />}
+
                     {onCanvasBackgroundColorChange && (
                       <DropdownMenuItem
                         onSelect={(e) => e.preventDefault()}
@@ -283,7 +390,7 @@ export function DesignerHeader({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          )} */}
       </div>
     </div>
   );
