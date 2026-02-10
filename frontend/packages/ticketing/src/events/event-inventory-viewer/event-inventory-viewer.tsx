@@ -19,6 +19,7 @@ import { EventInventoryLegend } from "./event-inventory-legend";
 import { EventInventoryBreadcrumb } from "./event-inventory-breadcrumb";
 import { EventInventorySectionPopover } from "./event-inventory-section-popover";
 import { EventInventorySeatPopover } from "./event-inventory-seat-popover";
+import { DEFAULT_CANVAS_BACKGROUND } from "./event-inventory-viewer-colors";
 
 export interface EventInventoryViewerProps {
   layout: Layout;
@@ -187,7 +188,7 @@ export function EventInventoryViewer({
     if (layout.canvas_background_color) {
       return layout.canvas_background_color;
     }
-    return "#e5e7eb";
+    return DEFAULT_CANVAS_BACKGROUND;
   }, [selectedSection, layout.canvas_background_color]);
 
   // Get image URL - use section image if in drill-down mode, otherwise use layout image

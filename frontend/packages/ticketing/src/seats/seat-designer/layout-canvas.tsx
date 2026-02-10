@@ -2399,8 +2399,18 @@ export function LayoutCanvas({
         </Layer>
       )}
 
-      {/* Background Layer: Image takes priority; canvas background color only when no image (simple floor) */}
+      {/* Background Layer: Always show canvas background, with image layered on top */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
+        {/* Background rectangle - always rendered to support transparency and consistent background color */}
+        <Rect
+          name="canvas-background"
+          x={imageX}
+          y={imageY}
+          width={displayedWidth}
+          height={displayedHeight}
+          fill={canvasBackgroundColor}
+          listening={false}
+        />
         {image ? (
           <Image
             name="background-image"
