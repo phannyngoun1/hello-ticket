@@ -46,6 +46,7 @@ export interface Section {
   y_coordinate?: number | null;
   file_id?: string | null;
   image_url?: string | null;
+  canvas_background_color?: string | null; // Canvas background when no section image (hex)
   shape?: string | null; // JSON string storing PlacementShape data
   is_active: boolean;
   created_at: Date;
