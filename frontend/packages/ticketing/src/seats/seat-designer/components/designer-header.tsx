@@ -81,11 +81,12 @@ export function DesignerHeader({
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
 }: DesignerHeaderProps) {
-  // Logic for showing datasheet toggle
+  // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
-    (venueType === "large" && sectionMarkers.length > 0) ||
-    (venueType === "small" && seats.length > 0) ||
-    (viewingSection && displayedSeats.length > 0);
+    !isFullscreen &&
+    ((venueType === "large" && sectionMarkers.length > 0) ||
+      (venueType === "small" && seats.length > 0) ||
+      (viewingSection && displayedSeats.length > 0));
 
   // Logic for showing dropdown menu (when we have image)
   const showImageMenu =
