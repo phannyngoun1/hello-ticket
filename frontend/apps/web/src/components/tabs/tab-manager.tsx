@@ -297,16 +297,30 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     (e: React.MouseEvent, tabId: string) => {
       e.stopPropagation();
       const tabIndex = tabs.findIndex((tab) => tab.id === tabId);
+      const isClosingActiveTab = activeTabId === tabId;
       const newTabs = tabs.filter((tab) => tab.id !== tabId);
 
       setTabs(newTabs);
 
-      // If closing active tab, switch to another tab or home
-      if (activeTabId === tabId) {
+      // Smart tab selection when closing the active tab
+      if (isClosingActiveTab) {
         if (newTabs.length > 0) {
-          const nextTab = newTabs[Math.min(tabIndex, newTabs.length - 1)];
-          navigate({ to: nextTab.path });
+          let nextTab;
+
+          // Prefer next tab to the right first
+          if (tabIndex < newTabs.length) {
+            nextTab = newTabs[tabIndex];
+          } else {
+            // Fall back to previous tab if closing the last tab
+            nextTab = newTabs[tabIndex - 1];
+          }
+
+          // Navigate with a small delay for smooth transition
+          setTimeout(() => {
+            navigate({ to: nextTab.path });
+          }, 50);
         } else {
+          // No more tabs, go to home
           navigate({ to: "/" });
         }
       }
@@ -325,6 +339,48 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     setTabs([]);
     navigate({ to: "/" });
   }, [navigate]);
+
+  // Keyboard shortcuts for tab management
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+      const modKey = isMac ? e.metaKey : e.ctrlKey;
+
+      // Ctrl/Cmd + W: Close current tab
+      if (modKey && e.key === "w") {
+        e.preventDefault();
+        if (activeTabId) {
+          const event = new MouseEvent("click");
+          handleTabClose(event as any, activeTabId);
+        }
+      }
+
+      // Ctrl/Cmd + Tab: Next tab
+      if (modKey && e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+        if (currentIndex < tabs.length - 1) {
+          navigate({ to: tabs[currentIndex + 1].path });
+        } else if (tabs.length > 0) {
+          navigate({ to: tabs[0].path });
+        }
+      }
+
+      // Ctrl/Cmd + Shift + Tab: Previous tab
+      if (modKey && e.key === "Tab" && e.shiftKey) {
+        e.preventDefault();
+        const currentIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+        if (currentIndex > 0) {
+          navigate({ to: tabs[currentIndex - 1].path });
+        } else if (tabs.length > 0) {
+          navigate({ to: tabs[tabs.length - 1].path });
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [tabs, activeTabId, navigate, handleTabClose]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e: React.DragEvent, tabId: string) => {
