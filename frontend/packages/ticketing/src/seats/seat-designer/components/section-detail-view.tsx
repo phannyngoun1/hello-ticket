@@ -97,7 +97,10 @@ export interface SectionDetailViewProps {
   onShapeOverlayClick: (overlayId: string) => void;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
-  onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;  /** Called when user aligns multiple selected markers */
+  onMarkersInRect?: (
+    seatIds: string[],
+    sectionIds: string[],
+  ) => void; /** Called when user aligns multiple selected markers */
   onAlign?: (
     alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
   ) => void;
@@ -165,7 +168,8 @@ export function SectionDetailView({
   onShapeOverlayClick,
   onDetectSeats,
   isDetectingSeats = false,
-  onMarkersInRect,  selectedSeatIds = [],
+  onMarkersInRect,
+  selectedSeatIds = [],
   onSelectSeatIds,
   onAlign,
   seatEditControls,
@@ -479,15 +483,19 @@ export function SectionDetailView({
               onSeatShapeStyleChange={onSeatShapeStyleChange}
               onAlign={onAlign}
               selectedSeatCount={selectedSeatIds.length}
-              seatPlacement={{
-                form: seatPlacementForm,
-                uniqueSections,
-                sectionsData,
-                sectionSelectValue,
-                onSectionSelectValueChange,
-                viewingSection,
-                onNewSection,
-              }}
+              seatPlacement={
+                selectedSeatIds.length <= 1
+                  ? {
+                      form: seatPlacementForm,
+                      uniqueSections,
+                      sectionsData,
+                      sectionSelectValue,
+                      onSectionSelectValueChange,
+                      viewingSection,
+                      onNewSection,
+                    }
+                  : undefined
+              }
               seatEditControls={seatEditControls}
               readOnly={readOnly}
             />
@@ -514,7 +522,8 @@ export function SectionDetailView({
             canvasBackgroundColor={effectiveCanvasColor}
             seats={displayedSeats}
             selectedSeatId={selectedSeat?.id ?? null}
-            selectedSeatIds={selectedSeatIds}            isPlacingSeats={isPlacingSeats}
+            selectedSeatIds={selectedSeatIds}
+            isPlacingSeats={isPlacingSeats}
             readOnly={readOnly}
             zoomLevel={zoomLevel}
             panOffset={panOffset}
@@ -526,7 +535,8 @@ export function SectionDetailView({
             onShapeDraw={onShapeDraw}
             onShapeOverlayClick={onShapeOverlayClick}
             onMarkersInRect={onMarkersInRect}
-            onWheel={onWheel}            onPan={onPan}
+            onWheel={onWheel}
+            onPan={onPan}
             onZoomIn={onZoomIn}
             onZoomOut={onZoomOut}
             onResetZoom={onResetZoom}

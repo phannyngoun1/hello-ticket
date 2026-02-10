@@ -3170,19 +3170,23 @@ export function SeatDesigner({
               onAlign={handleAlign}
               selectedSeatCount={selectedSeatIds.length}
               selectedSectionCount={selectedSectionIds.length}
-              seatPlacement={{
-                form: seatPlacementForm,
-                uniqueSections: getUniqueSections(),
-                sectionsData,
-                sectionSelectValue,
-                onSectionSelectValueChange: setSectionSelectValue,
-                onNewSection: () => {
-                  setIsSectionFormOpen(true);
-                  setEditingSectionId(null);
-                  sectionForm.reset({ name: "" });
-                },
-                onManageSections: () => setIsManageSectionsOpen(true),
-              }}
+              seatPlacement={
+                selectedSeatIds.length <= 1
+                  ? {
+                      form: seatPlacementForm,
+                      uniqueSections: getUniqueSections(),
+                      sectionsData,
+                      sectionSelectValue,
+                      onSectionSelectValueChange: setSectionSelectValue,
+                      onNewSection: () => {
+                        setIsSectionFormOpen(true);
+                        setEditingSectionId(null);
+                        sectionForm.reset({ name: "" });
+                      },
+                      onManageSections: () => setIsManageSectionsOpen(true),
+                    }
+                  : undefined
+              }
               seatEditControls={
                 isEditingSeat && selectedSeat && !readOnly ? (
                   <SeatEditControls
