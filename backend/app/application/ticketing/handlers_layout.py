@@ -97,7 +97,8 @@ class LayoutCommandHandler:
         if command.description is not None:
             update_kwargs['description'] = command.description
         if command.file_id is not None:
-            update_kwargs['file_id'] = command.file_id
+            # Empty string means "remove image" (file_id is optional)
+            update_kwargs['file_id'] = command.file_id if command.file_id else None
         if command.canvas_background_color is not None:
             update_kwargs['canvas_background_color'] = command.canvas_background_color
 

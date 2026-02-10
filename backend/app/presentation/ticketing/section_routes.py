@@ -55,6 +55,7 @@ def section_model_to_response(
         y_coordinate=section.y_coordinate,
         file_id=section.file_id,
         image_url=image_url,
+        canvas_background_color=getattr(section, "canvas_background_color", None) or "#e5e7eb",
         shape=shape_str,  # Return as JSON string for API compatibility
         is_active=section.is_active,
         seat_count=seat_count,
@@ -112,6 +113,7 @@ async def create_section(
                 x_coordinate=request.x_coordinate,
                 y_coordinate=request.y_coordinate,
                 file_id=request.file_id,
+                canvas_background_color=request.canvas_background_color or "#e5e7eb",
                 shape=shape_data,  # Store as dict - JSONB column will handle serialization
                 is_active=True,
                 is_deleted=False,
@@ -273,7 +275,10 @@ async def update_section(
             if request.y_coordinate is not None:
                 section.y_coordinate = request.y_coordinate
             if request.file_id is not None:
-                section.file_id = request.file_id
+                # Empty string means "remove section image" (file_id is optional)
+                section.file_id = request.file_id if request.file_id else None
+            if request.canvas_background_color is not None:
+                section.canvas_background_color = request.canvas_background_color or "#e5e7eb"
             if request.shape is not None:
                 # Parse shape if provided (convert JSON string to dict for JSONB storage)
                 shape_data = None

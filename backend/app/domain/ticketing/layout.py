@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 from app.domain.aggregates.base import AggregateRoot
+
+# Sentinel: when passed as file_id in update_details, means "do not change file_id"
+_OMIT = object()
 from app.shared.exceptions import BusinessRuleError, ValidationError
 from app.shared.utils import generate_id
 
@@ -51,15 +54,15 @@ class Layout(AggregateRoot):
         *,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        file_id: Optional[str] = None,
+        file_id: Optional[str] = _OMIT,
         canvas_background_color: Optional[str] = None,
     ) -> None:
-        """Update layout details with validation."""
+        """Update layout details with validation. Pass file_id=None to clear image."""
         if name is not None:
             self.name = self._validate_name(name)
         if description is not None:
             self.description = description
-        if file_id is not None:
+        if file_id is not _OMIT:
             self.file_id = file_id
         if canvas_background_color is not None:
             self.canvas_background_color = canvas_background_color or "#e5e7eb"

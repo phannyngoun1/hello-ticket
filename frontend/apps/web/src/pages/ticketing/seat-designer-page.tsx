@@ -122,6 +122,14 @@ function SeatDesignerContent({
         fileId={layoutWithSeats?.layout.file_id}
         initialCanvasBackgroundColor={layoutWithSeats?.layout.canvas_background_color}
         readOnly={isReadOnly}
+        onImageUpload={(_url, fileId) => {
+          if (fileId) {
+            updateLayoutMutation.mutate({
+              id: effectiveLayoutId,
+              input: { file_id: fileId },
+            });
+          }
+        }}
         onRemoveImage={async () => {
           await updateLayoutMutation.mutateAsync({
             id: effectiveLayoutId,

@@ -15,6 +15,7 @@ interface SectionDTO {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    canvas_background_color?: string | null;
     shape?: string | null;
     is_active: boolean;
     created_at: string;
@@ -39,6 +40,7 @@ function transformSection(dto: SectionDTO): Section {
         y_coordinate: dto.y_coordinate ?? undefined,
         file_id: dto.file_id ?? undefined,
         image_url: dto.image_url ?? undefined,
+        canvas_background_color: dto.canvas_background_color ?? undefined,
         shape: shapeValue,
         is_active: dto.is_active,
         created_at: dto.created_at ? new Date(dto.created_at) : new Date(),

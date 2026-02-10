@@ -60,9 +60,11 @@ export interface SeatDesignerProps {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    canvas_background_color?: string | null;
     shape?: string | null;
   }>;
-  onImageUpload?: (url: string) => void;
+  /** Called when user adds a floor plan image. Pass fileId so parent can persist layout.file_id. */
+  onImageUpload?: (url: string, fileId?: string) => void;
   /** Called when user removes the floor plan image (switch to simple floor). Parent should persist via layout update. */
   onRemoveImage?: () => Promise<void>;
   /** Initial canvas background color when no image (from layout). */
@@ -79,6 +81,8 @@ export interface SectionMarker {
   x: number;
   y: number;
   imageUrl?: string;
+  /** Canvas background color when no section image (hex). Stored per section. */
+  canvasBackgroundColor?: string;
   isNew?: boolean;
   shape?: PlacementShape; // Optional shape for advanced placement
 }

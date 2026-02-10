@@ -933,6 +933,7 @@ class SectionModel(SQLModel, table=True):
     x_coordinate: Optional[float] = None  # Position on main floor plan (percentage)
     y_coordinate: Optional[float] = None  # Position on main floor plan (percentage)
     file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Section floor plan image
+    canvas_background_color: Optional[str] = Field(default="#e5e7eb")  # Canvas background when no section image (hex)
     shape: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # JSONB storing PlacementShape data as dict
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)

@@ -63,6 +63,7 @@ class SectionResponse(BaseModel):
     y_coordinate: Optional[float] = None
     file_id: Optional[str] = None
     image_url: Optional[str] = None  # URL to the section image file (from file_id)
+    canvas_background_color: Optional[str] = None  # Canvas background when no section image (hex e.g. #e5e7eb)
     shape: Optional[str] = None  # JSON string storing PlacementShape data
     is_active: bool
     seat_count: Optional[int] = None  # Number of seats attached to this section
@@ -78,6 +79,7 @@ class SectionCreateRequest(BaseModel):
     x_coordinate: Optional[float] = Field(None, description="X coordinate on main floor plan")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
+    canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no section image (hex e.g. #e5e7eb)")
     shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
     
     @field_validator('shape', mode='before')
@@ -101,6 +103,7 @@ class SectionUpdateRequest(BaseModel):
     x_coordinate: Optional[float] = Field(None, description="X coordinate on main floor plan")
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
+    canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no section image (hex e.g. #e5e7eb)")
     shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
     
     @field_validator('shape', mode='before')

@@ -23,6 +23,9 @@ import {
   List,
   ArrowLeft,
   ScanSearch,
+  Minimize,
+  Maximize,
+  Palette,
 } from "lucide-react";
 import {
   DatasheetView,
@@ -59,6 +62,8 @@ export interface SectionDetailViewProps {
     sectionId: string,
     e: React.ChangeEvent<HTMLInputElement>
   ) => void;
+  /** Called when user removes the section floor plan image (file_id becomes optional/empty) */
+  onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
@@ -94,6 +99,12 @@ export interface SectionDetailViewProps {
   isDetectingSeats?: boolean;
   /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
   seatEditControls?: React.ReactNode;
+  /** Canvas background color when no section image (image has priority). Section-level or fallback from layout. */
+  canvasBackgroundColor?: string;
+  /** Called when user changes canvas background color. Parent should persist via section update. */
+  onCanvasBackgroundColorChange?: (color: string) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
 }
 
 export function SectionDetailView({
@@ -118,6 +129,7 @@ export function SectionDetailView({
   onSave,
   onClearSectionSeats,
   onSectionImageSelect,
+  onRemoveSectionImage,
   onSeatClick,
   onSeatDragEnd,
   onSeatShapeTransform,
@@ -146,12 +158,20 @@ export function SectionDetailView({
   onDetectSeats,
   isDetectingSeats = false,
   seatEditControls,
+  canvasBackgroundColor = "#e5e7eb",
+  onCanvasBackgroundColorChange,
+  isFullscreen = false,
+  onToggleFullscreen,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
+  const effectiveCanvasColor = viewingSection.canvasBackgroundColor ?? canvasBackgroundColor ?? "#e5e7eb";
+  const innerClassName = isFullscreen
+    ? "flex flex-col flex-1 min-h-0 p-6 space-y-4"
+    : "p-6 space-y-4";
   return (
     <Card className={className}>
-      <div className="p-6 space-y-4">
-        <div className="flex items-center justify-between">
+      <div className={innerClassName}>
+        <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -166,16 +186,19 @@ export function SectionDetailView({
               Section: {viewingSection.name}
             </h3>
           </div>
-          <div className="flex gap-1">
-            <Button
-              onClick={() => setIsDatasheetOpen(true)}
-              variant="outline"
-              size="sm"
-              className="h-7 px-2"
-            >
-              <List className="h-3.5 w-3.5 mr-1" />
-              Seat List ({displayedSeats.length})
-            </Button>
+          {/* Toolbar: same order as DesignerHeader (List | Detect | Save | Fullscreen | color | ⋮) */}
+          <div className="flex items-center gap-1">
+            {!isFullscreen && (
+              <Button
+                onClick={() => setIsDatasheetOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0"
+                title="View seat list"
+              >
+                <List className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {onDetectSeats && viewingSection.imageUrl && !readOnly && (
               <Button
                 variant="outline"
@@ -200,6 +223,21 @@ export function SectionDetailView({
                 Save
               </Button>
             )}
+            {onToggleFullscreen && (
+              <Button
+                variant="outline"
+                onClick={onToggleFullscreen}
+                size="sm"
+                className="h-7 w-7 p-0"
+                title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-3.5 w-3.5" />
+                ) : (
+                  <Maximize className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            )}
             {!readOnly && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -212,9 +250,54 @@ export function SectionDetailView({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Clear All Seats
                   </DropdownMenuItem>
-                  {viewingSection.imageUrl && (
+                  <DropdownMenuSeparator />
+                  {!viewingSection.imageUrl ? (
                     <>
-                      <DropdownMenuSeparator />
+                      <Label
+                        htmlFor={`add-section-image-${viewingSection.id}`}
+                        className="cursor-pointer"
+                      >
+                        <DropdownMenuItem
+                          onSelect={(e) => e.preventDefault()}
+                          asChild
+                        >
+                          <div>
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Add floor plan image
+                            <Input
+                              id={`add-section-image-${viewingSection.id}`}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                onSectionImageSelect(viewingSection.id, e);
+                                e.target.value = "";
+                              }}
+                              className="hidden"
+                            />
+                          </div>
+                        </DropdownMenuItem>
+                      </Label>
+                      {onCanvasBackgroundColorChange && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                            <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+                              <Palette className="h-4 w-4 shrink-0" />
+                              <span className="flex-1">Canvas background color</span>
+                              <input
+                                type="color"
+                                aria-label="Canvas background color"
+                                value={effectiveCanvasColor}
+                                onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+                                className="h-6 w-8 cursor-pointer rounded border border-input"
+                              />
+                            </label>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
                       <Label
                         htmlFor={`change-section-image-${viewingSection.id}`}
                         className="cursor-pointer"
@@ -239,6 +322,18 @@ export function SectionDetailView({
                           </div>
                         </DropdownMenuItem>
                       </Label>
+                      {onRemoveSectionImage && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => onRemoveSectionImage(viewingSection.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove Image
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </>
                   )}
                 </DropdownMenuContent>
@@ -249,6 +344,7 @@ export function SectionDetailView({
 
         {/* Shape Toolbox with compact seat placement controls */}
         {onShapeToolSelect && (
+          <div className="shrink-0">
           <SeatDesignToolbar
             selectedShapeType={selectedShapeTool || null}
             onShapeTypeSelect={onShapeToolSelect}
@@ -273,13 +369,14 @@ export function SectionDetailView({
             seatEditControls={seatEditControls}
             readOnly={readOnly}
           />
+          </div>
         )}
 
-        {/* Section Image Upload + Seat Design Canvas */}
-        <div className="space-y-4">
+        {/* Seat Design Canvas - same as seat-level: always show canvas; no image = canvas background color, image = image (add/change/remove via dropdown) */}
+        <div className={isFullscreen ? "flex-1 min-h-0 flex flex-col" : "space-y-4"}>
           <SeatDesignCanvas
             imageUrl={viewingSection.imageUrl ?? ""}
-            showImageUpload
+            showImageUpload={false}
             imageUploadId={`section-image-${viewingSection.id}`}
             imageUploadLabel={`Upload Floor Plan Image for ${viewingSection.name}`}
             onImageUpload={(e) => onSectionImageSelect(viewingSection.id, e)}
@@ -288,6 +385,7 @@ export function SectionDetailView({
             dimensionsReady={dimensionsReady}
             containerDimensions={containerDimensions}
             containerStyle="flex"
+            canvasBackgroundColor={effectiveCanvasColor}
             seats={displayedSeats}
             selectedSeatId={selectedSeat?.id ?? null}
             isPlacingSeats={isPlacingSeats}

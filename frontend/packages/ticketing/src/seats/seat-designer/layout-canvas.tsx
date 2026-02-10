@@ -4,7 +4,13 @@
  * Provides better performance and smoother interactions compared to DOM-based rendering
  */
 
-import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Stage,
   Layer,
@@ -76,7 +82,7 @@ function ShapeRenderer({
       "Shape:",
       shape,
       "Valid types:",
-      Object.values(PlacementShapeType)
+      Object.values(PlacementShapeType),
     );
     // Fallback to circle if type is invalid
     return <Circle {...baseProps} radius={12} />;
@@ -104,7 +110,7 @@ function ShapeRenderer({
       const maxCornerRadius = Math.min(validWidth, validHeight) / 2;
       const validCornerRadius = Math.max(
         0,
-        Math.min(Math.abs(rawCornerRadius), maxCornerRadius)
+        Math.min(Math.abs(rawCornerRadius), maxCornerRadius),
       );
       return (
         <Rect
@@ -198,7 +204,7 @@ interface LayoutCanvasProps {
   onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSectionClick?: (
     section: SectionMarker,
-    event?: { shiftKey?: boolean }
+    event?: { shiftKey?: boolean },
   ) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
@@ -207,7 +213,7 @@ interface LayoutCanvasProps {
   onSectionShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   onImageClick?: (
     e: Konva.KonvaEventObject<MouseEvent>,
-    percentageCoords?: { x: number; y: number }
+    percentageCoords?: { x: number; y: number },
   ) => void;
   onDeselect?: () => void;
   onShapeDraw?: (
@@ -215,12 +221,12 @@ interface LayoutCanvasProps {
     x: number,
     y: number,
     width?: number,
-    height?: number
+    height?: number,
   ) => void;
   onShapeOverlayClick?: (overlayId: string) => void;
   onWheel?: (
     e: Konva.KonvaEventObject<WheelEvent>,
-    isSpacePressed: boolean
+    isSpacePressed: boolean,
   ) => void;
   onPanStart?: () => void;
   onPan?: (delta: { x: number; y: number }) => void;
@@ -521,12 +527,7 @@ function SeatMarkerComponent({
 
   // Attach transformer when selected and update when shape changes
   useEffect(() => {
-    if (
-      !readOnly &&
-      isSelected &&
-      groupRef.current &&
-      transformerRef.current
-    ) {
+    if (!readOnly && isSelected && groupRef.current && transformerRef.current) {
       transformerRef.current.nodes([groupRef.current]);
       // Force all anchors to be visible
       transformerRef.current.forceUpdate();
@@ -608,7 +609,7 @@ function SeatMarkerComponent({
       const minRadiusPercent = 0.1;
       updatedShape.radius = Math.max(
         minRadiusPercent,
-        (newRadius / Math.min(imageWidth, imageHeight)) * 100
+        (newRadius / Math.min(imageWidth, imageHeight)) * 100,
       );
     } else if (
       shape.type === PlacementShapeType.RECTANGLE ||
@@ -623,11 +624,11 @@ function SeatMarkerComponent({
       const minHeightPercent = 0.1;
       updatedShape.width = Math.max(
         minWidthPercent,
-        (Math.abs(currentWidth * scaleX) / imageWidth) * 100
+        (Math.abs(currentWidth * scaleX) / imageWidth) * 100,
       );
       updatedShape.height = Math.max(
         minHeightPercent,
-        (Math.abs(currentHeight * scaleY) / imageHeight) * 100
+        (Math.abs(currentHeight * scaleY) / imageHeight) * 100,
       );
       // For rectangles, ensure cornerRadius doesn't exceed dimensions
       if (
@@ -637,11 +638,11 @@ function SeatMarkerComponent({
         const maxCornerRadius =
           Math.min(
             (updatedShape.width / 100) * imageWidth,
-            (updatedShape.height / 100) * imageHeight
+            (updatedShape.height / 100) * imageHeight,
           ) / 2;
         updatedShape.cornerRadius = Math.min(
           updatedShape.cornerRadius,
-          (maxCornerRadius / imageWidth) * 100
+          (maxCornerRadius / imageWidth) * 100,
         );
       }
     } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
@@ -675,9 +676,19 @@ function SeatMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && (forceDraggable || (isPlacingSeats && isSelected))}
-        onDragStart={!readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined}
-        onDragMove={!readOnly && onSeatDragMove ? (e) => onSeatDragMove(seat.id, e.target.x(), e.target.y()) : undefined}
+        draggable={
+          !readOnly && (forceDraggable || (isPlacingSeats && isSelected))
+        }
+        onDragStart={
+          !readOnly && onSeatDragStart
+            ? () => onSeatDragStart(seat.id)
+            : undefined
+        }
+        onDragMove={
+          !readOnly && onSeatDragMove
+            ? (e) => onSeatDragMove(seat.id, e.target.x(), e.target.y())
+            : undefined
+        }
         onDragEnd={!readOnly ? (e) => onSeatDragEnd(seat.id, e) : undefined}
         onTransformEnd={!readOnly ? handleTransformEnd : undefined}
         onMouseDown={(e) => {
@@ -879,11 +890,15 @@ interface SectionMarkerComponentProps {
   selectedShapeTool?: PlacementShapeType | null;
   onSectionClick?: (
     section: SectionMarker,
-    event?: { shiftKey?: boolean }
+    event?: { shiftKey?: boolean },
   ) => void;
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
-  onSectionDragMove?: (sectionId: string, stageX: number, stageY: number) => void;
+  onSectionDragMove?: (
+    sectionId: string,
+    stageX: number,
+    stageY: number,
+  ) => void;
   onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
   imageWidth: number;
   readOnly?: boolean;
@@ -1005,7 +1020,7 @@ function SectionMarkerComponent({
       const minRadiusPercent = 0.1;
       updatedShape.radius = Math.max(
         minRadiusPercent,
-        (newRadius / Math.min(imageWidth, imageHeight)) * 100
+        (newRadius / Math.min(imageWidth, imageHeight)) * 100,
       );
     } else if (
       shape.type === PlacementShapeType.RECTANGLE ||
@@ -1020,11 +1035,11 @@ function SectionMarkerComponent({
       const minHeightPercent = 0.1;
       updatedShape.width = Math.max(
         minWidthPercent,
-        (Math.abs(currentWidth * scaleX) / imageWidth) * 100
+        (Math.abs(currentWidth * scaleX) / imageWidth) * 100,
       );
       updatedShape.height = Math.max(
         minHeightPercent,
-        (Math.abs(currentHeight * scaleY) / imageHeight) * 100
+        (Math.abs(currentHeight * scaleY) / imageHeight) * 100,
       );
       // For rectangles, ensure cornerRadius doesn't exceed dimensions
       if (
@@ -1034,11 +1049,11 @@ function SectionMarkerComponent({
         const maxCornerRadius =
           Math.min(
             (updatedShape.width / 100) * imageWidth,
-            (updatedShape.height / 100) * imageHeight
+            (updatedShape.height / 100) * imageHeight,
           ) / 2;
         updatedShape.cornerRadius = Math.min(
           updatedShape.cornerRadius,
-          (maxCornerRadius / imageWidth) * 100
+          (maxCornerRadius / imageWidth) * 100,
         );
       }
     } else if (shape.type === PlacementShapeType.FREEFORM && shape.points) {
@@ -1084,7 +1099,13 @@ function SectionMarkerComponent({
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected, isPlacingSections, disableHoverAnimation, colors.stroke]);
+  }, [
+    isHovered,
+    isSelected,
+    isPlacingSections,
+    disableHoverAnimation,
+    colors.stroke,
+  ]);
 
   return (
     <>
@@ -1093,16 +1114,30 @@ function SectionMarkerComponent({
         x={x}
         y={y}
         rotation={shape.rotation || 0}
-        draggable={!readOnly && (forceDraggable || (isPlacingSections && isSelected))}
-        onDragStart={!readOnly && onSectionDragStart ? () => onSectionDragStart(section.id) : undefined}
-        onDragMove={!readOnly && onSectionDragMove ? (e) => onSectionDragMove(section.id, e.target.x(), e.target.y()) : undefined}
-        onDragEnd={!readOnly ? (e) => {
-          if (!onSectionDragEnd) return;
-          const node = e.target;
-          // node.x() and node.y() are already in stage coordinates
-          onSectionDragEnd(section.id, node.x(), node.y());
-        } : undefined}
-        onTransformEnd={!readOnly && section.shape ? handleTransformEnd : undefined}
+        draggable={!readOnly && isPlacingSections && isSelected}
+        onDragStart={
+          !readOnly && onSectionDragStart
+            ? () => onSectionDragStart(section.id)
+            : undefined
+        }
+        onDragMove={
+          !readOnly && onSectionDragMove
+            ? (e) => onSectionDragMove(section.id, e.target.x(), e.target.y())
+            : undefined
+        }
+        onDragEnd={
+          !readOnly
+            ? (e) => {
+                if (!onSectionDragEnd) return;
+                const node = e.target;
+                // node.x() and node.y() are already in stage coordinates
+                onSectionDragEnd(section.id, node.x(), node.y());
+              }
+            : undefined
+        }
+        onTransformEnd={
+          !readOnly && section.shape ? handleTransformEnd : undefined
+        }
         onMouseDown={(e) => {
           // Allow clicks to pass through to Layer when polygon tool is selected
           if (selectedShapeTool === PlacementShapeType.FREEFORM) {
@@ -1417,7 +1452,10 @@ export function LayoutCanvas({
   const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   // Live position during drag so the marker follows the cursor (percentage coords)
-  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [dragPosition, setDragPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Drag-to-select marquee (stage coordinates)
   const [selectionStart, setSelectionStart] = useState<{
@@ -1611,18 +1649,11 @@ export function LayoutCanvas({
   // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
-      const x =
-        coordImageX + (xPercent / 100) * coordDisplayedWidth;
-      const y =
-        coordImageY + (yPercent / 100) * coordDisplayedHeight;
+      const x = coordImageX + (xPercent / 100) * coordDisplayedWidth;
+      const y = coordImageY + (yPercent / 100) * coordDisplayedHeight;
       return { x, y };
     },
-    [
-      coordImageX,
-      coordImageY,
-      coordDisplayedWidth,
-      coordDisplayedHeight,
-    ]
+    [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
   );
 
   // Convert Konva stage coordinates to percentage
@@ -1632,12 +1663,7 @@ export function LayoutCanvas({
       const y = ((stageY - coordImageY) / coordDisplayedHeight) * 100;
       return { x, y };
     },
-    [
-      coordImageX,
-      coordImageY,
-      coordDisplayedWidth,
-      coordDisplayedHeight,
-    ]
+    [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
   );
 
   // Convert stage pointer position to percentage, accounting for Layer transforms
@@ -1666,7 +1692,7 @@ export function LayoutCanvas({
       coordDisplayedHeight,
       panOffset,
       zoomLevel,
-    ]
+    ],
   );
 
   // Handle seat drag end
@@ -1678,21 +1704,24 @@ export function LayoutCanvas({
       setDragPosition(null);
       onSeatDragEnd(seatId, x, y);
     },
-    [onSeatDragEnd, stageToPercentage]
+    [onSeatDragEnd, stageToPercentage],
   );
 
-  const handleSeatDragStart = useCallback((seatId: string) => {
-    setDraggedSeatId(seatId);
-    const seat = seats.find((s) => s.id === seatId);
-    if (seat) setDragPosition({ x: seat.x, y: seat.y });
-  }, [seats]);
+  const handleSeatDragStart = useCallback(
+    (seatId: string) => {
+      setDraggedSeatId(seatId);
+      const seat = seats.find((s) => s.id === seatId);
+      if (seat) setDragPosition({ x: seat.x, y: seat.y });
+    },
+    [seats],
+  );
 
   const handleSeatDragMove = useCallback(
     (seatId: string, stageX: number, stageY: number) => {
       const { x, y } = stageToPercentage(stageX, stageY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage]
+    [stageToPercentage],
   );
 
   const handleSectionDragEnd = useCallback(
@@ -1702,21 +1731,24 @@ export function LayoutCanvas({
       const { x, y } = stageToPercentage(stageX, stageY);
       onSectionDragEnd?.(sectionId, x, y);
     },
-    [onSectionDragEnd, stageToPercentage]
+    [onSectionDragEnd, stageToPercentage],
   );
 
-  const handleSectionDragStart = useCallback((sectionId: string) => {
-    setDraggedSectionId(sectionId);
-    const section = sections.find((s) => s.id === sectionId);
-    if (section) setDragPosition({ x: section.x, y: section.y });
-  }, [sections]);
+  const handleSectionDragStart = useCallback(
+    (sectionId: string) => {
+      setDraggedSectionId(sectionId);
+      const section = sections.find((s) => s.id === sectionId);
+      if (section) setDragPosition({ x: section.x, y: section.y });
+    },
+    [sections],
+  );
 
   const handleSectionDragMove = useCallback(
     (sectionId: string, stageX: number, stageY: number) => {
       const { x, y } = stageToPercentage(stageX, stageY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage]
+    [stageToPercentage],
   );
 
   // Ensure container dimensions are valid
@@ -1732,81 +1764,82 @@ export function LayoutCanvas({
   const imageY = coordImageY;
 
   // Viewport virtualization - MUST be before any early return to keep hook order consistent
-  const { visibleSeats, visibleSections, visibleShapeOverlays } = useMemo(() => {
-    const totalCount = seats.length + sections.length + shapeOverlays.length;
-    if (totalCount < VIRTUALIZATION_THRESHOLD) {
-      return {
-        visibleSeats: seats,
-        visibleSections: sections,
-        visibleShapeOverlays: shapeOverlays,
+  const { visibleSeats, visibleSections, visibleShapeOverlays } =
+    useMemo(() => {
+      const totalCount = seats.length + sections.length + shapeOverlays.length;
+      if (totalCount < VIRTUALIZATION_THRESHOLD) {
+        return {
+          visibleSeats: seats,
+          visibleSections: sections,
+          visibleShapeOverlays: shapeOverlays,
+        };
+      }
+
+      const padding = 0.2;
+      const minLayerX =
+        centerX -
+        (centerX + panOffset.x) / zoomLevel -
+        (validWidth * padding) / zoomLevel;
+      const maxLayerX =
+        centerX +
+        (validWidth - centerX - panOffset.x) / zoomLevel +
+        (validWidth * padding) / zoomLevel;
+      const minLayerY =
+        centerY -
+        (centerY + panOffset.y) / zoomLevel -
+        (validHeight * padding) / zoomLevel;
+      const maxLayerY =
+        centerY +
+        (validHeight - centerY - panOffset.y) / zoomLevel +
+        (validHeight * padding) / zoomLevel;
+
+      const isInView = (px: number, py: number) => {
+        const layerX = imageX + (px / 100) * displayedWidth;
+        const layerY = imageY + (py / 100) * displayedHeight;
+        return (
+          layerX >= minLayerX &&
+          layerX <= maxLayerX &&
+          layerY >= minLayerY &&
+          layerY <= maxLayerY
+        );
       };
-    }
 
-    const padding = 0.2;
-    const minLayerX =
-      centerX -
-      (centerX + panOffset.x) / zoomLevel -
-      (validWidth * padding) / zoomLevel;
-    const maxLayerX =
-      centerX +
-      (validWidth - centerX - panOffset.x) / zoomLevel +
-      (validWidth * padding) / zoomLevel;
-    const minLayerY =
-      centerY -
-      (centerY + panOffset.y) / zoomLevel -
-      (validHeight * padding) / zoomLevel;
-    const maxLayerY =
-      centerY +
-      (validHeight - centerY - panOffset.y) / zoomLevel +
-      (validHeight * padding) / zoomLevel;
+      const visibleSeats = seats.filter((s) => {
+        if (selectedSeatIdSet.has(s.id)) return true;
+        return isInView(s.x, s.y);
+      });
+      const visibleSections = sections.filter((s) => {
+        if (selectedSectionIdSet.has(s.id)) return true;
+        return isInView(s.x, s.y);
+      });
+      const visibleShapeOverlays = shapeOverlays.filter((o) => {
+        if (selectedOverlayId === o.id) return true;
+        return isInView(o.x, o.y);
+      });
 
-    const isInView = (px: number, py: number) => {
-      const layerX = imageX + (px / 100) * displayedWidth;
-      const layerY = imageY + (py / 100) * displayedHeight;
-      return (
-        layerX >= minLayerX &&
-        layerX <= maxLayerX &&
-        layerY >= minLayerY &&
-        layerY <= maxLayerY
-      );
-    };
-
-    const visibleSeats = seats.filter((s) => {
-      if (selectedSeatIdSet.has(s.id)) return true;
-      return isInView(s.x, s.y);
-    });
-    const visibleSections = sections.filter((s) => {
-      if (selectedSectionIdSet.has(s.id)) return true;
-      return isInView(s.x, s.y);
-    });
-    const visibleShapeOverlays = shapeOverlays.filter((o) => {
-      if (selectedOverlayId === o.id) return true;
-      return isInView(o.x, o.y);
-    });
-
-    return {
-      visibleSeats,
-      visibleSections,
-      visibleShapeOverlays,
-    };
-  }, [
-    seats,
-    sections,
-    shapeOverlays,
-    panOffset,
-    zoomLevel,
-    validWidth,
-    validHeight,
-    centerX,
-    centerY,
-    imageX,
-    imageY,
-    displayedWidth,
-    displayedHeight,
-    selectedSeatIdSet,
-    selectedSectionIdSet,
-    selectedOverlayId,
-  ]);
+      return {
+        visibleSeats,
+        visibleSections,
+        visibleShapeOverlays,
+      };
+    }, [
+      seats,
+      sections,
+      shapeOverlays,
+      panOffset,
+      zoomLevel,
+      validWidth,
+      validHeight,
+      centerX,
+      centerY,
+      imageX,
+      imageY,
+      displayedWidth,
+      displayedHeight,
+      selectedSeatIdSet,
+      selectedSectionIdSet,
+      selectedOverlayId,
+    ]);
 
   const totalVisibleCount =
     visibleSeats.length + visibleSections.length + visibleShapeOverlays.length;
@@ -1823,19 +1856,21 @@ export function LayoutCanvas({
   };
 
   const staticSeats = visibleSeats.filter(
-    (s) => s.id !== selectedSeatId && s.id !== draggedSeatId
+    (s) => s.id !== selectedSeatId && s.id !== draggedSeatId,
   );
   const selectedSeat = visibleSeats.find((s) => s.id === selectedSeatId);
   const draggedSeat = visibleSeats.find((s) => s.id === draggedSeatId);
 
   const staticSections = visibleSections.filter(
-    (s) => s.id !== selectedSectionId && s.id !== draggedSectionId
+    (s) => s.id !== selectedSectionId && s.id !== draggedSectionId,
   );
-  const selectedSection = visibleSections.find((s) => s.id === selectedSectionId);
+  const selectedSection = visibleSections.find(
+    (s) => s.id === selectedSectionId,
+  );
   const draggedSection = visibleSections.find((s) => s.id === draggedSectionId);
 
-  // Show loading indicator only when imageUrl is provided but image not yet loaded
-  // When !imageUrl (simple floor mode), render canvas immediately with blank background
+  // Image has priority over canvas background color: only use canvas background when there is no image.
+  // Show loading indicator when imageUrl is set but image not yet loaded (use neutral bg, not canvas color).
   if (imageUrl && (imageLoading || !image || !image.width || !image.height)) {
     return (
       <div
@@ -1845,7 +1880,7 @@ export function LayoutCanvas({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: canvasBackgroundColor,
+          backgroundColor: "#f3f4f6",
           borderRadius: "0.5rem",
         }}
       >
@@ -1892,12 +1927,12 @@ export function LayoutCanvas({
       onMouseDown={(e) => {
         // Reset ignore click ref on new interaction
         ignoreClickRef.current = false;
-        
+
         // Prevent default browser behavior (scrolling, text selection)
-        if(e.evt) {
+        if (e.evt) {
           e.evt.preventDefault();
         }
-        
+
         const stage = e.target.getStage();
         if (!stage) return;
 
@@ -1968,10 +2003,7 @@ export function LayoutCanvas({
         const hasSelectedMarker =
           selectedSeatIdSet.size > 0 || selectedSectionIdSet.size > 0;
 
-        if (
-          hasSelectedMarker &&
-          isClickOnMarkerOrTransformer
-        ) {
+        if (hasSelectedMarker && isClickOnMarkerOrTransformer) {
           setIsDrawingShape(false);
           setDrawStartPos(null);
           setDrawCurrentPos(null);
@@ -1985,7 +2017,7 @@ export function LayoutCanvas({
         ) {
           const percentageCoords = pointerToPercentage(
             pointerPos.x,
-            pointerPos.y
+            pointerPos.y,
           );
           setIsDrawingShape(true);
           setDrawStartPos(percentageCoords);
@@ -2063,7 +2095,7 @@ export function LayoutCanvas({
         ) {
           const percentageCoords = pointerToPercentage(
             pointerPos.x,
-            pointerPos.y
+            pointerPos.y,
           );
           setDrawCurrentPos(percentageCoords);
         } else if (
@@ -2073,7 +2105,7 @@ export function LayoutCanvas({
         ) {
           const percentageCoords = pointerToPercentage(
             pointerPos.x,
-            pointerPos.y
+            pointerPos.y,
           );
           setFreeformHoverPos(percentageCoords);
         }
@@ -2097,20 +2129,18 @@ export function LayoutCanvas({
           const maxPx = Math.max(p1.x, p2.x);
           const minPy = Math.min(p1.y, p2.y);
           const maxPy = Math.max(p1.y, p2.y);
-          const seatIds = seats.filter(
-            (s) =>
-              s.x >= minPx &&
-              s.x <= maxPx &&
-              s.y >= minPy &&
-              s.y <= maxPy
-          ).map((s) => s.id);
-          const sectionIds = sections.filter(
-            (s) =>
-              s.x >= minPx &&
-              s.x <= maxPx &&
-              s.y >= minPy &&
-              s.y <= maxPy
-          ).map((s) => s.id);
+          const seatIds = seats
+            .filter(
+              (s) =>
+                s.x >= minPx && s.x <= maxPx && s.y >= minPy && s.y <= maxPy,
+            )
+            .map((s) => s.id);
+          const sectionIds = sections
+            .filter(
+              (s) =>
+                s.x >= minPx && s.x <= maxPx && s.y >= minPy && s.y <= maxPy,
+            )
+            .map((s) => s.id);
           onMarkersInRect(seatIds, sectionIds);
           setSelectionStart(null);
           setSelectionCurrent(null);
@@ -2184,7 +2214,7 @@ export function LayoutCanvas({
 
             // Calculate distance moved - require minimum drag distance
             const distance = Math.sqrt(
-              Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2)
+              Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2),
             );
             const minDragDistance = 0.3; // 0.3% of image - minimum drag distance to create shape
 
@@ -2192,7 +2222,7 @@ export function LayoutCanvas({
               // Prevent click event from propagating to Image onClick handler
               // This prevents duplicate creation (one from drag, one from click)
               e.cancelBubble = true;
-              
+
               // Set ref to ignore subsequent click event
               ignoreClickRef.current = true;
 
@@ -2282,7 +2312,7 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
-      {/* Background Layer: Image or blank rect (simple floor) */}
+      {/* Background Layer: Image takes priority; canvas background color only when no image (simple floor) */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
         {image ? (
           <Image
@@ -2293,144 +2323,6 @@ export function LayoutCanvas({
             width={displayedWidth}
             height={displayedHeight}
             listening={true}
-          onMouseMove={(e) => {
-            if (
-              selectedShapeTool === PlacementShapeType.FREEFORM &&
-              freeformPath.length > 0
-            ) {
-              const pointerPos = e.target.getStage()?.getPointerPosition();
-              if (pointerPos) {
-                const percentageCoords = pointerToPercentage(
-                  pointerPos.x,
-                  pointerPos.y
-                );
-                setFreeformHoverPos(percentageCoords);
-              }
-            }
-          }}
-          onClick={(e) => {
-            if (ignoreClickRef.current) {
-              ignoreClickRef.current = false;
-              return;
-            }
-            if (
-              selectedShapeTool === PlacementShapeType.FREEFORM &&
-              onShapeDraw
-            ) {
-              e.cancelBubble = true;
-              const pointerPos = e.target.getStage()?.getPointerPosition();
-              if (pointerPos) {
-                const percentageCoords = pointerToPercentage(
-                  pointerPos.x,
-                  pointerPos.y
-                );
-                if (freeformPath.length >= 2) {
-                  const firstPoint = freeformPath[0];
-                  const distanceToStart = Math.sqrt(
-                    Math.pow(percentageCoords.x - firstPoint.x, 2) +
-                      Math.pow(percentageCoords.y - firstPoint.y, 2)
-                  );
-                  if (distanceToStart < 1.5) {
-                    const finalPath = [...freeformPath, firstPoint];
-                    const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
-                    const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
-                    const cx = sumX / finalPath.length;
-                    const cy = sumY / finalPath.length;
-                    const points: number[] = [];
-                    finalPath.forEach((point) => {
-                      points.push(point.x - cx, point.y - cy);
-                    });
-                    const shape: PlacementShape = {
-                      type: PlacementShapeType.FREEFORM,
-                      points,
-                    };
-                    onShapeDraw(shape, cx, cy);
-                    setFreeformPath([]);
-                    setFreeformHoverPos(null);
-                    return;
-                  }
-                }
-                setFreeformPath((prev) => {
-                  if (prev.length === 0) return [percentageCoords];
-                  const lastPoint = prev[prev.length - 1];
-                  const distanceInPercent = Math.sqrt(
-                    Math.pow(percentageCoords.x - lastPoint.x, 2) +
-                      Math.pow(percentageCoords.y - lastPoint.y, 2)
-                  );
-                  if (distanceInPercent >= 0.1) return [...prev, percentageCoords];
-                  return prev;
-                });
-              }
-              return;
-            }
-            const target = e.target;
-            if (
-              target &&
-              target.name() === "background-image" &&
-              !selectedShapeTool &&
-              !isDrawingShape
-            ) {
-              onDeselect?.();
-            }
-            if (onImageClick) {
-              const pointerPos = e.target.getStage()?.getPointerPosition();
-              if (pointerPos) {
-                const percentageCoords = pointerToPercentage(
-                  pointerPos.x,
-                  pointerPos.y
-                );
-                onImageClick(e, percentageCoords);
-              } else {
-                onImageClick(e);
-              }
-            }
-          }}
-          onDblClick={(e) => {
-            if (
-              selectedShapeTool === PlacementShapeType.FREEFORM &&
-              freeformPath.length >= 2 &&
-              onShapeDraw
-            ) {
-              e.cancelBubble = true;
-              const finalPath = [...freeformPath, freeformPath[0]];
-              const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
-              const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
-              const cx = sumX / finalPath.length;
-              const cy = sumY / finalPath.length;
-              const points: number[] = [];
-              finalPath.forEach((point) => {
-                points.push(point.x - cx, point.y - cy);
-              });
-              const shape: PlacementShape = {
-                type: PlacementShapeType.FREEFORM,
-                points,
-              };
-              onShapeDraw(shape, cx, cy);
-              setFreeformPath([]);
-              setFreeformHoverPos(null);
-            }
-          }}
-          onTap={(e) => {
-            const target = e.target;
-            if (
-              target &&
-              target.name() === "background-image" &&
-              !selectedShapeTool &&
-              !isDrawingShape
-            ) {
-              onDeselect?.();
-            }
-          }}
-        />
-        ) : (
-          <Rect
-            name="background-image"
-            x={imageX}
-            y={imageY}
-            width={displayedWidth}
-            height={displayedHeight}
-            fill={canvasBackgroundColor}
-            listening={true}
             onMouseMove={(e) => {
               if (
                 selectedShapeTool === PlacementShapeType.FREEFORM &&
@@ -2440,7 +2332,7 @@ export function LayoutCanvas({
                 if (pointerPos) {
                   const percentageCoords = pointerToPercentage(
                     pointerPos.x,
-                    pointerPos.y
+                    pointerPos.y,
                   );
                   setFreeformHoverPos(percentageCoords);
                 }
@@ -2460,13 +2352,13 @@ export function LayoutCanvas({
                 if (pointerPos) {
                   const percentageCoords = pointerToPercentage(
                     pointerPos.x,
-                    pointerPos.y
+                    pointerPos.y,
                   );
                   if (freeformPath.length >= 2) {
                     const firstPoint = freeformPath[0];
                     const distanceToStart = Math.sqrt(
                       Math.pow(percentageCoords.x - firstPoint.x, 2) +
-                        Math.pow(percentageCoords.y - firstPoint.y, 2)
+                        Math.pow(percentageCoords.y - firstPoint.y, 2),
                     );
                     if (distanceToStart < 1.5) {
                       const finalPath = [...freeformPath, firstPoint];
@@ -2493,9 +2385,10 @@ export function LayoutCanvas({
                     const lastPoint = prev[prev.length - 1];
                     const distanceInPercent = Math.sqrt(
                       Math.pow(percentageCoords.x - lastPoint.x, 2) +
-                        Math.pow(percentageCoords.y - lastPoint.y, 2)
+                        Math.pow(percentageCoords.y - lastPoint.y, 2),
                     );
-                    if (distanceInPercent >= 0.1) return [...prev, percentageCoords];
+                    if (distanceInPercent >= 0.1)
+                      return [...prev, percentageCoords];
                     return prev;
                   });
                 }
@@ -2515,7 +2408,7 @@ export function LayoutCanvas({
                 if (pointerPos) {
                   const percentageCoords = pointerToPercentage(
                     pointerPos.x,
-                    pointerPos.y
+                    pointerPos.y,
                   );
                   onImageClick(e, percentageCoords);
                 } else {
@@ -2523,43 +2416,182 @@ export function LayoutCanvas({
                 }
               }
             }}
-          onDblClick={(e) => {
-            if (
-              selectedShapeTool === PlacementShapeType.FREEFORM &&
-              freeformPath.length >= 2 &&
-              onShapeDraw
-            ) {
-              e.cancelBubble = true;
-              const finalPath = [...freeformPath, freeformPath[0]];
-              const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
-              const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
-              const cx = sumX / finalPath.length;
-              const cy = sumY / finalPath.length;
-              const points: number[] = [];
-              finalPath.forEach((point) => {
-                points.push(point.x - cx, point.y - cy);
-              });
-              const shape: PlacementShape = {
-                type: PlacementShapeType.FREEFORM,
-                points,
-              };
-              onShapeDraw(shape, cx, cy);
-              setFreeformPath([]);
-              setFreeformHoverPos(null);
-            }
-          }}
-          onTap={(e) => {
-            const target = e.target;
-            if (
-              target &&
-              target.name() === "background-image" &&
-              !selectedShapeTool &&
-              !isDrawingShape
-            ) {
-              onDeselect?.();
-            }
-          }}
-        />
+            onDblClick={(e) => {
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                freeformPath.length >= 2 &&
+                onShapeDraw
+              ) {
+                e.cancelBubble = true;
+                const finalPath = [...freeformPath, freeformPath[0]];
+                const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                const cx = sumX / finalPath.length;
+                const cy = sumY / finalPath.length;
+                const points: number[] = [];
+                finalPath.forEach((point) => {
+                  points.push(point.x - cx, point.y - cy);
+                });
+                const shape: PlacementShape = {
+                  type: PlacementShapeType.FREEFORM,
+                  points,
+                };
+                onShapeDraw(shape, cx, cy);
+                setFreeformPath([]);
+                setFreeformHoverPos(null);
+              }
+            }}
+            onTap={(e) => {
+              const target = e.target;
+              if (
+                target &&
+                target.name() === "background-image" &&
+                !selectedShapeTool &&
+                !isDrawingShape
+              ) {
+                onDeselect?.();
+              }
+            }}
+          />
+        ) : (
+          <Rect
+            name="background-image"
+            x={imageX}
+            y={imageY}
+            width={displayedWidth}
+            height={displayedHeight}
+            fill={canvasBackgroundColor}
+            listening={true}
+            onMouseMove={(e) => {
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                freeformPath.length > 0
+              ) {
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y,
+                  );
+                  setFreeformHoverPos(percentageCoords);
+                }
+              }
+            }}
+            onClick={(e) => {
+              if (ignoreClickRef.current) {
+                ignoreClickRef.current = false;
+                return;
+              }
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                onShapeDraw
+              ) {
+                e.cancelBubble = true;
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y,
+                  );
+                  if (freeformPath.length >= 2) {
+                    const firstPoint = freeformPath[0];
+                    const distanceToStart = Math.sqrt(
+                      Math.pow(percentageCoords.x - firstPoint.x, 2) +
+                        Math.pow(percentageCoords.y - firstPoint.y, 2),
+                    );
+                    if (distanceToStart < 1.5) {
+                      const finalPath = [...freeformPath, firstPoint];
+                      const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                      const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                      const cx = sumX / finalPath.length;
+                      const cy = sumY / finalPath.length;
+                      const points: number[] = [];
+                      finalPath.forEach((point) => {
+                        points.push(point.x - cx, point.y - cy);
+                      });
+                      const shape: PlacementShape = {
+                        type: PlacementShapeType.FREEFORM,
+                        points,
+                      };
+                      onShapeDraw(shape, cx, cy);
+                      setFreeformPath([]);
+                      setFreeformHoverPos(null);
+                      return;
+                    }
+                  }
+                  setFreeformPath((prev) => {
+                    if (prev.length === 0) return [percentageCoords];
+                    const lastPoint = prev[prev.length - 1];
+                    const distanceInPercent = Math.sqrt(
+                      Math.pow(percentageCoords.x - lastPoint.x, 2) +
+                        Math.pow(percentageCoords.y - lastPoint.y, 2),
+                    );
+                    if (distanceInPercent >= 0.1)
+                      return [...prev, percentageCoords];
+                    return prev;
+                  });
+                }
+                return;
+              }
+              const target = e.target;
+              if (
+                target &&
+                target.name() === "background-image" &&
+                !selectedShapeTool &&
+                !isDrawingShape
+              ) {
+                onDeselect?.();
+              }
+              if (onImageClick) {
+                const pointerPos = e.target.getStage()?.getPointerPosition();
+                if (pointerPos) {
+                  const percentageCoords = pointerToPercentage(
+                    pointerPos.x,
+                    pointerPos.y,
+                  );
+                  onImageClick(e, percentageCoords);
+                } else {
+                  onImageClick(e);
+                }
+              }
+            }}
+            onDblClick={(e) => {
+              if (
+                selectedShapeTool === PlacementShapeType.FREEFORM &&
+                freeformPath.length >= 2 &&
+                onShapeDraw
+              ) {
+                e.cancelBubble = true;
+                const finalPath = [...freeformPath, freeformPath[0]];
+                const sumX = finalPath.reduce((sum, p) => sum + p.x, 0);
+                const sumY = finalPath.reduce((sum, p) => sum + p.y, 0);
+                const cx = sumX / finalPath.length;
+                const cy = sumY / finalPath.length;
+                const points: number[] = [];
+                finalPath.forEach((point) => {
+                  points.push(point.x - cx, point.y - cy);
+                });
+                const shape: PlacementShape = {
+                  type: PlacementShapeType.FREEFORM,
+                  points,
+                };
+                onShapeDraw(shape, cx, cy);
+                setFreeformPath([]);
+                setFreeformHoverPos(null);
+              }
+            }}
+            onTap={(e) => {
+              const target = e.target;
+              if (
+                target &&
+                target.name() === "background-image" &&
+                !selectedShapeTool &&
+                !isDrawingShape
+              ) {
+                onDeselect?.();
+              }
+            }}
+          />
         )}
       </Layer>
 
@@ -2684,46 +2716,46 @@ export function LayoutCanvas({
           </>
         )}
         {venueType === "large" &&
-          selectedSection && (
-            (() => {
-              const pos =
-                draggedSectionId === selectedSection.id && dragPosition
-                  ? dragPosition
-                  : { x: selectedSection.x, y: selectedSection.y };
-              const { x, y } = percentageToStage(pos.x, pos.y);
-              return (
-                <MemoizedSectionMarkerComponent
-                  key={selectedSection.id}
-                  section={selectedSection}
-                  x={x}
-                  y={y}
-                  isSelected={true}
-                  isPlacingSections={isPlacingSections}
-                  isPanning={isPanning}
-                  isSpacePressed={isSpacePressed}
-                  isPlacingSeats={isPlacingSeats}
-                  onSectionClick={onSectionClick}
-                  onSectionDoubleClick={onSectionDoubleClick}
-                  onSectionDragEnd={handleSectionDragEnd}
-                  onSectionDragMove={handleSectionDragMove}
-                  onSectionDragStart={handleSectionDragStart}
-                  selectedShapeTool={selectedShapeTool}
-                  onShapeTransform={onSectionShapeTransform}
-                  colors={getSectionMarkerColors(selectedSection)}
-                  imageWidth={displayedWidth}
-                  imageHeight={displayedHeight}
-                  readOnly={readOnly}
-                  disableHoverAnimation={disableHoverAnimation}
-                  useLowDetail={false}
-                />
-              );
-            })()
-          )}
+          selectedSection &&
+          (() => {
+            const pos =
+              draggedSectionId === selectedSection.id && dragPosition
+                ? dragPosition
+                : { x: selectedSection.x, y: selectedSection.y };
+            const { x, y } = percentageToStage(pos.x, pos.y);
+            return (
+              <MemoizedSectionMarkerComponent
+                key={selectedSection.id}
+                section={selectedSection}
+                x={x}
+                y={y}
+                isSelected={true}
+                isPlacingSections={isPlacingSections}
+                isPanning={isPanning}
+                isSpacePressed={isSpacePressed}
+                isPlacingSeats={isPlacingSeats}
+                onSectionClick={onSectionClick}
+                onSectionDoubleClick={onSectionDoubleClick}
+                onSectionDragEnd={handleSectionDragEnd}
+                onSectionDragMove={handleSectionDragMove}
+                onSectionDragStart={handleSectionDragStart}
+                selectedShapeTool={selectedShapeTool}
+                onShapeTransform={onSectionShapeTransform}
+                colors={getSectionMarkerColors(selectedSection)}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                readOnly={readOnly}
+                disableHoverAnimation={disableHoverAnimation}
+                useLowDetail={false}
+              />
+            );
+          })()}
       </Layer>
 
       {/* Drag Layer: Dragged shape when different from selected (selected one moves in Interactive Layer via dragPosition) */}
       <Layer {...layerTransform} listening={true}>
-        {draggedSeat && (!selectedSeat || selectedSeat.id !== draggedSeatId) && (
+        {draggedSeat &&
+          (!selectedSeat || selectedSeat.id !== draggedSeatId) &&
           (() => {
             const pos = dragPosition ?? { x: draggedSeat.x, y: draggedSeat.y };
             const { x, y } = percentageToStage(pos.x, pos.y);
@@ -2754,43 +2786,44 @@ export function LayoutCanvas({
                 forceDraggable={true}
               />
             );
-          })()
-        )}
+          })()}
         {venueType === "large" &&
           draggedSection &&
-          (!selectedSection || selectedSection.id !== draggedSectionId) && (
-            (() => {
-              const pos = dragPosition ?? { x: draggedSection.x, y: draggedSection.y };
-              const { x, y } = percentageToStage(pos.x, pos.y);
-              return (
-                <MemoizedSectionMarkerComponent
-                  key={draggedSection.id}
-                  section={draggedSection}
-                  x={x}
-                  y={y}
-                  isSelected={false}
-                  isPlacingSections={isPlacingSections}
-                  isPanning={isPanning}
-                  isSpacePressed={isSpacePressed}
-                  isPlacingSeats={isPlacingSeats}
-                  onSectionClick={onSectionClick}
-                  onSectionDoubleClick={onSectionDoubleClick}
-                  onSectionDragEnd={handleSectionDragEnd}
-                  onSectionDragMove={handleSectionDragMove}
-                  onSectionDragStart={handleSectionDragStart}
-                  selectedShapeTool={selectedShapeTool}
-                  onShapeTransform={onSectionShapeTransform}
-                  colors={getSectionMarkerColors(draggedSection)}
-                  imageWidth={displayedWidth}
-                  imageHeight={displayedHeight}
-                  readOnly={readOnly}
-                  disableHoverAnimation={disableHoverAnimation}
-                  useLowDetail={false}
-                  forceDraggable={true}
-                />
-              );
-            })()
-          )}
+          (!selectedSection || selectedSection.id !== draggedSectionId) &&
+          (() => {
+            const pos = dragPosition ?? {
+              x: draggedSection.x,
+              y: draggedSection.y,
+            };
+            const { x, y } = percentageToStage(pos.x, pos.y);
+            return (
+              <MemoizedSectionMarkerComponent
+                key={draggedSection.id}
+                section={draggedSection}
+                x={x}
+                y={y}
+                isSelected={false}
+                isPlacingSections={isPlacingSections}
+                isPanning={isPanning}
+                isSpacePressed={isSpacePressed}
+                isPlacingSeats={isPlacingSeats}
+                onSectionClick={onSectionClick}
+                onSectionDoubleClick={onSectionDoubleClick}
+                onSectionDragEnd={handleSectionDragEnd}
+                onSectionDragMove={handleSectionDragMove}
+                onSectionDragStart={handleSectionDragStart}
+                selectedShapeTool={selectedShapeTool}
+                onShapeTransform={onSectionShapeTransform}
+                colors={getSectionMarkerColors(draggedSection)}
+                imageWidth={displayedWidth}
+                imageHeight={displayedHeight}
+                readOnly={readOnly}
+                disableHoverAnimation={disableHoverAnimation}
+                useLowDetail={false}
+                forceDraggable={true}
+              />
+            );
+          })()}
       </Layer>
 
       {/* Overlay Layer: Preview shapes, freeform lines, etc. */}
@@ -2820,7 +2853,7 @@ export function LayoutCanvas({
             if (pointerPos) {
               const percentageCoords = pointerToPercentage(
                 pointerPos.x,
-                pointerPos.y
+                pointerPos.y,
               );
 
               // Check if clicking near the first point to close the shape (need at least 2 points)
@@ -2828,7 +2861,7 @@ export function LayoutCanvas({
                 const firstPoint = freeformPath[0];
                 const distanceToStart = Math.sqrt(
                   Math.pow(percentageCoords.x - firstPoint.x, 2) +
-                    Math.pow(percentageCoords.y - firstPoint.y, 2)
+                    Math.pow(percentageCoords.y - firstPoint.y, 2),
                 );
 
                 // If clicking within 1.5% of the start point, close the shape
@@ -2869,7 +2902,7 @@ export function LayoutCanvas({
                 // This works consistently regardless of zoom level or image size
                 const distanceInPercent = Math.sqrt(
                   Math.pow(percentageCoords.x - lastPoint.x, 2) +
-                    Math.pow(percentageCoords.y - lastPoint.y, 2)
+                    Math.pow(percentageCoords.y - lastPoint.y, 2),
                 );
 
                 // Use a percentage-based threshold (0.1%) to prevent exact duplicate clicks
@@ -2902,7 +2935,7 @@ export function LayoutCanvas({
               if (pointerPos) {
                 const percentageCoords = pointerToPercentage(
                   pointerPos.x,
-                  pointerPos.y
+                  pointerPos.y,
                 );
                 setFreeformHoverPos(percentageCoords);
               }
@@ -2911,8 +2944,8 @@ export function LayoutCanvas({
           onClick={(e) => {
             // Check if we should ignore this click (e.g. after drag-to-draw)
             if (ignoreClickRef.current) {
-                ignoreClickRef.current = false;
-                return;
+              ignoreClickRef.current = false;
+              return;
             }
 
             // Handle freeform click-to-add-points
@@ -2925,7 +2958,7 @@ export function LayoutCanvas({
               if (pointerPos) {
                 const percentageCoords = pointerToPercentage(
                   pointerPos.x,
-                  pointerPos.y
+                  pointerPos.y,
                 );
 
                 // Check if clicking near the first point to close the shape (need at least 2 points)
@@ -2933,7 +2966,7 @@ export function LayoutCanvas({
                   const firstPoint = freeformPath[0];
                   const distanceToStart = Math.sqrt(
                     Math.pow(percentageCoords.x - firstPoint.x, 2) +
-                      Math.pow(percentageCoords.y - firstPoint.y, 2)
+                      Math.pow(percentageCoords.y - firstPoint.y, 2),
                   );
 
                   // If clicking within 1.5% of the start point, close the shape
@@ -2974,7 +3007,7 @@ export function LayoutCanvas({
                   // This works consistently regardless of zoom level or image size
                   const distanceInPercent = Math.sqrt(
                     Math.pow(percentageCoords.x - lastPoint.x, 2) +
-                      Math.pow(percentageCoords.y - lastPoint.y, 2)
+                      Math.pow(percentageCoords.y - lastPoint.y, 2),
                   );
 
                   // Use a percentage-based threshold (0.1%) to prevent exact duplicate clicks
@@ -3007,7 +3040,7 @@ export function LayoutCanvas({
               if (pointerPos) {
                 const percentageCoords = pointerToPercentage(
                   pointerPos.x,
-                  pointerPos.y
+                  pointerPos.y,
                 );
                 onImageClick(e, percentageCoords);
               } else {
@@ -3074,11 +3107,11 @@ export function LayoutCanvas({
               const endPoint = freeformPath[i + 1];
               const { x: startX, y: startY } = percentageToStage(
                 startPoint.x,
-                startPoint.y
+                startPoint.y,
               );
               const { x: endX, y: endY } = percentageToStage(
                 endPoint.x,
-                endPoint.y
+                endPoint.y,
               );
 
               lines.push({
@@ -3093,11 +3126,11 @@ export function LayoutCanvas({
               const lastPoint = freeformPath[freeformPath.length - 1];
               const { x: lastX, y: lastY } = percentageToStage(
                 lastPoint.x,
-                lastPoint.y
+                lastPoint.y,
               );
               const { x: hoverX, y: hoverY } = percentageToStage(
                 freeformHoverPos.x,
-                freeformHoverPos.y
+                freeformHoverPos.y,
               );
 
               lines.push({

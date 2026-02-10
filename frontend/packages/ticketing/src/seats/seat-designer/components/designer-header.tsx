@@ -18,6 +18,7 @@ import {
   Trash2,
   Image as ImageIcon,
   ScanSearch,
+  Palette,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -170,38 +171,8 @@ export function DesignerHeader({
             <Maximize className="h-3.5 w-3.5" />
           )}
         </Button>
-        
-        {!mainImageUrl && !readOnly && onCanvasBackgroundColorChange && (
-          <input
-            type="color"
-            aria-label="Canvas background color"
-            title="Canvas background color"
-            value={canvasBackgroundColor}
-            onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
-            className="h-7 w-8 cursor-pointer rounded border border-input"
-          />
-        )}
-        {!mainImageUrl && !readOnly && onMainImageSelect && (
-          <Label htmlFor="add-floor-plan-image" className="cursor-pointer">
-            <Button variant="outline" size="sm" className="h-7 px-2" asChild>
-              <span>
-                <ImageIcon className="h-3.5 w-3.5 mr-1" />
-                Add floor plan image
-              </span>
-            </Button>
-            <Input
-              id="add-floor-plan-image"
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                onMainImageSelect(e);
-                e.target.value = "";
-              }}
-              className="hidden"
-            />
-          </Label>
-        )}
-        {showImageMenu && (
+        {/* Dropdown: no image = canvas color + add image; with image = clear / change / remove */}
+        {!readOnly && ((!mainImageUrl && (onCanvasBackgroundColorChange || onMainImageSelect)) || showImageMenu) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-7 w-7 p-0">
@@ -209,39 +180,82 @@ export function DesignerHeader({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onClearAllPlacements}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear All Placements
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <Label htmlFor="change-main-image" className="cursor-pointer">
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
-                  <div>
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Change Image
-                    <Input
-                      id="change-main-image"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        onMainImageSelect(e);
-                        e.target.value = ""; // Reset input
-                      }}
-                      className="hidden"
-                    />
-                  </div>
-                </DropdownMenuItem>
-              </Label>
-              {onRemoveImage && (
+              {!mainImageUrl ? (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => onRemoveImage()}
-                    className="text-destructive focus:text-destructive"
-                  >
+                  {onMainImageSelect && (
+                    <Label htmlFor="add-floor-plan-image" className="cursor-pointer">
+                      <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                        <div>
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Add floor plan image
+                          <Input
+                            id="add-floor-plan-image"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              onMainImageSelect(e);
+                              e.target.value = "";
+                            }}
+                            className="hidden"
+                          />
+                        </div>
+                      </DropdownMenuItem>
+                    </Label>
+                  )}
+                  {onMainImageSelect && onCanvasBackgroundColorChange && <DropdownMenuSeparator />}
+                  {onCanvasBackgroundColorChange && (
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                      <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+                        <Palette className="h-4 w-4 shrink-0" />
+                        <span className="flex-1">Canvas background color</span>
+                        <input
+                          type="color"
+                          aria-label="Canvas background color"
+                          value={canvasBackgroundColor}
+                          onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+                          className="h-6 w-8 cursor-pointer rounded border border-input"
+                        />
+                      </label>
+                    </DropdownMenuItem>
+                  )}
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={onClearAllPlacements}>
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Remove Image
+                    Clear All Placements
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <Label htmlFor="change-main-image" className="cursor-pointer">
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+                      <div>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Change Image
+                        <Input
+                          id="change-main-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            onMainImageSelect(e);
+                            e.target.value = ""; // Reset input
+                          }}
+                          className="hidden"
+                        />
+                      </div>
+                    </DropdownMenuItem>
+                  </Label>
+                  {onRemoveImage && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onRemoveImage()}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Remove Image
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </>
               )}
             </DropdownMenuContent>

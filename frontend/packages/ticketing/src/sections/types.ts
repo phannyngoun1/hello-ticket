@@ -13,6 +13,7 @@ export interface Section {
     y_coordinate?: number | null;
     file_id?: string | null;
     image_url?: string | null;
+    canvas_background_color?: string | null; // Canvas background when no section image (hex)
     shape?: string | null; // JSON string storing PlacementShape data
     is_active: boolean;
     seat_count?: number | null; // Number of seats attached to this section
@@ -26,6 +27,7 @@ export interface CreateSectionInput {
     x_coordinate?: number;
     y_coordinate?: number;
     file_id?: string;
+    canvas_background_color?: string;
     shape?: string; // JSON string storing PlacementShape data
 }
 
@@ -34,6 +36,7 @@ export interface UpdateSectionInput {
     x_coordinate?: number;
     y_coordinate?: number;
     file_id?: string;
+    canvas_background_color?: string;
     shape?: string; // JSON string storing PlacementShape data
 }
 
