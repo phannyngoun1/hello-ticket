@@ -222,7 +222,7 @@ export function SeatDesigner({
   // Shape state for placement marks
   const [placementShape, setPlacementShape] = useState<PlacementShape>({
     type: PlacementShapeType.CIRCLE,
-    radius: 1.2,
+    radius: 0.8,
   });
 
   // Selected shape tool from toolbox
@@ -1958,7 +1958,7 @@ export function SeatDesigner({
           setSectionMarkers((prev) => [...prev, newSectionMarker]);
           setPlacementShape({
             type: PlacementShapeType.CIRCLE,
-            radius: 1.2,
+            radius: 0.8,
           });
         }
       }
@@ -2378,7 +2378,17 @@ export function SeatDesigner({
   );
 
   const handleSeatShapeStyleChange = useCallback(
-    (seatId: string, style: { fillColor?: string; strokeColor?: string }) => {
+    (
+      seatId: string,
+      style: {
+        fillColor?: string;
+        strokeColor?: string;
+        width?: number;
+        height?: number;
+        radius?: number;
+        rotation?: number;
+      },
+    ) => {
       setSeats((prev) =>
         prev.map((s) =>
           s.id === seatId
@@ -2387,7 +2397,7 @@ export function SeatDesigner({
                 shape: {
                   ...(s.shape || {
                     type: PlacementShapeType.CIRCLE,
-                    radius: 1.2,
+                    radius: 0.8,
                   }),
                   ...style,
                 } as PlacementShape,
@@ -2402,7 +2412,7 @@ export function SeatDesigner({
               shape: {
                 ...(prev.shape || {
                   type: PlacementShapeType.CIRCLE,
-                  radius: 1.2,
+                  radius: 0.8,
                 }),
                 ...style,
               } as PlacementShape,
@@ -2416,7 +2426,14 @@ export function SeatDesigner({
   const handleSectionShapeStyleChange = useCallback(
     (
       sectionId: string,
-      style: { fillColor?: string; strokeColor?: string },
+      style: {
+        fillColor?: string;
+        strokeColor?: string;
+        width?: number;
+        height?: number;
+        radius?: number;
+        rotation?: number;
+      },
     ) => {
       const mergeSectionShape = (
         existing: PlacementShape | undefined,
@@ -2424,8 +2441,8 @@ export function SeatDesigner({
         ({
           ...(existing || {
             type: PlacementShapeType.RECTANGLE,
-            width: 3,
-            height: 2,
+            width: 2,
+            height: 1.5,
           }),
           ...style,
         }) as PlacementShape;

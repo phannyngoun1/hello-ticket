@@ -512,7 +512,7 @@ function SeatMarkerComponent({
   // Default shape if none specified
   const defaultShape: PlacementShape = {
     type: PlacementShapeType.CIRCLE,
-    radius: 1.2, // ~12px at 1000px image width
+    radius: 0.8, // ~8px at 1000px image width
   };
   const shape = seat.shape || defaultShape;
 
@@ -963,8 +963,8 @@ function SectionMarkerComponent({
   // Default shape if none specified (rectangle for sections)
   const defaultShape: PlacementShape = {
     type: PlacementShapeType.RECTANGLE,
-    width: 3, // ~30px at 1000px image width
-    height: 2, // ~20px at 1000px image height
+    width: 2, // ~20px at 1000px image width
+    height: 1.5, // ~15px at 1000px image height
   };
   const shape = section.shape || defaultShape;
 

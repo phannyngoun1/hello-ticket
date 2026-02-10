@@ -42,11 +42,25 @@ export interface ShapeToolboxProps {
   onSectionDelete?: (section: SectionMarker) => void;
   onSeatShapeStyleChange?: (
     seatId: string,
-    style: { fillColor?: string; strokeColor?: string },
+    style: {
+      fillColor?: string;
+      strokeColor?: string;
+      width?: number;
+      height?: number;
+      radius?: number;
+      rotation?: number;
+    },
   ) => void;
   onSectionShapeStyleChange?: (
     sectionId: string,
-    style: { fillColor?: string; strokeColor?: string },
+    style: {
+      fillColor?: string;
+      strokeColor?: string;
+      width?: number;
+      height?: number;
+      radius?: number;
+      rotation?: number;
+    },
   ) => void;
   /** Called when user aligns multiple selected markers. Only shown when 2+ selected. */
   onAlign?: (
@@ -144,11 +158,23 @@ export function ShapeToolbox({
   const markerShape = selectedSeat?.shape ?? selectedSection?.shape;
   const onStyleChange =
     selectedSeat && onSeatShapeStyleChange
-      ? (style: { fillColor?: string; strokeColor?: string }) =>
-          onSeatShapeStyleChange(selectedSeat.id, style)
+      ? (style: {
+          fillColor?: string;
+          strokeColor?: string;
+          width?: number;
+          height?: number;
+          radius?: number;
+          rotation?: number;
+        }) => onSeatShapeStyleChange(selectedSeat.id, style)
       : selectedSection && onSectionShapeStyleChange
-        ? (style: { fillColor?: string; strokeColor?: string }) =>
-            onSectionShapeStyleChange(selectedSection.id, style)
+        ? (style: {
+            fillColor?: string;
+            strokeColor?: string;
+            width?: number;
+            height?: number;
+            radius?: number;
+            rotation?: number;
+          }) => onSectionShapeStyleChange(selectedSection.id, style)
         : undefined;
   const showColorControls =
     !readOnly &&
@@ -329,7 +355,7 @@ export function ShapeToolbox({
 
         {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
         {!isEditMode && showColorControls && (
-          <div className="flex items-center gap-2 border-l pl-2.5">
+          <div className="hidden flex items-center gap-2 border-l pl-2.5">
             <div className="flex items-center gap-1">
               <Label className="text-xs text-muted-foreground shrink-0 w-7">
                 Fill
@@ -398,6 +424,104 @@ export function ShapeToolbox({
             >
               <RotateCcw className="h-3 w-3 text-muted-foreground" />
             </button>
+          </div>
+        )}
+
+        {/* Manual size controls for shapes - shown when a seat or section is selected */}
+        {!isEditMode && markerShape && (
+          <div className="flex items-center gap-2 border-l pl-2.5">
+            {markerShape.type === PlacementShapeType.CIRCLE ? (
+              // Radius control for circles
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground shrink-0">
+                  Radius
+                </Label>
+                <Input
+                  type="number"
+                  min="0.1"
+                  max="50"
+                  step="0.1"
+                  value={markerShape.radius || 1.2}
+                  onChange={(e) =>
+                    onStyleChange?.({
+                      radius: parseFloat(e.target.value) || 1.2,
+                    })
+                  }
+                  className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                  title="Radius as % of canvas"
+                  aria-label="Circle radius"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+              </div>
+            ) : (
+              // Width and height controls for rectangles/ellipses
+              <>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground shrink-0">
+                    W
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    value={markerShape.width || 3}
+                    onChange={(e) =>
+                      onStyleChange?.({
+                        width: parseFloat(e.target.value) || 3,
+                      })
+                    }
+                    className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                    title="Width as % of canvas"
+                    aria-label="Shape width"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground shrink-0">
+                    H
+                  </Label>
+                  <Input
+                    type="number"
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    value={markerShape.height || 2}
+                    onChange={(e) =>
+                      onStyleChange?.({
+                        height: parseFloat(e.target.value) || 2,
+                      })
+                    }
+                    className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                    title="Height as % of canvas"
+                    aria-label="Shape height"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              </>
+            )}
+            {/* Rotation control - shown for all shapes */}
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground shrink-0">
+                R
+              </Label>
+              <Input
+                type="number"
+                min="0"
+                max="360"
+                step="1"
+                value={markerShape.rotation || 0}
+                onChange={(e) =>
+                  onStyleChange?.({
+                    rotation: parseFloat(e.target.value) || 0,
+                  })
+                }
+                className="h-6 w-10 font-mono text-[11px] py-0 px-1"
+                title="Rotation in degrees"
+                aria-label="Shape rotation"
+              />
+              <span className="text-xs text-muted-foreground">°</span>
+            </div>
           </div>
         )}
 
