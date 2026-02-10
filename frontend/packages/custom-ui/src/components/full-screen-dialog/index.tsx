@@ -13,13 +13,10 @@
 
 import React, { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Button, Kbd, cn } from "@truths/ui";
+import { Button, Kbd, cn, ScrollArea } from "@truths/ui";
 import { useDensityStyles, useIsCompact } from "@truths/utils";
 import { X, Keyboard } from "lucide-react";
-import {
-  FullScreenDialogProps,
-  KeyboardShortcut,
-} from "./types";
+import { FullScreenDialogProps, KeyboardShortcut } from "./types";
 
 /**
  * Detects if the user is on macOS
@@ -47,7 +44,7 @@ function ShortcutHint({ shortcut }: { shortcut: KeyboardShortcut }) {
     <div
       className={cn(
         "flex items-center gap-1.5 text-muted-foreground flex-shrink-0",
-        density.textSizeSmall
+        density.textSizeSmall,
       )}
     >
       <span className="text-muted-foreground whitespace-nowrap">
@@ -288,15 +285,15 @@ export function FullScreenDialog({
           </div>
 
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto bg-muted/30">
+          <ScrollArea className="flex-1 min-h-0 bg-muted/30">
             <div
               ref={contentRef}
-              className={`mx-auto w-full ${contentClassName || ""}`}
+              className={`mx-auto w-full h-full ${contentClassName || ""}`}
               style={{ maxWidth, marginTop: "8px" }}
             >
               {children}
             </div>
-          </div>
+          </ScrollArea>
 
           {/* Footer */}
           {footerNode
@@ -310,7 +307,7 @@ export function FullScreenDialog({
                     <div
                       className={cn(
                         "flex items-center justify-between max-w-4xl mx-auto",
-                        density.gapButtonGroup
+                        density.gapButtonGroup,
                       )}
                     >
                       {/* Keyboard Shortcuts Hint - Left side */}
@@ -319,7 +316,7 @@ export function FullScreenDialog({
                           <Keyboard
                             className={cn(
                               "text-muted-foreground flex-shrink-0",
-                              density.iconSizeSmall
+                              density.iconSizeSmall,
                             )}
                           />
                           <div className="flex items-center gap-1 flex-wrap">
@@ -330,7 +327,7 @@ export function FullScreenDialog({
                                   <span
                                     className={cn(
                                       "text-muted-foreground/50 flex-shrink-0 mx-0.5",
-                                      density.textSizeSmall
+                                      density.textSizeSmall,
                                     )}
                                   >
                                     •
@@ -355,7 +352,7 @@ export function FullScreenDialog({
                                 density.buttonHeightSmall,
                                 density.textSizeSmall,
                                 "px-3 font-medium border-border hover:bg-muted",
-                                action.className
+                                action.className,
                               )}
                             >
                               {action.label}
@@ -372,7 +369,7 @@ export function FullScreenDialog({
                                 className={cn(
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
-                                  "px-3 font-medium border-border hover:bg-muted"
+                                  "px-3 font-medium border-border hover:bg-muted",
                                 )}
                               >
                                 Clear
@@ -388,7 +385,7 @@ export function FullScreenDialog({
                                 className={cn(
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
-                                  "px-3 font-medium border-border hover:bg-muted"
+                                  "px-3 font-medium border-border hover:bg-muted",
                                 )}
                               >
                                 Cancel
@@ -408,7 +405,7 @@ export function FullScreenDialog({
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
                                   "px-3 font-medium border-border hover:bg-muted",
-                                  loading && "cursor-not-allowed"
+                                  loading && "cursor-not-allowed",
                                 )}
                               >
                                 Submit
@@ -424,7 +421,7 @@ export function FullScreenDialog({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
