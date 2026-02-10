@@ -4,28 +4,18 @@
  * Shared form used for creating and editing organizers with Zod validation.
  */
 
-import { forwardRef, useEffect, useRef } from "react";
+import { forwardRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
-  Input,
-  Field,
-  FieldLabel,
-  FieldError,
-  Textarea,
-} from "@truths/ui";
-import { cn } from "@truths/ui/lib/utils";
-import { ImproveTextButton } from "@truths/custom-ui";
+  TextInputField,
+  TextareaInputField,
+} from "@truths/custom-ui";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const organizerFormSchema = z
   .object({
-    code: z.string().optional(),
-
-    
-    
-    
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -35,8 +25,6 @@ const organizerFormSchema = z
     city: z.string().optional(),
     country: z.string().optional(),
     logo: z.string().url("Invalid URL").optional().or(z.literal("")),
-    
-    
   })
   .transform((values) => values);
 
@@ -60,21 +48,11 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
     ref
   ) {
     const {
-      register,
       handleSubmit,
-      watch,
-      setValue,
-      formState: { errors, isSubmitted },
+      control,
     } = useForm<OrganizerFormData>({
       resolver: zodResolver(organizerFormSchema),
       defaultValues: {
-        
-        
-
-        
-        
-        
-        code: "",
         name: "",
         description: "",
         email: "",
@@ -84,32 +62,9 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         city: "",
         country: "",
         logo: "",
-        
-        
         ...defaultValues,
       },
     });
-
-    const firstErrorRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-      if (isSubmitted && Object.keys(errors).length > 0) {
-        const firstErrorField = Object.keys(errors)[0];
-        const errorElement = document.querySelector(
-          `[name="${firstErrorField}"], #${firstErrorField}`
-        ) as HTMLElement | null;
-
-        if (errorElement) {
-          errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
-          errorElement.focus?.();
-        } else if (firstErrorRef.current) {
-          firstErrorRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-      }
-    }, [errors, isSubmitted]);
 
     const handleFormSubmit = async (data: OrganizerFormData) => {
       await onSubmit(data);
@@ -122,184 +77,96 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         onSubmit={handleSubmit(handleFormSubmit)}
         className="space-y-6"
       >
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4")}
-          ref={firstErrorRef}
-        >
-          
-          <Field data-invalid={!!errors.code}>
-            <FieldLabel htmlFor="code">Code</FieldLabel>
-            <Input
-              id="code"
-              type="text"
-              placeholder="Enter Code"
-              {...register("code")}
-              disabled={isLoading}
-              className={cn(errors.code && "border-destructive")}
-            />
-            <FieldError>{errors.code?.message}</FieldError>
-          </Field>
-          <Field data-invalid={!!errors.name}>
-            <FieldLabel htmlFor="name">
-              Name <span className="text-destructive">*</span>
-            </FieldLabel>
-            
-              
-                
-                {(() => {
-                  const isCodeLocked =
-                    (false && mode === "edit") ||
-                    (false && mode === "create");
-                  const lockReason =
-                    false && mode === "edit"
-                      ? "Codes cannot be modified after creation"
-                      : false && mode === "create"
-                        ? "Code will be generated automatically"
-                        : undefined;
-                  return (
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter Name"
-                      {...register("name")}
-                      disabled={isLoading || isCodeLocked}
-                      readOnly={isCodeLocked}
-                      tabIndex={isCodeLocked ? -1 : undefined}
-                      aria-disabled={isCodeLocked || undefined}
-                      aria-readonly={isCodeLocked || undefined}
-                      title={lockReason}
-                      className={cn(
-                        isCodeLocked && "cursor-not-allowed bg-muted text-muted-foreground",
-                        errors.name && "border-destructive"
-                      )}
-                    />
-                  );
-                })()}
-                
-              
-              <FieldError>{errors.name?.message}</FieldError>
-            
-          </Field>
-          
-          
-        </div>
-        
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <Field data-invalid={!!errors.email}>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
-                    <Input
-                        id="email"
-                        type="email"
-                        placeholder="contact@example.com"
-                        {...register("email")}
-                        disabled={isLoading}
-                        className={cn(errors.email && "border-destructive")}
-                    />
-                    <FieldError>{errors.email?.message}</FieldError>
-                </Field>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Row 1: Name, Email */}
+          <TextInputField
+            name="name"
+            control={control}
+            label="Name"
+            placeholder="Enter Name"
+            type="text"
+            required={true}
+            disabled={isLoading}
+          />
 
-                <Field data-invalid={!!errors.phone}>
-                    <FieldLabel htmlFor="phone">Phone</FieldLabel>
-                    <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+1 234 567 890"
-                        {...register("phone")}
-                        disabled={isLoading}
-                        className={cn(errors.phone && "border-destructive")}
-                    />
-                    <FieldError>{errors.phone?.message}</FieldError>
-                </Field>
-                
-                 <Field data-invalid={!!errors.website}>
-                    <FieldLabel htmlFor="website">Website</FieldLabel>
-                    <Input
-                        id="website"
-                        type="url"
-                        placeholder="https://example.com"
-                        {...register("website")}
-                        disabled={isLoading}
-                        className={cn(errors.website && "border-destructive")}
-                    />
-                    <FieldError>{errors.website?.message}</FieldError>
-                </Field>
-                 <Field data-invalid={!!errors.logo}>
-                    <FieldLabel htmlFor="logo">Logo URL</FieldLabel>
-                    <Input
-                        id="logo"
-                        type="url"
-                        placeholder="https://example.com/logo.png"
-                        {...register("logo")}
-                        disabled={isLoading}
-                        className={cn(errors.logo && "border-destructive")}
-                    />
-                    <FieldError>{errors.logo?.message}</FieldError>
-                </Field>
-            </div>
-            
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <Field className="md:col-span-3" data-invalid={!!errors.address}>
-                    <FieldLabel htmlFor="address">Address</FieldLabel>
-                     <Input
-                        id="address"
-                        type="text"
-                        placeholder="Street Address"
-                        {...register("address")}
-                        disabled={isLoading}
-                        className={cn(errors.address && "border-destructive")}
-                    />
-                    <FieldError>{errors.address?.message}</FieldError>
-                </Field>
-                
-                 <Field data-invalid={!!errors.city}>
-                    <FieldLabel htmlFor="city">City</FieldLabel>
-                     <Input
-                        id="city"
-                        type="text"
-                        placeholder="City"
-                        {...register("city")}
-                        disabled={isLoading}
-                        className={cn(errors.city && "border-destructive")}
-                    />
-                    <FieldError>{errors.city?.message}</FieldError>
-                </Field>
-                
-                 <Field data-invalid={!!errors.country}>
-                    <FieldLabel htmlFor="country">Country</FieldLabel>
-                     <Input
-                        id="country"
-                        type="text"
-                        placeholder="Country"
-                        {...register("country")}
-                        disabled={isLoading}
-                        className={cn(errors.country && "border-destructive")}
-                    />
-                    <FieldError>{errors.country?.message}</FieldError>
-                </Field>
-             </div>
+          <TextInputField
+            name="email"
+            control={control}
+            label="Email"
+            placeholder="contact@example.com"
+            type="email"
+            disabled={isLoading}
+          />
 
-             <Field data-invalid={!!errors.description}>
-                <FieldLabel htmlFor="description">Description</FieldLabel>
-                <div className="flex gap-2 items-start">
-                    <Textarea
-                        id="description"
-                        placeholder="Enter description"
-                        {...register("description")}
-                        disabled={isLoading}
-                        className={cn("flex-1 min-w-0", errors.description && "border-destructive")}
-                    />
-                    <ImproveTextButton
-                        value={watch("description") ?? ""}
-                        onImproved={(text) => setValue("description", text)}
-                        disabled={isLoading}
-                        className="shrink-0"
-                    />
-                </div>
-                <FieldError>{errors.description?.message}</FieldError>
-            </Field>
+          {/* Row 2: Phone, Website */}
+          <TextInputField
+            name="phone"
+            control={control}
+            label="Phone"
+            placeholder="+1 234 567 890"
+            type="tel"
+            disabled={isLoading}
+          />
+
+          <TextInputField
+            name="website"
+            control={control}
+            label="Website"
+            placeholder="https://example.com"
+            type="url"
+            disabled={isLoading}
+          />
+
+          {/* Row 3: Logo, Address */}
+          <TextInputField
+            name="logo"
+            control={control}
+            label="Logo URL"
+            placeholder="https://example.com/logo.png"
+            type="url"
+            disabled={isLoading}
+          />
+
+          <TextInputField
+            name="address"
+            control={control}
+            label="Address"
+            placeholder="Street Address"
+            type="text"
+            disabled={isLoading}
+          />
+
+          {/* Row 4: City, Country */}
+          <TextInputField
+            name="city"
+            control={control}
+            label="City"
+            placeholder="City"
+            type="text"
+            disabled={isLoading}
+          />
+
+          <TextInputField
+            name="country"
+            control={control}
+            label="Country"
+            placeholder="Country"
+            type="text"
+            disabled={isLoading}
+          />
         </div>
+
+        {/* Row 5: Description (full width) */}
+        <TextareaInputField
+          name="description"
+          control={control}
+          label="Description"
+          placeholder="Enter description"
+          disabled={isLoading}
+          rows={4}
+          showImproveButton={true}
+        />
       </form>
     );
-  }
+  },
 );
-
