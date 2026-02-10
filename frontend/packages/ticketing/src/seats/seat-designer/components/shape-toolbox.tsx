@@ -420,7 +420,16 @@ export function ShapeToolbox({
                       "hover:bg-accent hover:border-accent-foreground",
                       "bg-background border-border",
                     )}
-                    title="View details"
+                    title={
+                      selectedSection
+                        ? "Open section detail"
+                        : "View seat details"
+                    }
+                    aria-label={
+                      selectedSection
+                        ? "Open section detail"
+                        : "View seat details"
+                    }
                   >
                     <Eye className="h-3 w-3 text-muted-foreground" />
                   </button>

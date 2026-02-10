@@ -1534,25 +1534,32 @@ export function SeatDesigner({
     [snapToGrid, gridSize, gridSize],
   );
 
-  // Handle section click from Konva
+  // Handle section click from Konva (shift-click toggles multi-select)
   const handleKonvaSectionClick = useCallback(
     (section: SectionMarker, event?: { shiftKey?: boolean }) => {
-      // Shift + click: navigate to section detail view
+      setViewingSection(null);
+      setSelectedSeatIds([]);
+      setSelectedSeat(null);
+
       if (event?.shiftKey) {
-        setViewingSection(section);
-        seatPlacementForm.setValue("section", section.name);
-        setSelectedSectionMarker(null);
-        setSelectedSectionIds([]);
-        setSelectedSeatIds([]);
-        setZoomLevel(1);
-        setPanOffset({ x: 0, y: 0 });
-      } else {
-        setSelectedSectionIds([section.id]);
-        setSelectedSectionMarker(section);
-        setViewingSection(null);
+        const isSelected = selectedSectionIds.includes(section.id);
+        const nextIds = isSelected
+          ? selectedSectionIds.filter((id) => id !== section.id)
+          : [...selectedSectionIds, section.id];
+        setSelectedSectionIds(nextIds);
+
+        const primaryId = nextIds.length > 0 ? nextIds[0] : null;
+        const primarySection = primaryId
+          ? (sectionMarkers.find((marker) => marker.id === primaryId) ?? null)
+          : null;
+        setSelectedSectionMarker(primarySection);
+        return;
       }
+
+      setSelectedSectionIds([section.id]);
+      setSelectedSectionMarker(section);
     },
-    [seatPlacementForm],
+    [sectionMarkers, selectedSectionIds],
   );
 
   // Handle seat marker click - used elsewhere in the component
@@ -3152,7 +3159,9 @@ export function SeatDesigner({
               onSeatView={handleSeatView}
               onSectionEdit={handleSectionEdit}
               onSectionView={
-                designMode === "section-level" ? handleSectionView : undefined
+                designMode === "section-level"
+                  ? handleOpenSectionDetail
+                  : undefined
               }
               onSeatDelete={handleDeleteSeat}
               onSectionDelete={handleDeleteSection}
@@ -3225,7 +3234,7 @@ export function SeatDesigner({
                   onSeatEdit={handleSeatEdit}
                   onSeatView={handleSeatView}
                   onSectionEdit={handleSectionEdit}
-                  onSectionView={handleSectionView}
+                  onSectionView={handleOpenSectionDetail}
                   onSeatDelete={handleDeleteSeat}
                   onSectionDelete={handleDeleteSection}
                   onSeatShapeStyleChange={handleSeatShapeStyleChange}
@@ -3324,6 +3333,7 @@ export function SeatDesigner({
                   onSeatDragEnd={handleKonvaSeatDragEnd}
                   onSeatShapeTransform={handleSeatShapeTransform}
                   onSectionShapeTransform={handleSectionShapeTransform}
+                  onSectionDoubleClick={handleOpenSectionDetail}
                   shapeOverlays={displayedShapeOverlays}
                   onImageClick={handleKonvaImageClick}
                   onDeselect={handleDeselect}
