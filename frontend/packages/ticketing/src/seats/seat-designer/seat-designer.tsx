@@ -278,12 +278,16 @@ export function SeatDesigner({
     height: 0,
   });
   const [dimensionsReady, setDimensionsReady] = useState(false);
+  const [dragOverActive, setDragOverActive] = useState(false);
 
   // When in section detail view, the canvas only mounts after section has an image (else ImageUploadCard shows).
   // Reset dimensions so we re-measure the canvas container when it mounts and the image shows like seat-level.
   const prevSectionImageUrlRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    const sectionImageUrl = venueType === "large" && viewingSection ? viewingSection.imageUrl : undefined;
+    const sectionImageUrl =
+      venueType === "large" && viewingSection
+        ? viewingSection.imageUrl
+        : undefined;
     const hadImage = !!prevSectionImageUrlRef.current;
     const hasImage = !!sectionImageUrl;
     if (!hadImage && hasImage) {
@@ -478,7 +482,9 @@ export function SeatDesigner({
           x: section.x_coordinate || 50,
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
-          canvasBackgroundColor: (section as { canvas_background_color?: string | null }).canvas_background_color ?? "#e5e7eb",
+          canvasBackgroundColor:
+            (section as { canvas_background_color?: string | null })
+              .canvas_background_color ?? "#e5e7eb",
           shape,
           isNew: false,
         };
@@ -979,12 +985,7 @@ export function SeatDesigner({
         alert("Failed to remove section image. Please try again.");
       }
     },
-    [
-      layoutId,
-      queryClient,
-      selectedSectionMarker?.id,
-      viewingSection?.id,
-    ],
+    [layoutId, queryClient, selectedSectionMarker?.id, viewingSection?.id],
   );
 
   // Clear all placements
@@ -1652,6 +1653,96 @@ export function SeatDesigner({
     [seats, sectionMarkers],
   );
 
+  // Handle drag over canvas for shape toolbox drag-drop
+  const handleCanvasDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    setDragOverActive(true);
+  };
+
+  const handleCanvasDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget === e.target) {
+      setDragOverActive(false);
+    }
+  };
+
+  const handleCanvasDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOverActive(false);
+
+    const dragData = e.dataTransfer.getData("application/json");
+    if (!dragData) return;
+
+    try {
+      const { shapeType, dragSource } = JSON.parse(dragData);
+      if (dragSource !== "shape-toolbox" || !shapeType) return;
+
+      // Type-safe access to shape type
+      const typedShapeType = shapeType as PlacementShapeType;
+      if (!Object.values(PlacementShapeType).includes(typedShapeType)) {
+        return;
+      }
+
+      // Get container position
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      // Calculate drop position relative to container
+      const dropX = e.clientX - rect.left;
+      const dropY = e.clientY - rect.top;
+
+      // Convert to percentage coordinates (0-100) accounting for zoom and pan
+      const percentageX =
+        ((dropX - panOffset.x) / zoomLevel / containerDimensions.width) * 100;
+      const percentageY =
+        ((dropY - panOffset.y) / zoomLevel / containerDimensions.height) * 100;
+
+      // Create default shape based on selected shape type
+      const defaultShapes: Record<PlacementShapeType, PlacementShape> = {
+        [PlacementShapeType.CIRCLE]: {
+          type: PlacementShapeType.CIRCLE,
+          radius: 2,
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
+        },
+        [PlacementShapeType.RECTANGLE]: {
+          type: PlacementShapeType.RECTANGLE,
+          width: 4,
+          height: 3,
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
+        },
+        [PlacementShapeType.ELLIPSE]: {
+          type: PlacementShapeType.ELLIPSE,
+          width: 4,
+          height: 3,
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
+        },
+        [PlacementShapeType.POLYGON]: {
+          type: PlacementShapeType.POLYGON,
+          points: [-1.5, -1, 1.5, -1, 2, 1, 0, 2, -2, 1],
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
+        },
+        [PlacementShapeType.FREEFORM]: {
+          type: PlacementShapeType.FREEFORM,
+          points: [0, 0, 2, 0, 3, 2, 2, 3, 0, 3, -1, 2],
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
+        },
+      };
+
+      const shape = defaultShapes[typedShapeType];
+      if (!shape) return;
+
+      // Call handleShapeDraw with the dropped shape
+      handleShapeDraw(shape, percentageX, percentageY);
+    } catch (error) {
+      console.error("Error processing shape drop:", error);
+    }
+  };
+
   // Section form helpers (Sheet)
   const handleOpenNewSectionForm = () => {
     setEditingSectionId(null);
@@ -1891,7 +1982,13 @@ export function SeatDesigner({
       );
       if (viewingSection?.id === section.id) {
         setViewingSection((prev) =>
-          prev ? { ...prev, name: section.name, canvasBackgroundColor: canvasColor } : null,
+          prev
+            ? {
+                ...prev,
+                name: section.name,
+                canvasBackgroundColor: canvasColor,
+              }
+            : null,
         );
       }
       // Update seat placement form if section name matches
@@ -1946,7 +2043,9 @@ export function SeatDesigner({
         toast({
           title: "Error",
           description:
-            err instanceof Error ? err.message : "Failed to update canvas color",
+            err instanceof Error
+              ? err.message
+              : "Failed to update canvas color",
           variant: "destructive",
         });
       }
@@ -3144,9 +3243,9 @@ export function SeatDesigner({
           ) : (
             <div
               ref={containerRef}
-              className={`relative border rounded-lg overflow-hidden select-none w-full ${
+              className={`relative border rounded-lg overflow-hidden select-none w-full transition-colors ${
                 mainImageUrl ? "bg-gray-100" : ""
-              } ${isFullscreen ? "flex-1 min-h-0" : ""}`}
+              } ${dragOverActive ? "ring-2 ring-primary bg-primary/5" : ""} ${isFullscreen ? "flex-1 min-h-0" : ""}`}
               style={{
                 height: isFullscreen ? undefined : "600px",
                 ...(isFullscreen ? { minHeight: 400 } : {}),
@@ -3158,6 +3257,9 @@ export function SeatDesigner({
                   ? {}
                   : { backgroundColor: canvasBackgroundColor }),
               }}
+              onDragOver={handleCanvasDragOver}
+              onDragLeave={handleCanvasDragLeave}
+              onDrop={handleCanvasDrop}
             >
               {dimensionsReady ? (
                 <LayoutCanvas
@@ -3304,7 +3406,11 @@ export function SeatDesigner({
     const sectionDetailContent = (
       <SectionDetailView
         viewingSection={viewingSection}
-        className={isFullscreen ? `${className || ""} flex-1 min-h-0 flex flex-col`.trim() : className}
+        className={
+          isFullscreen
+            ? `${className || ""} flex-1 min-h-0 flex flex-col`.trim()
+            : className
+        }
         readOnly={readOnly}
         displayedSeats={displayedSeats}
         selectedSeat={selectedSeat}

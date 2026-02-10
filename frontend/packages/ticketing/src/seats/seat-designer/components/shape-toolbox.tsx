@@ -42,21 +42,15 @@ export interface ShapeToolboxProps {
   onSectionDelete?: (section: SectionMarker) => void;
   onSeatShapeStyleChange?: (
     seatId: string,
-    style: { fillColor?: string; strokeColor?: string }
+    style: { fillColor?: string; strokeColor?: string },
   ) => void;
   onSectionShapeStyleChange?: (
     sectionId: string,
-    style: { fillColor?: string; strokeColor?: string }
+    style: { fillColor?: string; strokeColor?: string },
   ) => void;
   /** Called when user aligns multiple selected markers. Only shown when 2+ selected. */
   onAlign?: (
-    alignment:
-      | "left"
-      | "center"
-      | "right"
-      | "top"
-      | "middle"
-      | "bottom"
+    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
   ) => void;
   /** Number of selected seats (for alignment UI) */
   selectedSeatCount?: number;
@@ -169,57 +163,78 @@ export function ShapeToolbox({
     <Card className={cn("px-3 py-2.5", className)}>
       <div className="flex items-center gap-3 flex-wrap w-full">
         {!isEditMode && (
-        <div className="flex items-center gap-2">
-          <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-            Shapes:
-          </div>
-          <div className="flex gap-1.5">
-            {/* Pointer tool (deselect) */}
-            <button
-              type="button"
-              onClick={() => onShapeTypeSelect?.(null)}
-              disabled={readOnly || !onShapeTypeSelect}
-              className={cn(
-                "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
-                !readOnly && "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
-                readOnly && "opacity-50 cursor-not-allowed",
-                !selectedShapeType && !readOnly
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background border-border"
-              )}
-              title="Pointer (Select)"
-            >
-              <MousePointer2 className="h-3.5 w-3.5 transition-transform duration-200" />
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+              Shapes:
+            </div>
+            <div className="flex gap-1.5">
+              {/* Pointer tool (deselect) */}
+              <button
+                type="button"
+                onClick={() => onShapeTypeSelect?.(null)}
+                disabled={readOnly || !onShapeTypeSelect}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  !readOnly &&
+                    "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
+                  readOnly && "opacity-50 cursor-not-allowed",
+                  !selectedShapeType && !readOnly
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background border-border",
+                )}
+                title="Pointer (Select)"
+              >
+                <MousePointer2 className="h-3.5 w-3.5 transition-transform duration-200" />
+              </button>
 
-            {/* Shape tools */}
-            {shapes.map((shape) => {
-              const Icon = shape.icon;
-              const isSelected = selectedShapeType === shape.type;
-              return (
-                <button
-                  key={shape.type}
-                  type="button"
-                  onClick={() => {
-                    onShapeTypeSelect?.(shape.type);
-                  }}
-                  disabled={readOnly || !onShapeTypeSelect}
-                  className={cn(
-                    "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
-                    !readOnly && "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
-                    readOnly && "opacity-50 cursor-not-allowed",
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background border-border"
-                  )}
-                  title={shape.label}
-                >
-                  <Icon className="h-3.5 w-3.5 transition-transform duration-200" />
-                </button>
-              );
-            })}
+              {/* Shape tools */}
+              {shapes.map((shape) => {
+                const Icon = shape.icon;
+                const isSelected = selectedShapeType === shape.type;
+                return (
+                  <button
+                    key={shape.type}
+                    type="button"
+                    draggable={!readOnly}
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = "copy";
+                      e.dataTransfer.setData(
+                        "application/json",
+                        JSON.stringify({
+                          shapeType: shape.type,
+                          dragSource: "shape-toolbox",
+                        }),
+                      );
+                      // Set a drag image
+                      const dragImage = new Image();
+                      dragImage.src =
+                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%235b21b6' stroke='%235b21b6'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E";
+                      e.dataTransfer.setDragImage(dragImage, 12, 12);
+                    }}
+                    onDragEnd={(e) => {
+                      e.dataTransfer.dropEffect = "copy";
+                    }}
+                    onClick={() => {
+                      onShapeTypeSelect?.(shape.type);
+                    }}
+                    disabled={readOnly || !onShapeTypeSelect}
+                    className={cn(
+                      "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                      !readOnly &&
+                        "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95 cursor-grab active:cursor-grabbing",
+                      readOnly && "opacity-50 cursor-not-allowed",
+                      isSelected
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background border-border",
+                    )}
+                    title={`${shape.label} (drag to canvas to place)`}
+                  >
+                    <Icon className="h-3.5 w-3.5 transition-transform duration-200" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
         )}
 
         {/* Alignment tools - shown when 2+ markers selected */}
@@ -235,7 +250,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align left"
               >
@@ -247,7 +262,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align center"
               >
@@ -259,7 +274,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align right"
               >
@@ -271,7 +286,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align top"
               >
@@ -283,7 +298,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align middle"
               >
@@ -295,7 +310,7 @@ export function ShapeToolbox({
                 className={cn(
                   "flex items-center justify-center p-1.5 rounded border transition-all",
                   "hover:bg-primary hover:border-primary hover:text-white",
-                  "bg-background border-border"
+                  "bg-background border-border",
                 )}
                 title="Align bottom"
               >
@@ -316,15 +331,15 @@ export function ShapeToolbox({
         {!isEditMode && showColorControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             <div className="flex items-center gap-1">
-              <Label className="text-xs text-muted-foreground shrink-0 w-7">Fill</Label>
+              <Label className="text-xs text-muted-foreground shrink-0 w-7">
+                Fill
+              </Label>
               <input
                 type="color"
                 aria-label="Fill color"
                 title="Fill color"
                 value={markerShape?.fillColor?.trim() || "#60a5fa"}
-                onChange={(e) =>
-                  onStyleChange?.({ fillColor: e.target.value })
-                }
+                onChange={(e) => onStyleChange?.({ fillColor: e.target.value })}
                 className="h-6 w-7 cursor-pointer rounded border shrink-0"
               />
               <Input
@@ -340,7 +355,9 @@ export function ShapeToolbox({
               />
             </div>
             <div className="flex items-center gap-1">
-              <Label className="text-xs text-muted-foreground shrink-0 w-12">Border</Label>
+              <Label className="text-xs text-muted-foreground shrink-0 w-12">
+                Border
+              </Label>
               <input
                 type="color"
                 aria-label="Border color"
@@ -374,7 +391,7 @@ export function ShapeToolbox({
               className={cn(
                 "flex items-center justify-center h-6 w-6 rounded border transition-all shrink-0",
                 "hover:bg-accent hover:border-accent-foreground",
-                "bg-background border-border"
+                "bg-background border-border",
               )}
               title="Reset to default colors"
               aria-label="Reset to default colors"
@@ -385,63 +402,62 @@ export function ShapeToolbox({
         )}
 
         {/* Inline seat edit controls - replaces marker name when editing seat */}
-        {selectedSeat && seatEditControls ? (
-          seatEditControls
-        ) : (
-        /* Selected marker name with view, edit and delete actions */
-        selectedMarker && markerName && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
-              {markerName}
-            </span>
-            {handleView && (
-              <button
-                type="button"
-                onClick={handleView}
-                className={cn(
-                  "flex items-center justify-center p-1 rounded border transition-all",
-                  "hover:bg-accent hover:border-accent-foreground",
-                  "bg-background border-border"
+        {selectedSeat && seatEditControls
+          ? seatEditControls
+          : /* Selected marker name with view, edit and delete actions */
+            selectedMarker &&
+            markerName && (
+              <div className="flex items-center gap-1.5 ml-auto">
+                <span className="text-xs font-medium text-foreground whitespace-nowrap px-2.5 py-1">
+                  {markerName}
+                </span>
+                {handleView && (
+                  <button
+                    type="button"
+                    onClick={handleView}
+                    className={cn(
+                      "flex items-center justify-center p-1 rounded border transition-all",
+                      "hover:bg-accent hover:border-accent-foreground",
+                      "bg-background border-border",
+                    )}
+                    title="View details"
+                  >
+                    <Eye className="h-3 w-3 text-muted-foreground" />
+                  </button>
                 )}
-                title="View details"
-              >
-                <Eye className="h-3 w-3 text-muted-foreground" />
-              </button>
-            )}
-            {handleEdit && !readOnly && (
-              <button
-                type="button"
-                onClick={handleEdit}
-                className={cn(
-                  "flex items-center justify-center p-1 rounded border transition-all",
-                  "hover:bg-accent hover:border-accent-foreground",
-                  "bg-background border-border"
+                {handleEdit && !readOnly && (
+                  <button
+                    type="button"
+                    onClick={handleEdit}
+                    className={cn(
+                      "flex items-center justify-center p-1 rounded border transition-all",
+                      "hover:bg-accent hover:border-accent-foreground",
+                      "bg-background border-border",
+                    )}
+                    title="Click to edit"
+                  >
+                    <Edit className="h-3 w-3 text-muted-foreground" />
+                  </button>
                 )}
-                title="Click to edit"
-              >
-                <Edit className="h-3 w-3 text-muted-foreground" />
-              </button>
-            )}
-            {handleDelete && !readOnly && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete();
-                }}
-                className={cn(
-                  "flex items-center justify-center p-1 rounded border transition-all",
-                  "hover:bg-destructive hover:border-destructive hover:text-destructive-foreground",
-                  "bg-background border-border"
+                {handleDelete && !readOnly && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
+                    className={cn(
+                      "flex items-center justify-center p-1 rounded border transition-all",
+                      "hover:bg-destructive hover:border-destructive hover:text-destructive-foreground",
+                      "bg-background border-border",
+                    )}
+                    title="Delete marker"
+                  >
+                    <Trash2 className="h-3 w-3 text-destructive" />
+                  </button>
                 )}
-                title="Delete marker"
-              >
-                <Trash2 className="h-3 w-3 text-destructive" />
-              </button>
+              </div>
             )}
-          </div>
-        ))
-        }
       </div>
     </Card>
   );
