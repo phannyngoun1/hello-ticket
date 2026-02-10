@@ -122,6 +122,9 @@ function SeatDesignerContent({
         initialCanvasBackgroundColor={
           layoutWithSeats?.layout.canvas_background_color
         }
+        markerFillTransparency={
+          layoutWithSeats?.layout.marker_fill_transparency
+        }
         readOnly={isReadOnly}
         onImageUpload={(_url, fileId) => {
           if (fileId) {
@@ -141,6 +144,12 @@ function SeatDesignerContent({
           updateLayoutMutation.mutate({
             id: effectiveLayoutId,
             input: { canvas_background_color: color },
+          });
+        }}
+        onMarkerFillTransparencyChange={(transparency) => {
+          updateLayoutMutation.mutate({
+            id: effectiveLayoutId,
+            input: { marker_fill_transparency: transparency },
           });
         }}
       />

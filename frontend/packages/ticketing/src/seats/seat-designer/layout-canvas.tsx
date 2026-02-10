@@ -965,6 +965,7 @@ function SectionMarkerComponent({
   onSectionDragStart,
   useLowDetail = false,
   colors,
+  forceDraggable = false,
 }: SectionMarkerComponentProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);

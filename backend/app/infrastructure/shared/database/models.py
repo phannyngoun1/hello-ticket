@@ -897,6 +897,7 @@ class LayoutModel(SQLModel, table=True):
     file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Reference to uploaded file
     design_mode: str = Field(default="seat-level", index=True)  # "seat-level" or "section-level"
     canvas_background_color: Optional[str] = Field(default="#e5e7eb")  # When no image (hex e.g. #e5e7eb)
+    marker_fill_transparency: float = Field(default=1.0)  # Marker fill transparency for all seats (0.0 to 1.0)
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)

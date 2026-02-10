@@ -71,6 +71,10 @@ export interface SeatDesignerProps {
   initialCanvasBackgroundColor?: string;
   /** Called when user changes canvas background color. Parent should persist via layout update. */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Marker fill transparency (0.0 to 1.0) from layout. */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency. Parent should persist via layout update. */
+  onMarkerFillTransparencyChange?: (transparency: number) => void;
   className?: string;
   fileId?: string;
 }

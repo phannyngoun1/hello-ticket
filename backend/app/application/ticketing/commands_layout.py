@@ -13,6 +13,7 @@ class CreateLayoutCommand:
     file_id: Optional[str] = None
     design_mode: Optional[str] = "seat-level"
     canvas_background_color: Optional[str] = None
+    marker_fill_transparency: Optional[float] = 1.0
 
 
 @dataclass
@@ -24,6 +25,7 @@ class UpdateLayoutCommand:
     description: Optional[str] = None
     file_id: Optional[str] = None
     canvas_background_color: Optional[str] = None
+    marker_fill_transparency: Optional[float] = None
 
 
 @dataclass

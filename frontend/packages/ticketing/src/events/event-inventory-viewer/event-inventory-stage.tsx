@@ -221,6 +221,7 @@ export function EventInventoryStage({
           isSelected={isSelected}
           imageWidth={displayedWidth}
           imageHeight={displayedHeight}
+          markerFillTransparency={layout.marker_fill_transparency}
           onMouseEnter={(e) => {
             setHoveredSeatId(seat.id);
             setHoveredSeatData({ seat, eventSeat });

@@ -58,6 +58,7 @@ class LayoutCommandHandler:
             file_id=command.file_id,
             design_mode=command.design_mode or "seat-level",
             canvas_background_color=command.canvas_background_color or "#e5e7eb",
+            marker_fill_transparency=command.marker_fill_transparency or 1.0,
         )
 
         saved = await self._layout_repository.save(layout)
@@ -101,6 +102,8 @@ class LayoutCommandHandler:
             update_kwargs['file_id'] = command.file_id if command.file_id else None
         if command.canvas_background_color is not None:
             update_kwargs['canvas_background_color'] = command.canvas_background_color
+        if command.marker_fill_transparency is not None:
+            update_kwargs['marker_fill_transparency'] = command.marker_fill_transparency
 
         layout.update_details(**update_kwargs)
 

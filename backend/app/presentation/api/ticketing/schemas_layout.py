@@ -18,6 +18,7 @@ class LayoutCreateRequest(BaseModel):
     file_id: Optional[str] = Field(None, description="File ID for layout seat map image")
     design_mode: Optional[str] = Field("seat-level", description="Design mode: seat-level or section-level")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(1.0, description="Marker fill transparency for all seats (0.0 to 1.0)")
 
 
 class LayoutUpdateRequest(BaseModel):
@@ -27,6 +28,7 @@ class LayoutUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Layout description")
     file_id: Optional[str] = Field(None, description="File ID for layout seat map image")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for all seats (0.0 to 1.0)")
 
 
 class LayoutResponse(BaseModel):
@@ -41,6 +43,7 @@ class LayoutResponse(BaseModel):
     image_url: Optional[str] = None  # URL to the layout image file (from file_id)
     design_mode: str = "seat-level"
     canvas_background_color: Optional[str] = None  # When no image (hex e.g. #e5e7eb)
+    marker_fill_transparency: float = 1.0  # Marker fill transparency for all seats (0.0 to 1.0)
     is_active: bool
     created_at: datetime
     updated_at: datetime

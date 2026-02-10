@@ -57,6 +57,7 @@ async def create_layout(
             file_id=request.file_id,
             design_mode=request.design_mode or "seat-level",
             canvas_background_color=request.canvas_background_color,
+            marker_fill_transparency=request.marker_fill_transparency or 1.0,
         )
         layout = await mediator.send(command)
         
@@ -258,6 +259,7 @@ async def update_layout(
             description=request.description,
             file_id=request.file_id,
             canvas_background_color=request.canvas_background_color,
+            marker_fill_transparency=request.marker_fill_transparency,
         )
         layout = await mediator.send(command)
         

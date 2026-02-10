@@ -18,6 +18,7 @@ interface LayoutDTO {
   file_id?: string | null;
   design_mode?: string | null;
   canvas_background_color?: string | null;
+  marker_fill_transparency?: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -35,6 +36,7 @@ function transformLayout(dto: LayoutDTO): Layout {
     file_id: dto.file_id || undefined,
     design_mode: (dto.design_mode || "seat-level") as "seat-level" | "section-level",
     canvas_background_color: dto.canvas_background_color || undefined,
+    marker_fill_transparency: dto.marker_fill_transparency ?? 1.0,
     is_active: dto.is_active,
     created_at: dto.created_at ? new Date(dto.created_at) : new Date(),
     updated_at: dto.updated_at ? new Date(dto.updated_at) : new Date(),

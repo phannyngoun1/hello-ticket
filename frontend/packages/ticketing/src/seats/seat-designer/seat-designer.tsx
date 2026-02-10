@@ -85,6 +85,8 @@ export function SeatDesigner({
   onRemoveImage,
   initialCanvasBackgroundColor,
   onCanvasBackgroundColorChange,
+  markerFillTransparency: initialMarkerFillTransparency,
+  onMarkerFillTransparencyChange,
   className,
   fileId: initialFileId,
 }: SeatDesignerProps & { fileId?: string }) {
@@ -99,6 +101,10 @@ export function SeatDesigner({
   /** Canvas background color when no image (simple floor mode) */
   const [canvasBackgroundColor, setCanvasBackgroundColor] = useState<string>(
     initialCanvasBackgroundColor || DEFAULT_CANVAS_BACKGROUND_COLOR,
+  );
+  /** Marker fill transparency (0.0 to 1.0) */
+  const [markerFillTransparency, setMarkerFillTransparency] = useState<number>(
+    initialMarkerFillTransparency ?? 1.0,
   );
   // Store file_id for the main image
   const [mainImageFileId, setMainImageFileId] = useState<string | undefined>(
@@ -121,12 +127,27 @@ export function SeatDesigner({
     }
   }, [initialCanvasBackgroundColor]);
 
+  // Sync marker fill transparency from layout when it loads or changes
+  useEffect(() => {
+    if (initialMarkerFillTransparency !== undefined) {
+      setMarkerFillTransparency(initialMarkerFillTransparency);
+    }
+  }, [initialMarkerFillTransparency]);
+
   const handleCanvasBackgroundColorChange = useCallback(
     (color: string) => {
       setCanvasBackgroundColor(color);
       onCanvasBackgroundColorChange?.(color);
     },
     [onCanvasBackgroundColorChange],
+  );
+
+  const handleMarkerFillTransparencyChange = useCallback(
+    (transparency: number) => {
+      setMarkerFillTransparency(transparency);
+      onMarkerFillTransparencyChange?.(transparency);
+    },
+    [onMarkerFillTransparencyChange],
   );
 
   // Large venue: sections placed on main floor plan
@@ -3345,6 +3366,9 @@ export function SeatDesigner({
           onCanvasBackgroundColorChange={
             !mainImageUrl ? handleCanvasBackgroundColorChange : undefined
           }
+          onMarkerFillTransparencyChange={
+            !readOnly ? handleMarkerFillTransparencyChange : undefined
+          }
           snapToGrid={snapToGrid}
           onSnapToGridChange={setSnapToGrid}
           gridSize={gridSize}
@@ -3915,6 +3939,7 @@ export function SeatDesigner({
             image_url: mainImageUrl,
             canvas_background_color: canvasBackgroundColor,
             design_mode: designMode,
+            marker_fill_transparency: markerFillTransparency,
           } as unknown as import("../../layouts/types").Layout
         }
         layoutSeats={(venueType === "large" && viewingSection

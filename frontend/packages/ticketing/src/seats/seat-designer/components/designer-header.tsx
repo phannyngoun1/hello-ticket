@@ -69,6 +69,10 @@ export interface DesignerHeaderProps {
   onShowGridChange?: (enabled: boolean) => void;
   /** Called when user clicks preview button to see booking view */
   onPreview?: () => void;
+  /** Marker fill transparency (0.0 to 1.0) */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency */
+  onMarkerFillTransparencyChange?: (transparency: number) => void;
 }
 
 export function DesignerHeader({
@@ -105,6 +109,8 @@ export function DesignerHeader({
   showGrid = false,
   onShowGridChange,
   onPreview,
+  markerFillTransparency = 1.0,
+  onMarkerFillTransparencyChange,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
@@ -160,6 +166,32 @@ export function DesignerHeader({
               onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
               className="h-6 w-8 cursor-pointer rounded border border-input"
             />
+          </label>
+        </DropdownMenuItem>
+      ),
+
+      !readOnly && onMarkerFillTransparencyChange && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer flex-col items-start gap-3 px-2 py-1.5">
+            <div className="flex items-center gap-2 w-full">
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                Marker Fill Transparency:
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={(markerFillTransparency || 1.0) * 100}
+                onChange={(e) =>
+                  onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
+                }
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                title="Adjust marker fill transparency"
+              />
+              <span className="text-xs text-muted-foreground w-8 text-right">
+                {Math.round((markerFillTransparency || 1.0) * 100)}%
+              </span>
+            </div>
           </label>
         </DropdownMenuItem>
       ),
@@ -281,6 +313,9 @@ export function DesignerHeader({
     onMainImageSelect,
     onCanvasBackgroundColorChange,
     onRemoveImage,
+    canvasBackgroundColor,
+    onMarkerFillTransparencyChange,
+    markerFillTransparency,
     onSnapToGridChange,
     snapToGrid,
     gridSize,

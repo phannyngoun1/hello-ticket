@@ -3,7 +3,7 @@
  */
 
 import { useRef, useEffect, useState } from "react";
-import { Group } from "react-konva";
+import { Group, Circle, Text } from "react-konva";
 import Konva from "konva";
 import type { Seat } from "../../seats/types";
 import type { EventSeat } from "../types";
@@ -48,6 +48,7 @@ export interface SeatMarkerProps {
   isSelected?: boolean;
   imageWidth: number;
   imageHeight: number;
+  markerFillTransparency?: number;
   onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: () => void;
@@ -68,6 +69,7 @@ export function SeatMarker({
   onClick,
   imageWidth,
   imageHeight,
+  markerFillTransparency = 1.0,
 }: SeatMarkerProps) {
   const shapeGroupRef = useRef<Konva.Group>(null);
   const [isHoveredState, setIsHoveredState] = useState(false);
@@ -145,7 +147,7 @@ export function SeatMarker({
 
   const isAvailableForSelection = eventSeat?.status === "available";
 
-  const baseOpacity = 1;
+  const baseOpacity = markerFillTransparency;
   const hoverOpacity = 1;
   const selectedOpacity = 1;
 
@@ -202,6 +204,12 @@ export function SeatMarker({
   const statusTransparency = eventSeat
     ? getSeatStatusTransparency(eventSeat.status)
     : 0;
+
+  // Calculate checkmark size based on seat dimensions
+  const checkmarkRadius = parsedShape?.width
+    ? Math.min(Math.max(parsedShape.width * 0.15, 6), 12)
+    : 8;
+  const checkmarkFontSize = checkmarkRadius * 1.75;
 
   return (
     <Group
@@ -271,6 +279,28 @@ export function SeatMarker({
           { hoverColors, isHover },
         )}
       </Group>
+
+      {/* Checkmark indicator for selected/booked seats */}
+      {isSelected && (
+        <Group>
+          <Circle
+            x={0}
+            y={0}
+            radius={checkmarkRadius}
+            fill="#ef4444"
+            stroke="#fff"
+            strokeWidth={2}
+          />
+          <Text
+            x={-checkmarkRadius * 0.6}
+            y={-checkmarkRadius * 0.85}
+            text="✓"
+            fontSize={checkmarkFontSize}
+            fill="#fff"
+            fontStyle="bold"
+          />
+        </Group>
+      )}
     </Group>
   );
 }
