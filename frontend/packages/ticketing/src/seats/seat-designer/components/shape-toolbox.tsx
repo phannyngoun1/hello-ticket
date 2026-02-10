@@ -28,6 +28,7 @@ import {
   type SectionMarker,
 } from "../types";
 import { cn } from "@truths/ui/lib/utils";
+import { DEFAULT_SHAPE_FILL, DEFAULT_SHAPE_STROKE } from "../colors";
 
 export interface ShapeToolboxProps {
   selectedShapeType: PlacementShapeType | null;
@@ -364,7 +365,7 @@ export function ShapeToolbox({
                 type="color"
                 aria-label="Fill color"
                 title="Fill color"
-                value={markerShape?.fillColor?.trim() || "#60a5fa"}
+                value={markerShape?.fillColor?.trim() || DEFAULT_SHAPE_FILL}
                 onChange={(e) => onStyleChange?.({ fillColor: e.target.value })}
                 className="h-6 w-7 cursor-pointer rounded border shrink-0"
               />
@@ -388,7 +389,7 @@ export function ShapeToolbox({
                 type="color"
                 aria-label="Border color"
                 title="Border color"
-                value={markerShape?.strokeColor?.trim() || "#2563eb"}
+                value={markerShape?.strokeColor?.trim() || DEFAULT_SHAPE_STROKE}
                 onChange={(e) =>
                   onStyleChange?.({ strokeColor: e.target.value })
                 }

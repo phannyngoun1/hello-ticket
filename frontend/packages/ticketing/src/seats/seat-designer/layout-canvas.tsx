@@ -31,6 +31,16 @@ import {
   type SeatMarker,
   type SectionMarker,
 } from "./types";
+import {
+  ANCHOR_FILL,
+  ANCHOR_STROKE,
+  DEFAULT_SHAPE_FILL,
+  DEFAULT_SHAPE_STROKE,
+  MARQUEE_FILL,
+  MARQUEE_STROKE,
+  SELECTED_FILL,
+  SELECTED_STROKE,
+} from "./colors";
 
 // Types are now imported from ./types
 
@@ -591,12 +601,12 @@ function SeatMarkerComponent({
   // Use seat type colors but make them more vibrant and visible
   // Anchor gets special orange styling
   const fillColor = isAnchor
-    ? "#f97316"
+    ? ANCHOR_FILL
     : isSelected
       ? colors.fill
       : colors.fill;
   const strokeColor = isAnchor
-    ? "#ea580c"
+    ? ANCHOR_STROKE
     : isSelected
       ? colors.stroke
       : colors.stroke;
@@ -3370,10 +3380,10 @@ export function LayoutCanvas({
             y={Math.min(selectionStart.y, selectionCurrent.y)}
             width={Math.abs(selectionCurrent.x - selectionStart.x)}
             height={Math.abs(selectionCurrent.y - selectionStart.y)}
-            stroke="#2563eb"
+            stroke={MARQUEE_STROKE}
             strokeWidth={1}
             dash={[6, 4]}
-            fill="rgba(37, 99, 235, 0.08)"
+            fill={MARQUEE_FILL}
           />
         </Layer>
       )}
