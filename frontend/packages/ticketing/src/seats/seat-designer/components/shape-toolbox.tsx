@@ -248,73 +248,73 @@ export function ShapeToolbox({
                 type="button"
                 onClick={() => onAlign?.("left")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align left"
               >
-                <AlignStartVertical className="h-3.5 w-3.5" />
+                <AlignStartVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("center")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align center"
               >
-                <AlignCenterVertical className="h-3.5 w-3.5" />
+                <AlignCenterVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("right")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align right"
               >
-                <AlignEndVertical className="h-3.5 w-3.5" />
+                <AlignEndVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("top")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align top"
               >
-                <AlignStartHorizontal className="h-3.5 w-3.5" />
+                <AlignStartHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("middle")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align middle"
               >
-                <AlignCenterHorizontal className="h-3.5 w-3.5" />
+                <AlignCenterHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("bottom")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align bottom"
               >
-                <AlignEndHorizontal className="h-3.5 w-3.5" />
+                <AlignEndHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
             </div>
           </div>
