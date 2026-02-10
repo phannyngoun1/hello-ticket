@@ -32,7 +32,7 @@ import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 export interface SectionDetailViewProps {
   viewingSection: SectionMarker;
@@ -166,6 +166,89 @@ export function SectionDetailView({
   const innerClassName = isFullscreen
     ? "flex flex-col flex-1 min-h-0 p-6 space-y-4"
     : "p-6 space-y-4";
+
+  const dropdownMenuItems: React.ReactNode[] = useMemo(() => {
+    return [
+      <DropdownMenuItem onClick={onClearSectionSeats}>
+        <BrushCleaning className="h-4 w-4 mr-2" />
+        Clear All Placements
+      </DropdownMenuItem>,
+      <DropdownMenuSeparator />,
+      !viewingSection.imageUrl && (
+        <Label
+          htmlFor={`add-section-image-${viewingSection.id}`}
+          className="cursor-pointer"
+        >
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+            <div>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Add floor plan image
+              <Input
+                id={`add-section-image-${viewingSection.id}`}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  onSectionImageSelect(viewingSection.id, e);
+                  e.target.value = "";
+                }}
+                className="hidden"
+              />
+            </div>
+          </DropdownMenuItem>
+        </Label>
+      ),
+      viewingSection.imageUrl && onSectionImageSelect && (
+        <Label
+          htmlFor={`change-section-image-${viewingSection.id}`}
+          className="cursor-pointer"
+        >
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+            <div>
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Change Image
+              <Input
+                id={`change-section-image-${viewingSection.id}`}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  onSectionImageSelect(viewingSection.id, e);
+                  e.target.value = ""; // Reset input
+                }}
+                className="hidden"
+              />
+            </div>
+          </DropdownMenuItem>
+        </Label>
+      ),
+      onCanvasBackgroundColorChange && !viewingSection.imageUrl && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+            <Palette className="h-4 w-4 shrink-0" />
+            <span className="flex-1">Canvas background color</span>
+            <input
+              type="color"
+              aria-label="Canvas background color"
+              value={effectiveCanvasColor}
+              onChange={(e) => onCanvasBackgroundColorChange(e.target.value)}
+              className="h-6 w-8 cursor-pointer rounded border border-input"
+            />
+          </label>
+        </DropdownMenuItem>
+      ),
+      viewingSection.imageUrl && onRemoveSectionImage && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => onRemoveSectionImage(viewingSection.id)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove Image
+          </DropdownMenuItem>
+        </>
+      ),
+    ];
+  }, [onClearSectionSeats]);
   return (
     <Card className={className}>
       <div className={innerClassName}>
@@ -236,7 +319,22 @@ export function SectionDetailView({
                 )}
               </Button>
             )}
-            {!readOnly && (
+
+            {!readOnly && dropdownMenuItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {dropdownMenuItems.map((item, index) => (
+                    <Fragment key={index}>{item}</Fragment>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {/* {!readOnly && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 w-7 p-0">
@@ -344,7 +442,7 @@ export function SectionDetailView({
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
+            )} */}
           </div>
         </div>
 
