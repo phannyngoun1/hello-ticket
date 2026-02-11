@@ -66,10 +66,6 @@ export function SeatViewer({
   const hasSeats = seats.length > 0;
 
   const handleCreateFloorPlan = () => {
-    console.log("handleCreateFloorPlan", {
-      venueId,
-      hasCallback: !!onNavigateToDesigner,
-    });
     if (onNavigateToDesigner) {
       try {
         onNavigateToDesigner(venueId);
@@ -84,10 +80,6 @@ export function SeatViewer({
   };
 
   const handleEditFloorPlan = () => {
-    console.log("handleEditFloorPlan", {
-      venueId,
-      hasCallback: !!onNavigateToDesigner,
-    });
     if (onNavigateToDesigner) {
       try {
         onNavigateToDesigner(venueId);

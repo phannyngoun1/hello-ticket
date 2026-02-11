@@ -614,58 +614,23 @@ export function SeatDesigner({
     ) {
       // Always sync effectiveSectionsData to sectionMarkers, even if empty
       // This replaces any temporary "section-default" markers with real sections
-      console.log("effectiveSectionsData received:", effectiveSectionsData);
       const markers: SectionMarker[] = effectiveSectionsData.map((section) => {
-        console.log(
-          "Processing section:",
-          section.id,
-          "name:",
-          section.name,
-          "canvas_background_color:",
-          section.canvas_background_color,
-          "marker_fill_transparency:",
-          section.marker_fill_transparency,
-          "shape value:",
-          section.shape,
-          "type:",
-          typeof section.shape,
-          "isTruthy:",
-          !!section.shape,
-        );
         let shape: PlacementShape | undefined;
         if (section.shape) {
           try {
             const parsed = JSON.parse(section.shape);
-            console.log("Parsed shape JSON:", parsed);
             // Normalize the type to ensure it matches the enum
             if (parsed && typeof parsed === "object" && parsed.type) {
-              const normalized: PlacementShape = {
+              shape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
-              shape = normalized;
-              console.log(
-                "Normalized shape:",
-                normalized,
-                "Type:",
-                normalized.type,
-              );
             } else {
               console.warn("Parsed shape is invalid:", parsed);
             }
           } catch (e) {
-            console.error(
-              "Failed to parse section shape:",
-              e,
-              "Raw shape string:",
-              section.shape,
-            );
+            console.error("Failed to parse section shape:", e);
           }
-        } else {
-          console.log(
-            "Section has no shape property or shape is falsy. Section:",
-            { id: section.id, name: section.name, shape: section.shape },
-          );
         }
         return {
           id: section.id,
@@ -685,18 +650,6 @@ export function SeatDesigner({
           isNew: false,
         };
       });
-      console.log(
-        "Section markers created from effectiveSectionsData:",
-        markers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          hasShape: !!m.shape,
-          shapeType: m.shape?.type,
-          shape: m.shape,
-          canvasBackgroundColor: m.canvasBackgroundColor,
-          markerFillTransparency: m.markerFillTransparency,
-        })),
-      );
       setSectionMarkers(markers);
     }
   }, [effectiveSectionsData, initialSections, designMode]);
@@ -724,37 +677,18 @@ export function SeatDesigner({
     if (initialSeats) {
       lastInitialSeatsRef.current = initialSeats;
       if (initialSeats.length > 0) {
-        console.log("Loading seats from initialSeats:", initialSeats);
         const markers: SeatMarker[] = initialSeats.map((seat) => {
-          console.log(
-            "Processing initialSeat:",
-            seat.id,
-            "shape value:",
-            seat.shape,
-            "type:",
-            typeof seat.shape,
-            "has shape prop:",
-            "shape" in seat,
-          );
           // Parse shape from JSON string if available
           let shape: PlacementShape | undefined;
           if ("shape" in seat && seat.shape) {
             try {
               const parsed = JSON.parse(seat.shape);
-              console.log("Parsed seat shape JSON from initialSeats:", parsed);
               // Normalize the type to ensure it matches the enum
               if (parsed && typeof parsed === "object" && parsed.type) {
-                const normalized: PlacementShape = {
+                shape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
-                shape = normalized;
-                console.log(
-                  "Normalized seat shape from initialSeats:",
-                  normalized,
-                  "Type:",
-                  normalized.type,
-                );
               } else {
                 console.warn(
                   "Parsed seat shape is invalid from initialSeats:",
@@ -762,18 +696,8 @@ export function SeatDesigner({
                 );
               }
             } catch (e) {
-              console.error(
-                "Failed to parse seat shape from initialSeats:",
-                e,
-                "Raw shape string:",
-                seat.shape,
-              );
+              console.error("Failed to parse seat shape from initialSeats:", e);
             }
-          } else {
-            console.log(
-              "Seat from initialSeats has no shape or shape is falsy:",
-              { id: seat.id, shape: seat.shape, hasShapeProp: "shape" in seat },
-            );
           }
 
           return {
@@ -790,15 +714,6 @@ export function SeatDesigner({
             shape,
           };
         });
-        console.log(
-          "Seat markers created from initialSeats:",
-          markers.map((m) => ({
-            id: m.id,
-            hasShape: !!m.shape,
-            shapeType: m.shape?.type,
-            shape: m.shape,
-          })),
-        );
         setSeats(markers);
       } else {
         // Layout exists but has no seats yet - start with empty array
@@ -807,36 +722,19 @@ export function SeatDesigner({
     } else if (existingSeats) {
       // Fallback to query result if initialSeats not provided
       lastExistingSeatsRef.current = existingSeats;
-      console.log("Loading seats from existingSeats:", existingSeats);
       if (existingSeats.items && existingSeats.items.length > 0) {
         const markers: SeatMarker[] = existingSeats.items.map((seat) => {
-          console.log(
-            "Processing existingSeat:",
-            seat.id,
-            "shape value:",
-            seat.shape,
-            "type:",
-            typeof seat.shape,
-          );
           // Parse shape from JSON string if available
           let shape: PlacementShape | undefined;
           if (seat.shape) {
             try {
               const parsed = JSON.parse(seat.shape);
-              console.log("Parsed seat shape JSON from existingSeats:", parsed);
               // Normalize the type to ensure it matches the enum
               if (parsed && typeof parsed === "object" && parsed.type) {
-                const normalized: PlacementShape = {
+                shape = {
                   ...parsed,
                   type: parsed.type as PlacementShapeType,
                 };
-                shape = normalized;
-                console.log(
-                  "Normalized seat shape from existingSeats:",
-                  normalized,
-                  "Type:",
-                  normalized.type,
-                );
               } else {
                 console.warn(
                   "Parsed seat shape is invalid from existingSeats:",
@@ -844,18 +742,8 @@ export function SeatDesigner({
                 );
               }
             } catch (e) {
-              console.error(
-                "Failed to parse seat shape from existingSeats:",
-                e,
-                "Raw shape string:",
-                seat.shape,
-              );
+              console.error("Failed to parse seat shape from existingSeats:", e);
             }
-          } else {
-            console.log(
-              "Seat from existingSeats has no shape or shape is falsy:",
-              { id: seat.id, shape: seat.shape },
-            );
           }
 
           return {
@@ -872,15 +760,6 @@ export function SeatDesigner({
             shape,
           };
         });
-        console.log(
-          "Seat markers created from existingSeats:",
-          markers.map((m) => ({
-            id: m.id,
-            hasShape: !!m.shape,
-            shapeType: m.shape?.type,
-            shape: m.shape,
-          })),
-        );
         setSeats(markers);
       } else if (
         lastInitialSeatsRef.current === undefined &&
@@ -2678,12 +2557,6 @@ export function SeatDesigner({
             ? sectionTransparency
             : 1.0;
           
-          // Debug: Log section transparency being sent
-          console.log(`[Bulk Save] Section ${section.id} (${section.name}) marker_fill_transparency:`, 
-                     finalTransparency, 
-                     '(section.markerFillTransparency:', section.markerFillTransparency, 
-                     ', layout-level:', layoutTransparency, ')');
-          
           if (section.isNew) {
             // Create: no id field
             const sectionPayload: Record<string, any> = {
@@ -2714,17 +2587,7 @@ export function SeatDesigner({
           }
         }
         
-        // Debug: Log all sections payload
-        console.log('[Bulk Save] All sections payload:', sectionsPayload.map(s => ({
-          id: s.id,
-          name: s.name,
-          marker_fill_transparency: s.marker_fill_transparency,
-          hasMarkerFillTransparency: 'marker_fill_transparency' in s
-        })));
       }
-      
-      // Debug: Log final payload before sending
-      console.log('[Bulk Save] Final payload sections:', sectionsPayload);
 
       // Prepare seats array with operation type determined by presence of 'id'
       // No 'id' = create, Has 'id' = update
@@ -2780,9 +2643,7 @@ export function SeatDesigner({
       const currentTransparency = markerFillTransparencyRef.current;
       // Ensure we always send a valid number (default to 1.0 if somehow undefined/null)
       const transparencyToSend = currentTransparency ?? markerFillTransparency ?? 1.0;
-      // Debug: Log the transparency value being sent
-      console.log('[Bulk Save] marker_fill_transparency being sent:', transparencyToSend, '(ref:', currentTransparency, ', state:', markerFillTransparency, ')');
-      
+
       const response = await api.post<{
         layout: any;
         sections: any[];
