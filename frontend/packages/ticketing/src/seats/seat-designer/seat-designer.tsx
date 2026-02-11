@@ -239,7 +239,6 @@ export function SeatDesigner({
   const handleMarkerFillTransparencyChange = useCallback(
     (transparency: number) => {
       recordSnapshot(); // Record state before change for undo
-      console.log('[Transparency Change] Setting markerFillTransparency to:', transparency);
       setMarkerFillTransparency(transparency);
       // Don't save immediately - will be saved when save button is clicked
     },
@@ -559,36 +558,17 @@ export function SeatDesigner({
   // Load existing sections when initialSections provided
   useEffect(() => {
     if (initialSections && designMode === "section-level") {
-      console.log("Loading sections from initialSections:", initialSections);
       const markers: SectionMarker[] = initialSections.map((section) => {
-        console.log(
-          "Processing initialSection:",
-          section.id,
-          "shape value:",
-          section.shape,
-          "type:",
-          typeof section.shape,
-          "has shape prop:",
-          "shape" in section,
-        );
         let shape: PlacementShape | undefined;
         if ("shape" in section && section.shape) {
           try {
             const parsed = JSON.parse(section.shape);
-            console.log("Parsed shape JSON from initialSections:", parsed);
             // Normalize the type to ensure it matches the enum
             if (parsed && typeof parsed === "object" && parsed.type) {
-              const normalized: PlacementShape = {
+              shape = {
                 ...parsed,
                 type: parsed.type as PlacementShapeType,
               };
-              shape = normalized;
-              console.log(
-                "Normalized shape from initialSections:",
-                normalized,
-                "Type:",
-                normalized.type,
-              );
             } else {
               console.warn(
                 "Parsed shape is invalid from initialSections:",
@@ -599,20 +579,8 @@ export function SeatDesigner({
             console.error(
               "Failed to parse section shape from initialSections:",
               e,
-              "Raw shape string:",
-              section.shape,
             );
           }
-        } else {
-          console.log(
-            "Section from initialSections has no shape or shape is falsy:",
-            {
-              id: section.id,
-              name: section.name,
-              shape: section.shape,
-              hasShapeProp: "shape" in section,
-            },
-          );
         }
         return {
           id: section.id,
@@ -627,16 +595,6 @@ export function SeatDesigner({
           isNew: false,
         };
       });
-      console.log(
-        "Section markers created from initialSections:",
-        markers.map((m) => ({
-          id: m.id,
-          name: m.name,
-          hasShape: !!m.shape,
-          shapeType: m.shape?.type,
-          shape: m.shape,
-        })),
-      );
       setSectionMarkers(markers);
       // Don't auto-select the first section to avoid opening the Selected Section sheet immediately
       // if (markers.length > 0) {

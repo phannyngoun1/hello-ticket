@@ -2,18 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Inter font face declarations - works offline with system fonts or local font files */
-/* Checks for locally installed Inter first, then web fonts, then falls back to system fonts */
+/* Inter font face declarations - uses locally installed Inter if available,
+   otherwise falls back to the system font stack in tailwind.config.js
+   (system-ui, -apple-system, Segoe UI, Roboto, etc.) */
 @font-face {
   font-family: "Inter";
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src:
-    local("Inter Light"),
-    local("Inter-Light"),
-    url("/fonts/Inter-Light.woff2") format("woff2"),
-    url("/fonts/Inter-Light.woff") format("woff");
+  src: local("Inter Light"), local("Inter-Light");
 }
 
 @font-face {
@@ -21,12 +18,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src:
-    local("Inter"),
-    local("Inter Regular"),
-    local("Inter-Regular"),
-    url("/fonts/Inter-Regular.woff2") format("woff2"),
-    url("/fonts/Inter-Regular.woff") format("woff");
+  src: local("Inter"), local("Inter Regular"), local("Inter-Regular");
 }
 
 @font-face {
@@ -34,11 +26,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src:
-    local("Inter Medium"),
-    local("Inter-Medium"),
-    url("/fonts/Inter-Medium.woff2") format("woff2"),
-    url("/fonts/Inter-Medium.woff") format("woff");
+  src: local("Inter Medium"), local("Inter-Medium");
 }
 
 @font-face {
@@ -46,11 +34,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src:
-    local("Inter SemiBold"),
-    local("Inter-SemiBold"),
-    url("/fonts/Inter-SemiBold.woff2") format("woff2"),
-    url("/fonts/Inter-SemiBold.woff") format("woff");
+  src: local("Inter SemiBold"), local("Inter-SemiBold");
 }
 
 @font-face {
@@ -58,11 +42,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src:
-    local("Inter Bold"),
-    local("Inter-Bold"),
-    url("/fonts/Inter-Bold.woff2") format("woff2"),
-    url("/fonts/Inter-Bold.woff") format("woff");
+  src: local("Inter Bold"), local("Inter-Bold");
 }
 
 @layer base {
