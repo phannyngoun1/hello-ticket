@@ -361,21 +361,46 @@ export function SeatDesigner({
   
   // Refresh handler to reload data from server
   const handleRefresh = useCallback(async () => {
-    // Invalidate and refetch all relevant queries
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["seats", layoutId] }),
-      queryClient.invalidateQueries({ queryKey: ["sections", "layout", layoutId] }),
-      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId, "with-seats"] }),
-      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId] }),
-    ]);
-    // Refetch queries
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ["seats", layoutId] }),
-      queryClient.refetchQueries({ queryKey: ["sections", "layout", layoutId] }),
-      queryClient.refetchQueries({ queryKey: ["layouts", layoutId, "with-seats"] }),
-      queryClient.refetchQueries({ queryKey: ["layouts", layoutId] }),
-    ]);
-  }, [queryClient, layoutId]);
+    // Invalidate queries - React Query will automatically dedupe concurrent refetches
+    // of the same query key, so even if multiple components use the same query,
+    // it will only make one network request
+    
+    // If initialSections is provided, we're using data from /with-seats, so we don't need
+    // to invalidate the separate sections query - just invalidate /with-seats
+    // The parent component will refetch /with-seats and pass updated initialSections
+    const queriesToInvalidate = [
+      queryClient.invalidateQueries({ 
+        queryKey: ["seats", layoutId],
+        refetchType: "active", // Only refetch active queries
+      }),
+      // Only invalidate sections query if we're not using initialSections (from /with-seats)
+      // When initialSections is provided, sections come from /with-seats, so no need for separate call
+      ...(!initialSections ? [
+        queryClient.invalidateQueries({ 
+          queryKey: ["sections", "layout", layoutId],
+          refetchType: "active",
+        }),
+      ] : []),
+      // Always invalidate with-seats so parent component gets updated data
+      // This will also update initialSections when parent refetches
+      queryClient.invalidateQueries({ 
+        queryKey: ["layouts", layoutId, "with-seats"],
+        refetchType: "active", // Only refetch active queries
+      }),
+    ];
+    
+    await Promise.all(queriesToInvalidate);
+    
+    // Reset dirty state and undo/redo history after refresh
+    // This ensures the UI reflects that we're back to a clean state matching the server
+    setDeletedSeatIds([]);
+    setDeletedSectionIds([]);
+    // Mark all seats and sections as not new (they're from server now)
+    setSeats((prev) => prev.map((s) => ({ ...s, isNew: false })));
+    setSectionMarkers((prev) => prev.map((s) => ({ ...s, isNew: false })));
+    // Clear undo/redo history since we've refreshed from server
+    clearHistory();
+  }, [queryClient, layoutId, initialSections, clearHistory]);
   
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
@@ -414,18 +439,23 @@ export function SeatDesigner({
     queryFn: () => seatService.getByLayout(layoutId),
     enabled: !!layoutId && !initialSeats, // Only fetch if initialSeats not provided
     retry: false, // Don't retry if column doesn't exist
-    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnMount: false, // Don't refetch on mount - use cache, refresh button will invalidate
     refetchOnWindowFocus: false,
   });
 
-  // Fetch sections for the layout (needed for seat-level mode select box and seat editing)
+  // Fetch sections for the layout only if initialSections not provided
+  // If initialSections is provided (from /with-seats), use that instead to avoid duplicate API calls
   const { data: sectionsData } = useQuery({
     queryKey: ["sections", "layout", layoutId],
     queryFn: () => sectionService.getByLayout(layoutId),
-    enabled: !!layoutId, // Enable for both modes since we need it for seat editing
-    refetchOnMount: true,
+    enabled: !!layoutId && !initialSections, // Only fetch if initialSections not provided
+    refetchOnMount: false, // Don't refetch on mount - use cache, refresh button will invalidate
     refetchOnWindowFocus: false,
   });
+  
+  // Use initialSections if provided, otherwise use sectionsData from query
+  // Both should have the same structure (Section[]), so this is safe
+  const effectiveSectionsData = (initialSections || sectionsData) as typeof sectionsData;
 
   // Ensure a default section exists in UI for section-level (large) mode
   // Only create temporary marker if no sections from API and no initialSections
@@ -435,7 +465,7 @@ export function SeatDesigner({
       sectionMarkers.length === 0 &&
       !isLoading &&
       !initialSections &&
-      (!sectionsData || sectionsData.length === 0)
+      (!effectiveSectionsData || effectiveSectionsData.length === 0)
     ) {
       const defaultSection: SectionMarker = {
         id: `section-default`,
@@ -454,7 +484,7 @@ export function SeatDesigner({
     isLoading,
     sectionMarkers.length,
     initialSections,
-    sectionsData,
+    effectiveSectionsData,
   ]);
 
   // Initial synchronous measurement to avoid first-render resizing
@@ -621,13 +651,13 @@ export function SeatDesigner({
   useEffect(() => {
     if (
       !initialSections &&
-      sectionsData !== undefined && // sectionsData has been loaded (could be empty array)
+      effectiveSectionsData !== undefined && // effectiveSectionsData has been loaded (could be empty array)
       designMode === "section-level"
     ) {
-      // Always sync sectionsData to sectionMarkers, even if empty
+      // Always sync effectiveSectionsData to sectionMarkers, even if empty
       // This replaces any temporary "section-default" markers with real sections
-      console.log("sectionsData received:", sectionsData);
-      const markers: SectionMarker[] = sectionsData.map((section) => {
+      console.log("effectiveSectionsData received:", effectiveSectionsData);
+      const markers: SectionMarker[] = effectiveSectionsData.map((section) => {
         console.log(
           "Processing section:",
           section.id,
@@ -698,7 +728,7 @@ export function SeatDesigner({
         };
       });
       console.log(
-        "Section markers created from sectionsData:",
+        "Section markers created from effectiveSectionsData:",
         markers.map((m) => ({
           id: m.id,
           name: m.name,
@@ -711,7 +741,7 @@ export function SeatDesigner({
       );
       setSectionMarkers(markers);
     }
-  }, [sectionsData, initialSections, designMode]);
+  }, [effectiveSectionsData, initialSections, designMode]);
 
   // Track the last loaded data to prevent unnecessary reloads
   const lastInitialSeatsRef = useRef<typeof initialSeats>();
@@ -989,8 +1019,8 @@ export function SeatDesigner({
         }
 
         // Save file_id to the section in the database
-        // Try to get section from sectionsData first (saved in DB), otherwise use sectionMarkers
-        const sectionFromData = sectionsData?.find((s) => s.id === sectionId);
+        // Try to get section from effectiveSectionsData first (saved in DB), otherwise use sectionMarkers
+        const sectionFromData = effectiveSectionsData?.find((s) => s.id === sectionId);
         const sectionFromMarkers = sectionMarkers.find(
           (s) => s.id === sectionId,
         );
@@ -1923,7 +1953,7 @@ export function SeatDesigner({
     setPendingSectionCoordinates(null); // Clear any pending coordinates
   };
 
-  // Edit section from sectionsData (for seat-level mode)
+  // Edit section from effectiveSectionsData (for seat-level mode)
   const handleEditSectionFromData = (section: { id: string; name: string }) => {
     setEditingSectionId(section.id);
     sectionForm.reset({ name: section.name });
@@ -1952,7 +1982,7 @@ export function SeatDesigner({
   const getUniqueSections = (): string[] => {
     return getUniqueSectionsUtil(
       seats,
-      sectionsData,
+      effectiveSectionsData,
       sectionMarkers,
       designMode,
     );
@@ -2469,11 +2499,11 @@ export function SeatDesigner({
     const name = data.name.trim() || "Section";
 
     if (editingSectionId) {
-      // Find section in sectionMarkers (section-level mode) or sectionsData (seat-level mode)
+      // Find section in sectionMarkers (section-level mode) or effectiveSectionsData (seat-level mode)
       const sectionFromMarkers = sectionMarkers.find(
         (s) => s.id === editingSectionId,
       );
-      const sectionFromData = sectionsData?.find(
+      const sectionFromData = effectiveSectionsData?.find(
         (s) => s.id === editingSectionId,
       );
 
@@ -2683,7 +2713,7 @@ export function SeatDesigner({
           } else {
             // Update: has id field
             // Find original section from query result to preserve file_id
-            const originalSection = sectionsData?.find((s) => s.id === section.id);
+            const originalSection = effectiveSectionsData?.find((s) => s.id === section.id);
             const sectionPayload: Record<string, any> = {
               id: section.id,
               name: section.name,
@@ -2732,8 +2762,8 @@ export function SeatDesigner({
           // Try to find section_id from section name if sectionId is not provided
           let sectionId = seat.seat.sectionId;
           if (!sectionId && seat.seat.section) {
-            if (sectionsData && designMode === "seat-level") {
-              const section = sectionsData.find((s) => s.name === seat.seat.section);
+            if (effectiveSectionsData && designMode === "seat-level") {
+              const section = effectiveSectionsData.find((s) => s.name === seat.seat.section);
               sectionId = section?.id;
             } else if (designMode === "section-level") {
               const section = sectionMarkers.find((s) => s.name === seat.seat.section);
@@ -3449,7 +3479,7 @@ export function SeatDesigner({
                   ? {
                       form: seatPlacementForm,
                       uniqueSections: getUniqueSections(),
-                      sectionsData,
+                      sectionsData: effectiveSectionsData,
                       sectionSelectValue,
                       onSectionSelectValueChange: setSectionSelectValue,
                       onNewSection: () => {

@@ -10,7 +10,7 @@ import type { Section } from "../../sections/types";
  */
 export function getUniqueSections(
   seats: SeatMarker[],
-  sectionsData?: Section[],
+  sectionsData?: Section[] | Array<{ id: string; name: string; [key: string]: any }>,
   sectionMarkers?: SectionMarker[],
   designMode?: "seat-level" | "section-level"
 ): string[] {
@@ -24,6 +24,7 @@ export function getUniqueSections(
   });
 
   // Add sections from API (for both modes - needed for seat editing)
+  // Accepts both full Section[] and partial section data (from /with-seats)
   if (sectionsData) {
     sectionsData.forEach((section) => {
       sections.add(section.name);
@@ -45,10 +46,11 @@ export function getUniqueSections(
  */
 export function findSectionId(
   sectionName: string,
-  sectionsData?: Section[],
+  sectionsData?: Section[] | Array<{ id: string; name: string; [key: string]: any }>,
   sectionMarkers?: SectionMarker[]
 ): string | undefined {
   // Try sectionsData first (API data)
+  // Accepts both full Section[] and partial section data (from /with-seats)
   if (sectionsData) {
     const section = sectionsData.find((s) => s.name === sectionName);
     if (section) return section.id;
