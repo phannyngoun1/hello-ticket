@@ -16,7 +16,6 @@ import {
   Label,
 } from "@truths/ui";
 import {
-  Save,
   Trash2,
   MoreVertical,
   Image as ImageIcon,
@@ -407,18 +406,6 @@ export function SectionDetailView({
                   <Redo2 className="h-3.5 w-3.5" />
                 </Button>
               </>
-            )}
-            {!readOnly && (
-              <Button
-                onClick={onSave}
-                disabled={saveSeatsMutationPending}
-                size="sm"
-                className={`h-7 px-2 ${isDirty ? "ring-2 ring-primary ring-offset-2" : ""}`}
-                title={isDirty ? "You have unsaved changes" : "Save changes"}
-              >
-                <Save className="h-3.5 w-3.5 mr-1" />
-                Save{isDirty ? " *" : ""}
-              </Button>
             )}
             {onToggleFullscreen && (
               <Button

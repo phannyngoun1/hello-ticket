@@ -406,7 +406,7 @@ function ShapeOverlayComponent({
       onMouseEnter={(e) => {
         const container = e.target.getStage()?.container();
         if (container) {
-          container.style.cursor = "pointer";
+          container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
         }
         setIsHovered(true);
         overlay.onHover?.();
@@ -747,7 +747,11 @@ function SeatMarkerComponent({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor = isSelected ? "move" : "pointer";
+            container.style.cursor = selectedShapeTool
+              ? "crosshair"
+              : isSelected
+                ? "move"
+                : "pointer";
           }
           setIsHovered(true);
         }}
@@ -757,7 +761,7 @@ function SeatMarkerComponent({
             container.style.cursor =
               isPanning || isSpacePressed
                 ? "grab"
-                : isPlacingSeats || isPlacingSections
+                : selectedShapeTool || isPlacingSeats || isPlacingSections
                   ? "crosshair"
                   : "pointer"; // Pointer tool shows pointer cursor
           }
@@ -884,7 +888,7 @@ function SeatMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
           onMouseUp={(e) => {
@@ -896,7 +900,7 @@ function SeatMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
         />
@@ -1207,8 +1211,11 @@ function SectionMarkerComponent({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor =
-              isSelected && section.shape ? "move" : "pointer";
+            container.style.cursor = selectedShapeTool
+              ? "crosshair"
+              : isSelected && section.shape
+                ? "move"
+                : "pointer";
           }
           setIsHovered(true);
         }}
@@ -1218,7 +1225,7 @@ function SectionMarkerComponent({
             container.style.cursor =
               isPanning || isSpacePressed
                 ? "grab"
-                : isPlacingSeats || isPlacingSections
+                : selectedShapeTool || isPlacingSeats || isPlacingSections
                   ? "crosshair"
                   : "pointer"; // Pointer tool shows pointer cursor
           }
@@ -1396,7 +1403,7 @@ function SectionMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
           onMouseUp={(e) => {
@@ -1408,7 +1415,7 @@ function SectionMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
         />

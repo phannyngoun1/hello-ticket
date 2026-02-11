@@ -4,6 +4,7 @@
  * Toolbox for selecting shape tools to draw on the canvas
  */
 
+import { useState, useEffect, useCallback } from "react";
 import { Card, Input, Label } from "@truths/ui";
 import {
   Circle,
@@ -29,6 +30,66 @@ import {
 } from "../types";
 import { cn } from "@truths/ui/lib/utils";
 import { DEFAULT_SHAPE_FILL, DEFAULT_SHAPE_STROKE } from "../colors";
+
+/**
+ * A number input that only commits its value on blur (or Enter key).
+ * This prevents every keystroke from triggering expensive style changes.
+ */
+function BlurNumberInput({
+  value,
+  onCommit,
+  min,
+  max,
+  step,
+  fallback,
+  className,
+  title,
+  "aria-label": ariaLabel,
+}: {
+  value: number;
+  onCommit: (value: number) => void;
+  min?: string;
+  max?: string;
+  step?: string;
+  fallback: number;
+  className?: string;
+  title?: string;
+  "aria-label"?: string;
+}) {
+  const [localValue, setLocalValue] = useState<string>(String(value));
+
+  // Sync local value when external value changes (e.g. different marker selected)
+  useEffect(() => {
+    setLocalValue(String(value));
+  }, [value]);
+
+  const commit = useCallback(() => {
+    const parsed = parseFloat(localValue);
+    const final = isNaN(parsed) ? fallback : parsed;
+    onCommit(final);
+    setLocalValue(String(final));
+  }, [localValue, fallback, onCommit]);
+
+  return (
+    <Input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className={className}
+      title={title}
+      aria-label={ariaLabel}
+    />
+  );
+}
 
 export interface ShapeToolboxProps {
   selectedShapeType: PlacementShapeType | null;
@@ -347,8 +408,8 @@ export function ShapeToolbox({
           </div>
         )}
 
-        {/* Compact seat placement controls - hidden when an object is selected (only for new markers) */}
-        {!isEditMode && !selectedMarker && seatPlacementControls && (
+        {/* Compact seat placement controls - hidden when pointer selected or an object is selected (only shown with active shape tool) */}
+        {!isEditMode && !selectedMarker && selectedShapeType && seatPlacementControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             {seatPlacementControls}
           </div>
@@ -437,17 +498,13 @@ export function ShapeToolbox({
                 <Label className="text-xs text-muted-foreground shrink-0">
                   Radius
                 </Label>
-                <Input
-                  type="number"
+                <BlurNumberInput
                   min="0.1"
                   max="50"
                   step="0.1"
                   value={markerShape.radius || 1.2}
-                  onChange={(e) =>
-                    onStyleChange?.({
-                      radius: parseFloat(e.target.value) || 1.2,
-                    })
-                  }
+                  onCommit={(v) => onStyleChange?.({ radius: v })}
+                  fallback={1.2}
                   className="h-6 w-16 font-mono text-[11px] py-0 px-1"
                   title="Radius as % of canvas"
                   aria-label="Circle radius"
@@ -461,17 +518,13 @@ export function ShapeToolbox({
                   <Label className="text-xs text-muted-foreground shrink-0">
                     W
                   </Label>
-                  <Input
-                    type="number"
+                  <BlurNumberInput
                     min="0.1"
                     max="100"
                     step="0.1"
                     value={markerShape.width || 3}
-                    onChange={(e) =>
-                      onStyleChange?.({
-                        width: parseFloat(e.target.value) || 3,
-                      })
-                    }
+                    onCommit={(v) => onStyleChange?.({ width: v })}
+                    fallback={3}
                     className="h-6 w-16 font-mono text-[11px] py-0 px-1"
                     title="Width as % of canvas"
                     aria-label="Shape width"
@@ -482,17 +535,13 @@ export function ShapeToolbox({
                   <Label className="text-xs text-muted-foreground shrink-0">
                     H
                   </Label>
-                  <Input
-                    type="number"
+                  <BlurNumberInput
                     min="0.1"
                     max="100"
                     step="0.1"
                     value={markerShape.height || 2}
-                    onChange={(e) =>
-                      onStyleChange?.({
-                        height: parseFloat(e.target.value) || 2,
-                      })
-                    }
+                    onCommit={(v) => onStyleChange?.({ height: v })}
+                    fallback={2}
                     className="h-6 w-16 font-mono text-[11px] py-0 px-1"
                     title="Height as % of canvas"
                     aria-label="Shape height"
@@ -506,17 +555,13 @@ export function ShapeToolbox({
               <Label className="text-xs text-muted-foreground shrink-0">
                 R
               </Label>
-              <Input
-                type="number"
+              <BlurNumberInput
                 min="0"
                 max="360"
                 step="1"
                 value={markerShape.rotation || 0}
-                onChange={(e) =>
-                  onStyleChange?.({
-                    rotation: parseFloat(e.target.value) || 0,
-                  })
-                }
+                onCommit={(v) => onStyleChange?.({ rotation: v })}
+                fallback={0}
                 className="h-6 w-10 font-mono text-[11px] py-0 px-1"
                 title="Rotation in degrees"
                 aria-label="Shape rotation"
