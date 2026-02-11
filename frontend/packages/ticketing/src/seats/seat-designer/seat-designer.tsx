@@ -1684,6 +1684,9 @@ export function SeatDesigner({
   // Handle section click from Konva (shift-click toggles multi-select)
   const handleKonvaSectionClick = useCallback(
     (section: SectionMarker, event?: { shiftKey?: boolean }) => {
+      // When a shape tool is active, skip selection (canvas is in placement mode)
+      if (selectedShapeTool) return;
+
       setViewingSection(null);
       setSelectedSeatIds([]);
       setSelectedSeat(null);
@@ -1712,7 +1715,7 @@ export function SeatDesigner({
       setAnchorSectionId(section.id);
       setAnchorSeatId(null);
     },
-    [sectionMarkers, selectedSectionIds],
+    [sectionMarkers, selectedSectionIds, selectedShapeTool],
   );
 
   // Handle seat marker click - used elsewhere in the component
@@ -1742,6 +1745,9 @@ export function SeatDesigner({
     seat: SeatMarker,
     event?: { shiftKey?: boolean },
   ) => {
+    // When a shape tool is active, skip selection (canvas is in placement mode)
+    if (selectedShapeTool) return;
+
     if (event?.shiftKey) {
       setSelectedSeatIds((prev) =>
         prev.includes(seat.id)
@@ -1813,6 +1819,24 @@ export function SeatDesigner({
     }
   };
 
+  // Handle shape tool selection - clear all selections when a shape tool (not pointer) is selected
+  const handleShapeToolSelect = useCallback(
+    (tool: PlacementShapeType | null) => {
+      setSelectedShapeTool(tool);
+      // When a shape tool (not pointer) is selected, release all selections
+      if (tool !== null) {
+        setSelectedSeat(null);
+        setSelectedSeatIds([]);
+        setSelectedSectionMarker(null);
+        setSelectedSectionIds([]);
+        setAnchorSeatId(null);
+        setAnchorSectionId(null);
+        setIsEditingSeat(false);
+      }
+    },
+    [],
+  );
+
   // Handle deselection - clear all selections when clicking on empty space
   const handleDeselect = () => {
     setSelectedSeat(null);
@@ -1827,6 +1851,9 @@ export function SeatDesigner({
   // Apply drag-to-select result: set multi-selection and primary from first item
   const handleMarkersInRect = useCallback(
     (seatIds: string[], sectionIds: string[]) => {
+      // When a shape tool is active, skip drag-to-select (canvas is in placement mode)
+      if (selectedShapeTool) return;
+
       setSelectedSeatIds(seatIds);
       setSelectedSectionIds(sectionIds);
       setSelectedSeat(
@@ -1844,7 +1871,7 @@ export function SeatDesigner({
       // within a section). Clearing viewingSection would incorrectly exit the drill-down.
       // When on the main canvas, viewingSection is already null so the call was a no-op anyway.
     },
-    [seats, sectionMarkers],
+    [seats, sectionMarkers, selectedShapeTool],
   );
 
   // Handle drag over canvas for shape toolbox drag-drop
@@ -3454,7 +3481,7 @@ export function SeatDesigner({
           {venueType === "small" && (
             <SeatDesignToolbar
               selectedShapeType={selectedShapeTool}
-              onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
+              onShapeTypeSelect={readOnly ? () => {} : handleShapeToolSelect}
               selectedSeat={selectedSeat}
               selectedSection={
                 designMode === "section-level" ? selectedSectionMarker : null
@@ -3524,7 +3551,7 @@ export function SeatDesigner({
                   isEditing={!!editingSectionId}
                   selectedShapeType={selectedShapeTool}
                   onShapeTypeSelect={(type) => {
-                    setSelectedShapeTool(type);
+                    handleShapeToolSelect(type);
                     // If we are editing, we keep the editing state.
                     // If we are creating, we keep the creating state.
                     // But if they change tool implies they might want to redraw.
@@ -3536,7 +3563,7 @@ export function SeatDesigner({
               ) : (
                 <ShapeToolbox
                   selectedShapeType={selectedShapeTool}
-                  onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
+                  onShapeTypeSelect={readOnly ? () => {} : handleShapeToolSelect}
                   selectedSeat={null}
                   selectedSection={selectedSectionMarker}
                   onSeatEdit={handleSeatEdit}
@@ -3827,7 +3854,7 @@ export function SeatDesigner({
         placementShape={placementShape}
         onPlacementShapeChange={setPlacementShape}
         selectedShapeTool={selectedShapeTool}
-        onShapeToolSelect={setSelectedShapeTool}
+        onShapeToolSelect={handleShapeToolSelect}
         onShapeDraw={handleShapeDraw}
         shapeOverlays={shapeOverlays}
         selectedOverlayId={selectedOverlayId}

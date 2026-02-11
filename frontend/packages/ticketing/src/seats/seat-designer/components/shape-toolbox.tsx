@@ -347,8 +347,8 @@ export function ShapeToolbox({
           </div>
         )}
 
-        {/* Compact seat placement controls - right after shapes so always visible in seat-level */}
-        {!isEditMode && seatPlacementControls && (
+        {/* Compact seat placement controls - hidden when an object is selected (only for new markers) */}
+        {!isEditMode && !selectedMarker && seatPlacementControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             {seatPlacementControls}
           </div>
