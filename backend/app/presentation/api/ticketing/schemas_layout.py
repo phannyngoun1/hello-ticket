@@ -138,3 +138,34 @@ class LayoutWithSeatsResponse(BaseModel):
     layout: LayoutResponse
     seats: List[SeatResponse] = Field(..., description="List of seats for this layout")
     sections: List[SectionResponse] = Field(default_factory=list, description="List of sections for this layout")
+
+
+class BulkDesignerSaveRequest(BaseModel):
+    """Bulk save request for designer - saves layout properties, sections, and seats in one operation"""
+    
+    # Layout properties
+    canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for all seats (0.0 to 1.0)")
+    
+    # Sections: list of operations (create, update, delete)
+    # - No 'id' field: Create new section
+    # - Has 'id' field: Update existing section
+    # - Has 'id' field + 'delete' flag: Delete section
+    sections: List[Dict[str, Any]] = Field(default_factory=list, description="List of section operations")
+    
+    # Seats: list of operations (create, update, delete)
+    # - No 'id' field: Create new seat
+    # - Has 'id' field: Update existing seat
+    # - Has 'id' field + 'delete' flag: Delete seat
+    seats: List[Dict[str, Any]] = Field(default_factory=list, description="List of seat operations")
+    
+    # Optional file_id for layout image update
+    file_id: Optional[str] = Field(None, description="File ID to update the layout's image file")
+
+
+class BulkDesignerSaveResponse(BaseModel):
+    """Response from bulk designer save"""
+    
+    layout: LayoutResponse
+    sections: List[SectionResponse] = Field(default_factory=list)
+    seats: List[SeatResponse] = Field(default_factory=list)

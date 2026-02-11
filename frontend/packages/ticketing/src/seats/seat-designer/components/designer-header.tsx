@@ -22,6 +22,9 @@ import {
   Palette,
   Grid3x3,
   Eye,
+  Undo2,
+  Redo2,
+  RefreshCw,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -73,6 +76,20 @@ export interface DesignerHeaderProps {
   markerFillTransparency?: number;
   /** Called when user changes marker fill transparency */
   onMarkerFillTransparencyChange?: (transparency: number) => void;
+  /** Undo last change */
+  onUndo?: () => void;
+  /** Redo last undone change */
+  onRedo?: () => void;
+  /** Whether undo is available */
+  canUndo?: boolean;
+  /** Whether redo is available */
+  canRedo?: boolean;
+  /** Whether there are unsaved changes */
+  isDirty?: boolean;
+  /** Called when user clicks refresh button to reload data from server */
+  onRefresh?: () => void | Promise<void>;
+  /** Whether refresh is in progress */
+  isRefreshing?: boolean;
 }
 
 export function DesignerHeader({
@@ -111,6 +128,13 @@ export function DesignerHeader({
   onPreview,
   markerFillTransparency = 1.0,
   onMarkerFillTransparencyChange,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  isDirty = false,
+  onRefresh,
+  isRefreshing = false,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
@@ -340,6 +364,19 @@ export function DesignerHeader({
         )}
       </div>
       <div className="flex gap-1">
+        {/* Refresh Button */}
+        {onRefresh && (
+          <Button
+            variant="outline"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            size="sm"
+            className="h-7 w-7 p-0"
+            title="Refresh data from server"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
         {/* Datasheet Toggle Button */}
         {showDatasheetButton && (
           <Button
@@ -378,15 +415,40 @@ export function DesignerHeader({
             {isDetectingSeats ? "Detecting…" : "Detect seats"}
           </Button>
         )}
+        {!readOnly && onUndo && onRedo && (
+          <>
+            <Button
+              variant="outline"
+              onClick={onUndo}
+              disabled={!canUndo}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onRedo}
+              disabled={!canRedo}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
         {!readOnly && (
           <Button
             onClick={onSave}
             disabled={isSaving}
             size="sm"
-            className="h-7 px-2"
+            className={`h-7 px-2 ${isDirty ? "ring-2 ring-primary ring-offset-2" : ""}`}
+            title={isDirty ? "You have unsaved changes" : "Save changes"}
           >
             <Save className="h-3.5 w-3.5 mr-1" />
-            Save
+            Save{isDirty ? " *" : ""}
           </Button>
         )}
         {onPreview && (

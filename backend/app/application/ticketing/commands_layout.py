@@ -40,3 +40,22 @@ class CloneLayoutCommand:
     """Command to clone a layout with all its sections and seats."""
 
     layout_id: str
+
+
+@dataclass
+class BulkDesignerSaveCommand:
+    """Command to bulk save designer changes: layout properties, sections, and seats in one operation"""
+
+    layout_id: str
+    venue_id: str
+    canvas_background_color: Optional[str] = None
+    marker_fill_transparency: Optional[float] = None
+    file_id: Optional[str] = None
+    sections: list[dict] = None  # List of section operations (create, update, delete)
+    seats: list[dict] = None  # List of seat operations (create, update, delete)
+    
+    def __post_init__(self):
+        if self.sections is None:
+            self.sections = []
+        if self.seats is None:
+            self.seats = []

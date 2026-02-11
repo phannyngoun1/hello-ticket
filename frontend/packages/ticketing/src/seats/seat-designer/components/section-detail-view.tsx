@@ -27,6 +27,9 @@ import {
   Maximize,
   Palette,
   BrushCleaning,
+  Undo2,
+  Redo2,
+  RefreshCw,
 } from "lucide-react";
 import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -122,6 +125,20 @@ export interface SectionDetailViewProps {
   gridSize?: number;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  /** Undo last change */
+  onUndo?: () => void;
+  /** Redo last undone change */
+  onRedo?: () => void;
+  /** Whether undo is available */
+  canUndo?: boolean;
+  /** Whether redo is available */
+  canRedo?: boolean;
+  /** Whether there are unsaved changes */
+  isDirty?: boolean;
+  /** Called when user clicks refresh button to reload data from server */
+  onRefresh?: () => void | Promise<void>;
+  /** Whether refresh is in progress */
+  isRefreshing?: boolean;
 }
 
 export function SectionDetailView({
@@ -188,6 +205,13 @@ export function SectionDetailView({
   gridSize = 5,
   isFullscreen = false,
   onToggleFullscreen,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  isDirty = false,
+  onRefresh,
+  isRefreshing = false,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const effectiveCanvasColor =
@@ -323,6 +347,19 @@ export function SectionDetailView({
           </div>
           {/* Toolbar: same order as DesignerHeader (List | Detect | Save | Fullscreen | color | ⋮) */}
           <div className="flex items-center gap-1">
+            {/* Refresh Button */}
+            {onRefresh && (
+              <Button
+                variant="outline"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                size="sm"
+                className="h-7 w-7 p-0"
+                title="Refresh data from server"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
             {!isFullscreen && (
               <Button
                 onClick={() => setIsDatasheetOpen(true)}
@@ -347,15 +384,40 @@ export function SectionDetailView({
                 {isDetectingSeats ? "Detecting…" : "Detect seats"}
               </Button>
             )}
+            {!readOnly && onUndo && onRedo && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Redo (Ctrl+Shift+Z)"
+                >
+                  <Redo2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
             {!readOnly && (
               <Button
                 onClick={onSave}
                 disabled={saveSeatsMutationPending}
                 size="sm"
-                className="h-7 px-2"
+                className={`h-7 px-2 ${isDirty ? "ring-2 ring-primary ring-offset-2" : ""}`}
+                title={isDirty ? "You have unsaved changes" : "Save changes"}
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
-                Save
+                Save{isDirty ? " *" : ""}
               </Button>
             )}
             {onToggleFullscreen && (

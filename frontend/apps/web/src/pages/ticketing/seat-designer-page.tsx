@@ -140,14 +140,14 @@ function SeatDesignerContent({
             input: { file_id: "" },
           });
         }}
-        onCanvasBackgroundColorChange={(color) => {
-          updateLayoutMutation.mutate({
+        onCanvasBackgroundColorChange={async (color) => {
+          await updateLayoutMutation.mutateAsync({
             id: effectiveLayoutId,
             input: { canvas_background_color: color },
           });
         }}
-        onMarkerFillTransparencyChange={(transparency) => {
-          updateLayoutMutation.mutate({
+        onMarkerFillTransparencyChange={async (transparency) => {
+          await updateLayoutMutation.mutateAsync({
             id: effectiveLayoutId,
             input: { marker_fill_transparency: transparency },
           });

@@ -22,6 +22,7 @@ import { sectionService } from "../../sections/section-service";
 import { SeatType } from "../types";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@truths/api";
+import { api } from "@truths/api";
 import { uploadService } from "@truths/shared";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { detectMarkers } from "../../ai/detect-markers";
@@ -36,6 +37,8 @@ import {
   type SectionFormData,
   type SeatFormData,
 } from "./form-schemas";
+import { useDesignerHistory } from "./hooks/use-designer-history";
+import type { DesignerSnapshot } from "./types";
 import {
   ZoomControls,
   InstructionsPanel,
@@ -106,6 +109,11 @@ export function SeatDesigner({
   const [markerFillTransparency, setMarkerFillTransparency] = useState<number>(
     initialMarkerFillTransparency ?? 1.0,
   );
+  // Use ref to ensure we always read the latest transparency value in mutation closure
+  const markerFillTransparencyRef = useRef(markerFillTransparency);
+  useEffect(() => {
+    markerFillTransparencyRef.current = markerFillTransparency;
+  }, [markerFillTransparency]);
   // Store file_id for the main image
   const [mainImageFileId, setMainImageFileId] = useState<string | undefined>(
     initialFileId,
@@ -133,19 +141,6 @@ export function SeatDesigner({
       setMarkerFillTransparency(initialMarkerFillTransparency);
     }
   }, [initialMarkerFillTransparency]);
-
-  const handleCanvasBackgroundColorChange = useCallback((color: string) => {
-    setCanvasBackgroundColor(color);
-    // Don't save immediately - will be saved when save button is clicked
-  }, []);
-
-  const handleMarkerFillTransparencyChange = useCallback(
-    (transparency: number) => {
-      setMarkerFillTransparency(transparency);
-      // Don't save immediately - will be saved when save button is clicked
-    },
-    [],
-  );
 
   // Large venue: sections placed on main floor plan
   const [sectionMarkers, setSectionMarkers] = useState<SectionMarker[]>([]);
@@ -200,6 +195,57 @@ export function SeatDesigner({
   const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
   /** Multi-selection: all selected seat ids (for highlight + Delete key). */
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  /** Track IDs of seats deleted locally (for batch deletion on Save) */
+  const [deletedSeatIds, setDeletedSeatIds] = useState<string[]>([]);
+  /** Track IDs of sections deleted locally (for batch deletion on Save) */
+  const [deletedSectionIds, setDeletedSectionIds] = useState<string[]>([]);
+
+  // Undo/Redo history management (must be after seats and sectionMarkers are defined)
+  const getSnapshot = useCallback((): DesignerSnapshot => {
+    return {
+      seats: [...seats],
+      sectionMarkers: [...sectionMarkers],
+      canvasBackgroundColor,
+      markerFillTransparency,
+    };
+  }, [seats, sectionMarkers, canvasBackgroundColor, markerFillTransparency]);
+
+  const restoreSnapshot = useCallback((snapshot: DesignerSnapshot) => {
+    setSeats(snapshot.seats);
+    setSectionMarkers(snapshot.sectionMarkers);
+    setCanvasBackgroundColor(snapshot.canvasBackgroundColor);
+    setMarkerFillTransparency(snapshot.markerFillTransparency);
+  }, []);
+
+  const {
+    recordSnapshot,
+    undo,
+    redo,
+    clearHistory,
+    canUndo,
+    canRedo,
+  } = useDesignerHistory({
+    getSnapshot,
+    restoreSnapshot,
+  });
+
+  // Canvas and marker handlers (defined after recordSnapshot is available)
+  const handleCanvasBackgroundColorChange = useCallback((color: string) => {
+    recordSnapshot(); // Record state before change for undo
+    setCanvasBackgroundColor(color);
+    // Don't save immediately - will be saved when save button is clicked
+  }, [recordSnapshot]);
+
+  const handleMarkerFillTransparencyChange = useCallback(
+    (transparency: number) => {
+      recordSnapshot(); // Record state before change for undo
+      console.log('[Transparency Change] Setting markerFillTransparency to:', transparency);
+      setMarkerFillTransparency(transparency);
+      // Don't save immediately - will be saved when save button is clicked
+    },
+    [recordSnapshot],
+  );
+
   /** Multi-selection: all selected section ids (for highlight + Delete key). */
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
   /** Anchor for alignment - the object to align others to (last clicked object) */
@@ -253,10 +299,6 @@ export function SeatDesigner({
   const [isSectionCreationPending, setIsSectionCreationPending] =
     useState(false);
 
-  // Debounce timers for shape updates to prevent rate limiting
-  const seatShapeUpdateTimersRef = useRef<Map<string, NodeJS.Timeout>>(
-    new Map(),
-  );
 
   // Shape state for placement marks
   const [placementShape, setPlacementShape] = useState<PlacementShape>({
@@ -316,6 +358,25 @@ export function SeatDesigner({
     (section: { id: string; isNew?: boolean }) => void
   >(() => {});
   const queryClient = useQueryClient();
+  
+  // Refresh handler to reload data from server
+  const handleRefresh = useCallback(async () => {
+    // Invalidate and refetch all relevant queries
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["seats", layoutId] }),
+      queryClient.invalidateQueries({ queryKey: ["sections", "layout", layoutId] }),
+      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId, "with-seats"] }),
+      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId] }),
+    ]);
+    // Refetch queries
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["seats", layoutId] }),
+      queryClient.refetchQueries({ queryKey: ["sections", "layout", layoutId] }),
+      queryClient.refetchQueries({ queryKey: ["layouts", layoutId, "with-seats"] }),
+      queryClient.refetchQueries({ queryKey: ["layouts", layoutId] }),
+    ]);
+  }, [queryClient, layoutId]);
+  
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
@@ -570,6 +631,12 @@ export function SeatDesigner({
         console.log(
           "Processing section:",
           section.id,
+          "name:",
+          section.name,
+          "canvas_background_color:",
+          section.canvas_background_color,
+          "marker_fill_transparency:",
+          section.marker_fill_transparency,
           "shape value:",
           section.shape,
           "type:",
@@ -618,8 +685,14 @@ export function SeatDesigner({
           x: section.x_coordinate || 50,
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
-          canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
-          markerFillTransparency: section.marker_fill_transparency ?? 1.0,
+          // Preserve section's own values - use undefined if not set (will inherit from layout)
+          // Only use defaults if section explicitly has no value AND we need a fallback for display
+          canvasBackgroundColor: section.canvas_background_color !== undefined && section.canvas_background_color !== null
+            ? section.canvas_background_color
+            : undefined, // undefined means inherit from layout
+          markerFillTransparency: section.marker_fill_transparency !== undefined && section.marker_fill_transparency !== null
+            ? section.marker_fill_transparency
+            : undefined, // undefined means inherit from layout
           shape,
           isNew: false,
         };
@@ -632,6 +705,8 @@ export function SeatDesigner({
           hasShape: !!m.shape,
           shapeType: m.shape?.type,
           shape: m.shape,
+          canvasBackgroundColor: m.canvasBackgroundColor,
+          markerFillTransparency: m.markerFillTransparency,
         })),
       );
       setSectionMarkers(markers);
@@ -1017,37 +1092,31 @@ export function SeatDesigner({
 
   // Remove section background image (file_id becomes optional/empty)
   const handleRemoveSectionImage = useCallback(
-    async (sectionId: string) => {
-      try {
-        await sectionService.update(sectionId, { file_id: "" });
-        setSectionMarkers((prev) =>
-          prev.map((s) =>
-            s.id === sectionId ? { ...s, imageUrl: undefined } : s,
-          ),
+    (sectionId: string) => {
+      recordSnapshot(); // Record state before change for undo
+      // Update local state only - will be saved when Save button is clicked
+      setSectionMarkers((prev) =>
+        prev.map((s) =>
+          s.id === sectionId ? { ...s, imageUrl: undefined } : s,
+        ),
+      );
+      if (selectedSectionMarker?.id === sectionId) {
+        setSelectedSectionMarker((prev) =>
+          prev ? { ...prev, imageUrl: undefined } : null,
         );
-        if (selectedSectionMarker?.id === sectionId) {
-          setSelectedSectionMarker((prev) =>
-            prev ? { ...prev, imageUrl: undefined } : null,
-          );
-        }
-        if (viewingSection?.id === sectionId) {
-          setViewingSection((prev) =>
-            prev ? { ...prev, imageUrl: undefined } : null,
-          );
-        }
-        queryClient.invalidateQueries({
-          queryKey: ["sections", "layout", layoutId],
-        });
-      } catch (error) {
-        console.error("Failed to remove section image:", error);
-        alert("Failed to remove section image. Please try again.");
+      }
+      if (viewingSection?.id === sectionId) {
+        setViewingSection((prev) =>
+          prev ? { ...prev, imageUrl: undefined } : null,
+        );
       }
     },
-    [layoutId, queryClient, selectedSectionMarker?.id, viewingSection?.id],
+    [selectedSectionMarker?.id, viewingSection?.id, recordSnapshot],
   );
 
   // Clear all placements
   const handleClearAllPlacements = () => {
+    recordSnapshot(); // Record state before change for undo
     if (venueType === "small") {
       // Clear all seats for small venue
       setSeats([]);
@@ -1096,6 +1165,7 @@ export function SeatDesigner({
         };
       });
       if (newMarkers.length > 0) {
+        recordSnapshot(); // Record state before change for undo
         setSectionMarkers((prev) => [...prev, ...newMarkers]);
         toast({
           title: `Added ${newMarkers.length} suggested section(s). You can move or edit them.`,
@@ -1126,7 +1196,7 @@ export function SeatDesigner({
     } finally {
       setIsDetectingSections(false);
     }
-  }, [mainImageUrl]);
+  }, [mainImageUrl, recordSnapshot]);
 
   // Detect seats from floor plan or section image via AI (seat-level)
   const handleDetectSeats = useCallback(async () => {
@@ -1167,6 +1237,7 @@ export function SeatDesigner({
         isNew: true,
       }));
       if (newSeats.length > 0) {
+        recordSnapshot(); // Record state before change for undo
         setSeats((prev) => [...prev, ...newSeats]);
         toast({
           title: `Added ${newSeats.length} suggested seat(s). You can move or edit them.`,
@@ -1196,11 +1267,12 @@ export function SeatDesigner({
     } finally {
       setIsDetectingSeats(false);
     }
-  }, [mainImageUrl, viewingSection, seatPlacementForm]);
+  }, [mainImageUrl, viewingSection, seatPlacementForm, recordSnapshot]);
 
   // Clear seats in current section (for section detail view)
   const handleClearSectionSeats = () => {
     if (viewingSection) {
+      recordSnapshot(); // Record state before change for undo
       setSeats((prev) =>
         prev.filter((s) => s.seat.section !== viewingSection.name),
       );
@@ -1263,7 +1335,7 @@ export function SeatDesigner({
           isPlacingSections &&
           !viewingSection
         ) {
-          // Store coordinates and start inline creation
+          // Store coordinates and start inline creation (no snapshot needed - will snapshot when section is created)
           setPendingSectionCoordinates({ x: clampedX, y: clampedY });
           // Store shape to apply after section is created
           setPlacementShape(finalShape);
@@ -1274,6 +1346,7 @@ export function SeatDesigner({
         }
 
         // Seat-level layout or section detail view: create seat markers
+        recordSnapshot(); // Record state before change for undo
         const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
@@ -1315,6 +1388,7 @@ export function SeatDesigner({
 
       // Create seat marker with shape (for normal seat placement mode)
       if (isPlacingSeats) {
+        recordSnapshot(); // Record state before change for undo
         const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
@@ -1339,6 +1413,7 @@ export function SeatDesigner({
     [
       designMode,
       venueType,
+      recordSnapshot,
       viewingSection,
       isPlacingSeats,
       isPlacingSections,
@@ -1383,6 +1458,7 @@ export function SeatDesigner({
 
       // Section detail view - place seats
       if (venueType === "large" && viewingSection && isPlacingSeats) {
+        recordSnapshot(); // Record state before change for undo
         const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
@@ -1443,6 +1519,7 @@ export function SeatDesigner({
       }
       // Small venue - place seats
       else if (venueType === "small" && isPlacingSeats) {
+        recordSnapshot(); // Record state before change for undo
         const seatValues = seatPlacementForm.getValues();
         const newSeat: SeatMarker = {
           id: `temp-${Date.now()}`,
@@ -1465,13 +1542,19 @@ export function SeatDesigner({
       }
     },
     [
+      recordSnapshot,
       venueType,
       viewingSection,
       isPlacingSeats,
       isPlacingSections,
-      seatPlacementForm,
-      sectionForm,
       selectedShapeTool,
+      seatPlacementForm,
+      placementShape,
+      setPlacementShape,
+      setPendingSectionCoordinates,
+      setIsSectionCreationPending,
+      setEditingSectionId,
+      setSeats,
     ],
   );
 
@@ -1500,6 +1583,7 @@ export function SeatDesigner({
   // Handle seat drag end from Konva
   const handleKonvaSeatDragEnd = useCallback(
     (seatId: string, newX: number, newY: number) => {
+      recordSnapshot(); // Record state before change for undo
       // Apply snap to grid if enabled
       let snappedX = newX;
       let snappedY = newY;
@@ -1519,54 +1603,32 @@ export function SeatDesigner({
         ),
       );
     },
-    [snapToGrid],
+    [snapToGrid, recordSnapshot],
   );
 
   // Handle seat shape transform (resize/rotate)
   const handleSeatShapeTransform = useCallback(
     (seatId: string, shape: PlacementShape) => {
-      // Update local state immediately
-      setSeats((prev) => {
-        const updated = prev.map((seat) =>
+      recordSnapshot(); // Record state before change for undo
+      // Update local state only - will be saved when Save button is clicked
+      setSeats((prev) =>
+        prev.map((seat) =>
           seat.id === seatId
             ? {
                 ...seat,
                 shape,
               }
             : seat,
-        );
-
-        // Save shape to backend for the updated seat (debounced to avoid rate limiting)
-        const seat = updated.find((s) => s.id === seatId);
-        if (seat && !seat.isNew) {
-          // Clear existing timer for this seat
-          const existingTimer = seatShapeUpdateTimersRef.current.get(seatId);
-          if (existingTimer) {
-            clearTimeout(existingTimer);
-          }
-
-          // Set new debounced timer (500ms delay)
-          const timer = setTimeout(() => {
-            seatService
-              .updateCoordinates(seatId, seat.x, seat.y, shape)
-              .catch((error) => {
-                console.error("Failed to save seat shape:", error);
-              });
-            seatShapeUpdateTimersRef.current.delete(seatId);
-          }, 500);
-
-          seatShapeUpdateTimersRef.current.set(seatId, timer);
-        }
-
-        return updated;
-      });
+        ),
+      );
     },
-    [],
+    [recordSnapshot],
   );
 
   // Handle section drag end from Konva
   const handleKonvaSectionDragEnd = useCallback(
     (sectionId: string, newX: number, newY: number) => {
+      recordSnapshot(); // Record state before change for undo
       // Apply snap to grid if enabled
       let snappedX = newX;
       let snappedY = newY;
@@ -1586,7 +1648,7 @@ export function SeatDesigner({
         ),
       );
     },
-    [snapToGrid, gridSize, gridSize],
+    [snapToGrid, gridSize, recordSnapshot],
   );
 
   // Handle section click from Konva (shift-click toggles multi-select)
@@ -1686,14 +1748,9 @@ export function SeatDesigner({
   };
 
   const handleSeatEditSave = (data: SeatFormData) => {
-    if (selectedSeat && !selectedSeat.isNew) {
-      updateSeatMutation.mutate(
-        { seatId: selectedSeat.id, data },
-        {
-          onSuccess: () => setIsEditingSeat(false),
-        },
-      );
-    } else if (selectedSeat && selectedSeat.isNew) {
+    if (selectedSeat) {
+      recordSnapshot(); // Record state before change for undo
+      // Update local state only - will be saved when Save button is clicked
       setSeats((prev) =>
         prev.map((s) => (s.id === selectedSeat.id ? { ...s, seat: data } : s)),
       );
@@ -1901,308 +1958,162 @@ export function SeatDesigner({
     );
   };
 
-  // Section mutations
-  const createSectionMutation = useMutation({
-    mutationFn: async (input: {
-      name: string;
-      x?: number;
-      y?: number;
-      shape?: PlacementShape;
-      replaceSectionId?: string;
-    }) => {
-      const { replaceSectionId: _, ...createInput } = input;
-      console.log("createSectionMutation.mutationFn called with:", createInput);
-      const result = await sectionService.create({
-        layout_id: layoutId,
+  // Section creation (local-only, will be saved on Save button click)
+  const handleCreateSection = (input: {
+    name: string;
+    x?: number;
+    y?: number;
+    shape?: PlacementShape;
+    replaceSectionId?: string;
+  }) => {
+    recordSnapshot(); // Record state before change for undo
+    const replaceSectionId = input.replaceSectionId;
+    const tempId = replaceSectionId || `temp-${Date.now()}`;
+    
+    // Always update seat placement form with the new section name and ID
+    seatPlacementForm.setValue("section", input.name);
+    seatPlacementForm.setValue("sectionId", tempId);
+
+    // Only update sectionMarkers in section-level mode
+    if (designMode === "section-level") {
+      const coordinates = pendingSectionCoordinates || {
+        x: input.x ?? 50,
+        y: input.y ?? 50,
+      };
+
+      const newSectionMarker: SectionMarker = {
+        id: tempId,
         name: input.name,
-        x_coordinate: input.x,
-        y_coordinate: input.y,
-        shape: input.shape ? JSON.stringify(input.shape) : undefined,
-      });
-      console.log("createSectionMutation.mutationFn result:", result);
-      return result;
-    },
-    onSuccess: (section, variables) => {
-      // Always update seat placement form with the new section name and ID
-      seatPlacementForm.setValue("section", section.name);
-      seatPlacementForm.setValue("sectionId", section.id);
+        x: coordinates.x,
+        y: coordinates.y,
+        canvasBackgroundColor: "#e5e7eb",
+        markerFillTransparency: 1.0,
+        isNew: true,
+        shape: input.shape ?? placementShape,
+      };
 
-      const replaceSectionId = variables.replaceSectionId;
-
-      // Only update sectionMarkers in section-level mode
-      if (designMode === "section-level") {
-        if (replaceSectionId) {
-          // Replacing an unsaved section marker: update in place with real id
-          let shape: PlacementShape | undefined = placementShape;
-          if (section.shape) {
-            try {
-              const parsed = JSON.parse(section.shape);
-              if (parsed && typeof parsed === "object" && parsed.type) {
-                shape = { ...parsed, type: parsed.type as PlacementShapeType };
-              }
-            } catch (e) {
-              console.error("Failed to parse section shape from API:", e);
-            }
-          }
-          const updatedMarker: SectionMarker = {
-            id: section.id,
-            name: section.name,
-            x: section.x_coordinate ?? 50,
-            y: section.y_coordinate ?? 50,
-            imageUrl: section.image_url || undefined,
-            canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
-            markerFillTransparency: section.marker_fill_transparency ?? 1.0,
-            isNew: false,
-            shape,
-          };
-          setSectionMarkers((prev) =>
-            prev.map((s) => (s.id === replaceSectionId ? updatedMarker : s)),
-          );
-          setSelectedSectionMarker((prev) =>
-            prev?.id === replaceSectionId ? updatedMarker : prev,
-          );
-          setViewingSection((prev) =>
-            prev?.id === replaceSectionId ? updatedMarker : prev,
-          );
-        } else {
-          // New section: use pending coordinates or API values
-          const coordinates = pendingSectionCoordinates || {
-            x: section.x_coordinate || 50,
-            y: section.y_coordinate || 50,
-          };
-
-          let shape: PlacementShape | undefined = placementShape;
-          if (section.shape) {
-            try {
-              const parsed = JSON.parse(section.shape);
-              if (parsed && typeof parsed === "object" && parsed.type) {
-                shape = { ...parsed, type: parsed.type as PlacementShapeType };
-              } else {
-                shape = placementShape;
-              }
-            } catch (e) {
-              console.error("Failed to parse section shape from API:", e);
-              shape = placementShape;
-            }
-          }
-
-          const newSectionMarker: SectionMarker = {
-            id: section.id,
-            name: section.name,
-            x: coordinates.x,
-            y: coordinates.y,
-            imageUrl: section.image_url || undefined,
-            canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
-            markerFillTransparency: section.marker_fill_transparency ?? 1.0,
-            isNew: false,
-            shape,
-          };
-          setSectionMarkers((prev) => [...prev, newSectionMarker]);
-          setPlacementShape({
-            type: PlacementShapeType.CIRCLE,
-            radius: 0.8,
-          });
-        }
+      if (replaceSectionId) {
+        // Replacing an unsaved section marker: update in place
+        setSectionMarkers((prev) =>
+          prev.map((s) => (s.id === replaceSectionId ? newSectionMarker : s)),
+        );
+        setSelectedSectionMarker((prev) =>
+          prev?.id === replaceSectionId ? newSectionMarker : prev,
+        );
+        setViewingSection((prev) =>
+          prev?.id === replaceSectionId ? newSectionMarker : prev,
+        );
+      } else {
+        // New section
+        setSectionMarkers((prev) => [...prev, newSectionMarker]);
+        setPlacementShape({
+          type: PlacementShapeType.CIRCLE,
+          radius: 0.8,
+        });
       }
+    }
 
-      setPendingSectionCoordinates(null);
-      setIsSectionFormOpen(false);
-      setEditingSectionId(null);
-      sectionForm.reset({ name: "" });
-      toast({ title: "Section created successfully" });
-      queryClient.invalidateQueries({
-        queryKey: ["sections", "layout", layoutId],
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to create section:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to create section",
-        variant: "destructive",
-      });
-    },
-  });
+    setPendingSectionCoordinates(null);
+    setIsSectionFormOpen(false);
+    setEditingSectionId(null);
+    sectionForm.reset({ name: "" });
+    toast({ title: "Section created (will be saved on Save)" });
+  };
 
-  const updateSectionMutation = useMutation({
-    mutationFn: async (input: {
-      sectionId: string;
-      name: string;
-      x?: number;
-      y?: number;
-      file_id?: string;
-      shape?: PlacementShape;
-    }) => {
-      return await sectionService.update(input.sectionId, {
-        name: input.name,
-        x_coordinate: input.x,
-        y_coordinate: input.y,
-        file_id: input.file_id,
-        shape: input.shape ? JSON.stringify(input.shape) : undefined,
-      });
-    },
-    onSuccess: (section) => {
-      // Parse shape from API response
-      let shape: PlacementShape | undefined;
-      if (section.shape) {
-        try {
-          const parsed = JSON.parse(section.shape);
-          // Normalize the type to ensure it matches the enum
-          if (parsed && typeof parsed === "object" && parsed.type) {
-            shape = {
-              ...parsed,
-              type: parsed.type as PlacementShapeType,
-            };
+  // Section update (local-only, will be saved on Save button click)
+  const handleUpdateSection = (input: {
+    sectionId: string;
+    name: string;
+    x?: number;
+    y?: number;
+    file_id?: string;
+    shape?: PlacementShape;
+  }) => {
+    recordSnapshot(); // Record state before change for undo
+    // Update sectionMarkers
+    setSectionMarkers((prev) =>
+      prev.map((s) =>
+        s.id === input.sectionId
+          ? {
+              ...s,
+              name: input.name,
+              x: input.x !== undefined ? input.x : s.x,
+              y: input.y !== undefined ? input.y : s.y,
+              shape: input.shape !== undefined ? input.shape : s.shape,
+            }
+          : s,
+      ),
+    );
+    setSelectedSectionMarker((prev) =>
+      prev && prev.id === input.sectionId
+        ? {
+            ...prev,
+            name: input.name,
+            x: input.x !== undefined ? input.x : prev.x,
+            y: input.y !== undefined ? input.y : prev.y,
+            shape: input.shape !== undefined ? input.shape : prev.shape,
           }
-        } catch (e) {
-          console.error("Failed to parse section shape from API:", e);
-        }
-      }
+        : prev,
+    );
+    if (viewingSection?.id === input.sectionId) {
+      setViewingSection((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: input.name,
+            }
+          : null,
+      );
+    }
+    setIsSectionFormOpen(false);
+    setEditingSectionId(null);
+    sectionForm.reset({ name: "" });
+    toast({ title: "Section updated (will be saved on Save)" });
+  };
 
-      const canvasColor = section.canvas_background_color ?? "#e5e7eb";
-      const sectionTransparency = section.marker_fill_transparency ?? 1.0;
-      // Update sectionMarkers
+  const handleSectionCanvasBackgroundColorChange = useCallback(
+    (color: string) => {
+      if (!viewingSection) return;
+      recordSnapshot(); // Record state before change for undo
+      // Update local state only - will be saved when Save button is clicked
       setSectionMarkers((prev) =>
         prev.map((s) =>
-          s.id === section.id
-            ? {
-                ...s,
-                name: section.name,
-                x: section.x_coordinate || s.x,
-                y: section.y_coordinate || s.y,
-                imageUrl: section.image_url || s.imageUrl,
-                canvasBackgroundColor: canvasColor,
-                markerFillTransparency: sectionTransparency,
-                shape: shape !== undefined ? shape : s.shape, // Update shape if provided
-              }
+          s.id === viewingSection.id
+            ? { ...s, canvasBackgroundColor: color }
             : s,
         ),
       );
-      setSelectedSectionMarker((prev) =>
-        prev && prev.id === section.id
-          ? {
-              ...prev,
-              name: section.name,
-              x: section.x_coordinate || prev.x,
-              y: section.y_coordinate || prev.y,
-              canvasBackgroundColor: canvasColor,
-              markerFillTransparency: sectionTransparency,
-              shape: shape !== undefined ? shape : prev.shape, // Update shape if provided
-            }
+      setViewingSection((prev) =>
+        prev && prev.id === viewingSection.id
+          ? { ...prev, canvasBackgroundColor: color }
           : prev,
       );
-      if (viewingSection?.id === section.id) {
-        setViewingSection((prev) =>
-          prev
-            ? {
-                ...prev,
-                name: section.name,
-                canvasBackgroundColor: canvasColor,
-              }
-            : null,
-        );
-      }
-      // Update seat placement form if section name matches
-      const currentSectionInForm = seatPlacementForm.getValues().section;
-      if (currentSectionInForm === section.name) {
-        // Section name unchanged, but sectionId might need updating
-      }
-      setIsSectionFormOpen(false);
-      setEditingSectionId(null);
-      sectionForm.reset({ name: "" });
-      toast({ title: "Section updated successfully" });
-      // Invalidate sections query
-      queryClient.invalidateQueries({
-        queryKey: ["sections", "layout", layoutId],
-      });
     },
-    onError: (error) => {
-      console.error("Failed to update section:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to update section",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleSectionCanvasBackgroundColorChange = useCallback(
-    async (color: string) => {
-      if (!viewingSection) return;
-      try {
-        await sectionService.update(viewingSection.id, {
-          canvas_background_color: color,
-        });
-        setSectionMarkers((prev) =>
-          prev.map((s) =>
-            s.id === viewingSection.id
-              ? { ...s, canvasBackgroundColor: color }
-              : s,
-          ),
-        );
-        setViewingSection((prev) =>
-          prev && prev.id === viewingSection.id
-            ? { ...prev, canvasBackgroundColor: color }
-            : prev,
-        );
-        queryClient.invalidateQueries({
-          queryKey: ["sections", "layout", layoutId],
-        });
-      } catch (err) {
-        console.error("Failed to update section canvas background color:", err);
-        toast({
-          title: "Error",
-          description:
-            err instanceof Error
-              ? err.message
-              : "Failed to update canvas color",
-          variant: "destructive",
-        });
-      }
-    },
-    [viewingSection, layoutId, queryClient],
+    [viewingSection, recordSnapshot],
   );
 
   const handleSectionMarkerFillTransparencyChange = useCallback(
-    async (transparency: number) => {
+    (transparency: number) => {
       if (!viewingSection) return;
-      try {
-        await sectionService.update(viewingSection.id, {
-          marker_fill_transparency: transparency,
-        });
-        setSectionMarkers((prev) =>
-          prev.map((s) =>
-            s.id === viewingSection.id
-              ? { ...s, markerFillTransparency: transparency }
-              : s,
-          ),
-        );
-        setViewingSection((prev) =>
-          prev && prev.id === viewingSection.id
-            ? { ...prev, markerFillTransparency: transparency }
-            : prev,
-        );
-        queryClient.invalidateQueries({
-          queryKey: ["sections", "layout", layoutId],
-        });
-      } catch (err) {
-        console.error("Failed to update section marker fill transparency:", err);
-        toast({
-          title: "Error",
-          description:
-            err instanceof Error
-              ? err.message
-              : "Failed to update marker transparency",
-          variant: "destructive",
-        });
-      }
+      recordSnapshot(); // Record state before change for undo
+      // Update local state only - will be saved when Save button is clicked
+      setSectionMarkers((prev) =>
+        prev.map((s) =>
+          s.id === viewingSection.id
+            ? { ...s, markerFillTransparency: transparency }
+            : s,
+        ),
+      );
+      setViewingSection((prev) =>
+        prev && prev.id === viewingSection.id
+          ? { ...prev, markerFillTransparency: transparency }
+          : prev,
+      );
     },
-    [viewingSection, layoutId, queryClient],
+    [viewingSection, recordSnapshot],
   );
 
-  // Handle keyboard shortcuts (arrow keys, copy, paste) - defined after updateSectionMutation
+  // Handle keyboard shortcuts (arrow keys, copy, paste)
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Don't handle if user is typing in an input/textarea
@@ -2277,6 +2188,7 @@ export function SeatDesigner({
           const currentSeatNumber = parseInt(seatValues.seatNumber) || 1;
           const nextSeatNumber = String(currentSeatNumber + 1);
 
+          recordSnapshot(); // Record state before change for undo
           const newSeat: SeatMarker = {
             id: `temp-${Date.now()}`,
             x: newX,
@@ -2322,6 +2234,7 @@ export function SeatDesigner({
             counter++;
           }
 
+          recordSnapshot(); // Record state before change for undo
           const newSection: SectionMarker = {
             id: `temp-${Date.now()}`,
             name: newName,
@@ -2334,6 +2247,21 @@ export function SeatDesigner({
 
           setSectionMarkers((prev) => [...prev, newSection]);
           setSelectedSectionMarker(newSection);
+          return;
+        }
+      }
+
+      // Handle undo/redo shortcuts
+      if (event.key === "z" || event.key === "Z") {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          if (event.shiftKey) {
+            // Ctrl+Shift+Z or Cmd+Shift+Z: Redo
+            redo();
+          } else {
+            // Ctrl+Z or Cmd+Z: Undo
+            undo();
+          }
           return;
         }
       }
@@ -2372,17 +2300,8 @@ export function SeatDesigner({
             break;
         }
 
-        // Update seat position
+        // Update seat position (local state only - will be saved when Save button is clicked)
         handleKonvaSeatDragEnd(selectedSeat.id, newX, newY);
-
-        // Save to backend if seat is not new
-        if (!currentSeat.isNew) {
-          seatService
-            .updateCoordinates(selectedSeat.id, newX, newY, currentSeat.shape)
-            .catch((error) => {
-              console.error("Failed to save seat position:", error);
-            });
-        }
         return;
       }
 
@@ -2431,18 +2350,20 @@ export function SeatDesigner({
     sectionMarkers,
     handleKonvaSeatDragEnd,
     handleKonvaSectionDragEnd,
-    updateSectionMutation,
     copiedSeat,
     copiedSection,
     designMode,
     venueType,
     viewingSection,
     seatPlacementForm,
+    undo,
+    redo,
   ]);
 
   // Handle section shape transform (resize/rotate) - defined after mutations
   const handleSectionShapeTransform = useCallback(
     (sectionId: string, shape: PlacementShape) => {
+      recordSnapshot(); // Record state before change for undo
       // Only update local state - don't save to backend immediately
       // Changes will be saved when user explicitly saves the layout
       setSectionMarkers((prev) => {
@@ -2456,7 +2377,7 @@ export function SeatDesigner({
         );
       });
     },
-    [],
+    [recordSnapshot],
   );
 
   const handleSeatShapeStyleChange = useCallback(
@@ -2471,6 +2392,7 @@ export function SeatDesigner({
         rotation?: number;
       },
     ) => {
+      recordSnapshot(); // Record state before change for undo
       setSeats((prev) =>
         prev.map((s) =>
           s.id === seatId
@@ -2502,7 +2424,7 @@ export function SeatDesigner({
           : prev,
       );
     },
-    [],
+    [recordSnapshot],
   );
 
   const handleSectionShapeStyleChange = useCallback(
@@ -2517,6 +2439,7 @@ export function SeatDesigner({
         rotation?: number;
       },
     ) => {
+      recordSnapshot(); // Record state before change for undo
       const mergeSectionShape = (
         existing: PlacementShape | undefined,
       ): PlacementShape =>
@@ -2537,9 +2460,9 @@ export function SeatDesigner({
         prev && prev.id === sectionId
           ? { ...prev, shape: mergeSectionShape(prev.shape) }
           : prev,
-      );
-    },
-    [],
+        );
+      },
+    [recordSnapshot],
   );
 
   const handleSaveSectionForm = sectionForm.handleSubmit((data) => {
@@ -2556,8 +2479,8 @@ export function SeatDesigner({
 
       if (sectionFromMarkers) {
         if (sectionFromMarkers.isNew) {
-          // Unsaved section: create in DB and replace marker
-          createSectionMutation.mutate({
+          // Unsaved section: create locally and replace marker
+          handleCreateSection({
             name,
             x: sectionFromMarkers.x,
             y: sectionFromMarkers.y,
@@ -2566,7 +2489,7 @@ export function SeatDesigner({
           });
         } else {
           // Update existing section (section-level mode)
-          updateSectionMutation.mutate({
+          handleUpdateSection({
             sectionId: editingSectionId,
             name,
             x: sectionFromMarkers.x,
@@ -2576,7 +2499,7 @@ export function SeatDesigner({
         }
       } else if (sectionFromData) {
         // Update existing section (seat-level mode)
-        updateSectionMutation.mutate({
+        handleUpdateSection({
           sectionId: editingSectionId,
           name,
           x: sectionFromData.x_coordinate ?? undefined,
@@ -2584,14 +2507,8 @@ export function SeatDesigner({
         });
       }
     } else {
-      // Create new section - always call API since seats need section_id
-      console.log("Creating section via API:", {
-        name,
-        layoutId,
-        designMode,
-        pendingCoordinates: pendingSectionCoordinates,
-      });
-      createSectionMutation.mutate({
+      // Create new section locally (will be saved on Save button click)
+      handleCreateSection({
         name,
         // Use pending coordinates if available (from canvas click), otherwise use defaults
         x:
@@ -2615,11 +2532,8 @@ export function SeatDesigner({
       const section = sectionMarkers.find((s) => s.id === editingSectionId);
       if (section) {
         if (section.isNew) {
-          console.log("Creating unsaved section via API (Inline):", {
-            name,
-            layoutId,
-          });
-          createSectionMutation.mutate({
+          // Create unsaved section locally
+          handleCreateSection({
             name,
             x: section.x,
             y: section.y,
@@ -2627,12 +2541,8 @@ export function SeatDesigner({
             replaceSectionId: editingSectionId,
           });
         } else {
-          console.log("Updating section via API (Inline):", {
-            sectionId: editingSectionId,
-            name,
-            layoutId,
-          });
-          updateSectionMutation.mutate({
+          // Update existing section locally
+          handleUpdateSection({
             sectionId: editingSectionId,
             name,
             x: section.x,
@@ -2642,15 +2552,8 @@ export function SeatDesigner({
         }
       }
     } else {
-      // Create new section - always call API since seats need section_id
-      console.log("Creating section via API (Inline):", {
-        name,
-        layoutId,
-        designMode,
-        pendingCoordinates: pendingSectionCoordinates,
-      });
-
-      createSectionMutation.mutate({
+      // Create new section locally
+      handleCreateSection({
         name,
         // Use pending coordinates if available (from canvas click), otherwise use defaults
         x:
@@ -2726,15 +2629,91 @@ export function SeatDesigner({
     }
   }, [selectedSectionMarker, isPlacingSections, sectionForm]);
 
-  // Save seats mutation
-  const saveSeatsMutation = useMutation({
-    mutationFn: async (seatsToSave: SeatMarker[]) => {
+  // Bulk designer save mutation (saves layout properties, sections, and seats in one call)
+  const bulkDesignerSaveMutation = useMutation({
+    mutationFn: async () => {
       // Check if image has changed (new file_id uploaded)
       const imageChanged = mainImageFileId && mainImageFileId !== initialFileId;
 
+      // Prepare sections array with operation type determined by presence of 'id' and 'delete' flag
+      const sectionsPayload: Array<Record<string, any>> = [];
+      
+      if (designMode === "section-level" && venueType === "large") {
+        // Process section deletions
+        for (const sectionId of deletedSectionIds) {
+          sectionsPayload.push({
+            id: sectionId,
+            delete: true,
+          });
+        }
+
+        // Process section creates and updates
+        for (const section of sectionMarkers) {
+          // Always send marker_fill_transparency for sections
+          // Priority: section's own value > layout-level value > 1.0 default
+          // This ensures each section can have its own transparency value
+          // Use ref for layout-level transparency to ensure we get the latest value
+          const layoutTransparency = markerFillTransparencyRef.current ?? markerFillTransparency ?? 1.0;
+          const sectionTransparency = (section.markerFillTransparency !== undefined && section.markerFillTransparency !== null)
+            ? section.markerFillTransparency 
+            : layoutTransparency;
+          
+          // Ensure it's always a valid number (defensive check)
+          const finalTransparency = typeof sectionTransparency === 'number' && !isNaN(sectionTransparency)
+            ? sectionTransparency
+            : 1.0;
+          
+          // Debug: Log section transparency being sent
+          console.log(`[Bulk Save] Section ${section.id} (${section.name}) marker_fill_transparency:`, 
+                     finalTransparency, 
+                     '(section.markerFillTransparency:', section.markerFillTransparency, 
+                     ', layout-level:', layoutTransparency, ')');
+          
+          if (section.isNew) {
+            // Create: no id field
+            const sectionPayload: Record<string, any> = {
+              name: section.name,
+              x_coordinate: section.x,
+              y_coordinate: section.y,
+              canvas_background_color: section.canvasBackgroundColor || undefined,
+              marker_fill_transparency: finalTransparency, // Always include, always a number
+              shape: section.shape ? JSON.stringify(section.shape) : undefined,
+            };
+            sectionsPayload.push(sectionPayload);
+          } else {
+            // Update: has id field
+            // Find original section from query result to preserve file_id
+            const originalSection = sectionsData?.find((s) => s.id === section.id);
+            const sectionPayload: Record<string, any> = {
+              id: section.id,
+              name: section.name,
+              x_coordinate: section.x,
+              y_coordinate: section.y,
+              canvas_background_color: section.canvasBackgroundColor || undefined,
+              marker_fill_transparency: finalTransparency, // Always include, always a number
+              shape: section.shape ? JSON.stringify(section.shape) : undefined,
+              // Preserve file_id from original section (from query result)
+              file_id: originalSection?.file_id || undefined,
+            };
+            sectionsPayload.push(sectionPayload);
+          }
+        }
+        
+        // Debug: Log all sections payload
+        console.log('[Bulk Save] All sections payload:', sectionsPayload.map(s => ({
+          id: s.id,
+          name: s.name,
+          marker_fill_transparency: s.marker_fill_transparency,
+          hasMarkerFillTransparency: 'marker_fill_transparency' in s
+        })));
+      }
+      
+      // Debug: Log final payload before sending
+      console.log('[Bulk Save] Final payload sections:', sectionsPayload);
+
       // Prepare seats array with operation type determined by presence of 'id'
       // No 'id' = create, Has 'id' = update
-      const seatsData = seatsToSave.map((seat) => {
+      const seatsData = seats.map((seat) => {
         if (seat.isNew) {
           // Create: no id field
           return {
@@ -2749,9 +2728,25 @@ export function SeatDesigner({
             shape: seat.shape ? JSON.stringify(seat.shape) : undefined,
           };
         } else {
-          // Update: has id field
+          // Update: has id field - include ALL fields (position, shape, AND metadata)
+          // Try to find section_id from section name if sectionId is not provided
+          let sectionId = seat.seat.sectionId;
+          if (!sectionId && seat.seat.section) {
+            if (sectionsData && designMode === "seat-level") {
+              const section = sectionsData.find((s) => s.name === seat.seat.section);
+              sectionId = section?.id;
+            } else if (designMode === "section-level") {
+              const section = sectionMarkers.find((s) => s.name === seat.seat.section);
+              sectionId = section?.id;
+            }
+          }
+          
           return {
             id: seat.id,
+            section_id: sectionId || seat.seat.section, // Send section_id if available, fallback to section name
+            row: seat.seat.row,
+            seat_number: seat.seat.seatNumber,
+            seat_type: seat.seat.seatType,
             x_coordinate: seat.x,
             y_coordinate: seat.y,
             shape: seat.shape ? JSON.stringify(seat.shape) : undefined,
@@ -2759,31 +2754,153 @@ export function SeatDesigner({
         }
       });
 
-      // Use bulk operations if we have any operations or image changed
-      if (seatsData.length > 0 || imageChanged) {
-        await seatService.bulkOperations({
-          venueId,
-          seats: seatsData,
-          fileId: imageChanged ? mainImageFileId : undefined,
-          layoutId,
-        });
-      }
+      // Add deletions to the seats array
+      const deleteOperations = deletedSeatIds.map((seatId) => ({
+        id: seatId,
+        delete: true,
+      }));
+
+      // Call bulk save endpoint
+      // Use ref to ensure we get the latest value (in case of closure issues)
+      const currentTransparency = markerFillTransparencyRef.current;
+      // Ensure we always send a valid number (default to 1.0 if somehow undefined/null)
+      const transparencyToSend = currentTransparency ?? markerFillTransparency ?? 1.0;
+      // Debug: Log the transparency value being sent
+      console.log('[Bulk Save] marker_fill_transparency being sent:', transparencyToSend, '(ref:', currentTransparency, ', state:', markerFillTransparency, ')');
+      
+      const response = await api.post<{
+        layout: any;
+        sections: any[];
+        seats: any[];
+      }>(
+        `/api/v1/ticketing/layouts/${layoutId}/bulk-save?venue_id=${venueId}`,
+        {
+          canvas_background_color: canvasBackgroundColor,
+          marker_fill_transparency: transparencyToSend,
+          file_id: imageChanged ? mainImageFileId : undefined,
+          sections: sectionsPayload,
+          seats: [...seatsData, ...deleteOperations],
+        },
+        { requiresAuth: true }
+      );
+
+      return response;
     },
-    onSuccess: () => {
-      // Invalidate seat queries
-      queryClient.invalidateQueries({ queryKey: ["seats", layoutId] });
+    onSuccess: (data) => {
+      // Transform the response data to match the cache format (same as fetchLayoutWithSeats)
+      // Transform layout
+      const transformedLayout = {
+        id: data.layout.id,
+        tenant_id: data.layout.tenant_id,
+        venue_id: data.layout.venue_id,
+        name: data.layout.name,
+        description: data.layout.description || undefined,
+        image_url: data.layout.image_url || undefined,
+        file_id: data.layout.file_id || undefined,
+        design_mode: (data.layout.design_mode || "seat-level") as "seat-level" | "section-level",
+        canvas_background_color: data.layout.canvas_background_color || undefined,
+        marker_fill_transparency: data.layout.marker_fill_transparency ?? 1.0,
+        is_active: data.layout.is_active,
+        created_at: data.layout.created_at ? new Date(data.layout.created_at) : new Date(),
+        updated_at: data.layout.updated_at ? new Date(data.layout.updated_at) : new Date(),
+      };
+      
+      // Transform seats
+      const transformedSeats = (data.seats || []).map((seat: any) => ({
+        id: seat.id,
+        tenant_id: seat.tenant_id,
+        venue_id: seat.venue_id,
+        layout_id: seat.layout_id,
+        section_id: seat.section_id,
+        section_name: seat.section_name,
+        row: seat.row,
+        seat_number: seat.seat_number,
+        seat_type: seat.seat_type,
+        x_coordinate: seat.x_coordinate ?? undefined,
+        y_coordinate: seat.y_coordinate ?? undefined,
+        shape: seat.shape ?? undefined,
+        is_active: seat.is_active,
+        created_at: seat.created_at ? new Date(seat.created_at) : new Date(),
+        updated_at: seat.updated_at ? new Date(seat.updated_at) : new Date(),
+      }));
+      
+      // Transform sections
+      const transformedSections = (data.sections || []).map((section: any) => ({
+        id: section.id,
+        tenant_id: section.tenant_id,
+        layout_id: section.layout_id,
+        name: section.name,
+        x_coordinate: section.x_coordinate ?? undefined,
+        y_coordinate: section.y_coordinate ?? undefined,
+        file_id: section.file_id ?? undefined,
+        image_url: section.image_url ?? undefined,
+        canvas_background_color: section.canvas_background_color ?? undefined,
+        marker_fill_transparency: section.marker_fill_transparency ?? undefined,
+        shape: section.shape ?? undefined,
+        is_active: section.is_active,
+        created_at: section.created_at ? new Date(section.created_at) : new Date(),
+        updated_at: section.updated_at ? new Date(section.updated_at) : new Date(),
+      }));
+      
+      // Update React Query cache with the transformed data instead of refetching
+      // This avoids unnecessary network requests and uses the latest data from the save
+      
+      // Update layout cache
+      queryClient.setQueryData(
+        ["layouts", layoutId],
+        transformedLayout
+      );
+      
+      // Update layout with seats cache (use returned data)
+      queryClient.setQueryData(
+        ["layouts", layoutId, "with-seats"],
+        {
+          layout: transformedLayout,
+          seats: transformedSeats,
+          sections: transformedSections,
+        }
+      );
+      
+      // Update seats cache
+      queryClient.setQueryData(
+        ["seats", layoutId],
+        transformedSeats
+      );
+      
+      // Update sections cache (use returned sections)
+      queryClient.setQueryData(
+        ["sections", "layout", layoutId],
+        transformedSections
+      );
+      
+      // Update the current layout in the venue layouts list cache (if it exists)
+      // This avoids refetching the entire venue layouts list
+      queryClient.setQueryData(
+        ["layouts", "venue", venueId],
+        (oldData: any) => {
+          if (!oldData) return oldData; // If cache doesn't exist, don't create it
+          return oldData.map((layout: any) =>
+            layout.id === layoutId ? transformedLayout : layout
+          );
+        }
+      );
+      
+      // Only invalidate venue-level seat queries (if needed for other components)
       queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
 
-      // Invalidate layout queries (layout might have been updated with new file_id)
-      queryClient.invalidateQueries({ queryKey: ["layouts", layoutId] });
-      queryClient.invalidateQueries({
-        queryKey: ["layouts", layoutId, "with-seats"],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["layouts", "venue", venueId],
-      });
-
       setSeats((prev) => prev.map((s) => ({ ...s, isNew: false })));
+
+      // Mark all sections as saved
+      setSectionMarkers((prev) =>
+        prev.map((section) => ({ ...section, isNew: false })),
+      );
+
+      // Clear deletion tracking arrays
+      setDeletedSeatIds([]);
+      setDeletedSectionIds([]);
+
+      // Clear undo/redo history after successful save
+      clearHistory();
 
       // Clear all placements after successful save
       if (venueType === "small") {
@@ -2801,8 +2918,8 @@ export function SeatDesigner({
 
       // Show success message
       toast({
-        title: "Seats Saved",
-        description: "Seat layout has been saved successfully.",
+        title: "Designer Saved",
+        description: "All designer changes have been saved successfully.",
         variant: "default",
       });
     },
@@ -2811,7 +2928,7 @@ export function SeatDesigner({
       setShowSaveConfirmDialog(false);
 
       // Extract error message
-      let errorMessage = "Failed to save seats. Please try again.";
+      let errorMessage = "Failed to save designer changes. Please try again.";
 
       if (error?.message) {
         // Try to parse JSON error message
@@ -2834,143 +2951,24 @@ export function SeatDesigner({
   });
 
   // Delete seat mutation
-  const deleteSeatMutation = useMutation({
-    mutationFn: async (seatId: string) => {
-      // Use bulk operations: seat with id and delete flag
-      await seatService.bulkOperations({
-        venueId,
-        seats: [{ id: seatId, delete: true }],
-        layoutId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
-      setSelectedSeat(null);
-    },
-  });
-
-  // Update seat mutation
-  const updateSeatMutation = useMutation({
-    mutationFn: async ({
-      seatId,
-      data,
-    }: {
-      seatId: string;
-      data: SeatInfo;
-    }) => {
-      // Try to find section_id from section name if sectionId is not provided
-      let sectionId = data.sectionId;
-      if (!sectionId && data.section) {
-        if (sectionsData && designMode === "seat-level") {
-          const section = sectionsData.find((s) => s.name === data.section);
-          sectionId = section?.id;
-        } else if (designMode === "section-level") {
-          const section = sectionMarkers.find((s) => s.name === data.section);
-          sectionId = section?.id;
-        }
-      }
-
-      return await seatService.update(seatId, {
-        section_id: sectionId || data.section, // Send section_id if available, fallback to section name (backend will handle conversion)
-        row: data.row,
-        seat_number: data.seatNumber,
-        seat_type: data.seatType,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["seats", venueId] });
-      seatEditForm.reset();
-      setViewingSeat(null);
-      setSelectedSeat(null);
-    },
-  });
 
   const handleSave = () => {
     setShowSaveConfirmDialog(true);
   };
 
   const handleConfirmSave = async () => {
-    setShowSaveConfirmDialog(false);
-
-    // Save layout properties (transparency and canvas background color) first
-    onMarkerFillTransparencyChange?.(markerFillTransparency);
-    onCanvasBackgroundColorChange?.(canvasBackgroundColor);
-
-    // For section-level layout, save sections first, then seats
-    if (designMode === "section-level" && venueType === "large") {
-      // Save all section markers in batch
-      const sectionsToSave = sectionMarkers.filter((section) => !section.isNew);
-      const newSections = sectionMarkers.filter((section) => section.isNew);
-
-      try {
-        // Save existing sections (updates)
-        const updatePromises = sectionsToSave.map((section) => {
-          // Get the original section to preserve file_id
-          const originalSection = sectionsData?.find(
-            (s) => s.id === section.id,
-          );
-          return sectionService.update(section.id, {
-            name: section.name,
-            x_coordinate: section.x,
-            y_coordinate: section.y,
-            canvas_background_color: section.canvasBackgroundColor || undefined,
-            marker_fill_transparency: section.markerFillTransparency,
-            shape: section.shape ? JSON.stringify(section.shape) : undefined,
-            // Preserve file_id from original section (only update if explicitly changed via image upload)
-            file_id: originalSection?.file_id || undefined,
-          });
-        });
-
-        // Save new sections (creates)
-        const createPromises = newSections.map((section) =>
-          sectionService.create({
-            layout_id: layoutId,
-            name: section.name,
-            x_coordinate: section.x,
-            y_coordinate: section.y,
-            canvas_background_color: section.canvasBackgroundColor || undefined,
-            marker_fill_transparency: section.markerFillTransparency,
-            shape: section.shape ? JSON.stringify(section.shape) : undefined,
-          }),
-        );
-
-        // Wait for all section saves to complete
-        await Promise.all([...updatePromises, ...createPromises]);
-
-        // Invalidate sections query to refresh data
-        queryClient.invalidateQueries({
-          queryKey: ["sections", "layout", layoutId],
-        });
-
-        // Mark all sections as saved
-        setSectionMarkers((prev) =>
-          prev.map((section) => ({ ...section, isNew: false })),
-        );
-
-        // Then save seats
-        saveSeatsMutation.mutate(seats);
-      } catch (error) {
-        console.error("Failed to save sections:", error);
-        toast({
-          title: "Error",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Failed to save sections. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      // For seat-level layout, just save seats
-      saveSeatsMutation.mutate(seats);
-    }
+    // Trigger bulk save mutation (handles layout properties, sections, and seats in one call)
+    bulkDesignerSaveMutation.mutate();
   };
 
   // Delete seat from datasheet
   const handleDeleteSeat = (seat: SeatMarker) => {
+    recordSnapshot(); // Record state before change for undo
+    // Track deletion for batch save (only if seat was already saved)
     if (!seat.isNew) {
-      deleteSeatMutation.mutate(seat.id);
+      setDeletedSeatIds((prev) => [...prev, seat.id]);
     }
+    // Remove from local state
     setSeats((prev) => prev.filter((s) => s.id !== seat.id));
     if (selectedSeat?.id === seat.id) {
       setSelectedSeat(null);
@@ -2978,60 +2976,17 @@ export function SeatDesigner({
     setSelectedSeatIds((prev) => prev.filter((id) => id !== seat.id));
   };
 
-  // Delete section mutation
-  const deleteSectionMutation = useMutation({
-    mutationFn: async (sectionId: string) => {
-      return await sectionService.delete(sectionId);
-    },
-    onSuccess: (_, sectionId) => {
-      // Remove from sectionMarkers (for section-level mode)
-      setSectionMarkers((prev) => prev.filter((s) => s.id !== sectionId));
-
-      // Remove seats that belong to this section
-      setSeats((prev) =>
-        prev.filter((s) => {
-          // Check if seat's sectionId matches (if available) or section name matches
-          const seatSectionId = (s.seat as any).sectionId;
-          return seatSectionId !== sectionId && s.seat.section !== sectionId;
-        }),
-      );
-
-      // Clear selected/viewing if they match
-      if (selectedSectionMarker?.id === sectionId) {
-        setSelectedSectionMarker(null);
-      }
-      setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
-      if (viewingSection?.id === sectionId) {
-        setViewingSection(null);
-      }
-
-      toast({ title: "Section deleted successfully" });
-
-      // Invalidate sections query
-      queryClient.invalidateQueries({
-        queryKey: ["sections", "layout", layoutId],
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to delete section:", error);
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to delete section",
-        variant: "destructive",
-      });
-    },
-  });
-
   // Delete section handlers
   const handleDeleteSection = (section: {
     id: string;
     isNew?: boolean;
     seat_count?: number | null;
   }) => {
+    const sectionId = section.id;
+    
     if (section.isNew) {
+      recordSnapshot(); // Record state before change for undo
       // Unsaved section: only remove from local state
-      const sectionId = section.id;
       setSectionMarkers((prev) => prev.filter((s) => s.id !== sectionId));
       setSeats((prev) =>
         prev.filter((s) => {
@@ -3055,7 +3010,33 @@ export function SeatDesigner({
         });
         return;
       }
-      deleteSectionMutation.mutate(section.id);
+      
+      recordSnapshot(); // Record state before change for undo
+      // Track deletion for batch save
+      setDeletedSectionIds((prev) => [...prev, sectionId]);
+      
+      // Remove from local state
+      setSectionMarkers((prev) => prev.filter((s) => s.id !== sectionId));
+      
+      // Remove seats that belong to this section
+      setSeats((prev) =>
+        prev.filter((s) => {
+          // Check if seat's sectionId matches (if available) or section name matches
+          const seatSectionId = (s.seat as any).sectionId;
+          return seatSectionId !== sectionId && s.seat.section !== sectionId;
+        }),
+      );
+
+      // Clear selected/viewing if they match
+      if (selectedSectionMarker?.id === sectionId) {
+        setSelectedSectionMarker(null);
+      }
+      setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
+      if (viewingSection?.id === sectionId) {
+        setViewingSection(null);
+      }
+      
+      toast({ title: "Section removed (will be deleted on save)" });
     }
   };
 
@@ -3387,7 +3368,7 @@ export function SeatDesigner({
           onToggleDatasheet={() => setIsDatasheetOpen(true)}
           readOnly={readOnly}
           onSave={handleSave}
-          isSaving={saveSeatsMutation.isPending}
+          isSaving={bulkDesignerSaveMutation.isPending}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleFullscreen}
           mainImageUrl={mainImageUrl}
@@ -3423,6 +3404,13 @@ export function SeatDesigner({
           showGrid={showGrid}
           onShowGridChange={setShowGrid}
           onPreview={() => setShowPreview(true)}
+          onUndo={!readOnly ? undo : undefined}
+          onRedo={!readOnly ? redo : undefined}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          isDirty={canUndo || deletedSeatIds.length > 0 || deletedSectionIds.length > 0 || sectionMarkers.some(s => s.isNew) || seats.some(s => s.isNew)}
+          onRefresh={handleRefresh}
+          isRefreshing={isLoading}
         />
 
         <div
@@ -3483,7 +3471,7 @@ export function SeatDesigner({
                     designMode={designMode}
                     onSave={handleSeatEditSave}
                     onCancel={handleSeatEditCancel}
-                    isUpdating={updateSeatMutation.isPending}
+                    isUpdating={false}
                     standalone
                   />
                 ) : undefined
@@ -3674,8 +3662,8 @@ export function SeatDesigner({
         editingSectionId={editingSectionId}
         sectionForm={sectionForm}
         selectedSectionMarker={selectedSectionMarker}
-        createSectionMutationPending={createSectionMutation.isPending}
-        updateSectionMutationPending={updateSectionMutation.isPending}
+        createSectionMutationPending={false}
+        updateSectionMutationPending={false}
         onSeatClick={handleSeatClick}
         onDeleteSeat={handleDeleteSeat}
         onOpenNewSectionForm={handleOpenNewSectionForm}
@@ -3703,7 +3691,7 @@ export function SeatDesigner({
           }
         }}
         isPlacingSeats={isPlacingSeats}
-        isDeleting={deleteSeatMutation.isPending}
+        isDeleting={false}
         onEdit={() => {
           if (viewingSeat) {
             handleSeatEdit(viewingSeat);
@@ -3799,7 +3787,7 @@ export function SeatDesigner({
           setIsSectionCreationPending(true);
           setEditingSectionId(null);
         }}
-        saveSeatsMutationPending={saveSeatsMutation.isPending}
+        saveSeatsMutationPending={bulkDesignerSaveMutation.isPending}
         seats={seats}
         onDeleteSeat={handleDeleteSeat}
         onSetViewingSeat={setViewingSeat}
@@ -3825,6 +3813,13 @@ export function SeatDesigner({
         onToggleFullscreen={handleFullscreen}
         showGrid={showGrid}
         gridSize={gridSize}
+        onUndo={!readOnly ? undo : undefined}
+        onRedo={!readOnly ? redo : undefined}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        isDirty={canUndo || deletedSeatIds.length > 0 || deletedSectionIds.length > 0 || sectionMarkers.some(s => s.isNew) || seats.some(s => s.isNew)}
+        onRefresh={handleRefresh}
+        isRefreshing={isLoading}
         seatEditControls={
           isEditingSeat && selectedSeat && !readOnly ? (
             <SeatEditControls
@@ -3836,7 +3831,7 @@ export function SeatDesigner({
               viewingSection={viewingSection}
               onSave={handleSeatEditSave}
               onCancel={handleSeatEditCancel}
-              isUpdating={updateSeatMutation.isPending}
+              isUpdating={false}
               standalone
             />
           ) : undefined
@@ -3866,7 +3861,7 @@ export function SeatDesigner({
             if (!open) setViewingSeat(null);
           }}
           isPlacingSeats={isPlacingSeats}
-          isDeleting={deleteSeatMutation.isPending}
+          isDeleting={false}
           onEdit={() => viewingSeat && handleSeatEdit(viewingSeat)}
           onDelete={() => {
             if (viewingSeat) {
@@ -3888,7 +3883,7 @@ export function SeatDesigner({
             label: "Save",
             variant: "default",
             onClick: handleConfirmSave,
-            loading: saveSeatsMutation.isPending,
+            loading: bulkDesignerSaveMutation.isPending,
           }}
           cancelAction={{
             label: "Cancel",
@@ -3932,7 +3927,7 @@ export function SeatDesigner({
           label: "Save",
           variant: "default",
           onClick: handleConfirmSave,
-          loading: saveSeatsMutation.isPending,
+          loading: bulkDesignerSaveMutation.isPending,
         }}
         cancelAction={{
           label: "Cancel",
@@ -3948,10 +3943,10 @@ export function SeatDesigner({
           sections={sectionsData}
           onEdit={handleEditSectionFromData}
           onDelete={handleDeleteSection}
-          isDeleting={deleteSectionMutation.isPending}
+          isDeleting={false}
           form={sectionForm}
           editingSectionId={editingSectionId}
-          isUpdating={updateSectionMutation.isPending}
+          isUpdating={false}
           onSave={handleSaveSectionForm}
           onCancelEdit={handleCancelEditSection}
         />
@@ -3970,8 +3965,8 @@ export function SeatDesigner({
         }}
         form={sectionForm}
         editingSectionId={editingSectionId}
-        isCreating={createSectionMutation.isPending}
-        isUpdating={updateSectionMutation.isPending}
+        isCreating={false}
+        isUpdating={false}
         onSave={handleSaveSectionForm}
         onCancel={handleCancelSectionForm}
       />
