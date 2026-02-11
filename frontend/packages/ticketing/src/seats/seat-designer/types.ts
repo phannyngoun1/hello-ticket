@@ -61,6 +61,7 @@ export interface SeatDesignerProps {
     file_id?: string | null;
     image_url?: string | null;
     canvas_background_color?: string | null;
+    marker_fill_transparency?: number | null;
     shape?: string | null;
   }>;
   /** Called when user adds a floor plan image. Pass fileId so parent can persist layout.file_id. */
@@ -87,6 +88,8 @@ export interface SectionMarker {
   imageUrl?: string;
   /** Canvas background color when no section image (hex). Stored per section. */
   canvasBackgroundColor?: string;
+  /** Marker fill transparency for seats in this section (0.0 to 1.0). Differentiates from main layout. */
+  markerFillTransparency?: number;
   isNew?: boolean;
   shape?: PlacementShape; // Optional shape for advanced placement
 }

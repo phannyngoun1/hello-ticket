@@ -27,7 +27,6 @@ import {
   Maximize,
   Palette,
   BrushCleaning,
-  Eye,
 } from "lucide-react";
 import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -113,14 +112,16 @@ export interface SectionDetailViewProps {
   canvasBackgroundColor?: string;
   /** Called when user changes canvas background color. Parent should persist via section update. */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Marker fill transparency for this section (0.0 to 1.0). Differentiates from main layout. */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency. Parent should persist via section update. */
+  onMarkerFillTransparencyChange?: (transparency: number) => void;
   /** Show grid lines on canvas */
   showGrid?: boolean;
   /** Grid size in percentage */
   gridSize?: number;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
-  /** Called when user clicks preview button to see booking view */
-  onPreview?: () => void;
 }
 
 export function SectionDetailView({
@@ -181,11 +182,12 @@ export function SectionDetailView({
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
+  markerFillTransparency = 1.0,
+  onMarkerFillTransparencyChange,
   showGrid = false,
   gridSize = 5,
   isFullscreen = false,
   onToggleFullscreen,
-  onPreview,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const effectiveCanvasColor =
@@ -262,6 +264,31 @@ export function SectionDetailView({
           </label>
         </DropdownMenuItem>
       ),
+      onMarkerFillTransparencyChange && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer flex-col items-start gap-3 px-2 py-1.5">
+            <div className="flex items-center gap-2 w-full">
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                Marker Fill Transparency:
+              </span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={(markerFillTransparency || 1.0) * 100}
+                onChange={(e) =>
+                  onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
+                }
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                title="Adjust marker fill transparency for this section"
+              />
+              <span className="text-xs text-muted-foreground w-8 text-right">
+                {Math.round((markerFillTransparency || 1.0) * 100)}%
+              </span>
+            </div>
+          </label>
+        </DropdownMenuItem>
+      ),
       viewingSection.imageUrl && onRemoveSectionImage && (
         <>
           <DropdownMenuSeparator />
@@ -275,7 +302,7 @@ export function SectionDetailView({
         </>
       ),
     ];
-  }, [onClearSectionSeats]);
+  }, [onClearSectionSeats, markerFillTransparency, onMarkerFillTransparencyChange]);
   return (
     <Card className={className}>
       <div className={innerClassName}>
@@ -329,18 +356,6 @@ export function SectionDetailView({
               >
                 <Save className="h-3.5 w-3.5 mr-1" />
                 Save
-              </Button>
-            )}
-            {onPreview && (
-              <Button
-                variant="outline"
-                onClick={onPreview}
-                size="sm"
-                className="h-7 px-2"
-                title="Preview how this section will appear during booking"
-              >
-                <Eye className="h-3.5 w-3.5 mr-1" />
-                Preview
               </Button>
             )}
             {onToggleFullscreen && (

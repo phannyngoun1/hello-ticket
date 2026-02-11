@@ -35,6 +35,8 @@ export interface EventInventoryViewerProps {
   selectedSeatIds?: Set<string>;
   selectedSectionId?: string | null;
   onSelectedSectionIdChange?: (sectionId: string | null) => void;
+  /** Hide the seat-status legend overlay on the canvas (default false) */
+  showLegend?: boolean;
 }
 
 export function EventInventoryViewer({
@@ -50,6 +52,7 @@ export function EventInventoryViewer({
   selectedSeatIds = new Set(),
   selectedSectionId: controlledSelectedSectionId,
   onSelectedSectionIdChange,
+  showLegend = true,
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -681,13 +684,16 @@ export function EventInventoryViewer({
         onResetZoom={handleResetZoom}
       />
 
-      {!(layout.design_mode === "section-level" && selectedSectionId) && (
-        <EventInventoryLegend className="absolute top-4 left-4" />
-      )}
+      {showLegend &&
+        !(layout.design_mode === "section-level" && selectedSectionId) && (
+          <EventInventoryLegend className="absolute top-4 left-4" />
+        )}
 
-      {layout.design_mode === "section-level" && selectedSectionId && (
-        <EventInventoryLegend className="absolute bottom-4 left-4" />
-      )}
+      {showLegend &&
+        layout.design_mode === "section-level" &&
+        selectedSectionId && (
+          <EventInventoryLegend className="absolute bottom-4 left-4" />
+        )}
 
       {layout.design_mode === "section-level" &&
         !selectedSectionId &&

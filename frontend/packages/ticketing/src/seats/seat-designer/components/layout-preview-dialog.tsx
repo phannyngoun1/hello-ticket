@@ -183,6 +183,7 @@ export function LayoutPreviewDialog({
                   selectedSeatIds={new Set()}
                   selectedSectionId={selectedSectionId}
                   onSelectedSectionIdChange={setSelectedSectionId}
+                  showLegend={false}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">

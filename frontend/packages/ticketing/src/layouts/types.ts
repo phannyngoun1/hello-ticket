@@ -50,6 +50,7 @@ export interface Section {
   file_id?: string | null;
   image_url?: string | null;
   canvas_background_color?: string | null; // Canvas background when no section image (hex)
+  marker_fill_transparency?: number | null; // Marker fill transparency for seats in this section (0.0 to 1.0)
   shape?: string | null; // JSON string storing PlacementShape data
   is_active: boolean;
   created_at: Date;

@@ -619,6 +619,7 @@ export function SeatDesigner({
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
           canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
+          markerFillTransparency: section.marker_fill_transparency ?? 1.0,
           shape,
           isNew: false,
         };
@@ -1950,6 +1951,7 @@ export function SeatDesigner({
             y: section.y_coordinate ?? 50,
             imageUrl: section.image_url || undefined,
             canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
+            markerFillTransparency: section.marker_fill_transparency ?? 1.0,
             isNew: false,
             shape,
           };
@@ -1991,6 +1993,7 @@ export function SeatDesigner({
             y: coordinates.y,
             imageUrl: section.image_url || undefined,
             canvasBackgroundColor: section.canvas_background_color ?? "#e5e7eb",
+            markerFillTransparency: section.marker_fill_transparency ?? 1.0,
             isNew: false,
             shape,
           };
@@ -2058,6 +2061,7 @@ export function SeatDesigner({
       }
 
       const canvasColor = section.canvas_background_color ?? "#e5e7eb";
+      const sectionTransparency = section.marker_fill_transparency ?? 1.0;
       // Update sectionMarkers
       setSectionMarkers((prev) =>
         prev.map((s) =>
@@ -2069,6 +2073,7 @@ export function SeatDesigner({
                 y: section.y_coordinate || s.y,
                 imageUrl: section.image_url || s.imageUrl,
                 canvasBackgroundColor: canvasColor,
+                markerFillTransparency: sectionTransparency,
                 shape: shape !== undefined ? shape : s.shape, // Update shape if provided
               }
             : s,
@@ -2082,6 +2087,7 @@ export function SeatDesigner({
               x: section.x_coordinate || prev.x,
               y: section.y_coordinate || prev.y,
               canvasBackgroundColor: canvasColor,
+              markerFillTransparency: sectionTransparency,
               shape: shape !== undefined ? shape : prev.shape, // Update shape if provided
             }
           : prev,
@@ -2152,6 +2158,43 @@ export function SeatDesigner({
             err instanceof Error
               ? err.message
               : "Failed to update canvas color",
+          variant: "destructive",
+        });
+      }
+    },
+    [viewingSection, layoutId, queryClient],
+  );
+
+  const handleSectionMarkerFillTransparencyChange = useCallback(
+    async (transparency: number) => {
+      if (!viewingSection) return;
+      try {
+        await sectionService.update(viewingSection.id, {
+          marker_fill_transparency: transparency,
+        });
+        setSectionMarkers((prev) =>
+          prev.map((s) =>
+            s.id === viewingSection.id
+              ? { ...s, markerFillTransparency: transparency }
+              : s,
+          ),
+        );
+        setViewingSection((prev) =>
+          prev && prev.id === viewingSection.id
+            ? { ...prev, markerFillTransparency: transparency }
+            : prev,
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["sections", "layout", layoutId],
+        });
+      } catch (err) {
+        console.error("Failed to update section marker fill transparency:", err);
+        toast({
+          title: "Error",
+          description:
+            err instanceof Error
+              ? err.message
+              : "Failed to update marker transparency",
           variant: "destructive",
         });
       }
@@ -2871,6 +2914,7 @@ export function SeatDesigner({
             x_coordinate: section.x,
             y_coordinate: section.y,
             canvas_background_color: section.canvasBackgroundColor || undefined,
+            marker_fill_transparency: section.markerFillTransparency,
             shape: section.shape ? JSON.stringify(section.shape) : undefined,
             // Preserve file_id from original section (only update if explicitly changed via image upload)
             file_id: originalSection?.file_id || undefined,
@@ -2885,6 +2929,7 @@ export function SeatDesigner({
             x_coordinate: section.x,
             y_coordinate: section.y,
             canvas_background_color: section.canvasBackgroundColor || undefined,
+            marker_fill_transparency: section.markerFillTransparency,
             shape: section.shape ? JSON.stringify(section.shape) : undefined,
           }),
         );
@@ -3774,9 +3819,10 @@ export function SeatDesigner({
         onAlign={handleAlign}
         canvasBackgroundColor={canvasBackgroundColor}
         onCanvasBackgroundColorChange={handleSectionCanvasBackgroundColorChange}
+        markerFillTransparency={viewingSection?.markerFillTransparency ?? markerFillTransparency}
+        onMarkerFillTransparencyChange={!readOnly ? handleSectionMarkerFillTransparencyChange : undefined}
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleFullscreen}
-        onPreview={() => setShowPreview(true)}
         showGrid={showGrid}
         gridSize={gridSize}
         seatEditControls={
