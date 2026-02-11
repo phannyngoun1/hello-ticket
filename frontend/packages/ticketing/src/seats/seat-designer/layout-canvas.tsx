@@ -2349,66 +2349,62 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
-      {/* Grid Layer - renders behind everything when grid is enabled */}
-      {showGrid && gridSize > 0 && (
-        <Layer {...layerTransform} listening={false}>
-          {(() => {
-            const gridLines: Array<{
-              x1: number;
-              y1: number;
-              x2: number;
-              y2: number;
-              isVertical: boolean;
-            }> = [];
-
-            // Generate vertical grid lines
-            for (
-              let percentage = gridSize;
-              percentage < 100;
-              percentage += gridSize
-            ) {
-              const x = (percentage / 100) * containerWidth;
-              gridLines.push({
-                x1: x,
-                y1: 0,
-                x2: x,
-                y2: containerHeight,
-                isVertical: true,
-              });
-            }
-
-            // Generate horizontal grid lines
-            for (
-              let percentage = gridSize;
-              percentage < 100;
-              percentage += gridSize
-            ) {
-              const y = (percentage / 100) * containerHeight;
-              gridLines.push({
-                x1: 0,
-                y1: y,
-                x2: containerWidth,
-                y2: y,
-                isVertical: false,
-              });
-            }
-
-            return gridLines.map((line, index) => (
-              <Line
-                key={`grid-line-${index}`}
-                points={[line.x1, line.y1, line.x2, line.y2]}
-                stroke="rgba(100, 150, 255, 0.2)"
-                strokeWidth={1}
-                perfectDrawEnabled={false}
-                dash={[2, 2]}
-              />
-            ));
-          })()}
-        </Layer>
-      )}
-
-      {/* Background Layer: Always show canvas background, with image layered on top */}
+      {/* Background Layer: Grid lines (when enabled), canvas background, and image */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
+        {/* Grid lines - rendered behind everything */}
+        {showGrid && gridSize > 0 && (
+          <Group listening={false}>
+            {(() => {
+              const gridLines: Array<{
+                x1: number;
+                y1: number;
+                x2: number;
+                y2: number;
+              }> = [];
+
+              // Generate vertical grid lines
+              for (
+                let percentage = gridSize;
+                percentage < 100;
+                percentage += gridSize
+              ) {
+                const x = (percentage / 100) * containerWidth;
+                gridLines.push({
+                  x1: x,
+                  y1: 0,
+                  x2: x,
+                  y2: containerHeight,
+                });
+              }
+
+              // Generate horizontal grid lines
+              for (
+                let percentage = gridSize;
+                percentage < 100;
+                percentage += gridSize
+              ) {
+                const y = (percentage / 100) * containerHeight;
+                gridLines.push({
+                  x1: 0,
+                  y1: y,
+                  x2: containerWidth,
+                  y2: y,
+                });
+              }
+
+              return gridLines.map((line, index) => (
+                <Line
+                  key={`grid-line-${index}`}
+                  points={[line.x1, line.y1, line.x2, line.y2]}
+                  stroke="rgba(100, 150, 255, 0.2)"
+                  strokeWidth={1}
+                  perfectDrawEnabled={false}
+                  dash={[2, 2]}
+                />
+              ));
+            })()}
+          </Group>
+        )}
         {/* Background rectangle - always rendered to support transparency and consistent background color */}
         <Rect
           name="canvas-background"
@@ -2875,10 +2871,7 @@ export function LayoutCanvas({
               />
             );
           })()}
-      </Layer>
-
-      {/* Drag Layer: Dragged shape when different from selected (selected one moves in Interactive Layer via dragPosition) */}
-      <Layer {...layerTransform} listening={true}>
+        {/* Dragged shape when different from selected (selected one moves via dragPosition above) */}
         {draggedSeat &&
           (!selectedSeat || selectedSeat.id !== draggedSeatId) &&
           (() => {
