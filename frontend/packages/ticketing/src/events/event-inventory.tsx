@@ -4,7 +4,7 @@
  * Displays venue layout with event seats overlaid, allowing management of seat inventory
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   Card,
   Button,
@@ -53,6 +53,7 @@ import {
   useEventSeatStatistics,
   useUpdateEvent,
 } from "./use-events";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLayoutWithSeats } from "../layouts/use-layouts";
 import type { EventSeat } from "./types";
 import { EventSeatStatus, EventStatus } from "./types";
@@ -175,6 +176,24 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
     eventService,
     eventId,
   );
+
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["events", eventId] }),
+        event?.layout_id
+          ? queryClient.refetchQueries({
+              queryKey: ["layouts", event.layout_id, "with-seats"],
+            })
+          : Promise.resolve(),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [queryClient, eventId, event?.layout_id]);
 
   const initializeSeatsMutation = useInitializeEventSeats(eventService);
   const deleteSeatsMutation = useDeleteEventSeats(eventService);
@@ -751,6 +770,18 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           </div>
 
           <div className="flex items-center gap-1 flex-wrap">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              title="Refresh (invalidate cache)"
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+              />
+            </Button>
             <Button
               onClick={() => setChangeStatusDialogOpen(true)}
               variant="outline"
