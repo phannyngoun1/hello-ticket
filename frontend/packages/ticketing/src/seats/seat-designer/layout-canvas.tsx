@@ -1682,8 +1682,13 @@ export function LayoutCanvas({
     ? (coordValidHeight - coordDisplayedHeight) / 2
     : 0;
 
-  // Convert percentage coordinates to Konva stage coordinates
-  // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
+  // Layer transform params (must match layerTransform below)
+  const centerX = (containerWidth > 0 ? containerWidth : 800) / 2;
+  const centerY = (containerHeight > 0 ? containerHeight : 600) / 2;
+
+  // Convert percentage to layer coordinates - use SAME coordinate system as background/image
+  // so they scale and position together when canvas resizes or zooms.
+  // Background is at (coordImageX, coordImageY) with size (coordDisplayedWidth, coordDisplayedHeight).
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
       const x = coordImageX + (xPercent / 100) * coordDisplayedWidth;
@@ -1693,14 +1698,26 @@ export function LayoutCanvas({
     [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
   );
 
-  // Convert Konva stage coordinates to percentage
-  const stageToPercentage = useCallback(
-    (stageX: number, stageY: number) => {
-      const x = ((stageX - coordImageX) / coordDisplayedWidth) * 100;
-      const y = ((stageY - coordImageY) / coordDisplayedHeight) * 100;
+  // Convert layer coordinates to percentage (for drag handlers - node.x/y are in layer space)
+  const layerToPercentage = useCallback(
+    (layerX: number, layerY: number) => {
+      const x = ((layerX - coordImageX) / coordDisplayedWidth) * 100;
+      const y = ((layerY - coordImageY) / coordDisplayedHeight) * 100;
       return { x, y };
     },
     [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
+  );
+
+  // Convert stage coordinates to percentage (for marquee - pointer pos is in stage space)
+  const stageToPercentage = useCallback(
+    (stageX: number, stageY: number) => {
+      const layerX =
+        (stageX - centerX - panOffset.x) / zoomLevel + centerX;
+      const layerY =
+        (stageY - centerY - panOffset.y) / zoomLevel + centerY;
+      return layerToPercentage(layerX, layerY);
+    },
+    [centerX, centerY, panOffset, zoomLevel, layerToPercentage],
   );
 
   // Convert stage pointer position to percentage, accounting for Layer transforms
@@ -1732,16 +1749,16 @@ export function LayoutCanvas({
     ],
   );
 
-  // Handle seat drag end
+  // Handle seat drag end (node.x/y are layer-local)
   const handleSeatDragEnd = useCallback(
     (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
-      const { x, y } = stageToPercentage(node.x(), node.y());
+      const { x, y } = layerToPercentage(node.x(), node.y());
       setDraggedSeatId(null);
       setDragPosition(null);
       onSeatDragEnd(seatId, x, y);
     },
-    [onSeatDragEnd, stageToPercentage],
+    [onSeatDragEnd, layerToPercentage],
   );
 
   const handleSeatDragStart = useCallback(
@@ -1754,21 +1771,21 @@ export function LayoutCanvas({
   );
 
   const handleSeatDragMove = useCallback(
-    (seatId: string, stageX: number, stageY: number) => {
-      const { x, y } = stageToPercentage(stageX, stageY);
+    (seatId: string, layerX: number, layerY: number) => {
+      const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage],
+    [layerToPercentage],
   );
 
   const handleSectionDragEnd = useCallback(
-    (sectionId: string, stageX: number, stageY: number) => {
+    (sectionId: string, layerX: number, layerY: number) => {
       setDraggedSectionId(null);
       setDragPosition(null);
-      const { x, y } = stageToPercentage(stageX, stageY);
+      const { x, y } = layerToPercentage(layerX, layerY);
       onSectionDragEnd?.(sectionId, x, y);
     },
-    [onSectionDragEnd, stageToPercentage],
+    [onSectionDragEnd, layerToPercentage],
   );
 
   const handleSectionDragStart = useCallback(
@@ -1781,11 +1798,11 @@ export function LayoutCanvas({
   );
 
   const handleSectionDragMove = useCallback(
-    (sectionId: string, stageX: number, stageY: number) => {
-      const { x, y } = stageToPercentage(stageX, stageY);
+    (sectionId: string, layerX: number, layerY: number) => {
+      const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage],
+    [layerToPercentage],
   );
 
   // Ensure container dimensions are valid
@@ -1793,8 +1810,7 @@ export function LayoutCanvas({
   const validHeight = containerHeight > 0 ? containerHeight : 600;
 
   // Compute display dimensions (no-image = use full container for simple floor mode)
-  const centerX = validWidth / 2;
-  const centerY = validHeight / 2;
+  // centerX/centerY already defined above for coordinate conversion
   const displayedWidth = coordDisplayedWidth;
   const displayedHeight = coordDisplayedHeight;
   const imageX = coordImageX;
