@@ -31,6 +31,7 @@ export interface EventListContainerProps {
   className?: string;
   onNavigateToEvent?: (eventId: string) => void;
   onNavigateToInventory?: (eventId: string) => void;
+  onNavigateToVenue?: (venueId: string) => void;
 }
 
 export function EventListContainer({
@@ -38,6 +39,7 @@ export function EventListContainer({
   className,
   onNavigateToEvent,
   onNavigateToInventory,
+  onNavigateToVenue,
 }: EventListContainerProps) {
   const service = useEventService();
   const [page, setPage] = useState(1);
@@ -75,7 +77,7 @@ export function EventListContainer({
       await createMutation.mutateAsync(input);
       setCreateDialogOpen(false);
     },
-    [createMutation]
+    [createMutation],
   );
 
   const handleEdit = useCallback((event: Event) => {
@@ -89,14 +91,14 @@ export function EventListContainer({
       setEditDialogOpen(false);
       setSelectedEvent(null);
     },
-    [updateMutation]
+    [updateMutation],
   );
 
   const handleDelete = useCallback(
     async (event: Event) => {
       await deleteMutation.mutateAsync(event.id);
     },
-    [deleteMutation]
+    [deleteMutation],
   );
 
   const handleStatusChange = useCallback(
@@ -106,7 +108,7 @@ export function EventListContainer({
         input: { status: newStatus },
       });
     },
-    [updateMutation]
+    [updateMutation],
   );
 
   const handleEventClick = useCallback(
@@ -120,7 +122,7 @@ export function EventListContainer({
         onNavigateToEvent(event.id);
       }
     },
-    [onNavigateToEvent]
+    [onNavigateToEvent],
   );
 
   const handlePageChange = useCallback((newPage: number) => {
@@ -160,7 +162,19 @@ export function EventListContainer({
         window.location.href = `/ticketing/events/${event.id}/inventory`;
       }
     },
-    [onNavigateToInventory]
+    [onNavigateToInventory],
+  );
+
+  const handleVenueClick = useCallback(
+    (venueId: string) => {
+      if (onNavigateToVenue) {
+        onNavigateToVenue(venueId);
+      } else {
+        // Fallback to window.location if no callback provided
+        window.location.href = `/ticketing/venues/${venueId}`;
+      }
+    },
+    [onNavigateToVenue],
   );
 
   // Fetch event detail when sheet is open
@@ -183,6 +197,7 @@ export function EventListContainer({
         onManageInventory={handleManageInventory}
         onStatusChange={handleStatusChange}
         onEventClick={handleEventClick}
+        onVenueClick={handleVenueClick}
         onSearch={handleSearch}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}

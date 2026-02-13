@@ -50,6 +50,7 @@ export interface EventListProps {
   onDelete?: (event: Event) => void;
   onManageInventory?: (event: Event) => void;
   onStatusChange?: (event: Event, newStatus: EventStatus) => void;
+  onVenueClick?: (venueId: string) => void;
   onCreate?: () => void;
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
@@ -71,7 +72,7 @@ interface EventListItem extends DataListItem {
 function EventStatisticsDisplay({ eventId }: { eventId: string }) {
   const { data: statistics, isLoading } = useEventSeatStatistics(
     useEventService(),
-    eventId
+    eventId,
   );
 
   if (isLoading || !statistics) {
@@ -134,6 +135,7 @@ export function EventList({
   onDelete,
   onManageInventory,
   onStatusChange,
+  onVenueClick,
   onSearch,
   customActions,
   showShowNameInTitle = false,
@@ -193,7 +195,7 @@ export function EventList({
   };
 
   const getStatusVariant = (
-    status: string
+    status: string,
   ): "default" | "secondary" | "destructive" | "outline" => {
     switch (status.toLowerCase()) {
       case "draft":
@@ -262,51 +264,6 @@ export function EventList({
     label: formatStatus(status),
   }));
 
-  // Render status badge with dropdown
-  const renderStatusBadge = (
-    event: Event,
-    statusVariant: "default" | "secondary" | "destructive" | "outline"
-  ) => {
-    if (onStatusChange) {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-auto p-0 hover:bg-transparent"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Badge
-                variant={statusVariant}
-                className="text-xs flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
-              >
-                {formatStatus(event.status)}
-                <ChevronDown className="h-3 w-3" />
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            {statusOptions.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onClick={() => handleStatusChange(event, option.value)}
-                disabled={event.status === option.value}
-              >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
-    return (
-      <Badge variant={statusVariant} className="text-xs flex-shrink-0">
-        {formatStatus(event.status)}
-      </Badge>
-    );
-  };
-
   // Action button configuration
   const actionButtons: ActionButtonItem[] = useMemo(
     () => [
@@ -338,7 +295,7 @@ export function EventList({
         show: !!onDelete,
       },
     ],
-    [onManageInventory, onEdit, onDelete, handleEdit, handleDeleteClick]
+    [onManageInventory, onEdit, onDelete, handleEdit, handleDeleteClick],
   );
 
   // Custom item renderer - supports both card and list views
@@ -358,7 +315,12 @@ export function EventList({
             {/* Date Badge */}
             <div className="flex-shrink-0">
               <div className="flex flex-col items-center justify-center w-16 h-16 rounded bg-muted/50 border border-border/50">
-                <span className={cn("font-semibold text-muted-foreground uppercase leading-tight tracking-wide", density.textSizeSmall)}>
+                <span
+                  className={cn(
+                    "font-semibold text-muted-foreground uppercase leading-tight tracking-wide",
+                    density.textSizeSmall,
+                  )}
+                >
                   {dateInfo.month}
                 </span>
                 <span className="text-xl font-bold text-foreground leading-none mt-0.5">
@@ -368,32 +330,76 @@ export function EventList({
             </div>
 
             {/* Main Content */}
-            <div className={cn("flex-1 min-w-0 flex flex-col", density.gapFormItem)}>
+            <div
+              className={cn(
+                "flex-1 min-w-0 flex flex-col",
+                density.gapFormItem,
+              )}
+            >
               {/* Header: Title and Status */}
-              <div className={cn("flex items-start justify-between", density.gapCard)}>
-                <h4 className={cn("font-semibold text-foreground line-clamp-2 leading-snug flex-1", density.textSize)}>
+              <div
+                className={cn(
+                  "flex items-start justify-between",
+                  density.gapCard,
+                )}
+              >
+                <h4
+                  className={cn(
+                    "font-semibold text-foreground line-clamp-2 leading-snug flex-1",
+                    density.textSize,
+                  )}
+                >
                   {showShowNameInTitle && item.event.show
                     ? `${item.event.show.name} - ${item.name}`
                     : item.name}
                 </h4>
                 <div className="flex-shrink-0">
-                  {renderStatusBadge(item.event, statusVariant)}
+                  <Badge
+                    variant={statusVariant}
+                    className="text-xs flex-shrink-0 flex items-center gap-1"
+                  >
+                    {formatStatus(item.event.status)}
+                  </Badge>
                 </div>
               </div>
 
               {/* Time, Location, Duration - First Row */}
-              <div className={cn("flex items-center text-muted-foreground flex-wrap", density.gapCard, density.textSizeSmall)}>
+              <div
+                className={cn(
+                  "flex items-center text-muted-foreground flex-wrap",
+                  density.gapCard,
+                  density.textSizeSmall,
+                )}
+              >
                 <div className={cn("flex items-center", density.gapFormItem)}>
                   <Clock className={cn("flex-shrink-0", density.iconSize)} />
-                  <span className={cn("font-medium text-foreground", density.textSizeSmall)}>
+                  <span
+                    className={cn(
+                      "font-medium text-foreground",
+                      density.textSizeSmall,
+                    )}
+                  >
                     {timeInfo.dayOfWeek}
                   </span>
                   <span>{timeInfo.time}</span>
                 </div>
                 <div className={cn("flex items-center", density.gapFormItem)}>
                   <MapPin className={cn("flex-shrink-0", density.iconSize)} />
-                  <span className="truncate">
-                    {item.event.venue?.name || "Venue TBD"}
+                  <span
+                    className={cn(
+                      "truncate",
+                      onVenueClick &&
+                        item.event.venue_name &&
+                        "cursor-pointer hover:text-primary hover:underline",
+                    )}
+                    onClick={(e) => {
+                      if (onVenueClick && item.event.venue_id) {
+                        e.stopPropagation();
+                        onVenueClick(item.event.venue_id);
+                      }
+                    }}
+                  >
+                    {item.event.venue_name || ""}
                   </span>
                 </div>
                 <div className={cn("flex items-center", density.gapFormItem)}>
@@ -402,7 +408,12 @@ export function EventList({
               </div>
 
               {/* Statistics and Actions - Second Row */}
-              <div className={cn("flex items-center justify-between", density.gapCard)}>
+              <div
+                className={cn(
+                  "flex items-center justify-between",
+                  density.gapCard,
+                )}
+              >
                 <EventStatisticsDisplay eventId={item.event.id} />
                 <ActionButtonList
                   item={item}
@@ -412,7 +423,6 @@ export function EventList({
                       ? (item) => customActions(item.event)
                       : undefined
                   }
-                  
                 />
               </div>
             </div>
@@ -425,6 +435,7 @@ export function EventList({
     onDelete,
     onManageInventory,
     onStatusChange,
+    onVenueClick,
     customActions,
     onEventClick,
     statusOptions,

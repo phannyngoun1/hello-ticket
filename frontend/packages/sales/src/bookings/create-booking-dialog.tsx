@@ -25,6 +25,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
+  ScrollArea,
 } from "@truths/ui";
 import { LayoutGrid, List } from "lucide-react";
 import { ShowService } from "@truths/ticketing/shows";
@@ -44,8 +45,6 @@ import type { CreateBookingInput } from "./types";
 import { BookingReceipt } from "./components/booking-receipt";
 import { BookingSeatSelection } from "./components/booking-seat-selection";
 import { BookingTicket } from "./types";
-
-
 
 export interface CreateBookingTransactionData {
   customerId?: string;
@@ -83,30 +82,38 @@ export function CreateBookingDialog({
     useState<CreateBookingTransactionData | null>(null);
 
   // Show and Event selection
-  const [selectedShowId, setSelectedShowId] = useState<string | null>(initialShowId || null);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEventId || null);
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(
+    initialShowId || null,
+  );
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(
+    initialEventId || null,
+  );
 
   // Popover open states
   const [showPopoverOpen, setShowPopoverOpen] = useState(false);
   const [eventPopoverOpen, setEventPopoverOpen] = useState(false);
   const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-  const [debouncedCustomerSearchQuery, setDebouncedCustomerSearchQuery] = useState("");
+  const [debouncedCustomerSearchQuery, setDebouncedCustomerSearchQuery] =
+    useState("");
 
   // Salesperson selection
-  const [selectedSalespersonId, setSelectedSalespersonId] = useState<string | null>(null);
+  const [selectedSalespersonId, setSelectedSalespersonId] = useState<
+    string | null
+  >(null);
   const [salespersonPopoverOpen, setSalespersonPopoverOpen] = useState(false);
   const [salespersonSearchQuery, setSalespersonSearchQuery] = useState("");
-  const [debouncedSalespersonSearchQuery, setDebouncedSalespersonSearchQuery] = useState("");
+  const [debouncedSalespersonSearchQuery, setDebouncedSalespersonSearchQuery] =
+    useState("");
 
   // Seat view mode: 'visualization' | 'list'
   const [seatViewMode, setSeatViewMode] = useState<"visualization" | "list">(
-    "visualization"
+    "visualization",
   );
 
   // Selected section ID for layout drill-down (preserved across view mode switches)
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
-    null
+    null,
   );
 
   // Selected tickets
@@ -114,12 +121,12 @@ export function CreateBookingDialog({
 
   // Customer selection
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
-    initialCustomerId || null
+    initialCustomerId || null,
   );
 
   // Discount type: 'percentage' or 'amount'
   const [discountType, setDiscountType] = useState<"percentage" | "amount">(
-    "percentage"
+    "percentage",
   );
   // Discount value (percentage or amount)
   const [discountValue, setDiscountValue] = useState<string>("0");
@@ -133,7 +140,7 @@ export function CreateBookingDialog({
           shows: "/api/v1/ticketing/shows",
         },
       }),
-    []
+    [],
   );
 
   const eventService = useMemo(
@@ -144,7 +151,7 @@ export function CreateBookingDialog({
           events: "/api/v1/ticketing/events",
         },
       }),
-    []
+    [],
   );
 
   const layoutService = useMemo(
@@ -155,7 +162,7 @@ export function CreateBookingDialog({
           layouts: "/api/v1/ticketing/layouts",
         },
       }),
-    []
+    [],
   );
 
   const customerService = useMemo(
@@ -166,7 +173,7 @@ export function CreateBookingDialog({
           customers: "/api/v1/sales/customers",
         },
       }),
-    []
+    [],
   );
 
   const employeeService = useMemo(
@@ -177,7 +184,7 @@ export function CreateBookingDialog({
           employees: "/api/v1/sales/employees",
         },
       }),
-    []
+    [],
   );
 
   // Fetch shows
@@ -203,7 +210,7 @@ export function CreateBookingDialog({
   });
   // Filter to only show events that are on sale
   const events = (eventsData?.data || []).filter(
-    (event) => event.status === EventStatus.ON_SALE
+    (event) => event.status === EventStatus.ON_SALE,
   );
 
   // Fetch event data
@@ -212,14 +219,14 @@ export function CreateBookingDialog({
   // Fetch layout with seats
   const { data: layoutWithSeats } = useLayoutWithSeats(
     layoutService,
-    event?.layout_id || null
+    event?.layout_id || null,
   );
 
   // Fetch event seats
   const { data: eventSeatsData } = useEventSeats(
     eventService,
     selectedEventId || "",
-    { skip: 0, limit: 1000 }
+    { skip: 0, limit: 1000 },
   );
   const eventSeats = eventSeatsData?.data || [];
 
@@ -256,15 +263,14 @@ export function CreateBookingDialog({
   // Fetch employees
   const { data: employeesData } = useEmployees(employeeService, {
     filter: {
-        search: debouncedSalespersonSearchQuery || undefined,
+      search: debouncedSalespersonSearchQuery || undefined,
     },
     pagination: {
-        page: 1,
-        pageSize: 50,
+      page: 1,
+      pageSize: 50,
     },
   });
   const employees = employeesData?.data || [];
-
 
   // Create maps for seat status lookup
   const seatStatusMap = useMemo(() => {
@@ -349,13 +355,13 @@ export function CreateBookingDialog({
 
       // Check if seat is already selected
       const existingIndex = selectedTickets.findIndex(
-        (t) => t.eventSeatId === targetEventSeat!.id
+        (t) => t.eventSeatId === targetEventSeat!.id,
       );
 
       if (existingIndex >= 0) {
         // Remove from selection
         setSelectedTickets((prev) =>
-          prev.filter((_, i) => i !== existingIndex)
+          prev.filter((_, i) => i !== existingIndex),
         );
       } else {
         // Add to selection (only if available - normalize to uppercase for comparison)
@@ -381,7 +387,7 @@ export function CreateBookingDialog({
       seatStatusMap,
       locationStatusMap,
       layoutWithSeats,
-    ]
+    ],
   );
 
   // Handle seat selection from list (for checkbox selection only, not auto-add to booking)
@@ -391,7 +397,7 @@ export function CreateBookingDialog({
       // The "Add to Booking" button will handle adding selected seats
       // Selection state is managed internally by EventSeatList when showAddToBooking is true
     },
-    []
+    [],
   );
 
   // Handle adding selected seats to booking list
@@ -411,7 +417,7 @@ export function CreateBookingDialog({
             if (statusUpper !== "AVAILABLE") return false;
             // Check if already in booking list using prevTickets
             const alreadyAdded = prevTickets.some(
-              (t) => t.eventSeatId === seat.id
+              (t) => t.eventSeatId === seat.id,
             );
             return !alreadyAdded;
           });
@@ -434,7 +440,7 @@ export function CreateBookingDialog({
         return [...prevTickets, ...newTickets];
       });
     },
-    [selectedEventId, eventSeats]
+    [selectedEventId, eventSeats],
   );
 
   // Calculate subtotal
@@ -484,7 +490,9 @@ export function CreateBookingDialog({
     // Validate that the selected event is still on sale
     const selectedEvent = events.find((e) => e.id === selectedEventId);
     if (!selectedEvent || selectedEvent.status !== EventStatus.ON_SALE) {
-      alert("The selected event is no longer available for booking. Please select a different event.");
+      alert(
+        "The selected event is no longer available for booking. Please select a different event.",
+      );
       return;
     }
 
@@ -572,13 +580,12 @@ export function CreateBookingDialog({
         onCancel={handleClose}
       >
         <div
-          className={cn(
-            "flex h-full",
-            density.paddingForm
-          )}
+          style={{ height: "calc(100vh - 115px)" }}
+          className={cn("flex min-h-0", density.paddingForm)}
         >
           {/* Left Section - Seat Selection */}
-          <div className="flex-1 flex flex-col min-w-0 ">
+
+          <div className="flex-1 flex flex-col min-w-0 min-h-0">
             {/* Header with Show/Event Selectors and View Toggle */}
             <div className="pr-1 border-b flex items-center gap-3 flex-shrink-0">
               <div className="flex-1 min-w-0">
@@ -667,11 +674,11 @@ export function CreateBookingDialog({
                         {selectedEventId
                           ? (() => {
                               const event = events.find(
-                                (e) => e.id === selectedEventId
+                                (e) => e.id === selectedEventId,
                               );
                               return event
                                 ? `${event.title} - ${new Date(
-                                    event.start_dt
+                                    event.start_dt,
                                   ).toLocaleDateString()}`
                                 : "Select an event";
                             })()
@@ -704,7 +711,7 @@ export function CreateBookingDialog({
                             <CommandItem
                               key={event.id}
                               value={`${event.title} ${new Date(
-                                event.start_dt
+                                event.start_dt,
                               ).toLocaleDateString()}`}
                               onSelect={() => {
                                 setSelectedEventId(event.id);
@@ -716,16 +723,17 @@ export function CreateBookingDialog({
                                   {event.title}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    event.start_dt
-                                  ).toLocaleDateString(undefined, {
-                                    weekday: "short",
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
+                                  {new Date(event.start_dt).toLocaleDateString(
+                                    undefined,
+                                    {
+                                      weekday: "short",
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
                                 </span>
                               </div>
                             </CommandItem>
@@ -738,45 +746,52 @@ export function CreateBookingDialog({
               </div>
 
               {/* View Mode Toggle */}
-              <Tabs
-                value={seatViewMode}
-                onValueChange={(value) =>
-                  setSeatViewMode(value as "visualization" | "list")
-                }
-              >
-                <TabsList>
-                  <TabsTrigger value="visualization" className="h-9 w-9 p-0">
-                    <LayoutGrid className="h-4 w-4" />
-                    <span className="sr-only">Layout</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="list" className="h-9 w-9 p-0">
-                    <List className="h-4 w-4" />
-                    <span className="sr-only">List</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+
+              <div>
+                <Tabs
+                  value={seatViewMode}
+                  onValueChange={(value) =>
+                    setSeatViewMode(value as "visualization" | "list")
+                  }
+                >
+                  <TabsList>
+                    <TabsTrigger value="visualization" className="h-9 w-9 p-0">
+                      <LayoutGrid className="h-4 w-4" />
+                      <span className="sr-only">Layout</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="list" className="h-9 w-9 p-0">
+                      <List className="h-4 w-4" />
+                      <span className="sr-only">List</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
 
             {/* Seat Content Area */}
-            <BookingSeatSelection
-              selectedEventId={selectedEventId}
-              seatViewMode={seatViewMode}
-              layoutWithSeats={layoutWithSeats}
-              eventSeats={eventSeats}
-              seatStatusMap={seatStatusMap}
-              locationStatusMap={locationStatusMap}
-              onSeatClick={handleSeatClick}
-              selectedTickets={selectedTickets}
-              selectedSectionId={selectedSectionId}
-              onSelectedSectionIdChange={setSelectedSectionId}
-              onListSeatSelect={handleListSeatSelect}
-              onAddSeatsToBooking={handleAddSeatsToBooking}
-            />
+            <div className="h-full">
+              <ScrollArea className="h-full w-full">
+                <BookingSeatSelection
+                  selectedEventId={selectedEventId}
+                  seatViewMode={seatViewMode}
+                  layoutWithSeats={layoutWithSeats}
+                  eventSeats={eventSeats}
+                  seatStatusMap={seatStatusMap}
+                  locationStatusMap={locationStatusMap}
+                  onSeatClick={handleSeatClick}
+                  selectedTickets={selectedTickets}
+                  selectedSectionId={selectedSectionId}
+                  onSelectedSectionIdChange={setSelectedSectionId}
+                  onListSeatSelect={handleListSeatSelect}
+                  onAddSeatsToBooking={handleAddSeatsToBooking}
+                />
+              </ScrollArea>
+            </div>
           </div>
 
           {/* Right Section - Receipt-style Booking Details */}
-          <div className="w-96 flex flex-col min-w-0 border rounded-xl bg-card flex-shrink-0 shadow-lg ml-6">
-            <div className="h-full overflow-y-auto flex flex-col">
+          <div className="w-96 sticky top-0 flex flex-col min-w-0 min-h-0 border rounded-xl bg-card flex-shrink-0 shadow-lg ml-6">
+            <ScrollArea className="h-full w-full">
               {/* Customer Selection - Receipt Style */}
               <BookingReceipt
                 // Customer Props
@@ -787,7 +802,6 @@ export function CreateBookingDialog({
                 onCustomerPopoverOpenChange={setCustomerPopoverOpen}
                 customerSearchQuery={customerSearchQuery}
                 onCustomerSearchQueryChange={setCustomerSearchQuery}
-
                 // Salesperson Props
                 employees={employees}
                 selectedSalespersonId={selectedSalespersonId}
@@ -796,18 +810,16 @@ export function CreateBookingDialog({
                 onSalespersonPopoverOpenChange={setSalespersonPopoverOpen}
                 salespersonSearchQuery={salespersonSearchQuery}
                 onSalespersonSearchQueryChange={setSalespersonSearchQuery}
-
                 // Discount Props
                 discountType={discountType}
                 onDiscountTypeChange={setDiscountType}
                 discountValue={discountValue}
                 onDiscountValueChange={setDiscountValue}
-
                 // Existing Props
                 selectedTickets={selectedTickets}
                 onRemoveTicket={(id) => {
                   setSelectedTickets((prev) =>
-                    prev.filter((t) => t.eventSeatId !== id)
+                    prev.filter((t) => t.eventSeatId !== id),
                   );
                 }}
                 onClearAll={() => setSelectedTickets([])}
@@ -816,7 +828,7 @@ export function CreateBookingDialog({
                 taxAmount={taxAmount}
                 totalAmount={totalAmount}
               />
-            </div>
+            </ScrollArea>
           </div>
         </div>
       </FullScreenDialog>

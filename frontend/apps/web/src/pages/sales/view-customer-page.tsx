@@ -31,11 +31,16 @@ import { useQuery } from "@tanstack/react-query";
 function CustomerDetailContent({ id }: { id: string }) {
   const navigate = useNavigate();
   const service = useCustomerService();
-  const { data: customer, isLoading, error, refetch } = useCustomer(service, id ?? null);
+  const {
+    data: customer,
+    isLoading,
+    error,
+    refetch,
+  } = useCustomer(service, id ?? null);
   const updateMutation = useUpdateCustomer(service);
   const deleteMutation = useDeleteCustomer(service);
   const { toast } = useToast();
-  
+
   const tagService = new TagService({ apiClient: api, endpoints: {} });
   const attachmentService = new AttachmentService({
     apiClient: api,
@@ -85,9 +90,8 @@ function CustomerDetailContent({ id }: { id: string }) {
         detail: {
           path: `/sales/customers/${id}`,
           title,
-          iconName: "Users",
         },
-      })
+      }),
     );
   }, [id, customer]);
 
@@ -111,7 +115,8 @@ function CustomerDetailContent({ id }: { id: string }) {
     } catch (err) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to delete customer",
+        description:
+          err instanceof Error ? err.message : "Failed to delete customer",
         variant: "destructive",
       });
     }
@@ -143,7 +148,8 @@ function CustomerDetailContent({ id }: { id: string }) {
     } catch (err) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to activate customer",
+        description:
+          err instanceof Error ? err.message : "Failed to activate customer",
         variant: "destructive",
       });
     }
@@ -166,7 +172,8 @@ function CustomerDetailContent({ id }: { id: string }) {
     } catch (err) {
       toast({
         title: "Error",
-        description: err instanceof Error ? err.message : "Failed to deactivate customer",
+        description:
+          err instanceof Error ? err.message : "Failed to deactivate customer",
         variant: "destructive",
       });
     }
@@ -189,21 +196,19 @@ function CustomerDetailContent({ id }: { id: string }) {
       } catch (err) {
         toast({
           title: "Error",
-          description: err instanceof Error ? err.message : "Failed to update customer",
+          description:
+            err instanceof Error ? err.message : "Failed to update customer",
           variant: "destructive",
         });
         throw err;
       }
     },
-    [updateMutation, toast, refetch]
+    [updateMutation, toast, refetch],
   );
 
-  const handleCreateBooking = useCallback(
-    (_: Customer) => {
-      setCreateBookingDialogOpen(true);
-    },
-    []
-  );
+  const handleCreateBooking = useCallback((_: Customer) => {
+    setCreateBookingDialogOpen(true);
+  }, []);
 
   const handleCreateBookingSubmit = useCallback(
     async (data: CreateBookingInput) => {
@@ -222,15 +227,15 @@ function CustomerDetailContent({ id }: { id: string }) {
       } catch (err) {
         toast({
           title: "Error",
-          description: err instanceof Error ? err.message : "Failed to create booking",
+          description:
+            err instanceof Error ? err.message : "Failed to create booking",
           variant: "destructive",
         });
         throw err;
       }
     },
-    [createBookingMutation, navigate, toast]
+    [createBookingMutation, navigate, toast],
   );
-
 
   const handleViewBookings = useCallback(
     (cus: Customer) => {
@@ -239,7 +244,7 @@ function CustomerDetailContent({ id }: { id: string }) {
         search: { customer_id: cus.id },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   const handleManageTags = useCallback(() => {
@@ -252,7 +257,7 @@ function CustomerDetailContent({ id }: { id: string }) {
       try {
         // Use unified service to manage tags (creates new tags and attaches them in one operation)
         await tagService.manageEntityTags("customer", customer.id, tags);
-        
+
         // Refetch customer to get updated tags
         await refetch();
         toast({
@@ -263,13 +268,14 @@ function CustomerDetailContent({ id }: { id: string }) {
       } catch (err) {
         toast({
           title: "Error",
-          description: err instanceof Error ? err.message : "Failed to update tags",
+          description:
+            err instanceof Error ? err.message : "Failed to update tags",
           variant: "destructive",
         });
         throw err;
       }
     },
-    [customer, refetch, toast, tagService]
+    [customer, refetch, toast, tagService],
   );
 
   const handleProfilePhotoChange = useCallback(
@@ -277,7 +283,7 @@ function CustomerDetailContent({ id }: { id: string }) {
       setProfilePhoto(photo);
       await refetchProfilePhoto();
     },
-    [refetchProfilePhoto]
+    [refetchProfilePhoto],
   );
 
   const handleManageAttachments = useCallback(() => {
@@ -292,7 +298,7 @@ function CustomerDetailContent({ id }: { id: string }) {
         description: "Attachments updated successfully",
       });
     },
-    [toast]
+    [toast],
   );
 
   return (
@@ -333,7 +339,8 @@ function CustomerDetailContent({ id }: { id: string }) {
             confirmText="delete"
             confirmTextLabel={
               <>
-                Type <span className="font-mono font-semibold">delete</span> to confirm:
+                Type <span className="font-mono font-semibold">delete</span> to
+                confirm:
               </>
             }
             confirmTextPlaceholder="Type 'delete' to confirm"

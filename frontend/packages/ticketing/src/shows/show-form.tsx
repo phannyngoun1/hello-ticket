@@ -5,35 +5,23 @@
  */
 
 import { forwardRef, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useState } from "react";
-import {
-  Input,
-  Field,
-  FieldLabel,
-  FieldError,
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { AIAssistFormButton, TextareaInputField } from "@truths/custom-ui";
+import {
+  AIAssistFormButton,
+  DateInputField,
+  SelectInputField,
+  TextareaInputField,
+  TextInputField,
+} from "@truths/custom-ui";
 
 // Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
 const showFormSchema = z
   .object({
     name: z.string().min(1, "Name is required"),
-    organizer_id: z.string().optional(),
+    organizer_id: z.string().min(1, "Organizer is required"),
     started_date: z.string().optional(),
     ended_date: z.string().optional(),
     note: z.string().optional(),
@@ -48,7 +36,7 @@ const showFormSchema = z
     {
       message: "End date must be after start date",
       path: ["ended_date"],
-    }
+    },
   )
   .transform((values) => values);
 
@@ -71,28 +59,25 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
       mode = "create",
       organizers = [],
     },
-    ref
+    ref,
   ) {
-    const [organizerPopoverOpen, setOrganizerPopoverOpen] = useState(false);
-    
-    const {
-      register,
-      control,
-      handleSubmit,
-      watch,
-      setValue,
-      formState: { errors, isSubmitted },
-    } = useForm<ShowFormData>({
+    const methods = useForm<ShowFormData>({
       resolver: zodResolver(showFormSchema),
       defaultValues: {
         name: "",
-        organizer_id: undefined,
+        organizer_id: "",
         started_date: undefined,
         ended_date: undefined,
         note: undefined,
         ...defaultValues,
       },
     });
+    const {
+      handleSubmit,
+      watch,
+      setValue,
+      formState: { errors, isSubmitted },
+    } = methods;
 
     const firstErrorRef = useRef<HTMLDivElement | null>(null);
 
@@ -100,7 +85,7 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
       if (isSubmitted && Object.keys(errors).length > 0) {
         const firstErrorField = Object.keys(errors)[0];
         const errorElement = document.querySelector(
-          `[name="${firstErrorField}"], #${firstErrorField}`
+          `[name="${firstErrorField}"], #${firstErrorField}`,
         ) as HTMLElement | null;
 
         if (errorElement) {
@@ -127,164 +112,86 @@ export const ShowForm = forwardRef<HTMLFormElement, ShowFormProps>(
       note: watch("note") ?? "",
     };
 
+    const organizerOptions = organizers.map((org) => ({
+      value: org.id,
+      label: org.name,
+    }));
+
     return (
-      <form
-        ref={ref}
-        id="show-form"
-        onSubmit={handleSubmit(handleFormSubmit)}
-        className="space-y-6"
-      >
-        <div className="flex justify-end">
-          <AIAssistFormButton
-            formType="show"
-            currentValues={showCurrentValues}
-            onSuggest={(values) => {
-              Object.entries(values).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== "") {
-                  if (key === "organizer_id") {
-                    const byId = organizers.find((o) => o.id === value);
-                    const byName = organizers.find((o) => o.name === value);
-                    setValue(
-                      "organizer_id",
-                      byId ? byId.id : byName ? byName.id : value
-                    );
-                  } else {
-                    setValue(key as keyof ShowFormData, value);
-                  }
-                }
-              });
-            }}
-            disabled={isLoading}
-          />
-        </div>
-        <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-4")}
-          ref={firstErrorRef}
+      <FormProvider {...methods}>
+        <form
+          ref={ref}
+          id="show-form"
+          onSubmit={handleSubmit(handleFormSubmit)}
+          className="space-y-6"
         >
-          <Field data-invalid={!!errors.name}>
-            <FieldLabel htmlFor="name">
-              Name <span className="text-destructive">*</span>
-            </FieldLabel>
-            <Input
-              id="name"
-              type="text"
+          <div className="flex justify-end">
+            <AIAssistFormButton
+              formType="show"
+              currentValues={showCurrentValues}
+              onSuggest={(values) => {
+                Object.entries(values).forEach(([key, value]) => {
+                  if (value !== undefined && value !== null && value !== "") {
+                    if (key === "organizer_id") {
+                      const byId = organizers.find((o) => o.id === value);
+                      const byName = organizers.find((o) => o.name === value);
+                      setValue(
+                        "organizer_id",
+                        byId ? byId.id : byName ? byName.id : value,
+                      );
+                    } else {
+                      setValue(key as keyof ShowFormData, value);
+                    }
+                  }
+                });
+              }}
+              disabled={isLoading}
+            />
+          </div>
+          <div
+            className={cn("grid grid-cols-1 md:grid-cols-2 gap-4")}
+            ref={firstErrorRef}
+          >
+            <TextInputField
+              name="name"
+              label="Name"
               placeholder="Enter Name"
-              {...register("name")}
+              required
               disabled={isLoading}
-              className={cn(errors.name && "border-destructive")}
             />
-            <FieldError>{errors.name?.message}</FieldError>
-          </Field>
-          
-          <Field data-invalid={!!errors.organizer_id}>
-            <FieldLabel htmlFor="organizer_id">
-              Organizer
-            </FieldLabel>
-            <Popover open={organizerPopoverOpen} onOpenChange={setOrganizerPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  id="organizer_id"
-                  variant="outline"
-                  role="combobox"
-                  className={cn(
-                    "w-full justify-between",
-                    !watch("organizer_id") && "text-muted-foreground",
-                    errors.organizer_id && "border-destructive"
-                  )}
-                  disabled={isLoading}
-                >
-                  {watch("organizer_id")
-                    ? organizers.find((org) => org.id === watch("organizer_id"))?.name || "Select organizer"
-                    : "Select an organizer (optional)"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search organizers..." />
-                  <CommandList>
-                    <CommandEmpty>No organizer found.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="__none__"
-                        onSelect={() => {
-                          setValue("organizer_id", undefined);
-                          setOrganizerPopoverOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            !watch("organizer_id") ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        None
-                      </CommandItem>
-                      {organizers.map((org) => (
-                        <CommandItem
-                          key={org.id}
-                          value={org.name}
-                          onSelect={() => {
-                            setValue("organizer_id", org.id);
-                            setOrganizerPopoverOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              watch("organizer_id") === org.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {org.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <FieldError>{errors.organizer_id?.message}</FieldError>
-          </Field>
 
-          <Field data-invalid={!!errors.started_date}>
-            <FieldLabel htmlFor="started_date">
-              Start Date
-            </FieldLabel>
-            <Input
-              id="started_date"
-              type="date"
-              {...register("started_date")}
+            <SelectInputField
+              name="organizer_id"
+              label="Organizer"
+              placeholder="Select an organizer"
+              options={organizerOptions}
+              required
               disabled={isLoading}
-              className={cn(errors.started_date && "border-destructive")}
             />
-            <FieldError>{errors.started_date?.message}</FieldError>
-          </Field>
 
-          <Field data-invalid={!!errors.ended_date}>
-            <FieldLabel htmlFor="ended_date">
-              End Date
-            </FieldLabel>
-            <Input
-              id="ended_date"
-              type="date"
-              {...register("ended_date")}
+            <DateInputField
+              name="started_date"
+              label="Start Date"
               disabled={isLoading}
-              className={cn(errors.ended_date && "border-destructive")}
             />
-            <FieldError>{errors.ended_date?.message}</FieldError>
-          </Field>
-        </div>
 
-        <TextareaInputField
-          control={control}
-          name="note"
-          label="Note"
-          placeholder="Enter notes about the show"
-          rows={4}
-          disabled={isLoading}
-          showImproveButton
-        />
-      </form>
+            <DateInputField
+              name="ended_date"
+              label="End Date"
+              disabled={isLoading}
+            />
+          </div>
+
+          <TextareaInputField
+            name="note"
+            label="Note"
+            placeholder="Enter notes about the show"
+            rows={4}
+            disabled={isLoading}
+            showImproveButton
+          />
+        </form>
+      </FormProvider>
     );
-  }
+  },
 );
-

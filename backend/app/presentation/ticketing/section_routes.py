@@ -46,6 +46,16 @@ def section_model_to_response(
         else:
             shape_str = json.dumps(section.shape)
     
+    # Get section's own values - preserve None if section doesn't have its own value (will inherit from layout)
+    # Use getattr with None default, then check if it's actually None (not just falsy)
+    canvas_bg_color = getattr(section, "canvas_background_color", None)
+    marker_transparency = getattr(section, "marker_fill_transparency", None)
+    
+    # Preserve None values - don't use defaults here, let frontend handle inheritance from layout
+    # Convert empty string to None for consistency
+    if canvas_bg_color == "":
+        canvas_bg_color = None
+    
     return SectionResponse(
         id=section.id,
         tenant_id=section.tenant_id,
@@ -55,7 +65,8 @@ def section_model_to_response(
         y_coordinate=section.y_coordinate,
         file_id=section.file_id,
         image_url=image_url,
-        canvas_background_color=getattr(section, "canvas_background_color", None) or "#e5e7eb",
+        canvas_background_color=canvas_bg_color,  # Preserve None if section doesn't have its own value
+        marker_fill_transparency=marker_transparency,  # Preserve None if section doesn't have its own value
         shape=shape_str,  # Return as JSON string for API compatibility
         is_active=section.is_active,
         seat_count=seat_count,
@@ -105,6 +116,7 @@ async def create_section(
                     shape_data = request.shape
             
             # Create new section
+            # Preserve None values to allow inheritance from layout
             section = SectionModel(
                 id=generate_id(),
                 tenant_id=current_user.tenant_id,
@@ -113,7 +125,8 @@ async def create_section(
                 x_coordinate=request.x_coordinate,
                 y_coordinate=request.y_coordinate,
                 file_id=request.file_id,
-                canvas_background_color=request.canvas_background_color or "#e5e7eb",
+                canvas_background_color=request.canvas_background_color,  # Preserve None to allow inheritance from layout
+                marker_fill_transparency=request.marker_fill_transparency,  # Preserve None to allow inheritance from layout
                 shape=shape_data,  # Store as dict - JSONB column will handle serialization
                 is_active=True,
                 is_deleted=False,
@@ -278,7 +291,11 @@ async def update_section(
                 # Empty string means "remove section image" (file_id is optional)
                 section.file_id = request.file_id if request.file_id else None
             if request.canvas_background_color is not None:
-                section.canvas_background_color = request.canvas_background_color or "#e5e7eb"
+                # Preserve None if explicitly set - allows section to inherit from layout
+                section.canvas_background_color = request.canvas_background_color if request.canvas_background_color is not None else None
+            if request.marker_fill_transparency is not None:
+                # Preserve None if explicitly set - allows section to inherit from layout
+                section.marker_fill_transparency = request.marker_fill_transparency if request.marker_fill_transparency is not None else None
             if request.shape is not None:
                 # Parse shape if provided (convert JSON string to dict for JSONB storage)
                 shape_data = None

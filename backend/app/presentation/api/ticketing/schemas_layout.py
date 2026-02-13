@@ -18,6 +18,7 @@ class LayoutCreateRequest(BaseModel):
     file_id: Optional[str] = Field(None, description="File ID for layout seat map image")
     design_mode: Optional[str] = Field("seat-level", description="Design mode: seat-level or section-level")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(1.0, description="Marker fill transparency for all seats (0.0 to 1.0)")
 
 
 class LayoutUpdateRequest(BaseModel):
@@ -27,6 +28,7 @@ class LayoutUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Layout description")
     file_id: Optional[str] = Field(None, description="File ID for layout seat map image")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for all seats (0.0 to 1.0)")
 
 
 class LayoutResponse(BaseModel):
@@ -41,6 +43,7 @@ class LayoutResponse(BaseModel):
     image_url: Optional[str] = None  # URL to the layout image file (from file_id)
     design_mode: str = "seat-level"
     canvas_background_color: Optional[str] = None  # When no image (hex e.g. #e5e7eb)
+    marker_fill_transparency: float = 1.0  # Marker fill transparency for all seats (0.0 to 1.0)
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -64,6 +67,7 @@ class SectionResponse(BaseModel):
     file_id: Optional[str] = None
     image_url: Optional[str] = None  # URL to the section image file (from file_id)
     canvas_background_color: Optional[str] = None  # Canvas background when no section image (hex e.g. #e5e7eb)
+    marker_fill_transparency: Optional[float] = None  # Marker fill transparency for seats in this section (0.0 to 1.0)
     shape: Optional[str] = None  # JSON string storing PlacementShape data
     is_active: bool
     seat_count: Optional[int] = None  # Number of seats attached to this section
@@ -80,6 +84,7 @@ class SectionCreateRequest(BaseModel):
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no section image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for seats in this section (0.0 to 1.0)")
     shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
     
     @field_validator('shape', mode='before')
@@ -104,6 +109,7 @@ class SectionUpdateRequest(BaseModel):
     y_coordinate: Optional[float] = Field(None, description="Y coordinate on main floor plan")
     file_id: Optional[str] = Field(None, description="File ID for section floor plan image")
     canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no section image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for seats in this section (0.0 to 1.0)")
     shape: Optional[Union[Dict[str, Any], str]] = Field(None, description="Shape data as dict (PlacementShape) or JSON string")
     
     @field_validator('shape', mode='before')
@@ -132,3 +138,34 @@ class LayoutWithSeatsResponse(BaseModel):
     layout: LayoutResponse
     seats: List[SeatResponse] = Field(..., description="List of seats for this layout")
     sections: List[SectionResponse] = Field(default_factory=list, description="List of sections for this layout")
+
+
+class BulkDesignerSaveRequest(BaseModel):
+    """Bulk save request for designer - saves layout properties, sections, and seats in one operation"""
+    
+    # Layout properties
+    canvas_background_color: Optional[str] = Field(None, description="Canvas background color when no image (hex e.g. #e5e7eb)")
+    marker_fill_transparency: Optional[float] = Field(None, description="Marker fill transparency for all seats (0.0 to 1.0)")
+    
+    # Sections: list of operations (create, update, delete)
+    # - No 'id' field: Create new section
+    # - Has 'id' field: Update existing section
+    # - Has 'id' field + 'delete' flag: Delete section
+    sections: List[Dict[str, Any]] = Field(default_factory=list, description="List of section operations")
+    
+    # Seats: list of operations (create, update, delete)
+    # - No 'id' field: Create new seat
+    # - Has 'id' field: Update existing seat
+    # - Has 'id' field + 'delete' flag: Delete seat
+    seats: List[Dict[str, Any]] = Field(default_factory=list, description="List of seat operations")
+    
+    # Optional file_id for layout image update
+    file_id: Optional[str] = Field(None, description="File ID to update the layout's image file")
+
+
+class BulkDesignerSaveResponse(BaseModel):
+    """Response from bulk designer save"""
+    
+    layout: LayoutResponse
+    sections: List[SectionResponse] = Field(default_factory=list)
+    seats: List[SeatResponse] = Field(default_factory=list)

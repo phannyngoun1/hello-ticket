@@ -41,6 +41,8 @@ class EventResponse(BaseResponse):
     start_dt: datetime
     duration_minutes: int
     venue_id: str
+    venue_name: Optional[str] = None
+    venue_code: Optional[str] = None
     layout_id: Optional[str] = None
     status: EventStatusEnum
     configuration_type: EventConfigurationTypeEnum

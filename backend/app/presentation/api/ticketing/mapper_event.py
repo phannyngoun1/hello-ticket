@@ -15,6 +15,8 @@ class EventPresenter(BasePresenter[Event, EventResponse]):
             start_dt=event.start_dt,
             duration_minutes=event.duration_minutes,
             venue_id=event.venue_id,
+            venue_name=getattr(event, 'venue_name', None),
+            venue_code=getattr(event, 'venue_code', None),
             layout_id=event.layout_id,
             status=event.status,
             configuration_type=event.configuration_type,

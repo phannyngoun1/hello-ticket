@@ -59,15 +59,16 @@ class ShowCommandHandler:
                 description="Show code"
             )
 
-        # Validate organizer if provided
-        if command.organizer_id:
-            await self._validate_organizer(tenant_id, command.organizer_id)
+        # Validate organizer if provided, and resolve if a code was passed
+        organizer_id = command.organizer_id
+        if organizer_id:
+            organizer_id = await self._validate_organizer(tenant_id, organizer_id)
 
         show = Show(
             tenant_id=tenant_id,
             code=code_value,
             name=command.name,
-            organizer_id=command.organizer_id,
+            organizer_id=organizer_id,
             started_date=command.started_date,
             ended_date=command.ended_date,
             note=command.note,
@@ -153,9 +154,13 @@ class ShowCommandHandler:
                 if duplicate and duplicate.id != show.id:
                     raise BusinessRuleError(f"Show code '{normalized_code}' already exists")
 
-        # Validate organizer if provided
+        # Validate organizer if provided, and resolve if a code was passed
+        resolved_organizer_id = None
         if command.organizer_id is not None:
-            await self._validate_organizer(tenant_id, command.organizer_id)
+            resolved_organizer_id = await self._validate_organizer(
+                tenant_id,
+                command.organizer_id,
+            )
 
         # Build update kwargs, only including fields that are explicitly provided
         update_kwargs = {}
@@ -164,7 +169,7 @@ class ShowCommandHandler:
         if command.name is not None:
             update_kwargs['name'] = command.name
         if command.organizer_id is not None:
-            update_kwargs['organizer_id'] = command.organizer_id
+            update_kwargs['organizer_id'] = resolved_organizer_id
         if command.started_date is not None:
             update_kwargs['started_date'] = command.started_date
         if command.ended_date is not None:
@@ -301,21 +306,25 @@ class ShowCommandHandler:
             raise NotFoundError(f"Show " + str(show_id) + " not found")
         return show
 
-    async def _validate_organizer(self, tenant_id: str, organizer_id: str) -> None:
-        """Validate that organizer exists and is active"""
+    async def _validate_organizer(self, tenant_id: str, organizer_id: str) -> str:
+        """Validate that organizer exists and is active; returns resolved organizer id."""
         if not self._organizer_repository:
             logger.warning("Organizer repository not configured, skipping organizer validation")
-            return
+            return organizer_id
         
         if not organizer_id or not organizer_id.strip():
             raise ValidationError("Organizer identifier is required")
         
         organizer = await self._organizer_repository.get_by_id(tenant_id, organizer_id)
         if not organizer:
-            raise NotFoundError(f"Organizer {organizer_id} not found")
+            organizer = await self._organizer_repository.get_by_code(tenant_id, organizer_id)
+            if not organizer:
+                raise NotFoundError(f"Organizer {organizer_id} not found")
         
         if not organizer.is_active:
-            raise BusinessRuleError(f"Organizer {organizer_id} is not active")
+            raise BusinessRuleError(f"Organizer {organizer.id} is not active")
+
+        return organizer.id
 
 
 class ShowQueryHandler:

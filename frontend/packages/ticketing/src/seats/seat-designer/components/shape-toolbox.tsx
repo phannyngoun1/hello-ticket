@@ -4,6 +4,7 @@
  * Toolbox for selecting shape tools to draw on the canvas
  */
 
+import { useState, useEffect, useCallback } from "react";
 import { Card, Input, Label } from "@truths/ui";
 import {
   Circle,
@@ -15,9 +16,9 @@ import {
   Trash2,
   Eye,
   RotateCcw,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
   AlignStartVertical,
   AlignCenterVertical,
   AlignEndVertical,
@@ -28,6 +29,67 @@ import {
   type SectionMarker,
 } from "../types";
 import { cn } from "@truths/ui/lib/utils";
+import { DEFAULT_SHAPE_FILL, DEFAULT_SHAPE_STROKE } from "../colors";
+
+/**
+ * A number input that only commits its value on blur (or Enter key).
+ * This prevents every keystroke from triggering expensive style changes.
+ */
+function BlurNumberInput({
+  value,
+  onCommit,
+  min,
+  max,
+  step,
+  fallback,
+  className,
+  title,
+  "aria-label": ariaLabel,
+}: {
+  value: number;
+  onCommit: (value: number) => void;
+  min?: string;
+  max?: string;
+  step?: string;
+  fallback: number;
+  className?: string;
+  title?: string;
+  "aria-label"?: string;
+}) {
+  const [localValue, setLocalValue] = useState<string>(String(value));
+
+  // Sync local value when external value changes (e.g. different marker selected)
+  useEffect(() => {
+    setLocalValue(String(value));
+  }, [value]);
+
+  const commit = useCallback(() => {
+    const parsed = parseFloat(localValue);
+    const final = isNaN(parsed) ? fallback : parsed;
+    onCommit(final);
+    setLocalValue(String(final));
+  }, [localValue, fallback, onCommit]);
+
+  return (
+    <Input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className={className}
+      title={title}
+      aria-label={ariaLabel}
+    />
+  );
+}
 
 export interface ShapeToolboxProps {
   selectedShapeType: PlacementShapeType | null;
@@ -42,11 +104,25 @@ export interface ShapeToolboxProps {
   onSectionDelete?: (section: SectionMarker) => void;
   onSeatShapeStyleChange?: (
     seatId: string,
-    style: { fillColor?: string; strokeColor?: string },
+    style: {
+      fillColor?: string;
+      strokeColor?: string;
+      width?: number;
+      height?: number;
+      radius?: number;
+      rotation?: number;
+    },
   ) => void;
   onSectionShapeStyleChange?: (
     sectionId: string,
-    style: { fillColor?: string; strokeColor?: string },
+    style: {
+      fillColor?: string;
+      strokeColor?: string;
+      width?: number;
+      height?: number;
+      radius?: number;
+      rotation?: number;
+    },
   ) => void;
   /** Called when user aligns multiple selected markers. Only shown when 2+ selected. */
   onAlign?: (
@@ -144,11 +220,23 @@ export function ShapeToolbox({
   const markerShape = selectedSeat?.shape ?? selectedSection?.shape;
   const onStyleChange =
     selectedSeat && onSeatShapeStyleChange
-      ? (style: { fillColor?: string; strokeColor?: string }) =>
-          onSeatShapeStyleChange(selectedSeat.id, style)
+      ? (style: {
+          fillColor?: string;
+          strokeColor?: string;
+          width?: number;
+          height?: number;
+          radius?: number;
+          rotation?: number;
+        }) => onSeatShapeStyleChange(selectedSeat.id, style)
       : selectedSection && onSectionShapeStyleChange
-        ? (style: { fillColor?: string; strokeColor?: string }) =>
-            onSectionShapeStyleChange(selectedSection.id, style)
+        ? (style: {
+            fillColor?: string;
+            strokeColor?: string;
+            width?: number;
+            height?: number;
+            radius?: number;
+            rotation?: number;
+          }) => onSectionShapeStyleChange(selectedSection.id, style)
         : undefined;
   const showColorControls =
     !readOnly &&
@@ -248,80 +336,80 @@ export function ShapeToolbox({
                 type="button"
                 onClick={() => onAlign?.("left")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align left"
               >
-                <AlignLeft className="h-3.5 w-3.5" />
+                <AlignStartVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("center")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align center"
               >
-                <AlignCenter className="h-3.5 w-3.5" />
+                <AlignCenterVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("right")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align right"
               >
-                <AlignRight className="h-3.5 w-3.5" />
+                <AlignEndVertical className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("top")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align top"
               >
-                <AlignStartVertical className="h-3.5 w-3.5" />
+                <AlignStartHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("middle")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align middle"
               >
-                <AlignCenterVertical className="h-3.5 w-3.5" />
+                <AlignCenterHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"
                 onClick={() => onAlign?.("bottom")}
                 className={cn(
-                  "flex items-center justify-center p-1.5 rounded border transition-all",
-                  "hover:bg-primary hover:border-primary hover:text-white",
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
                   "bg-background border-border",
                 )}
                 title="Align bottom"
               >
-                <AlignEndVertical className="h-3.5 w-3.5" />
+                <AlignEndHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
             </div>
           </div>
         )}
 
-        {/* Compact seat placement controls - right after shapes so always visible in seat-level */}
-        {!isEditMode && seatPlacementControls && (
+        {/* Compact seat placement controls - hidden when pointer selected or an object is selected (only shown with active shape tool) */}
+        {!isEditMode && !selectedMarker && selectedShapeType && seatPlacementControls && (
           <div className="flex items-center gap-2 border-l pl-2.5">
             {seatPlacementControls}
           </div>
@@ -329,7 +417,7 @@ export function ShapeToolbox({
 
         {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
         {!isEditMode && showColorControls && (
-          <div className="flex items-center gap-2 border-l pl-2.5">
+          <div className="hidden flex items-center gap-2 border-l pl-2.5">
             <div className="flex items-center gap-1">
               <Label className="text-xs text-muted-foreground shrink-0 w-7">
                 Fill
@@ -338,7 +426,7 @@ export function ShapeToolbox({
                 type="color"
                 aria-label="Fill color"
                 title="Fill color"
-                value={markerShape?.fillColor?.trim() || "#60a5fa"}
+                value={markerShape?.fillColor?.trim() || DEFAULT_SHAPE_FILL}
                 onChange={(e) => onStyleChange?.({ fillColor: e.target.value })}
                 className="h-6 w-7 cursor-pointer rounded border shrink-0"
               />
@@ -362,7 +450,7 @@ export function ShapeToolbox({
                 type="color"
                 aria-label="Border color"
                 title="Border color"
-                value={markerShape?.strokeColor?.trim() || "#2563eb"}
+                value={markerShape?.strokeColor?.trim() || DEFAULT_SHAPE_STROKE}
                 onChange={(e) =>
                   onStyleChange?.({ strokeColor: e.target.value })
                 }
@@ -401,6 +489,88 @@ export function ShapeToolbox({
           </div>
         )}
 
+        {/* Manual size controls for shapes - shown when a seat or section is selected */}
+        {!isEditMode && markerShape && (
+          <div className="flex items-center gap-2 border-l pl-2.5">
+            {markerShape.type === PlacementShapeType.CIRCLE ? (
+              // Radius control for circles
+              <div className="flex items-center gap-1">
+                <Label className="text-xs text-muted-foreground shrink-0">
+                  Radius
+                </Label>
+                <BlurNumberInput
+                  min="0.1"
+                  max="50"
+                  step="0.1"
+                  value={markerShape.radius || 1.2}
+                  onCommit={(v) => onStyleChange?.({ radius: v })}
+                  fallback={1.2}
+                  className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                  title="Radius as % of canvas"
+                  aria-label="Circle radius"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+              </div>
+            ) : (
+              // Width and height controls for rectangles/ellipses
+              <>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground shrink-0">
+                    W
+                  </Label>
+                  <BlurNumberInput
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    value={markerShape.width || 3}
+                    onCommit={(v) => onStyleChange?.({ width: v })}
+                    fallback={3}
+                    className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                    title="Width as % of canvas"
+                    aria-label="Shape width"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Label className="text-xs text-muted-foreground shrink-0">
+                    H
+                  </Label>
+                  <BlurNumberInput
+                    min="0.1"
+                    max="100"
+                    step="0.1"
+                    value={markerShape.height || 2}
+                    onCommit={(v) => onStyleChange?.({ height: v })}
+                    fallback={2}
+                    className="h-6 w-16 font-mono text-[11px] py-0 px-1"
+                    title="Height as % of canvas"
+                    aria-label="Shape height"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+              </>
+            )}
+            {/* Rotation control - shown for all shapes */}
+            <div className="flex items-center gap-1">
+              <Label className="text-xs text-muted-foreground shrink-0">
+                R
+              </Label>
+              <BlurNumberInput
+                min="0"
+                max="360"
+                step="1"
+                value={markerShape.rotation || 0}
+                onCommit={(v) => onStyleChange?.({ rotation: v })}
+                fallback={0}
+                className="h-6 w-10 font-mono text-[11px] py-0 px-1"
+                title="Rotation in degrees"
+                aria-label="Shape rotation"
+              />
+              <span className="text-xs text-muted-foreground">°</span>
+            </div>
+          </div>
+        )}
+
         {/* Inline seat edit controls - replaces marker name when editing seat */}
         {selectedSeat && seatEditControls
           ? seatEditControls
@@ -420,7 +590,16 @@ export function ShapeToolbox({
                       "hover:bg-accent hover:border-accent-foreground",
                       "bg-background border-border",
                     )}
-                    title="View details"
+                    title={
+                      selectedSection
+                        ? "Open section detail"
+                        : "View seat details"
+                    }
+                    aria-label={
+                      selectedSection
+                        ? "Open section detail"
+                        : "View seat details"
+                    }
                   >
                     <Eye className="h-3 w-3 text-muted-foreground" />
                   </button>

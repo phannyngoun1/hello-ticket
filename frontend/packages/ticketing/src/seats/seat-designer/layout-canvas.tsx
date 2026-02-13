@@ -31,6 +31,17 @@ import {
   type SeatMarker,
   type SectionMarker,
 } from "./types";
+import {
+  ANCHOR_FILL,
+  ANCHOR_STROKE,
+  DEFAULT_SHAPE_FILL,
+  DEFAULT_SHAPE_STROKE,
+  MARQUEE_FILL,
+  MARQUEE_STROKE,
+  SELECTED_FILL,
+  SELECTED_STROKE,
+  getSeatTypeColors,
+} from "./colors";
 
 // Types are now imported from ./types
 
@@ -194,6 +205,10 @@ interface LayoutCanvasProps {
   selectedSeatIds?: string[];
   /** Multi-selection: all selected section ids (used for highlight + Delete). */
   selectedSectionIds?: string[];
+  /** Anchor seat ID - reference object for alignment */
+  anchorSeatId?: string | null;
+  /** Anchor section ID - reference object for alignment */
+  anchorSectionId?: string | null;
   /** Called when user finishes a drag-to-select marquee with markers inside the rect. */
   onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
   isPlacingSeats: boolean;
@@ -249,6 +264,10 @@ interface LayoutCanvasProps {
   selectedOverlayId?: string | null;
   /** Background color when no image (simple floor mode). Default #e5e7eb */
   canvasBackgroundColor?: string;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Grid size in percentage */
+  gridSize?: number;
 }
 
 // Shape Overlay Component with hover effects
@@ -322,7 +341,7 @@ function ShapeOverlayComponent({
       ? "#2563eb"
       : "#3b82f6";
 
-  const strokeWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
+  const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 1;
 
   // Animate opacity on hover/selection change (skip when disabled for performance)
   useEffect(() => {
@@ -387,7 +406,7 @@ function ShapeOverlayComponent({
       onMouseEnter={(e) => {
         const container = e.target.getStage()?.container();
         if (container) {
-          container.style.cursor = "pointer";
+          container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
         }
         setIsHovered(true);
         overlay.onHover?.();
@@ -431,7 +450,7 @@ function ShapeOverlayComponent({
           verticalAlign="middle"
           backgroundFill={`rgba(255, 255, 255, ${isHovered || isSelected ? 0.98 : 0.9})`}
           backgroundStroke={strokeColor}
-          backgroundStrokeWidth={isHovered || isSelected ? 1.5 : 1}
+          backgroundStrokeWidth={isHovered || isSelected ? 1 : 0.75}
           cornerRadius={2}
           x={-20}
           y={-8}
@@ -451,6 +470,7 @@ interface SeatMarkerComponentProps {
   x: number;
   y: number;
   isSelected: boolean;
+  isAnchor?: boolean;
   isPlacingSeats: boolean;
   isPanning: boolean;
   isSpacePressed: boolean;
@@ -476,6 +496,7 @@ function SeatMarkerComponent({
   x,
   y,
   isSelected,
+  isAnchor = false,
   isPlacingSeats,
   isPanning,
   isSpacePressed,
@@ -502,7 +523,7 @@ function SeatMarkerComponent({
   // Default shape if none specified
   const defaultShape: PlacementShape = {
     type: PlacementShapeType.CIRCLE,
-    radius: 1.2, // ~12px at 1000px image width
+    radius: 0.8, // ~8px at 1000px image width
   };
   const shape = seat.shape || defaultShape;
 
@@ -571,7 +592,7 @@ function SeatMarkerComponent({
 
     shapeNode.to({
       stroke: hoverStrokeColor,
-      strokeWidth: isHovered ? 2.5 : 2, // More visible border
+      strokeWidth: isHovered ? 1 : 0.75, // More visible border
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
@@ -579,10 +600,19 @@ function SeatMarkerComponent({
 
   // Make markers more visible with better colors
   // Use seat type colors but make them more vibrant and visible
-  const fillColor = isSelected ? colors.fill : colors.fill;
-  const strokeColor = isSelected ? colors.stroke : colors.stroke;
-  const strokeWidth = isSelected ? 2.5 : 2; // More visible border
-  const fillOpacity = isSelected ? 0.5 : 0.35; // More visible opacity
+  // Anchor gets special orange styling
+  const fillColor = isAnchor
+    ? ANCHOR_FILL
+    : isSelected
+      ? colors.fill
+      : colors.fill;
+  const strokeColor = isAnchor
+    ? ANCHOR_STROKE
+    : isSelected
+      ? colors.stroke
+      : colors.stroke;
+  const strokeWidth = isAnchor ? 1 : isSelected ? 1.5 : 1; // Thicker border for anchor
+  const fillOpacity = isAnchor ? 0.6 : isSelected ? 0.5 : 0.35; // More visible opacity
 
   // Handle transform end - convert back to percentage coordinates
   const handleTransformEnd = useCallback(() => {
@@ -717,7 +747,11 @@ function SeatMarkerComponent({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor = isSelected ? "move" : "pointer";
+            container.style.cursor = selectedShapeTool
+              ? "crosshair"
+              : isSelected
+                ? "move"
+                : "pointer";
           }
           setIsHovered(true);
         }}
@@ -727,7 +761,7 @@ function SeatMarkerComponent({
             container.style.cursor =
               isPanning || isSpacePressed
                 ? "grab"
-                : isPlacingSeats || isPlacingSections
+                : selectedShapeTool || isPlacingSeats || isPlacingSections
                   ? "crosshair"
                   : "pointer"; // Pointer tool shows pointer cursor
           }
@@ -740,7 +774,7 @@ function SeatMarkerComponent({
               radius={3}
               fill={fillColor}
               stroke={strokeColor}
-              strokeWidth={1}
+              strokeWidth={strokeWidth}
               opacity={fillOpacity}
               perfectDrawEnabled={false}
             />
@@ -775,10 +809,10 @@ function SeatMarkerComponent({
           resizeEnabled={true}
           borderEnabled={true}
           borderStroke="#3b82f6"
-          borderStrokeWidth={2}
+          borderStrokeWidth={1.5}
           anchorFill="#ffffff"
           anchorStroke="#3b82f6"
-          anchorStrokeWidth={2}
+          anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
           ignoreStroke={false}
@@ -854,7 +888,7 @@ function SeatMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
           onMouseUp={(e) => {
@@ -866,7 +900,7 @@ function SeatMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
         />
@@ -883,6 +917,7 @@ interface SectionMarkerComponentProps {
   x: number;
   y: number;
   isSelected: boolean;
+  isAnchor?: boolean;
   isPlacingSections: boolean;
   isPanning: boolean;
   isSpacePressed: boolean;
@@ -916,6 +951,7 @@ function SectionMarkerComponent({
   x,
   y,
   isSelected,
+  isAnchor = false,
   isPlacingSections,
   isPanning,
   isSpacePressed,
@@ -933,6 +969,7 @@ function SectionMarkerComponent({
   onSectionDragStart,
   useLowDetail = false,
   colors,
+  forceDraggable = false,
 }: SectionMarkerComponentProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -942,8 +979,8 @@ function SectionMarkerComponent({
   // Default shape if none specified (rectangle for sections)
   const defaultShape: PlacementShape = {
     type: PlacementShapeType.RECTANGLE,
-    width: 3, // ~30px at 1000px image width
-    height: 2, // ~20px at 1000px image height
+    width: 2, // ~20px at 1000px image width
+    height: 1.5, // ~15px at 1000px image height
   };
   const shape = section.shape || defaultShape;
 
@@ -1092,7 +1129,7 @@ function SectionMarkerComponent({
     const shapeNode = shapeRef.current;
     if (!shapeNode || !isPlacingSections || isSelected) return;
 
-    const hoverStrokeWidth = isHovered ? 2.5 : 2;
+    const hoverStrokeWidth = isHovered ? 1 : 0.75;
     shapeNode.to({
       stroke: colors.stroke,
       strokeWidth: hoverStrokeWidth,
@@ -1174,8 +1211,11 @@ function SectionMarkerComponent({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor =
-              isSelected && section.shape ? "move" : "pointer";
+            container.style.cursor = selectedShapeTool
+              ? "crosshair"
+              : isSelected && section.shape
+                ? "move"
+                : "pointer";
           }
           setIsHovered(true);
         }}
@@ -1185,7 +1225,7 @@ function SectionMarkerComponent({
             container.style.cursor =
               isPanning || isSpacePressed
                 ? "grab"
-                : isPlacingSeats || isPlacingSections
+                : selectedShapeTool || isPlacingSeats || isPlacingSections
                   ? "crosshair"
                   : "pointer"; // Pointer tool shows pointer cursor
           }
@@ -1198,21 +1238,21 @@ function SectionMarkerComponent({
             {useLowDetail ? (
               <Circle
                 radius={4}
-                fill={colors.fill}
-                stroke={colors.stroke}
-                strokeWidth={1}
-                opacity={isSelected ? 0.5 : 0.35}
+                fill={isAnchor ? "#f97316" : colors.fill}
+                stroke={isAnchor ? "#ea580c" : colors.stroke}
+                strokeWidth={isAnchor ? 1 : 0.75}
+                opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
                 perfectDrawEnabled={false}
               />
             ) : (
               <ShapeRenderer
                 shape={shape}
-                fill={colors.fill}
-                stroke={colors.stroke}
-                strokeWidth={isSelected ? 2.5 : 2}
+                fill={isAnchor ? "#f97316" : colors.fill}
+                stroke={isAnchor ? "#ea580c" : colors.stroke}
+                strokeWidth={isAnchor ? 1 : isSelected ? 1.5 : 1}
                 imageWidth={imageWidth}
                 imageHeight={imageHeight}
-                opacity={isSelected ? 0.5 : 0.35}
+                opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
               />
             )}
           </Group>
@@ -1221,12 +1261,12 @@ function SectionMarkerComponent({
         {!section.shape && (
           <Circle
             radius={isSelected ? 12 : 10}
-            fill={colors.fill}
-            stroke={colors.stroke}
-            strokeWidth={isSelected ? 2.5 : 2}
+            fill={isAnchor ? "#f97316" : colors.fill}
+            stroke={isAnchor ? "#ea580c" : colors.stroke}
+            strokeWidth={isAnchor ? 2 : isSelected ? 1.5 : 1}
             x={0}
             y={0}
-            opacity={isSelected ? 0.5 : 0.35}
+            opacity={isAnchor ? 0.6 : isSelected ? 0.5 : 0.35}
           />
         )}
       </Group>
@@ -1248,10 +1288,10 @@ function SectionMarkerComponent({
           resizeEnabled={true}
           borderEnabled={true}
           borderStroke="#3b82f6"
-          borderStrokeWidth={2}
+          borderStrokeWidth={1.5}
           anchorFill="#ffffff"
           anchorStroke="#3b82f6"
-          anchorStrokeWidth={2}
+          anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
           ignoreStroke={false}
@@ -1363,7 +1403,7 @@ function SectionMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
           onMouseUp={(e) => {
@@ -1375,7 +1415,7 @@ function SectionMarkerComponent({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "";
             }
           }}
         />
@@ -1394,6 +1434,8 @@ export function LayoutCanvas({
   selectedSectionId,
   selectedSeatIds: selectedSeatIdsProp,
   selectedSectionIds: selectedSectionIdsProp,
+  anchorSeatId,
+  anchorSectionId,
   onMarkersInRect,
   isPlacingSeats,
   isPlacingSections,
@@ -1422,6 +1464,8 @@ export function LayoutCanvas({
   shapeOverlays = [],
   selectedOverlayId,
   canvasBackgroundColor = "#e5e7eb",
+  showGrid = false,
+  gridSize = 5,
 }: LayoutCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
@@ -1447,6 +1491,8 @@ export function LayoutCanvas({
     y: number;
   } | null>(null);
   const previewShapeRef = useRef<Konva.Group>(null);
+  // Lock canvas size for no-image mode so markers stay fixed on resize
+  const noImageInitialSizeRef = useRef<{ w: number; h: number } | null>(null);
 
   // Drag layer optimization: track which item is being dragged
   const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
@@ -1587,16 +1633,9 @@ export function LayoutCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
-  // Get seat color based on type - more vibrant colors for visibility
+  // Get seat color based on type using centralized color constants
   const getSeatColor = (seatType: SeatType) => {
-    switch (seatType) {
-      case SeatType.VIP:
-        return { fill: "#fbbf24", stroke: "#d97706" }; // vibrant yellow/gold
-      case SeatType.WHEELCHAIR:
-        return { fill: "#34d399", stroke: "#059669" }; // vibrant green
-      default:
-        return { fill: "#60a5fa", stroke: "#2563eb" }; // vibrant blue (instead of gray)
-    }
+    return getSeatTypeColors(seatType);
   };
 
   // Use shape fill/stroke when set; fall back to type-based default for the other
@@ -1622,31 +1661,61 @@ export function LayoutCanvas({
     };
   };
 
-  // Compute display dimensions for coordinate conversion (no-image = use container)
+  // Compute display dimensions for coordinate conversion.
+  //
+  // WITH IMAGE: use live container size (responsive); the image letterboxes.
+  // WITHOUT IMAGE: lock the canvas size from the first measurement so the
+  //   Stage stays fixed and markers don't shift on resize — just like the
+  //   image case where the image provides a fixed reference frame.
   const hasImage = !!image && !!image.width && !!image.height;
-  const coordValidWidth = containerWidth > 0 ? containerWidth : 800;
-  const coordValidHeight = containerHeight > 0 ? containerHeight : 600;
-  const imageAspectRatio = hasImage
-    ? image!.height / image!.width
-    : coordValidHeight / coordValidWidth;
-  const containerAspectRatio = coordValidHeight / coordValidWidth;
-  const coordDisplayedWidth =
-    hasImage && imageAspectRatio > containerAspectRatio
-      ? coordValidHeight / imageAspectRatio
-      : coordValidWidth;
-  const coordDisplayedHeight =
-    hasImage && imageAspectRatio > containerAspectRatio
-      ? coordValidHeight
-      : coordValidWidth * imageAspectRatio;
-  const coordImageX = hasImage
-    ? (coordValidWidth - coordDisplayedWidth) / 2
-    : 0;
-  const coordImageY = hasImage
-    ? (coordValidHeight - coordDisplayedHeight) / 2
-    : 0;
 
-  // Convert percentage coordinates to Konva stage coordinates
-  // Since Layer has offsetX/offsetY set to center, coordinates are relative to Layer's centered origin
+  // Lock size for no-image; reset when an image appears
+  if (!hasImage && containerWidth > 0 && containerHeight > 0) {
+    if (!noImageInitialSizeRef.current) {
+      noImageInitialSizeRef.current = { w: containerWidth, h: containerHeight };
+    }
+  } else if (hasImage) {
+    noImageInitialSizeRef.current = null;
+  }
+
+  const coordValidWidth = hasImage
+    ? (containerWidth > 0 ? containerWidth : 800)
+    : (noImageInitialSizeRef.current?.w ?? (containerWidth > 0 ? containerWidth : 800));
+  const coordValidHeight = hasImage
+    ? (containerHeight > 0 ? containerHeight : 600)
+    : (noImageInitialSizeRef.current?.h ?? (containerHeight > 0 ? containerHeight : 600));
+
+  // Use a fixed 4:3 AR for no-image (matching the 800×600 default) so that
+  // shapes and positions look identical across designer, viewer, and preview
+  // regardless of container size.  The virtual canvas is letterboxed.
+  const NO_IMAGE_ASPECT_RATIO = 3 / 4; // height/width = 0.75 (4:3)
+
+  const contentAspectRatio = hasImage
+    ? image!.height / image!.width
+    : NO_IMAGE_ASPECT_RATIO;
+  const canvasAspectRatio = coordValidHeight / coordValidWidth;
+
+  let coordDisplayedWidth: number;
+  let coordDisplayedHeight: number;
+
+  if (contentAspectRatio > canvasAspectRatio) {
+    coordDisplayedHeight = coordValidHeight;
+    coordDisplayedWidth = coordDisplayedHeight / contentAspectRatio;
+  } else {
+    coordDisplayedWidth = coordValidWidth;
+    coordDisplayedHeight = coordDisplayedWidth * contentAspectRatio;
+  }
+
+  const coordImageX = (coordValidWidth - coordDisplayedWidth) / 2;
+  const coordImageY = (coordValidHeight - coordDisplayedHeight) / 2;
+
+  // Layer transform params (must match layerTransform below)
+  const centerX = coordValidWidth / 2;
+  const centerY = coordValidHeight / 2;
+
+  // Convert percentage to layer coordinates - use SAME coordinate system as background/image
+  // so they scale and position together when canvas resizes or zooms.
+  // Background is at (coordImageX, coordImageY) with size (coordDisplayedWidth, coordDisplayedHeight).
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
       const x = coordImageX + (xPercent / 100) * coordDisplayedWidth;
@@ -1656,14 +1725,26 @@ export function LayoutCanvas({
     [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
   );
 
-  // Convert Konva stage coordinates to percentage
-  const stageToPercentage = useCallback(
-    (stageX: number, stageY: number) => {
-      const x = ((stageX - coordImageX) / coordDisplayedWidth) * 100;
-      const y = ((stageY - coordImageY) / coordDisplayedHeight) * 100;
+  // Convert layer coordinates to percentage (for drag handlers - node.x/y are in layer space)
+  const layerToPercentage = useCallback(
+    (layerX: number, layerY: number) => {
+      const x = ((layerX - coordImageX) / coordDisplayedWidth) * 100;
+      const y = ((layerY - coordImageY) / coordDisplayedHeight) * 100;
       return { x, y };
     },
     [coordImageX, coordImageY, coordDisplayedWidth, coordDisplayedHeight],
+  );
+
+  // Convert stage coordinates to percentage (for marquee - pointer pos is in stage space)
+  const stageToPercentage = useCallback(
+    (stageX: number, stageY: number) => {
+      const layerX =
+        (stageX - centerX - panOffset.x) / zoomLevel + centerX;
+      const layerY =
+        (stageY - centerY - panOffset.y) / zoomLevel + centerY;
+      return layerToPercentage(layerX, layerY);
+    },
+    [centerX, centerY, panOffset, zoomLevel, layerToPercentage],
   );
 
   // Convert stage pointer position to percentage, accounting for Layer transforms
@@ -1695,16 +1776,16 @@ export function LayoutCanvas({
     ],
   );
 
-  // Handle seat drag end
+  // Handle seat drag end (node.x/y are layer-local)
   const handleSeatDragEnd = useCallback(
     (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
-      const { x, y } = stageToPercentage(node.x(), node.y());
+      const { x, y } = layerToPercentage(node.x(), node.y());
       setDraggedSeatId(null);
       setDragPosition(null);
       onSeatDragEnd(seatId, x, y);
     },
-    [onSeatDragEnd, stageToPercentage],
+    [onSeatDragEnd, layerToPercentage],
   );
 
   const handleSeatDragStart = useCallback(
@@ -1717,21 +1798,21 @@ export function LayoutCanvas({
   );
 
   const handleSeatDragMove = useCallback(
-    (seatId: string, stageX: number, stageY: number) => {
-      const { x, y } = stageToPercentage(stageX, stageY);
+    (seatId: string, layerX: number, layerY: number) => {
+      const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage],
+    [layerToPercentage],
   );
 
   const handleSectionDragEnd = useCallback(
-    (sectionId: string, stageX: number, stageY: number) => {
+    (sectionId: string, layerX: number, layerY: number) => {
       setDraggedSectionId(null);
       setDragPosition(null);
-      const { x, y } = stageToPercentage(stageX, stageY);
+      const { x, y } = layerToPercentage(layerX, layerY);
       onSectionDragEnd?.(sectionId, x, y);
     },
-    [onSectionDragEnd, stageToPercentage],
+    [onSectionDragEnd, layerToPercentage],
   );
 
   const handleSectionDragStart = useCallback(
@@ -1744,20 +1825,19 @@ export function LayoutCanvas({
   );
 
   const handleSectionDragMove = useCallback(
-    (sectionId: string, stageX: number, stageY: number) => {
-      const { x, y } = stageToPercentage(stageX, stageY);
+    (sectionId: string, layerX: number, layerY: number) => {
+      const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
     },
-    [stageToPercentage],
+    [layerToPercentage],
   );
 
-  // Ensure container dimensions are valid
-  const validWidth = containerWidth > 0 ? containerWidth : 800;
-  const validHeight = containerHeight > 0 ? containerHeight : 600;
+  // Use the same locked dimensions for the Stage size
+  const validWidth = coordValidWidth;
+  const validHeight = coordValidHeight;
 
   // Compute display dimensions (no-image = use full container for simple floor mode)
-  const centerX = validWidth / 2;
-  const centerY = validHeight / 2;
+  // centerX/centerY already defined above for coordinate conversion
   const displayedWidth = coordDisplayedWidth;
   const displayedHeight = coordDisplayedHeight;
   const imageX = coordImageX;
@@ -2312,8 +2392,72 @@ export function LayoutCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
-      {/* Background Layer: Image takes priority; canvas background color only when no image (simple floor) */}
+      {/* Background Layer: Grid lines (when enabled), canvas background, and image */}
       <Layer ref={layerRef} {...layerTransform} listening={true}>
+        {/* Grid lines - rendered behind everything */}
+        {showGrid && gridSize > 0 && (
+          <Group listening={false}>
+            {(() => {
+              const gridLines: Array<{
+                x1: number;
+                y1: number;
+                x2: number;
+                y2: number;
+              }> = [];
+
+              // Generate vertical grid lines
+              for (
+                let percentage = gridSize;
+                percentage < 100;
+                percentage += gridSize
+              ) {
+                const x = (percentage / 100) * validWidth;
+                gridLines.push({
+                  x1: x,
+                  y1: 0,
+                  x2: x,
+                  y2: validHeight,
+                });
+              }
+
+              // Generate horizontal grid lines
+              for (
+                let percentage = gridSize;
+                percentage < 100;
+                percentage += gridSize
+              ) {
+                const y = (percentage / 100) * validHeight;
+                gridLines.push({
+                  x1: 0,
+                  y1: y,
+                  x2: validWidth,
+                  y2: y,
+                });
+              }
+
+              return gridLines.map((line, index) => (
+                <Line
+                  key={`grid-line-${index}`}
+                  points={[line.x1, line.y1, line.x2, line.y2]}
+                  stroke="rgba(100, 150, 255, 0.2)"
+                  strokeWidth={1}
+                  perfectDrawEnabled={false}
+                  dash={[2, 2]}
+                />
+              ));
+            })()}
+          </Group>
+        )}
+        {/* Background rectangle - always rendered to support transparency and consistent background color */}
+        <Rect
+          name="canvas-background"
+          x={imageX}
+          y={imageY}
+          width={displayedWidth}
+          height={displayedHeight}
+          fill={canvasBackgroundColor}
+          listening={false}
+        />
         {image ? (
           <Image
             name="background-image"
@@ -2607,6 +2751,11 @@ export function LayoutCanvas({
               x={x}
               y={y}
               isSelected={selectedSeatIdSet.has(seat.id)}
+              isAnchor={
+                anchorSeatId === seat.id &&
+                selectedSeatIdsProp &&
+                selectedSeatIdsProp.length > 1
+              }
               isPlacingSeats={isPlacingSeats}
               isPanning={isPanning}
               isSpacePressed={isSpacePressed}
@@ -2635,6 +2784,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={selectedSectionIdSet.has(section.id)}
+                isAnchor={
+                  anchorSectionId === section.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2694,6 +2848,11 @@ export function LayoutCanvas({
                   x={x}
                   y={y}
                   isSelected={true}
+                  isAnchor={
+                    anchorSeatId === selectedSeat.id &&
+                    selectedSeatIdsProp &&
+                    selectedSeatIdsProp.length > 1
+                  }
                   isPlacingSeats={isPlacingSeats}
                   isPanning={isPanning}
                   isSpacePressed={isSpacePressed}
@@ -2730,6 +2889,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={true}
+                isAnchor={
+                  anchorSectionId === selectedSection.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2750,10 +2914,7 @@ export function LayoutCanvas({
               />
             );
           })()}
-      </Layer>
-
-      {/* Drag Layer: Dragged shape when different from selected (selected one moves in Interactive Layer via dragPosition) */}
-      <Layer {...layerTransform} listening={true}>
+        {/* Dragged shape when different from selected (selected one moves via dragPosition above) */}
         {draggedSeat &&
           (!selectedSeat || selectedSeat.id !== draggedSeatId) &&
           (() => {
@@ -2767,6 +2928,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={false}
+                isAnchor={
+                  anchorSeatId === draggedSeat.id &&
+                  selectedSeatIdsProp &&
+                  selectedSeatIdsProp.length > 1
+                }
                 isPlacingSeats={isPlacingSeats}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -2803,6 +2969,11 @@ export function LayoutCanvas({
                 x={x}
                 y={y}
                 isSelected={false}
+                isAnchor={
+                  anchorSectionId === draggedSection.id &&
+                  selectedSectionIdsProp &&
+                  selectedSectionIdsProp.length > 1
+                }
                 isPlacingSections={isPlacingSections}
                 isPanning={isPanning}
                 isSpacePressed={isSpacePressed}
@@ -3149,7 +3320,7 @@ export function LayoutCanvas({
                     x={line.x}
                     y={line.y}
                     stroke="#3b82f6"
-                    strokeWidth={2.5}
+                    strokeWidth={1.5}
                     opacity={0.8}
                     dash={index === lines.length - 1 ? [5, 5] : undefined} // Dashed for preview line
                   />
@@ -3236,7 +3407,7 @@ export function LayoutCanvas({
                     shape={previewShape}
                     fill="rgba(59, 130, 246, 0.15)"
                     stroke="#3b82f6"
-                    strokeWidth={2.5}
+                    strokeWidth={1.5}
                     imageWidth={displayedWidth}
                     imageHeight={displayedHeight}
                     opacity={0.8}
@@ -3257,10 +3428,10 @@ export function LayoutCanvas({
             y={Math.min(selectionStart.y, selectionCurrent.y)}
             width={Math.abs(selectionCurrent.x - selectionStart.x)}
             height={Math.abs(selectionCurrent.y - selectionStart.y)}
-            stroke="#2563eb"
-            strokeWidth={2}
+            stroke={MARQUEE_STROKE}
+            strokeWidth={1}
             dash={[6, 4]}
-            fill="rgba(37, 99, 235, 0.08)"
+            fill={MARQUEE_FILL}
           />
         </Layer>
       )}

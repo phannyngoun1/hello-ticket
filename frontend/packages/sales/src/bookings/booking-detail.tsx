@@ -87,7 +87,7 @@ export function BookingDetail({
           events: "/api/v1/ticketing/events",
         },
       }),
-    []
+    [],
   );
 
   const showService = useMemo(
@@ -98,7 +98,7 @@ export function BookingDetail({
           shows: "/api/v1/ticketing/shows",
         },
       }),
-    []
+    [],
   );
 
   const customerService = useMemo(
@@ -109,7 +109,7 @@ export function BookingDetail({
           customers: "/api/v1/sales/customers",
         },
       }),
-    []
+    [],
   );
 
   const paymentService = useMemo(
@@ -120,21 +120,21 @@ export function BookingDetail({
           payments: "/api/v1/sales/payments",
         },
       }),
-    []
+    [],
   );
 
   // Fetch event, show, customer, and payment data
   const { data: eventData, isLoading: isLoadingEvent } = useEvent(
     eventService,
-    data?.event_id || null
+    data?.event_id || null,
   );
   const { data: showData, isLoading: isLoadingShow } = useShow(
     showService,
-    eventData?.show_id || null
+    eventData?.show_id || null,
   );
   const { data: customerData, isLoading: isLoadingCustomer } = useCustomer(
     customerService,
-    data?.customer_id || null
+    data?.customer_id || null,
   );
   const { data: payments = [], isLoading: isLoadingPayments } =
     usePaymentsByBooking(paymentService, data?.id || null);
@@ -148,7 +148,7 @@ export function BookingDetail({
 
   const displayName = useMemo(
     () => (data ? getBookingDisplayName() : ""),
-    [data, data?.booking_number]
+    [data, data?.booking_number],
   );
 
   const formatDate = (value?: Date | string) => {
@@ -214,7 +214,7 @@ export function BookingDetail({
   };
 
   const handlePaymentSubmit = async (
-    input: import("../payments/types").CreatePaymentInput
+    input: import("../payments/types").CreatePaymentInput,
   ) => {
     try {
       await createPaymentMutation.mutateAsync(input);
@@ -269,14 +269,14 @@ export function BookingDetail({
             </div>
             <div>
               <span className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold">{displayName}</h2>
-              <CopyButton
-                value={data.booking_number}
-                variant="ghost"
-                size="icon"
-                className="h-4 w-4 ml-1"
-                title="Copy code"
-              />
+                <h2 className="text-xl font-semibold">{displayName}</h2>
+                <CopyButton
+                  value={data.booking_number}
+                  variant="ghost"
+                  size="icon"
+                  className="h-4 w-4 ml-1"
+                  title="Copy code"
+                />
               </span>
               <div className="flex items-center gap-4 mt-2">
                 {data.status && (
@@ -288,7 +288,7 @@ export function BookingDetail({
                         : data.status === "cancelled" ||
                             data.status === "refunded"
                           ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
                     )}
                   >
                     {data.status.toUpperCase()}
@@ -300,7 +300,7 @@ export function BookingDetail({
                       "px-2 py-1 text-xs font-medium rounded-full",
                       data.payment_status === "paid"
                         ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
                     )}
                   >
                     Payment: {data.payment_status.toUpperCase()}
@@ -374,13 +374,13 @@ export function BookingDetail({
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
                   activeTab === "information"
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => setActiveTab("information")}
               >
                 <span className="flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Information
+                  Overview
                 </span>
               </button>
               <button
@@ -388,7 +388,7 @@ export function BookingDetail({
                   "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
                   activeTab === "payments"
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
                 onClick={() => setActiveTab("payments")}
               >
@@ -403,7 +403,7 @@ export function BookingDetail({
                     "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
                     activeTab === "metadata"
                       ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                   onClick={() => setActiveTab("metadata")}
                 >
@@ -517,8 +517,8 @@ export function BookingDetail({
 
                 {/* Booking Items Section */}
                 {data.items && data.items.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <div className="mt-6">
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <Ticket className="h-4 w-4" />
                       Booking Items ({data.items.length})
                     </h3>
@@ -527,22 +527,22 @@ export function BookingDetail({
                         <table className="w-full">
                           <thead className="bg-muted/50">
                             <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              <th className="w-12 px-2 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 #
                               </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Seat
-                              </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Section
-                              </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                                Row
-                              </th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Ticket Number
                               </th>
-                              <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Section
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Row
+                              </th>
+                              <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                Seat
+                              </th>
+                              <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
                                 Price
                               </th>
                             </tr>
@@ -553,22 +553,22 @@ export function BookingDetail({
                                 key={item.id || index}
                                 className="hover:bg-muted/30 transition-colors"
                               >
-                                <td className="px-4 py-3 text-sm text-muted-foreground">
+                                <td className="w-12 px-2 py-2 text-sm text-muted-foreground">
                                   {index + 1}
                                 </td>
-                                <td className="px-4 py-3 text-sm font-medium">
-                                  {item.seat_number || "-"}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-muted-foreground">
-                                  {item.section_name || "-"}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-muted-foreground">
-                                  {item.row_name || "-"}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
+                                <td className="px-3 py-2 text-sm text-muted-foreground font-mono">
                                   {item.ticket_number || "-"}
                                 </td>
-                                <td className="px-4 py-3 text-sm font-semibold text-right">
+                                <td className="px-3 py-2 text-sm text-muted-foreground">
+                                  {item.section_name || "-"}
+                                </td>
+                                <td className="px-3 py-2 text-sm text-muted-foreground">
+                                  {item.row_name || "-"}
+                                </td>
+                                <td className="px-3 py-2 text-sm font-medium">
+                                  {item.seat_number || "-"}
+                                </td>
+                                <td className="px-3 py-2 text-sm font-semibold text-right">
                                   {item.currency || data.currency || "USD"}{" "}
                                   {item.unit_price?.toFixed(2) || "0.00"}
                                 </td>
@@ -579,11 +579,11 @@ export function BookingDetail({
                             <tr>
                               <td
                                 colSpan={5}
-                                className="px-4 py-3 text-sm font-medium text-right pr-8"
+                                className="px-3 py-2 text-sm font-medium text-right pr-6"
                               >
                                 Subtotal:
                               </td>
-                              <td className="px-4 py-3 text-sm font-semibold text-right whitespace-nowrap">
+                              <td className="px-3 py-2 text-sm font-semibold text-right whitespace-nowrap">
                                 {data.currency || "USD"}{" "}
                                 {data.subtotal_amount?.toFixed(2) || "0.00"}
                               </td>
@@ -592,7 +592,7 @@ export function BookingDetail({
                               <tr>
                                 <td
                                   colSpan={5}
-                                  className="px-4 py-3 text-sm font-medium text-right pr-8"
+                                  className="px-3 py-2 text-sm font-medium text-right pr-6"
                                 >
                                   Discount
                                   {data.discount_type === "percentage" &&
@@ -601,7 +601,7 @@ export function BookingDetail({
                                     : ""}
                                   :
                                 </td>
-                                <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                                <td className="px-3 py-2 text-sm text-muted-foreground text-right whitespace-nowrap">
                                   -{data.currency || "USD"}{" "}
                                   {data.discount_amount?.toFixed(2) || "0.00"}
                                 </td>
@@ -610,12 +610,12 @@ export function BookingDetail({
                             <tr>
                               <td
                                 colSpan={5}
-                                className="px-4 py-3 text-sm font-medium text-right pr-8"
+                                className="px-3 py-2 text-sm font-medium text-right pr-6"
                               >
                                 Tax ({((data.tax_rate || 0) * 100).toFixed(0)}
                                 %):
                               </td>
-                              <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                              <td className="px-3 py-2 text-sm text-muted-foreground text-right whitespace-nowrap">
                                 {data.currency || "USD"}{" "}
                                 {data.tax_amount?.toFixed(2) || "0.00"}
                               </td>
@@ -623,11 +623,11 @@ export function BookingDetail({
                             <tr className="border-t-2 border-border">
                               <td
                                 colSpan={5}
-                                className="px-4 py-3 text-sm font-bold text-right pr-8"
+                                className="px-3 py-2.5 text-sm font-bold text-right pr-6"
                               >
                                 Total:
                               </td>
-                              <td className="px-4 py-3 text-sm font-bold text-right whitespace-nowrap">
+                              <td className="px-3 py-2.5 text-sm font-bold text-right whitespace-nowrap">
                                 {data.currency || "USD"}{" "}
                                 {data.total_amount?.toFixed(2) || "0.00"}
                               </td>
@@ -635,11 +635,11 @@ export function BookingDetail({
                             <tr>
                               <td
                                 colSpan={5}
-                                className="px-4 py-3 text-sm font-medium text-right pr-8"
+                                className="px-3 py-2 text-sm font-medium text-right pr-6"
                               >
                                 Paid Amount:
                               </td>
-                              <td className="px-4 py-3 text-sm text-muted-foreground text-right whitespace-nowrap">
+                              <td className="px-3 py-2 text-sm text-muted-foreground text-right whitespace-nowrap">
                                 {data.currency || "USD"}{" "}
                                 {paymentTotals.totalPaid.toFixed(2)}
                               </td>
@@ -647,16 +647,16 @@ export function BookingDetail({
                             <tr className="border-t-2 border-border">
                               <td
                                 colSpan={5}
-                                className="px-4 py-3 text-sm font-bold text-right pr-8"
+                                className="px-3 py-2.5 text-sm font-bold text-right pr-6"
                               >
                                 Balance Due:
                               </td>
                               <td
                                 className={cn(
-                                  "px-4 py-3 text-sm font-bold text-right whitespace-nowrap",
+                                  "px-3 py-2.5 text-sm font-bold text-right whitespace-nowrap",
                                   paymentTotals.balanceDue > 0
                                     ? "text-destructive"
-                                    : "text-green-600"
+                                    : "text-green-600",
                                 )}
                               >
                                 {data.currency || "USD"}{" "}
@@ -705,7 +705,7 @@ export function BookingDetail({
                           "text-lg font-semibold",
                           paymentTotals.balanceDue > 0
                             ? "text-destructive"
-                            : "text-green-600"
+                            : "text-green-600",
                         )}
                       >
                         {data.currency || "USD"}{" "}
@@ -796,7 +796,7 @@ export function BookingDetail({
                                         ? "bg-green-50 text-green-700 border-green-200"
                                         : payment.status === "void"
                                           ? "bg-gray-50 text-gray-700 border-gray-200"
-                                          : "bg-gray-50 text-gray-700 border-gray-200"
+                                          : "bg-gray-50 text-gray-700 border-gray-200",
                                     )}
                                   >
                                     {payment.status.toUpperCase()}

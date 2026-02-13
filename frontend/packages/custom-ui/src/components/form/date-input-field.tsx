@@ -142,9 +142,10 @@ export function DateInputField<TFieldValues extends FieldValues = FieldValues>({
             min={min}
             max={max}
             className={cn(
+              "date-input",
               hasError && "border-destructive",
               readOnly && "cursor-not-allowed bg-muted text-muted-foreground",
-              className
+              className,
             )}
             aria-invalid={hasError}
             aria-describedby={

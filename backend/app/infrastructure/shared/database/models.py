@@ -897,6 +897,7 @@ class LayoutModel(SQLModel, table=True):
     file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Reference to uploaded file
     design_mode: str = Field(default="seat-level", index=True)  # "seat-level" or "section-level"
     canvas_background_color: Optional[str] = Field(default="#e5e7eb")  # When no image (hex e.g. #e5e7eb)
+    marker_fill_transparency: float = Field(default=1.0)  # Marker fill transparency for all seats (0.0 to 1.0)
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
     version: int = Field(default=0)
@@ -934,6 +935,7 @@ class SectionModel(SQLModel, table=True):
     y_coordinate: Optional[float] = None  # Position on main floor plan (percentage)
     file_id: Optional[str] = Field(default=None, index=True, foreign_key="file_uploads.id")  # Section floor plan image
     canvas_background_color: Optional[str] = Field(default="#e5e7eb")  # Canvas background when no section image (hex)
+    marker_fill_transparency: float = Field(default=1.0)  # Marker fill transparency for seats in this section (0.0 to 1.0)
     shape: Optional[Dict[str, Any]] = Field(default=None, sa_column=Column(JSONB))  # JSONB storing PlacementShape data as dict
     is_active: bool = Field(default=True, index=True)
     is_deleted: bool = Field(default=False, index=True)

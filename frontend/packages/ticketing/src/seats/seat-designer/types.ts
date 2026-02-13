@@ -61,6 +61,7 @@ export interface SeatDesignerProps {
     file_id?: string | null;
     image_url?: string | null;
     canvas_background_color?: string | null;
+    marker_fill_transparency?: number | null;
     shape?: string | null;
   }>;
   /** Called when user adds a floor plan image. Pass fileId so parent can persist layout.file_id. */
@@ -70,7 +71,11 @@ export interface SeatDesignerProps {
   /** Initial canvas background color when no image (from layout). */
   initialCanvasBackgroundColor?: string;
   /** Called when user changes canvas background color. Parent should persist via layout update. */
-  onCanvasBackgroundColorChange?: (color: string) => void;
+  onCanvasBackgroundColorChange?: (color: string) => void | Promise<void>;
+  /** Marker fill transparency (0.0 to 1.0) from layout. */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency. Parent should persist via layout update. */
+  onMarkerFillTransparencyChange?: (transparency: number) => void | Promise<void>;
   className?: string;
   fileId?: string;
 }
@@ -81,8 +86,12 @@ export interface SectionMarker {
   x: number;
   y: number;
   imageUrl?: string;
+  /** File ID for section floor plan. null = user explicitly removed; undefined = not modified. */
+  file_id?: string | null;
   /** Canvas background color when no section image (hex). Stored per section. */
   canvasBackgroundColor?: string;
+  /** Marker fill transparency for seats in this section (0.0 to 1.0). Differentiates from main layout. */
+  markerFillTransparency?: number;
   isNew?: boolean;
   shape?: PlacementShape; // Optional shape for advanced placement
 }
@@ -102,6 +111,17 @@ export interface SeatMarker {
   seat: SeatInfo;
   isNew?: boolean;
   shape?: PlacementShape; // Optional shape for advanced placement
+}
+
+/**
+ * Snapshot of designer state for undo/redo functionality
+ * Captures only the undoable design state (not UI state like zoom, pan, selection)
+ */
+export interface DesignerSnapshot {
+  seats: SeatMarker[];
+  sectionMarkers: SectionMarker[];
+  canvasBackgroundColor: string;
+  markerFillTransparency: number;
 }
 
 /**

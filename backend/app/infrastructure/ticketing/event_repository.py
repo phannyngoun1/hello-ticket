@@ -22,6 +22,31 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
             tenant_id=tenant_id
         )
     
+    async def get_by_id(self, tenant_id: str, entity_id: str) -> Optional[Event]:
+        """Get event by ID with venue data"""
+        with self._session_factory() as session:
+            statement = (
+                select(EventModel, VenueModel.name, VenueModel.code)
+                .join(VenueModel, EventModel.venue_id == VenueModel.id)
+                .where(
+                    and_(
+                        EventModel.id == entity_id,
+                        EventModel.tenant_id == tenant_id,
+                        EventModel.is_deleted == False
+                    )
+                )
+            )
+            result = session.exec(statement).first()
+            if not result:
+                return None
+            
+            event_model, venue_name, venue_code = result
+            event = self._mapper.to_domain(event_model)
+            if event:
+                event.venue_name = venue_name
+                event.venue_code = venue_code
+            return event
+    
     async def get_by_code(self, tenant_id: str, code: str) -> Optional[Event]:
         """Get event by business code - deprecated, events no longer have codes"""
         # Events no longer have code fields, return None
@@ -92,7 +117,7 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
 
             # Get paginated results with JOINs
             statement = (
-                select(EventModel)
+                select(EventModel, VenueModel.name, VenueModel.code)
                 .join(ShowModel, EventModel.show_id == ShowModel.id)
                 .join(VenueModel, EventModel.venue_id == VenueModel.id)
                 .join(OrganizerModel, ShowModel.organizer_id == OrganizerModel.id)
@@ -100,9 +125,17 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
                 .offset(skip)
                 .limit(limit)
             )
-            models = session.exec(statement).all()
+            results = session.exec(statement).all()
             
-            items = [self._mapper.to_domain(model) for model in models]
+            # Map results with venue data
+            items = []
+            for event_model, venue_name, venue_code in results:
+                event = self._mapper.to_domain(event_model)
+                if event:
+                    event.venue_name = venue_name
+                    event.venue_code = venue_code
+                    items.append(event)
+            
             has_next = skip + limit < total
             
             return EventSearchResult(items=items, total=total, has_next=has_next)

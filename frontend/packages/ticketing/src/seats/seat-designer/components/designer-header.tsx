@@ -20,6 +20,12 @@ import {
   ScanSearch,
   BrushCleaning,
   Palette,
+  Layers,
+  Grid3x3,
+  Eye,
+  Undo2,
+  Redo2,
+  RefreshCw,
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
@@ -53,6 +59,38 @@ export interface DesignerHeaderProps {
   canvasBackgroundColor?: string;
   /** Called when user changes canvas background color; only relevant when no image */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Enable/disable snap to grid */
+  snapToGrid?: boolean;
+  /** Called when user toggles snap to grid */
+  onSnapToGridChange?: (enabled: boolean) => void;
+  /** Current grid size in percentage */
+  gridSize?: number;
+  /** Called when user changes grid size */
+  onGridSizeChange?: (size: number) => void;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Called when user toggles show grid */
+  onShowGridChange?: (enabled: boolean) => void;
+  /** Called when user clicks preview button to see booking view */
+  onPreview?: () => void;
+  /** Marker fill transparency (0.0 to 1.0) */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency */
+  onMarkerFillTransparencyChange?: (transparency: number) => void;
+  /** Undo last change */
+  onUndo?: () => void;
+  /** Redo last undone change */
+  onRedo?: () => void;
+  /** Whether undo is available */
+  canUndo?: boolean;
+  /** Whether redo is available */
+  canRedo?: boolean;
+  /** Whether there are unsaved changes */
+  isDirty?: boolean;
+  /** Called when user clicks refresh button to reload data from server */
+  onRefresh?: () => void | Promise<void>;
+  /** Whether refresh is in progress */
+  isRefreshing?: boolean;
 }
 
 export function DesignerHeader({
@@ -82,6 +120,22 @@ export function DesignerHeader({
   isDetectingSeats = false,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
+  snapToGrid = false,
+  onSnapToGridChange,
+  gridSize = 5,
+  onGridSizeChange,
+  showGrid = false,
+  onShowGridChange,
+  onPreview,
+  markerFillTransparency = 1.0,
+  onMarkerFillTransparencyChange,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  isDirty = false,
+  onRefresh,
+  isRefreshing = false,
 }: DesignerHeaderProps) {
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
@@ -164,7 +218,6 @@ export function DesignerHeader({
 
       !readOnly && onRemoveImage && (
         <>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => onRemoveImage()}
             className="text-destructive focus:text-destructive"
@@ -174,12 +227,122 @@ export function DesignerHeader({
           </DropdownMenuItem>
         </>
       ),
+
+      !readOnly && onMarkerFillTransparencyChange && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+            <Layers className="h-4 w-4 shrink-0" />
+            <span className="flex-1">Transparency</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={(markerFillTransparency ?? 1.0) * 100}
+              onChange={(e) =>
+                onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
+              }
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer min-w-0"
+              title="Adjust marker fill transparency"
+            />
+            <span className="text-xs text-muted-foreground w-8 text-right shrink-0">
+              {Math.round((markerFillTransparency ?? 1.0) * 100)}%
+            </span>
+          </label>
+        </DropdownMenuItem>
+      ),
+
+      !readOnly && onSnapToGridChange && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onSnapToGridChange(!snapToGrid)}>
+            <Grid3x3 className="h-4 w-4 mr-2" />
+            <span className="flex-1">Snap to Grid</span>
+            {snapToGrid && <span className="text-xs text-primary">✓</span>}
+          </DropdownMenuItem>
+          {snapToGrid && onGridSizeChange && (
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+              <label className="flex flex-col cursor-pointer items-start gap-3 px-2 py-1.5">
+                <div className="flex items-center gap-2 w-full">
+                  <span className="text-xs text-muted-foreground w-16 flex-shrink-0">
+                    Grid size:
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={gridSize}
+                    onChange={(e) =>
+                      onGridSizeChange(
+                        Math.max(1, parseInt(e.target.value) || 5),
+                      )
+                    }
+                    className="h-6 w-12 px-1 text-xs border rounded"
+                    title="Grid size in percentage"
+                  />
+                  <span className="text-xs text-muted-foreground">%</span>
+                </div>
+                {onShowGridChange && (
+                  <div
+                    className="flex items-center gap-2 w-full pl-16 cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onShowGridChange(!showGrid);
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={showGrid}
+                      onChange={() => {}}
+                      className="h-4 w-4 rounded cursor-pointer"
+                      title="Toggle grid visibility"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Show grid lines
+                    </span>
+                  </div>
+                )}
+              </label>
+            </DropdownMenuItem>
+          )}
+          {!snapToGrid && onShowGridChange && (
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+              <label
+                className="flex items-center gap-2 cursor-pointer px-2 py-1.5"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onShowGridChange(!showGrid);
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={showGrid}
+                  onChange={() => {}}
+                  className="h-4 w-4 rounded cursor-pointer"
+                  title="Toggle grid visibility"
+                />
+                <span className="text-xs">Show grid lines</span>
+              </label>
+            </DropdownMenuItem>
+          )}
+        </>
+      ),
     ];
   }, [
     onClearAllPlacements,
     onMainImageSelect,
     onCanvasBackgroundColorChange,
     onRemoveImage,
+    canvasBackgroundColor,
+    onMarkerFillTransparencyChange,
+    markerFillTransparency,
+    onSnapToGridChange,
+    snapToGrid,
+    gridSize,
+    onGridSizeChange,
+    showGrid,
+    onShowGridChange,
   ]);
 
   return (
@@ -198,6 +361,21 @@ export function DesignerHeader({
         )}
       </div>
       <div className="flex gap-1">
+        {/* Refresh Button */}
+        {onRefresh && (
+          <Button
+            variant="outline"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            size="sm"
+            className="h-7 w-7 p-0"
+            title="Refresh data from server"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </Button>
+        )}
         {/* Datasheet Toggle Button */}
         {showDatasheetButton && (
           <Button
@@ -236,15 +414,52 @@ export function DesignerHeader({
             {isDetectingSeats ? "Detecting…" : "Detect seats"}
           </Button>
         )}
+        {!readOnly && onUndo && onRedo && (
+          <>
+            <Button
+              variant="outline"
+              onClick={onUndo}
+              disabled={!canUndo}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onRedo}
+              disabled={!canRedo}
+              size="sm"
+              className="h-7 w-7 p-0"
+              title="Redo (Ctrl+Shift+Z)"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+            </Button>
+          </>
+        )}
         {!readOnly && (
           <Button
             onClick={onSave}
             disabled={isSaving}
             size="sm"
-            className="h-7 px-2"
+            className={`h-7 px-2 ${isDirty ? "ring-2 ring-primary ring-offset-2" : ""}`}
+            title={isDirty ? "You have unsaved changes" : "Save changes"}
           >
             <Save className="h-3.5 w-3.5 mr-1" />
-            Save
+            Save{isDirty ? " *" : ""}
+          </Button>
+        )}
+        {onPreview && (
+          <Button
+            variant="outline"
+            onClick={onPreview}
+            size="sm"
+            className="h-7 px-2"
+            title="Preview how this layout will appear during booking"
+          >
+            <Eye className="h-3.5 w-3.5 mr-1" />
+            Preview
           </Button>
         )}
         <Button

@@ -19,6 +19,7 @@ import { EventInventoryLegend } from "./event-inventory-legend";
 import { EventInventoryBreadcrumb } from "./event-inventory-breadcrumb";
 import { EventInventorySectionPopover } from "./event-inventory-section-popover";
 import { EventInventorySeatPopover } from "./event-inventory-seat-popover";
+import { DEFAULT_CANVAS_BACKGROUND } from "./event-inventory-viewer-colors";
 
 export interface EventInventoryViewerProps {
   layout: Layout;
@@ -34,6 +35,8 @@ export interface EventInventoryViewerProps {
   selectedSeatIds?: Set<string>;
   selectedSectionId?: string | null;
   onSelectedSectionIdChange?: (sectionId: string | null) => void;
+  /** Hide the seat-status legend overlay on the canvas (default false) */
+  showLegend?: boolean;
 }
 
 export function EventInventoryViewer({
@@ -49,6 +52,7 @@ export function EventInventoryViewer({
   selectedSeatIds = new Set(),
   selectedSectionId: controlledSelectedSectionId,
   onSelectedSectionIdChange,
+  showLegend = true,
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -121,7 +125,7 @@ export function EventInventoryViewer({
     sections.forEach((section) => {
       // Get all seats in this section
       const sectionSeats = layoutSeats.filter(
-        (seat) => seat.section_id === section.id
+        (seat) => seat.section_id === section.id,
       );
 
       // Get all event seats for this section
@@ -179,10 +183,22 @@ export function EventInventoryViewer({
     return sections.find((s) => s.id === selectedSectionId) || null;
   }, [selectedSectionId, sections]);
 
+  // Get canvas background color (use section's color when drilled down, otherwise layout's)
+  const canvasBackgroundColor = useMemo(() => {
+    if (selectedSection?.canvas_background_color) {
+      return selectedSection.canvas_background_color;
+    }
+    if (layout.canvas_background_color) {
+      return layout.canvas_background_color;
+    }
+    return DEFAULT_CANVAS_BACKGROUND;
+  }, [selectedSection, layout.canvas_background_color]);
+
   // Get image URL - use section image if in drill-down mode, otherwise use layout image
+  // When drilled into a section, only use that section's own image (don't fall back to layout image)
   const displayImageUrl = useMemo(() => {
-    if (selectedSection?.image_url) {
-      return selectedSection.image_url;
+    if (selectedSection) {
+      return selectedSection.image_url || undefined;
     }
     return imageUrl;
   }, [selectedSection, imageUrl]);
@@ -191,7 +207,7 @@ export function EventInventoryViewer({
   const displayedSeats = useMemo(() => {
     if (layout.design_mode === "section-level" && selectedSectionId) {
       return layoutSeats.filter(
-        (seat) => seat.section_id === selectedSectionId
+        (seat) => seat.section_id === selectedSectionId,
       );
     }
     return layoutSeats;
@@ -219,19 +235,49 @@ export function EventInventoryViewer({
     img.src = displayImageUrl;
   }, [displayImageUrl]);
 
-  // Update container size
+  const hasImage = !!image && !!image.width && !!image.height;
+  const isCanvasReady =
+    !isLoading && (!displayImageUrl || (imageLoaded && hasImage));
+
+  // Track whether the container has been measured at least once.
+  // For no-image mode we lock the canvas size after the first measurement
+  // so it behaves like the image case (fixed size, markers don't shift).
+  const initialSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const prevLayoutIdRef = useRef<string | null>(null);
+
+  // Reset locked size when layout changes so new layout gets fresh measurement
+  if (prevLayoutIdRef.current !== layout.id) {
+    prevLayoutIdRef.current = layout.id;
+    initialSizeRef.current = null;
+  }
+
+  // Update container size when it changes (resize, virtualization, flex layout).
+  // WITH IMAGE: always track the container so the image letterboxes into whatever
+  //   space is available (responsive).
+  // WITHOUT IMAGE: lock the Stage to the first measured size so the canvas stays
+  //   fixed and markers don't move — just like the image case where the image
+  //   provides a fixed reference frame.
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
     const updateSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        // Always capture the first measurement
+        if (!initialSizeRef.current) {
+          initialSizeRef.current = { width: rect.width, height: rect.height };
+        }
         setContainerSize({ width: rect.width, height: rect.height });
       }
     };
 
     updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [isCanvasReady]);
 
   // Handle Space key for panning (same as seat designer)
   useEffect(() => {
@@ -344,7 +390,7 @@ export function EventInventoryViewer({
         y: newPanY,
       });
     },
-    [zoomLevel, panOffset, containerSize]
+    [zoomLevel, panOffset, containerSize],
   );
 
   const handleMouseDown = useCallback(
@@ -362,7 +408,7 @@ export function EventInventoryViewer({
         return;
       }
     },
-    [isSpacePressed]
+    [isSpacePressed],
   );
 
   const handleMouseMove = useCallback(
@@ -386,7 +432,7 @@ export function EventInventoryViewer({
         }));
       }
     },
-    [isPanning, isSpacePressed, panStartPos]
+    [isPanning, isSpacePressed, panStartPos],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -495,66 +541,80 @@ export function EventInventoryViewer({
         setHoveredSeatPosition({ x: screenX, y: screenY });
       }
     },
-    []
+    [],
   );
 
-  // Ensure container dimensions are valid (same as layout designer)
-  const validWidth = containerSize.width > 0 ? containerSize.width : 800;
-  const validHeight = containerSize.height > 0 ? containerSize.height : 600;
+  // Determine the canvas size.
+  //
+  // WITH IMAGE: use the live container size (responsive). The image letterboxes
+  //   into whatever space is available, and markers scale with the image.
+  // WITHOUT IMAGE: lock to the first measured size so the canvas stays fixed.
+  //   This makes markers not move on resize — the same as the image case where
+  //   the image itself provides a fixed reference frame.
+  const canvasWidth = hasImage
+    ? (containerSize.width > 0 ? containerSize.width : 800)
+    : (initialSizeRef.current?.width ?? (containerSize.width > 0 ? containerSize.width : 800));
+  const canvasHeight = hasImage
+    ? (containerSize.height > 0 ? containerSize.height : 600)
+    : (initialSizeRef.current?.height ?? (containerSize.height > 0 ? containerSize.height : 600));
 
-  const hasImage = !!image && !!image.width && !!image.height;
+  const validWidth = canvasWidth;
+  const validHeight = canvasHeight;
 
-  // Convert percentage coordinates to Konva stage coordinates
-  // When no image (simple floor), use container as reference
+  // Calculate display dimensions.
+  //
+  // WITH IMAGE: the image's intrinsic aspect ratio is used to letterbox it
+  //   into the canvas.
+  // WITHOUT IMAGE: a fixed 4:3 aspect ratio (matching the 800×600 default)
+  //   is used so shapes and positions look identical across all views
+  //   (designer, viewer, preview dialog) regardless of container size.
+  //   The virtual canvas is letterboxed into the fixed canvas size.
+  const NO_IMAGE_ASPECT_RATIO = 3 / 4; // height/width = 600/800 = 0.75 (4:3)
+
+  const contentAspectRatio = hasImage
+    ? image!.height / image!.width
+    : NO_IMAGE_ASPECT_RATIO;
+  const canvasAspectRatio = validHeight / validWidth;
+
+  let displayedWidth: number;
+  let displayedHeight: number;
+  let imageX: number;
+  let imageY: number;
+
+  if (contentAspectRatio > canvasAspectRatio) {
+    displayedHeight = validHeight;
+    displayedWidth = displayedHeight / contentAspectRatio;
+  } else {
+    displayedWidth = validWidth;
+    displayedHeight = displayedWidth * contentAspectRatio;
+  }
+  imageX = (validWidth - displayedWidth) / 2;
+  imageY = (validHeight - displayedHeight) / 2;
+
+  // Convert percentage coordinates to stage position.
   const percentageToStage = useCallback(
     (xPercent: number, yPercent: number) => {
-      const currentValidWidth =
-        containerSize.width > 0 ? containerSize.width : 800;
-      const currentValidHeight =
-        containerSize.height > 0 ? containerSize.height : 600;
-
-      if (!hasImage) {
-        return {
-          x: (xPercent / 100) * currentValidWidth,
-          y: (yPercent / 100) * currentValidHeight,
-        };
-      }
-
-      const imageAspectRatio = image!.height / image!.width;
-      const containerAspectRatio = currentValidHeight / currentValidWidth;
-
-      let displayedWidth: number;
-      let displayedHeight: number;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        displayedHeight = currentValidHeight;
-        displayedWidth = displayedHeight / imageAspectRatio;
-      } else {
-        displayedWidth = currentValidWidth;
-        displayedHeight = displayedWidth * imageAspectRatio;
-      }
-
-      const imageX = (currentValidWidth - displayedWidth) / 2;
-      const imageY = (currentValidHeight - displayedHeight) / 2;
-
       const x = imageX + (xPercent / 100) * displayedWidth;
       const y = imageY + (yPercent / 100) * displayedHeight;
-
       return { x, y };
     },
-    [image, hasImage, containerSize]
+    [imageX, imageY, displayedWidth, displayedHeight],
   );
 
-  // Show loading indicator only when image URL provided but not yet loaded
-  if (isLoading || (displayImageUrl && (!imageLoaded || !hasImage))) {
-    return (
-      <div
-        className={cn(
-          "relative border rounded-lg overflow-hidden bg-gray-100",
-          className
-        )}
-        ref={containerRef}
-      >
+  // Calculate center point for zoom/pan transforms
+  const centerX = validWidth / 2;
+  const centerY = validHeight / 2;
+
+  return (
+    <div
+      className={cn(
+        "relative border rounded-lg bg-gray-100",
+        hasImage ? "overflow-hidden" : "overflow-auto",
+        className,
+      )}
+      style={{ minHeight: "600px", height: "70vh" }}
+    >
+      {!isCanvasReady ? (
         <div
           style={{
             width: validWidth,
@@ -568,43 +628,8 @@ export function EventInventoryViewer({
         >
           <div className="text-muted-foreground">Loading seats...</div>
         </div>
-      </div>
-    );
-  }
-
-  // Calculate display dimensions (no image = use full container for simple floor)
-  const imageAspectRatio = hasImage
-    ? image!.height / image!.width
-    : validHeight / validWidth;
-  const containerAspectRatio = validHeight / validWidth;
-
-  let displayedWidth: number;
-  let displayedHeight: number;
-
-  if (hasImage && imageAspectRatio > containerAspectRatio) {
-    displayedHeight = validHeight;
-    displayedWidth = displayedHeight / imageAspectRatio;
-  } else {
-    displayedWidth = validWidth;
-    displayedHeight = hasImage
-      ? validWidth * imageAspectRatio
-      : validHeight;
-  }
-
-  const imageX = hasImage ? (validWidth - displayedWidth) / 2 : 0;
-  const imageY = hasImage ? (validHeight - displayedHeight) / 2 : 0;
-
-  // Calculate center point for zoom/pan transforms
-  const centerX = validWidth / 2;
-  const centerY = validHeight / 2;
-
-  return (
-    <div
-      className={cn(
-        "relative border rounded-lg overflow-hidden bg-gray-100",
-        className
-      )}
-    >
+      ) : (
+        <>
       <EventInventoryStage
         containerRef={containerRef}
         stageRef={stageRef}
@@ -648,6 +673,7 @@ export function EventInventoryViewer({
         setZoomLevel={setZoomLevel}
         setPanOffset={setPanOffset}
         onSeatClick={onSeatClick}
+        canvasBackgroundColor={canvasBackgroundColor}
       />
 
       {layout.design_mode === "section-level" &&
@@ -669,13 +695,10 @@ export function EventInventoryViewer({
         onResetZoom={handleResetZoom}
       />
 
-      {!(layout.design_mode === "section-level" && selectedSectionId) && (
-        <EventInventoryLegend className="absolute top-4 left-4" />
-      )}
-
-      {layout.design_mode === "section-level" && selectedSectionId && (
-        <EventInventoryLegend className="absolute bottom-4 left-4" />
-      )}
+      {showLegend &&
+        !(layout.design_mode === "section-level" && selectedSectionId) && (
+          <EventInventoryLegend className="absolute top-4 left-4" />
+        )}
 
       {layout.design_mode === "section-level" &&
         !selectedSectionId &&
@@ -691,7 +714,7 @@ export function EventInventoryViewer({
             x={hoveredSeatPosition.x}
             y={hoveredSeatPosition.y}
           />,
-          document.body
+          document.body,
         )}
 
       {(layout.design_mode !== "section-level" || selectedSectionId) &&
@@ -710,8 +733,10 @@ export function EventInventoryViewer({
             x={hoveredSeatPosition.x}
             y={hoveredSeatPosition.y}
           />,
-          document.body
+          document.body,
         )}
+        </>
+      )}
     </div>
   );
 }

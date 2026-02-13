@@ -33,7 +33,11 @@ import {
   PURPLE_HOVER_FILL,
   RED_HOVER_FILL,
 } from "./event-inventory-viewer-colors";
-import { parseShape, renderShape } from "./event-inventory-viewer-utils";
+import {
+  parseShape,
+  renderShape,
+  getSectionHeatMapFill,
+} from "./event-inventory-viewer-utils";
 
 export interface SectionMarkerProps {
   section: Section;
@@ -46,6 +50,8 @@ export interface SectionMarkerProps {
   statusCounts: Record<string, number>;
   imageWidth: number;
   imageHeight: number;
+  /** Fill transparency 0-1 for section heat map (1 = opaque). Default 0.5 */
+  markerFillTransparency?: number;
   onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseLeave: () => void;
@@ -58,10 +64,12 @@ export function SectionMarker({
   y,
   isHovered,
   isSpacePressed,
+  totalSeats,
   eventSeatCount,
   statusCounts,
   imageWidth,
   imageHeight,
+  markerFillTransparency = 0.5,
   onMouseEnter,
   onMouseMove,
   onMouseLeave,
@@ -91,6 +99,19 @@ export function SectionMarker({
   const parsedShape = parseShape(section.shape);
   const hasShape = !!parsedShape;
 
+  // Heat map: dark blue (0% sold) -> grey (100% sold)
+  const soldCount = statusCounts["sold"] ?? 0;
+  const soldRatio =
+    totalSeats > 0 ? Math.min(1, soldCount / totalSeats) : 0;
+  const heatMapFill = getSectionHeatMapFill(
+    soldRatio,
+    markerFillTransparency,
+  );
+  const heatMapHoverFill = getSectionHeatMapFill(
+    soldRatio,
+    Math.min(1, markerFillTransparency + 0.2),
+  );
+
   const configFill = parsedShape?.fillColor?.trim();
   const configStroke = parsedShape?.strokeColor?.trim();
   const isDefaultOrEmpty = (v: string | undefined, d: string) =>
@@ -105,34 +126,38 @@ export function SectionMarker({
       ? undefined
       : configStroke!,
   };
-  /** Brighter colors for mouse-over state */
+  /** Brighter colors for mouse-over state (heat map uses slightly more opaque fill on hover) */
   const hoverColors = {
-    fill: !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
-      ? configFill!
-      : statusColor.fill === GRAY_FILL
-        ? GRAY_HOVER_FILL
-        : statusColor.fill === BLUE_FILL
-          ? BLUE_HOVER_FILL
-          : statusColor.fill === AMBER_FILL
-            ? AMBER_HOVER_FILL
-            : statusColor.fill === PURPLE_FILL
-              ? PURPLE_HOVER_FILL
-              : statusColor.fill === RED_FILL
-                ? RED_HOVER_FILL
-                : GREEN_HOVER_FILL,
-    stroke: !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
-      ? configStroke!
-      : statusColor.stroke === GRAY_STROKE
-        ? GRAY_FILL
-        : statusColor.stroke === BLUE_STROKE
-          ? BLUE_FILL
-          : statusColor.stroke === AMBER_STROKE
-            ? AMBER_FILL
-            : statusColor.stroke === PURPLE_STROKE
-              ? PURPLE_FILL
-              : statusColor.stroke === RED_STROKE
-                ? RED_FILL
-                : GREEN_HOVER_STROKE,
+    fill: hasShape
+      ? heatMapHoverFill
+      : !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
+        ? configFill!
+        : statusColor.fill === GRAY_FILL
+          ? GRAY_HOVER_FILL
+          : statusColor.fill === BLUE_FILL
+            ? BLUE_HOVER_FILL
+            : statusColor.fill === AMBER_FILL
+              ? AMBER_HOVER_FILL
+              : statusColor.fill === PURPLE_FILL
+                ? PURPLE_HOVER_FILL
+                : statusColor.fill === RED_FILL
+                  ? RED_HOVER_FILL
+                  : GREEN_HOVER_FILL,
+    stroke: hasShape
+      ? "rgba(30, 58, 138, 0.6)"
+      : !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
+        ? configStroke!
+        : statusColor.stroke === GRAY_STROKE
+          ? GRAY_FILL
+          : statusColor.stroke === BLUE_STROKE
+            ? BLUE_FILL
+            : statusColor.stroke === AMBER_STROKE
+              ? AMBER_FILL
+              : statusColor.stroke === PURPLE_STROKE
+                ? PURPLE_FILL
+                : statusColor.stroke === RED_STROKE
+                  ? RED_FILL
+                  : GREEN_HOVER_STROKE,
   };
   const isHover = isHovered || isHoveredState;
 
@@ -244,8 +269,10 @@ export function SectionMarker({
             {renderShape(
               parsedShape,
               {
-                fill: shapeCodeColors.fill,
-                stroke: shapeCodeColors.stroke,
+                fill: hasShape ? heatMapFill : shapeCodeColors.fill,
+                stroke: hasShape
+                  ? "rgba(30, 58, 138, 0.4)"
+                  : shapeCodeColors.stroke,
               },
               imageWidth,
               imageHeight,
@@ -264,9 +291,11 @@ export function SectionMarker({
             align="center"
             verticalAlign="middle"
             listening={false}
-            x={-24}
-            y={8}
+            x={0}
+            y={0}
             width={48}
+            offsetX={24}
+            offsetY={7}
             backgroundFill={LABEL_BACKGROUND_FILL}
             backgroundStroke={LABEL_BACKGROUND_STROKE}
             backgroundStrokeWidth={1}
@@ -279,7 +308,6 @@ export function SectionMarker({
           text={section.name}
           fontSize={14}
           fontFamily="Arial"
-          // fill={isHovered || isHoveredState ? "#1e3a8a" : "#1e40af"}
           padding={8}
           align="center"
           verticalAlign="middle"
@@ -293,8 +321,11 @@ export function SectionMarker({
           }
           backgroundStrokeWidth={strokeWidth}
           cornerRadius={4}
-          x={-30}
-          y={-10}
+          x={0}
+          y={0}
+          width={80}
+          offsetX={40}
+          offsetY={15}
           shadowBlur={2}
           shadowColor={LABEL_SHADOW_COLOR}
           opacity={currentOpacity}

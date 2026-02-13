@@ -16,7 +16,6 @@ import {
   Label,
 } from "@truths/ui";
 import {
-  Save,
   Trash2,
   MoreVertical,
   Image as ImageIcon,
@@ -26,7 +25,11 @@ import {
   Minimize,
   Maximize,
   Palette,
+  Layers,
   BrushCleaning,
+  Undo2,
+  Redo2,
+  RefreshCw,
 } from "lucide-react";
 import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
@@ -84,6 +87,11 @@ export interface SectionDetailViewProps {
   onEditSeat?: (seat: SeatMarker) => void;
   onSetSelectedSeat: (seat: SeatMarker | null) => void;
   seatEditFormReset: (data: any) => void;
+  /** Multi-selection: all selected seat ids */
+  selectedSeatIds?: string[];
+  onSelectSeatIds?: (ids: string[]) => void;
+  /** Anchor seat ID for alignment reference */
+  anchorSeatId?: string | null;
   placementShape: PlacementShape;
   onPlacementShapeChange: (shape: PlacementShape) => void;
   selectedShapeTool?: PlacementShapeType | null;
@@ -94,14 +102,43 @@ export interface SectionDetailViewProps {
   onShapeOverlayClick: (overlayId: string) => void;
   onDetectSeats?: () => void;
   isDetectingSeats?: boolean;
+  onMarkersInRect?: (
+    seatIds: string[],
+    sectionIds: string[],
+  ) => void; /** Called when user aligns multiple selected markers */
+  onAlign?: (
+    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
+  ) => void;
   /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
   seatEditControls?: React.ReactNode;
   /** Canvas background color when no section image (image has priority). Section-level or fallback from layout. */
   canvasBackgroundColor?: string;
   /** Called when user changes canvas background color. Parent should persist via section update. */
   onCanvasBackgroundColorChange?: (color: string) => void;
+  /** Marker fill transparency for this section (0.0 to 1.0). Differentiates from main layout. */
+  markerFillTransparency?: number;
+  /** Called when user changes marker fill transparency. Parent should persist via section update. */
+  onMarkerFillTransparencyChange?: (transparency: number) => void;
+  /** Show grid lines on canvas */
+  showGrid?: boolean;
+  /** Grid size in percentage */
+  gridSize?: number;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  /** Undo last change */
+  onUndo?: () => void;
+  /** Redo last undone change */
+  onRedo?: () => void;
+  /** Whether undo is available */
+  canUndo?: boolean;
+  /** Whether redo is available */
+  canRedo?: boolean;
+  /** Whether there are unsaved changes */
+  isDirty?: boolean;
+  /** Called when user clicks refresh button to reload data from server */
+  onRefresh?: () => void | Promise<void>;
+  /** Whether refresh is in progress */
+  isRefreshing?: boolean;
 }
 
 export function SectionDetailView({
@@ -154,11 +191,27 @@ export function SectionDetailView({
   onShapeOverlayClick,
   onDetectSeats,
   isDetectingSeats = false,
+  onMarkersInRect,
+  selectedSeatIds = [],
+  onSelectSeatIds,
+  anchorSeatId,
+  onAlign,
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
   onCanvasBackgroundColorChange,
+  markerFillTransparency = 1.0,
+  onMarkerFillTransparencyChange,
+  showGrid = false,
+  gridSize = 5,
   isFullscreen = false,
   onToggleFullscreen,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  isDirty = false,
+  onRefresh,
+  isRefreshing = false,
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const effectiveCanvasColor =
@@ -235,6 +288,28 @@ export function SectionDetailView({
           </label>
         </DropdownMenuItem>
       ),
+      onMarkerFillTransparencyChange && (
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+            <Layers className="h-4 w-4 shrink-0" />
+            <span className="flex-1">Transparency</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={(markerFillTransparency ?? 1.0) * 100}
+              onChange={(e) =>
+                onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
+              }
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer min-w-0"
+              title="Adjust marker fill transparency for this section"
+            />
+            <span className="text-xs text-muted-foreground w-8 text-right shrink-0">
+              {Math.round((markerFillTransparency ?? 1.0) * 100)}%
+            </span>
+          </label>
+        </DropdownMenuItem>
+      ),
       viewingSection.imageUrl && onRemoveSectionImage && (
         <>
           <DropdownMenuSeparator />
@@ -248,7 +323,11 @@ export function SectionDetailView({
         </>
       ),
     ];
-  }, [onClearSectionSeats]);
+  }, [
+    onClearSectionSeats,
+    markerFillTransparency,
+    onMarkerFillTransparencyChange,
+  ]);
   return (
     <Card className={className}>
       <div className={innerClassName}>
@@ -269,6 +348,21 @@ export function SectionDetailView({
           </div>
           {/* Toolbar: same order as DesignerHeader (List | Detect | Save | Fullscreen | color | ⋮) */}
           <div className="flex items-center gap-1">
+            {/* Refresh Button */}
+            {onRefresh && (
+              <Button
+                variant="outline"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                size="sm"
+                className="h-7 w-7 p-0"
+                title="Refresh data from server"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </Button>
+            )}
             {!isFullscreen && (
               <Button
                 onClick={() => setIsDatasheetOpen(true)}
@@ -293,16 +387,29 @@ export function SectionDetailView({
                 {isDetectingSeats ? "Detecting…" : "Detect seats"}
               </Button>
             )}
-            {!readOnly && (
-              <Button
-                onClick={onSave}
-                disabled={saveSeatsMutationPending}
-                size="sm"
-                className="h-7 px-2"
-              >
-                <Save className="h-3.5 w-3.5 mr-1" />
-                Save
-              </Button>
+            {!readOnly && onUndo && onRedo && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Redo (Ctrl+Shift+Z)"
+                >
+                  <Redo2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
             {onToggleFullscreen && (
               <Button
@@ -461,15 +568,21 @@ export function SectionDetailView({
               }}
               onSeatDelete={onDeleteSeat}
               onSeatShapeStyleChange={onSeatShapeStyleChange}
-              seatPlacement={{
-                form: seatPlacementForm,
-                uniqueSections,
-                sectionsData,
-                sectionSelectValue,
-                onSectionSelectValueChange,
-                viewingSection,
-                onNewSection,
-              }}
+              onAlign={onAlign}
+              selectedSeatCount={selectedSeatIds.length}
+              seatPlacement={
+                selectedSeatIds.length <= 1
+                  ? {
+                      form: seatPlacementForm,
+                      uniqueSections,
+                      sectionsData,
+                      sectionSelectValue,
+                      onSectionSelectValueChange,
+                      viewingSection,
+                      onNewSection,
+                    }
+                  : undefined
+              }
               seatEditControls={seatEditControls}
               readOnly={readOnly}
             />
@@ -496,6 +609,9 @@ export function SectionDetailView({
             canvasBackgroundColor={effectiveCanvasColor}
             seats={displayedSeats}
             selectedSeatId={selectedSeat?.id ?? null}
+            selectedSeatIds={selectedSeatIds}
+            anchorSeatId={anchorSeatId}
+            anchorSectionId={null}
             isPlacingSeats={isPlacingSeats}
             readOnly={readOnly}
             zoomLevel={zoomLevel}
@@ -507,6 +623,7 @@ export function SectionDetailView({
             onDeselect={onDeselect}
             onShapeDraw={onShapeDraw}
             onShapeOverlayClick={onShapeOverlayClick}
+            onMarkersInRect={onMarkersInRect}
             onWheel={onWheel}
             onPan={onPan}
             onZoomIn={onZoomIn}
@@ -515,6 +632,8 @@ export function SectionDetailView({
             selectedShapeTool={selectedShapeTool ?? null}
             shapeOverlays={shapeOverlays}
             selectedOverlayId={selectedOverlayId}
+            showGrid={showGrid}
+            gridSize={gridSize}
           />
         </div>
       </div>

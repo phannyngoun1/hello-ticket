@@ -16,6 +16,7 @@ interface SectionDTO {
     file_id?: string | null;
     image_url?: string | null;
     canvas_background_color?: string | null;
+    marker_fill_transparency?: number | null;
     shape?: string | null;
     is_active: boolean;
     created_at: string;
@@ -41,6 +42,7 @@ function transformSection(dto: SectionDTO): Section {
         file_id: dto.file_id ?? undefined,
         image_url: dto.image_url ?? undefined,
         canvas_background_color: dto.canvas_background_color ?? undefined,
+        marker_fill_transparency: dto.marker_fill_transparency ?? undefined,
         shape: shapeValue,
         is_active: dto.is_active,
         created_at: dto.created_at ? new Date(dto.created_at) : new Date(),

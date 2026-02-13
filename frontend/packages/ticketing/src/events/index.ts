@@ -16,4 +16,5 @@ export * from "./event-seat-list";
 export * from "./event-seat-list-view-only";
 export * from "./create-event-dialog";
 export * from "./edit-event-dialog";
+export * from "./change-event-status-dialog";
 

@@ -14,6 +14,7 @@ export interface Section {
     file_id?: string | null;
     image_url?: string | null;
     canvas_background_color?: string | null; // Canvas background when no section image (hex)
+    marker_fill_transparency?: number | null; // Marker fill transparency for seats in this section (0.0 to 1.0)
     shape?: string | null; // JSON string storing PlacementShape data
     is_active: boolean;
     seat_count?: number | null; // Number of seats attached to this section
@@ -28,6 +29,7 @@ export interface CreateSectionInput {
     y_coordinate?: number;
     file_id?: string;
     canvas_background_color?: string;
+    marker_fill_transparency?: number;
     shape?: string; // JSON string storing PlacementShape data
 }
 
@@ -37,6 +39,7 @@ export interface UpdateSectionInput {
     y_coordinate?: number;
     file_id?: string;
     canvas_background_color?: string;
+    marker_fill_transparency?: number;
     shape?: string; // JSON string storing PlacementShape data
 }
 
