@@ -235,19 +235,29 @@ export function EventInventoryViewer({
     img.src = displayImageUrl;
   }, [displayImageUrl]);
 
-  // Update container size
+  const hasImage = !!image && !!image.width && !!image.height;
+  const isCanvasReady =
+    !isLoading && (!displayImageUrl || (imageLoaded && hasImage));
+
+  // Update container size when it changes (resize, virtualization, flex layout)
+  // ResizeObserver catches all size changes; window resize alone misses flex/virtualization
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
     const updateSize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
         setContainerSize({ width: rect.width, height: rect.height });
       }
     };
 
     updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [isCanvasReady]);
 
   // Handle Space key for panning (same as seat designer)
   useEffect(() => {
@@ -518,8 +528,6 @@ export function EventInventoryViewer({
   const validWidth = containerSize.width > 0 ? containerSize.width : 800;
   const validHeight = containerSize.height > 0 ? containerSize.height : 600;
 
-  const hasImage = !!image && !!image.width && !!image.height;
-
   // Convert percentage coordinates to Konva stage coordinates
   // When no image (simple floor), use container as reference
   const percentageToStage = useCallback(
@@ -561,33 +569,6 @@ export function EventInventoryViewer({
     [image, hasImage, containerSize],
   );
 
-  // Show loading indicator only when image URL provided but not yet loaded
-  if (isLoading || (displayImageUrl && (!imageLoaded || !hasImage))) {
-    return (
-      <div
-        className={cn(
-          "relative border rounded-lg overflow-hidden bg-gray-100",
-          className,
-        )}
-        ref={containerRef}
-      >
-        <div
-          style={{
-            width: validWidth,
-            height: validHeight,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#f3f4f6",
-            borderRadius: "0.5rem",
-          }}
-        >
-          <div className="text-muted-foreground">Loading seats...</div>
-        </div>
-      </div>
-    );
-  }
-
   // Calculate display dimensions (no image = use full container for simple floor)
   const imageAspectRatio = hasImage
     ? image!.height / image!.width
@@ -618,7 +599,24 @@ export function EventInventoryViewer({
         "relative border rounded-lg overflow-hidden bg-gray-100",
         className,
       )}
+      style={{ minHeight: "600px", height: "70vh" }}
     >
+      {!isCanvasReady ? (
+        <div
+          style={{
+            width: validWidth,
+            height: validHeight,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#f3f4f6",
+            borderRadius: "0.5rem",
+          }}
+        >
+          <div className="text-muted-foreground">Loading seats...</div>
+        </div>
+      ) : (
+        <>
       <EventInventoryStage
         containerRef={containerRef}
         stageRef={stageRef}
@@ -730,6 +728,8 @@ export function EventInventoryViewer({
           />,
           document.body,
         )}
+        </>
+      )}
     </div>
   );
 }
