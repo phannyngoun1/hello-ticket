@@ -161,11 +161,11 @@ export function SectionMarker({
   };
   const isHover = isHovered || isHoveredState;
 
-  const baseOpacity = 0.5;
-  const hoverOpacity = 0.75;
+  const baseOpacity = markerFillTransparency;
+  const hoverOpacity = 0.3;
   const currentOpacity = isHover ? hoverOpacity : baseOpacity;
 
-  const strokeWidth = isHover ? 2.5 : 1.5;
+  const strokeWidth = isHover ? 1.5 : 1;
 
   useEffect(() => {
     const shapeGroup = shapeGroupRef.current;

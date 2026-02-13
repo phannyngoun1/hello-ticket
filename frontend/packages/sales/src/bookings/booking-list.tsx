@@ -175,13 +175,14 @@ export function BookingList({
     }),
     
     createTextColumn<Booking>({
-      accessorKey: "customer_id",
+      accessorKey: "customer_name",
       header: "Customer",
       cell: (info) => {
-        const value = info.getValue() as string | null | undefined;
+        const booking = info.row.original;
+        const name = booking.customer_name;
         return (
           <span className={cn("text-muted-foreground", density.textSize)}>
-            {value ?? "-"}
+            {name || "-"}
           </span>
         );
       },

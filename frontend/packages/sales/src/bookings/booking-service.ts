@@ -27,6 +27,7 @@ interface BookingDTO {
   tenant_id: string;
   booking_number: string;
   customer_id?: string;
+  customer_name?: string;
   salesperson_id?: string;
   event_id: string;
   status: string;
@@ -56,6 +57,7 @@ function transformBooking(dto: BookingDTO): Booking {
     tenant_id: dto.tenant_id,
     booking_number: dto.booking_number,
     customer_id: dto.customer_id,
+    customer_name: dto.customer_name,
     salesperson_id: dto.salesperson_id,
     event_id: dto.event_id,
     status: dto.status,

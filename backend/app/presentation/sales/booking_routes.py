@@ -1,5 +1,5 @@
 """FastAPI routes for Sales bookings"""
-from typing import Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
@@ -26,12 +26,37 @@ from app.presentation.core.dependencies.auth_dependencies import RequirePermissi
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
 from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationError
+from app.infrastructure.shared.database.connection import get_session_sync
+from sqlmodel import select
+from app.infrastructure.shared.database.models import CustomerModel
 
 # Permission constants for easy management and code generation
 MANAGE_PERMISSION = Permission.MANAGE_SALES_BOOKING
 VIEW_PERMISSION = Permission.VIEW_SALES_BOOKING
 
 router = APIRouter(prefix="/sales/bookings", tags=["sales"])
+
+
+def _resolve_customer_names(customer_ids: list[str]) -> Dict[str, str]:
+    """Look up customer names for a batch of customer IDs."""
+    if not customer_ids:
+        return {}
+    unique_ids = list(set(customer_ids))
+    name_map: Dict[str, str] = {}
+    try:
+        session = get_session_sync()
+        try:
+            stmt = select(CustomerModel.id, CustomerModel.name).where(
+                CustomerModel.id.in_(unique_ids)
+            )
+            rows = session.exec(stmt).all()
+            for row in rows:
+                name_map[row[0]] = row[1]
+        finally:
+            session.close()
+    except Exception:
+        pass  # Graceful fallback – names stay None
+    return name_map
 
 
 @router.post("", response_model=BookingResponse, status_code=201)
@@ -97,6 +122,14 @@ async def list_bookings(
         )
         presenter = BookingPresenter()
         items = presenter.from_domain_list(result.items)
+
+        # Enrich with customer names
+        customer_ids = [b.customer_id for b in items if b.customer_id]
+        name_map = _resolve_customer_names(customer_ids)
+        for item in items:
+            if item.customer_id and item.customer_id in name_map:
+                item.customer_name = name_map[item.customer_id]
+
         return BookingListResponse(
             items=items,
             skip=skip,
@@ -118,7 +151,11 @@ async def get_booking(
 
     try:
         booking = await mediator.query(GetBookingByIdQuery(booking_id=booking_id))
-        return BookingPresenter().from_domain(booking)
+        response = BookingPresenter().from_domain(booking)
+        if response.customer_id:
+            name_map = _resolve_customer_names([response.customer_id])
+            response.customer_name = name_map.get(response.customer_id)
+        return response
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 

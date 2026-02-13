@@ -324,7 +324,7 @@ function ShapeOverlayComponent({
   // Calculate opacity and stroke based on state
   // More transparent by default, brighter on hover/selection
   const baseOpacity = 0.25; // More transparent default
-  const hoverOpacity = 0.45; // Slightly more visible on hover
+  const hoverOpacity = 0.3; // Slightly more visible on hover
   const selectedOpacity = 0.55; // Most visible when selected
 
   const currentOpacity = isSelected
@@ -333,7 +333,7 @@ function ShapeOverlayComponent({
       ? hoverOpacity
       : baseOpacity;
 
-  const fillOpacity = isSelected ? 0.15 : isHovered ? 0.12 : 0.08; // Very transparent fill
+  const fillOpacity = isSelected ? 0.15 : isHovered ? 0.08 : 0.08; // Very transparent fill
 
   const strokeColor = isSelected
     ? "#1e40af"
@@ -341,7 +341,7 @@ function ShapeOverlayComponent({
       ? "#2563eb"
       : "#3b82f6";
 
-  const strokeWidth = isSelected ? 2 : isHovered ? 1.5 : 1;
+  const strokeWidth = isSelected ? 2 : isHovered ? 1 : 0.75;
 
   // Animate opacity on hover/selection change (skip when disabled for performance)
   useEffect(() => {
@@ -450,7 +450,7 @@ function ShapeOverlayComponent({
           verticalAlign="middle"
           backgroundFill={`rgba(255, 255, 255, ${isHovered || isSelected ? 0.98 : 0.9})`}
           backgroundStroke={strokeColor}
-          backgroundStrokeWidth={isHovered || isSelected ? 1 : 0.75}
+          backgroundStrokeWidth={isHovered || isSelected ? 0.75 : 0.5}
           cornerRadius={2}
           x={-20}
           y={-8}
@@ -592,7 +592,7 @@ function SeatMarkerComponent({
 
     shapeNode.to({
       stroke: hoverStrokeColor,
-      strokeWidth: isHovered ? 1 : 0.75, // More visible border
+      strokeWidth: isHovered ? 0.75 : 0.5, // Thinner stroke
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
@@ -1129,7 +1129,7 @@ function SectionMarkerComponent({
     const shapeNode = shapeRef.current;
     if (!shapeNode || !isPlacingSections || isSelected) return;
 
-    const hoverStrokeWidth = isHovered ? 1 : 0.75;
+    const hoverStrokeWidth = isHovered ? 0.75 : 0.5;
     shapeNode.to({
       stroke: colors.stroke,
       strokeWidth: hoverStrokeWidth,

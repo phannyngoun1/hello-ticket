@@ -28,6 +28,7 @@ export interface Booking {
     tenant_id: string;
     booking_number: string;
     customer_id?: string;
+    customer_name?: string;
     salesperson_id?: string;
     event_id: string;
     status: string; // 'pending' | 'reserved' | 'confirmed' | 'paid' | 'cancelled' | 'refunded'

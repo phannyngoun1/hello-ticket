@@ -61,6 +61,7 @@ class BookingResponse(BaseResponse):
     """Booking response model"""
     booking_number: str
     customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
     salesperson_id: Optional[str] = None
     event_id: str
     status: str

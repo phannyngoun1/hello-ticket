@@ -148,7 +148,7 @@ export function SeatMarker({
   const isAvailableForSelection = eventSeat?.status === "available";
 
   const baseOpacity = markerFillTransparency;
-  const hoverOpacity = 1;
+  const hoverOpacity = 0.3;
   const selectedOpacity = 1;
 
   const currentOpacity = isSelected
@@ -157,7 +157,7 @@ export function SeatMarker({
       ? hoverOpacity
       : baseOpacity;
 
-  const strokeWidth = isSelected ? 4 : isHover ? 3 : 2;
+  const strokeWidth = isSelected ? 3 : isHover ? 1.5 : 1;
 
   useEffect(() => {
     const shapeGroup = shapeGroupRef.current;
