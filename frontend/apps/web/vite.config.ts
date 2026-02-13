@@ -47,6 +47,7 @@ export default defineConfig(({ mode }) => ({
                 drop_debugger: true, // Remove debugger statements
             },
         } : undefined,
+        chunkSizeWarningLimit: 2500,
     },
 }))
 
