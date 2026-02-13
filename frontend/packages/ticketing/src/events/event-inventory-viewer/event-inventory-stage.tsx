@@ -139,12 +139,9 @@ export function EventInventoryStage({
         section.y_coordinate,
       );
 
-      const sectionTransparency =
-        section.marker_fill_transparency ??
-        layout.marker_fill_transparency ??
-        0.5;
-      const effectiveSectionTransparency =
-        sectionTransparency > 0 ? sectionTransparency : 0.5;
+      // Section-level overview: always use layout's marker_fill_transparency
+      // 0 = fully transparent, 1 = fully opaque
+      const effectiveSectionTransparency = layout.marker_fill_transparency ?? 0.5;
 
       return (
         <SectionMarker
@@ -210,12 +207,14 @@ export function EventInventoryStage({
   }
 
   function getEffectiveTransparencyForSeat(seat: Seat): number {
-    const section = sections.find((s) => s.id === seat.section_id);
-    const raw =
-      section?.marker_fill_transparency ??
-      layout.marker_fill_transparency ??
-      1.0;
-    return raw > 0 ? raw : 1.0;
+    // 0 = fully transparent, 1 = fully opaque
+    // Section detail drill-down: use the section's marker_fill_transparency
+    if (selectedSectionId) {
+      const section = sections.find((s) => s.id === seat.section_id);
+      return section?.marker_fill_transparency ?? layout.marker_fill_transparency ?? 1.0;
+    }
+    // Seat-level view (no section drill-down): use layout's marker_fill_transparency
+    return layout.marker_fill_transparency ?? 1.0;
   }
 
   function renderSeatMarkers() {
