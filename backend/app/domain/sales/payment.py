@@ -22,7 +22,7 @@ class Payment(AggregateRoot):
         payment_method: PaymentMethodEnum,
         payment_id: Optional[str] = None,
         payment_code: Optional[str] = None,
-        status: PaymentStatusEnum = PaymentStatusEnum.COMPLETED,
+        status: PaymentStatusEnum = PaymentStatusEnum.PAID,
         currency: str = "USD",
         transaction_reference: Optional[str] = None,
         notes: Optional[str] = None,
@@ -54,7 +54,7 @@ class Payment(AggregateRoot):
         """Mark payment as completed."""
         if self.status == PaymentStatusEnum.VOID:
             raise BusinessRuleError("Cannot mark void payment as completed")
-        self.status = PaymentStatusEnum.COMPLETED
+        self.status = PaymentStatusEnum.PAID
         self.processed_at = datetime.now(timezone.utc)
         self._touch()
     
@@ -62,7 +62,7 @@ class Payment(AggregateRoot):
         """Void payment. Can only void completed payments."""
         if self.status == PaymentStatusEnum.VOID:
             raise BusinessRuleError("Payment is already void")
-        if self.status != PaymentStatusEnum.COMPLETED:
+        if self.status != PaymentStatusEnum.PAID:
             raise BusinessRuleError(f"Only completed payments can be voided (current: {self.status})")
         self.status = PaymentStatusEnum.VOID
         self._touch()

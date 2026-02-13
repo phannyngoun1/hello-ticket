@@ -227,7 +227,7 @@ class PaymentModel(SQLModel, table=True):
     )
     status: str = Field(
         sa_column=Column(SAEnum(PaymentStatusEnum, native_enum=False), index=True),
-        default=PaymentStatusEnum.COMPLETED
+        default=PaymentStatusEnum.PAID
     )
     
     # Transaction reference

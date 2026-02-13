@@ -359,8 +359,9 @@ class VehicleStatusEnum(str, Enum):
 # ============================================================================
 
 class PaymentStatusEnum(str, Enum):
-    """Payment processing status - only COMPLETED and VOID are supported"""
+    """Payment processing status. PAID aligns with BookingPaymentStatusEnum.PAID for consistency."""
     COMPLETED = "completed"
+    PAID = "completed"  # Alias for COMPLETED - use when aligning with booking.payment_status
     VOID = "void"
 
 

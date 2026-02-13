@@ -88,8 +88,8 @@ class PaymentCommandHandler:
         # Calculate total paid so far (only completed payments count)
         existing_payments = await self._payment_repository.get_by_booking(tenant_id, command.booking_id)
         total_paid = sum(
-            p.amount for p in existing_payments 
-            if p.status == PaymentStatusEnum.COMPLETED
+            p.amount for p in existing_payments
+            if p.status == PaymentStatusEnum.PAID
         )
         
         # Check if payment exceeds booking total
@@ -102,7 +102,7 @@ class PaymentCommandHandler:
         # Generate payment code
         payment_code = await self._generate_payment_code()
         
-        # Create payment (defaults to COMPLETED status)
+        # Create payment (defaults to PAID status - aligns with BookingPaymentStatusEnum.PAID)
         payment = Payment(
             tenant_id=tenant_id,
             booking_id=command.booking_id,
@@ -112,7 +112,7 @@ class PaymentCommandHandler:
             currency=command.currency,
             transaction_reference=command.transaction_reference,
             notes=command.notes,
-            status=PaymentStatusEnum.COMPLETED,
+            status=PaymentStatusEnum.PAID,
         )
         
         # Save payment
@@ -230,8 +230,8 @@ class PaymentCommandHandler:
         if booking:
             existing_payments = await self._payment_repository.get_by_booking(tenant_id, payment.booking_id)
             total_paid = sum(
-                p.amount for p in existing_payments 
-                if p.status == PaymentStatusEnum.COMPLETED
+                p.amount for p in existing_payments
+                if p.status == PaymentStatusEnum.PAID
             )
             
             # Update due balance
