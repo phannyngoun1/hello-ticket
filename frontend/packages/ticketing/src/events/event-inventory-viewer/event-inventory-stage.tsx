@@ -139,6 +139,13 @@ export function EventInventoryStage({
         section.y_coordinate,
       );
 
+      const sectionTransparency =
+        section.marker_fill_transparency ??
+        layout.marker_fill_transparency ??
+        0.5;
+      const effectiveSectionTransparency =
+        sectionTransparency > 0 ? sectionTransparency : 0.5;
+
       return (
         <SectionMarker
           key={section.id}
@@ -152,9 +159,7 @@ export function EventInventoryStage({
           statusCounts={stats.statusCounts}
           imageWidth={displayedWidth}
           imageHeight={displayedHeight}
-          markerFillTransparency={
-            layout.marker_fill_transparency ?? 0.5
-          }
+          markerFillTransparency={effectiveSectionTransparency}
           onMouseEnter={(e) => {
             setHoveredSectionId(section.id);
             setHoveredSectionData({
@@ -206,11 +211,11 @@ export function EventInventoryStage({
 
   function getEffectiveTransparencyForSeat(seat: Seat): number {
     const section = sections.find((s) => s.id === seat.section_id);
-    return (
+    const raw =
       section?.marker_fill_transparency ??
       layout.marker_fill_transparency ??
-      1.0
-    );
+      1.0;
+    return raw > 0 ? raw : 1.0;
   }
 
   function renderSeatMarkers() {

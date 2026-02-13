@@ -269,14 +269,20 @@ export function SeatMarker({
         {renderShape(
           parsedShape,
           {
-            fill: shapeCodeColors.fill,
-            stroke: shapeCodeColors.stroke,
+            fill: shapeCodeColors.fill ?? fillColor,
+            stroke: shapeCodeColors.stroke ?? strokeColor,
           },
           imageWidth,
           imageHeight,
           strokeWidth,
           1,
-          { hoverColors, isHover },
+          {
+            hoverColors: {
+              fill: shapeCodeColors.fill ?? hoverColors.fill,
+              stroke: shapeCodeColors.stroke ?? hoverColors.stroke,
+            },
+            isHover,
+          },
         )}
       </Group>
 
