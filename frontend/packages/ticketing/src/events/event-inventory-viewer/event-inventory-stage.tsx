@@ -153,9 +153,7 @@ export function EventInventoryStage({
           imageWidth={displayedWidth}
           imageHeight={displayedHeight}
           markerFillTransparency={
-            section.marker_fill_transparency ??
-            layout.marker_fill_transparency ??
-            0.5
+            layout.marker_fill_transparency ?? 0.5
           }
           onMouseEnter={(e) => {
             setHoveredSectionId(section.id);
