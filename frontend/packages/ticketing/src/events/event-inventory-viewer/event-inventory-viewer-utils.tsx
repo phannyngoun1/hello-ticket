@@ -73,6 +73,36 @@ export function getSeatStatusColor(status: EventSeatStatus): {
   }
 }
 
+/**
+ * Get heat map fill color for section-level layout.
+ * Interpolates from dark blue (0% sold) to grey (100% sold).
+ * @param soldRatio 0-1, where 0 = no seats sold, 1 = all seats sold
+ * @param transparency 0-1, where 1 = fully opaque, 0 = fully transparent
+ */
+export function getSectionHeatMapFill(
+  soldRatio: number,
+  transparency: number = 0.5,
+): string {
+  const clampedRatio = Math.max(0, Math.min(1, soldRatio));
+  const alpha = Math.max(0, Math.min(1, transparency));
+
+  // Dark blue (0% sold) -> Grey (100% sold)
+  const darkBlue = { r: 30, g: 58, b: 138 }; // #1e3a8a
+  const grey = { r: 107, g: 114, b: 128 }; // #6b7280
+
+  const r = Math.round(
+    darkBlue.r + (grey.r - darkBlue.r) * clampedRatio,
+  );
+  const g = Math.round(
+    darkBlue.g + (grey.g - darkBlue.g) * clampedRatio,
+  );
+  const b = Math.round(
+    darkBlue.b + (grey.b - darkBlue.b) * clampedRatio,
+  );
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function getSeatStatusTransparency(status: EventSeatStatus): number {
   const statusUpper = String(status).toUpperCase().trim();
 
