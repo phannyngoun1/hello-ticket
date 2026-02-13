@@ -152,7 +152,11 @@ export function EventInventoryStage({
           statusCounts={stats.statusCounts}
           imageWidth={displayedWidth}
           imageHeight={displayedHeight}
-          markerFillTransparency={layout.marker_fill_transparency ?? 0.5}
+          markerFillTransparency={
+            section.marker_fill_transparency ??
+            layout.marker_fill_transparency ??
+            0.5
+          }
           onMouseEnter={(e) => {
             setHoveredSectionId(section.id);
             setHoveredSectionData({
@@ -202,6 +206,15 @@ export function EventInventoryStage({
     return undefined;
   }
 
+  function getEffectiveTransparencyForSeat(seat: Seat): number {
+    const section = sections.find((s) => s.id === seat.section_id);
+    return (
+      section?.marker_fill_transparency ??
+      layout.marker_fill_transparency ??
+      1.0
+    );
+  }
+
   function renderSeatMarkers() {
     return displayedSeats.map((seat) => {
       if (!seat.x_coordinate || !seat.y_coordinate) return null;
@@ -222,7 +235,7 @@ export function EventInventoryStage({
           isSelected={isSelected}
           imageWidth={displayedWidth}
           imageHeight={displayedHeight}
-          markerFillTransparency={layout.marker_fill_transparency}
+          markerFillTransparency={getEffectiveTransparencyForSeat(seat)}
           onMouseEnter={(e) => {
             setHoveredSeatId(seat.id);
             setHoveredSeatData({ seat, eventSeat });

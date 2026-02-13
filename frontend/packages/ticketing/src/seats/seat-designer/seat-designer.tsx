@@ -555,7 +555,7 @@ export function SeatDesigner({
     };
   }, [dimensionsReady]);
 
-  // Load existing sections when initialSections provided
+  // Load existing sections when initialSections provided (from layoutWithSeats)
   useEffect(() => {
     if (initialSections && designMode === "section-level") {
       const markers: SectionMarker[] = initialSections.map((section) => {
@@ -582,15 +582,27 @@ export function SeatDesigner({
             );
           }
         }
+        const sectionWithExtras = section as {
+          canvas_background_color?: string | null;
+          marker_fill_transparency?: number | null;
+        };
         return {
           id: section.id,
           name: section.name,
           x: section.x_coordinate || 50,
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
+          // Preserve section's own values - undefined means inherit from layout
           canvasBackgroundColor:
-            (section as { canvas_background_color?: string | null })
-              .canvas_background_color ?? "#e5e7eb",
+            sectionWithExtras.canvas_background_color !== undefined &&
+            sectionWithExtras.canvas_background_color !== null
+              ? sectionWithExtras.canvas_background_color
+              : undefined,
+          markerFillTransparency:
+            sectionWithExtras.marker_fill_transparency !== undefined &&
+            sectionWithExtras.marker_fill_transparency !== null
+              ? sectionWithExtras.marker_fill_transparency
+              : undefined,
           shape,
           isNew: false,
         };
@@ -3889,6 +3901,7 @@ export function SeatDesigner({
               y_coordinate: marker.y,
               image_url: marker.imageUrl,
               canvas_background_color: marker.canvasBackgroundColor,
+              marker_fill_transparency: marker.markerFillTransparency ?? undefined,
               shape: marker.shape ? JSON.stringify(marker.shape) : undefined,
             }) as unknown as import("../../layouts/types").Section,
         )}

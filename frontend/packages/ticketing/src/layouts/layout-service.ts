@@ -174,6 +174,8 @@ export class LayoutService {
           y_coordinate?: number | null;
           file_id?: string | null;
           image_url?: string | null;
+          canvas_background_color?: string | null;
+          marker_fill_transparency?: number | null;
           shape?: string | null;
           is_active: boolean;
           created_at: string;
@@ -211,6 +213,8 @@ export class LayoutService {
           y_coordinate: section.y_coordinate ?? undefined,
           file_id: section.file_id ?? undefined,
           image_url: section.image_url ?? undefined,
+          canvas_background_color: section.canvas_background_color ?? undefined,
+          marker_fill_transparency: section.marker_fill_transparency ?? undefined,
           shape: section.shape ?? undefined,
           is_active: section.is_active,
           created_at: section.created_at ? new Date(section.created_at) : new Date(),
