@@ -6,7 +6,7 @@
  * Shared by seat-level main view and section-level drill-down.
  */
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Konva from "konva";
 import { LayoutCanvas } from "../layout-canvas";
 import { ImageUploadCard, ZoomControls } from "./index";
@@ -125,6 +125,42 @@ export function SeatDesignCanvas({
 }: SeatDesignCanvasProps) {
   const [dragOverActive, setDragOverActive] = useState(false);
 
+  // Compute the virtual canvas dimensions matching layout-canvas logic so drop
+  // coordinates convert correctly.  No-image uses a fixed 4:3 AR letterboxed
+  // into the locked canvas size.
+  const NO_IMAGE_ASPECT_RATIO = 3 / 4; // 0.75 (4:3)
+  const noImageInitialSizeRef = useRef<{ w: number; h: number } | null>(null);
+  const hasImage = !!imageUrl;
+  if (!hasImage && containerDimensions.width > 0 && containerDimensions.height > 0) {
+    if (!noImageInitialSizeRef.current) {
+      noImageInitialSizeRef.current = {
+        w: containerDimensions.width,
+        h: containerDimensions.height,
+      };
+    }
+  } else if (hasImage) {
+    noImageInitialSizeRef.current = null;
+  }
+  const dropCanvasW = hasImage
+    ? (containerDimensions.width > 0 ? containerDimensions.width : 800)
+    : (noImageInitialSizeRef.current?.w ?? (containerDimensions.width > 0 ? containerDimensions.width : 800));
+  const dropCanvasH = hasImage
+    ? (containerDimensions.height > 0 ? containerDimensions.height : 600)
+    : (noImageInitialSizeRef.current?.h ?? (containerDimensions.height > 0 ? containerDimensions.height : 600));
+  // Letterbox the content AR into the locked canvas
+  const dropContentAR = hasImage ? (dropCanvasH / dropCanvasW) : NO_IMAGE_ASPECT_RATIO;
+  const dropCanvasAR = dropCanvasH / dropCanvasW;
+  let dropDisplayedW: number, dropDisplayedH: number;
+  if (dropContentAR > dropCanvasAR) {
+    dropDisplayedH = dropCanvasH;
+    dropDisplayedW = dropDisplayedH / dropContentAR;
+  } else {
+    dropDisplayedW = dropCanvasW;
+    dropDisplayedH = dropDisplayedW * dropContentAR;
+  }
+  const dropOffsetX = (dropCanvasW - dropDisplayedW) / 2;
+  const dropOffsetY = (dropCanvasH - dropDisplayedH) / 2;
+
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
@@ -162,11 +198,12 @@ export function SeatDesignCanvas({
       const dropX = e.clientX - rect.left;
       const dropY = e.clientY - rect.top;
 
-      // Convert to percentage coordinates (0-100) accounting for zoom and pan
-      const percentageX =
-        ((dropX - panOffset.x) / zoomLevel / containerDimensions.width) * 100;
-      const percentageY =
-        ((dropY - panOffset.y) / zoomLevel / containerDimensions.height) * 100;
+      // Convert to percentage coordinates (0-100) accounting for zoom, pan, and
+      // the letterboxed virtual canvas (matches layout-canvas coordinate system).
+      const layerX = (dropX - panOffset.x) / zoomLevel;
+      const layerY = (dropY - panOffset.y) / zoomLevel;
+      const percentageX = ((layerX - dropOffsetX) / dropDisplayedW) * 100;
+      const percentageY = ((layerY - dropOffsetY) / dropDisplayedH) * 100;
 
       // Create default shape based on type
       const defaultShapes: Record<PlacementShapeType, PlacementShape> = {

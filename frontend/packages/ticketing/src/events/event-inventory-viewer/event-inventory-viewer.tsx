@@ -239,8 +239,24 @@ export function EventInventoryViewer({
   const isCanvasReady =
     !isLoading && (!displayImageUrl || (imageLoaded && hasImage));
 
-  // Update container size when it changes (resize, virtualization, flex layout)
-  // ResizeObserver catches all size changes; window resize alone misses flex/virtualization
+  // Track whether the container has been measured at least once.
+  // For no-image mode we lock the canvas size after the first measurement
+  // so it behaves like the image case (fixed size, markers don't shift).
+  const initialSizeRef = useRef<{ width: number; height: number } | null>(null);
+  const prevLayoutIdRef = useRef<string | null>(null);
+
+  // Reset locked size when layout changes so new layout gets fresh measurement
+  if (prevLayoutIdRef.current !== layout.id) {
+    prevLayoutIdRef.current = layout.id;
+    initialSizeRef.current = null;
+  }
+
+  // Update container size when it changes (resize, virtualization, flex layout).
+  // WITH IMAGE: always track the container so the image letterboxes into whatever
+  //   space is available (responsive).
+  // WITHOUT IMAGE: lock the Stage to the first measured size so the canvas stays
+  //   fixed and markers don't move — just like the image case where the image
+  //   provides a fixed reference frame.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -248,6 +264,10 @@ export function EventInventoryViewer({
     const updateSize = () => {
       const rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.height > 0) {
+        // Always capture the first measurement
+        if (!initialSizeRef.current) {
+          initialSizeRef.current = { width: rect.width, height: rect.height };
+        }
         setContainerSize({ width: rect.width, height: rect.height });
       }
     };
@@ -524,70 +544,62 @@ export function EventInventoryViewer({
     [],
   );
 
-  // Ensure container dimensions are valid (same as layout designer)
-  const validWidth = containerSize.width > 0 ? containerSize.width : 800;
-  const validHeight = containerSize.height > 0 ? containerSize.height : 600;
+  // Determine the canvas size.
+  //
+  // WITH IMAGE: use the live container size (responsive). The image letterboxes
+  //   into whatever space is available, and markers scale with the image.
+  // WITHOUT IMAGE: lock to the first measured size so the canvas stays fixed.
+  //   This makes markers not move on resize — the same as the image case where
+  //   the image itself provides a fixed reference frame.
+  const canvasWidth = hasImage
+    ? (containerSize.width > 0 ? containerSize.width : 800)
+    : (initialSizeRef.current?.width ?? (containerSize.width > 0 ? containerSize.width : 800));
+  const canvasHeight = hasImage
+    ? (containerSize.height > 0 ? containerSize.height : 600)
+    : (initialSizeRef.current?.height ?? (containerSize.height > 0 ? containerSize.height : 600));
 
-  // Convert percentage coordinates to Konva stage coordinates
-  // When no image (simple floor), use container as reference
-  const percentageToStage = useCallback(
-    (xPercent: number, yPercent: number) => {
-      const currentValidWidth =
-        containerSize.width > 0 ? containerSize.width : 800;
-      const currentValidHeight =
-        containerSize.height > 0 ? containerSize.height : 600;
+  const validWidth = canvasWidth;
+  const validHeight = canvasHeight;
 
-      if (!hasImage) {
-        return {
-          x: (xPercent / 100) * currentValidWidth,
-          y: (yPercent / 100) * currentValidHeight,
-        };
-      }
+  // Calculate display dimensions.
+  //
+  // WITH IMAGE: the image's intrinsic aspect ratio is used to letterbox it
+  //   into the canvas.
+  // WITHOUT IMAGE: a fixed 4:3 aspect ratio (matching the 800×600 default)
+  //   is used so shapes and positions look identical across all views
+  //   (designer, viewer, preview dialog) regardless of container size.
+  //   The virtual canvas is letterboxed into the fixed canvas size.
+  const NO_IMAGE_ASPECT_RATIO = 3 / 4; // height/width = 600/800 = 0.75 (4:3)
 
-      const imageAspectRatio = image!.height / image!.width;
-      const containerAspectRatio = currentValidHeight / currentValidWidth;
-
-      let displayedWidth: number;
-      let displayedHeight: number;
-
-      if (imageAspectRatio > containerAspectRatio) {
-        displayedHeight = currentValidHeight;
-        displayedWidth = displayedHeight / imageAspectRatio;
-      } else {
-        displayedWidth = currentValidWidth;
-        displayedHeight = displayedWidth * imageAspectRatio;
-      }
-
-      const imageX = (currentValidWidth - displayedWidth) / 2;
-      const imageY = (currentValidHeight - displayedHeight) / 2;
-
-      const x = imageX + (xPercent / 100) * displayedWidth;
-      const y = imageY + (yPercent / 100) * displayedHeight;
-
-      return { x, y };
-    },
-    [image, hasImage, containerSize],
-  );
-
-  // Calculate display dimensions (no image = use full container for simple floor)
-  const imageAspectRatio = hasImage
+  const contentAspectRatio = hasImage
     ? image!.height / image!.width
-    : validHeight / validWidth;
-  const containerAspectRatio = validHeight / validWidth;
+    : NO_IMAGE_ASPECT_RATIO;
+  const canvasAspectRatio = validHeight / validWidth;
 
   let displayedWidth: number;
   let displayedHeight: number;
+  let imageX: number;
+  let imageY: number;
 
-  if (hasImage && imageAspectRatio > containerAspectRatio) {
+  if (contentAspectRatio > canvasAspectRatio) {
     displayedHeight = validHeight;
-    displayedWidth = displayedHeight / imageAspectRatio;
+    displayedWidth = displayedHeight / contentAspectRatio;
   } else {
     displayedWidth = validWidth;
-    displayedHeight = hasImage ? validWidth * imageAspectRatio : validHeight;
+    displayedHeight = displayedWidth * contentAspectRatio;
   }
+  imageX = (validWidth - displayedWidth) / 2;
+  imageY = (validHeight - displayedHeight) / 2;
 
-  const imageX = hasImage ? (validWidth - displayedWidth) / 2 : 0;
-  const imageY = hasImage ? (validHeight - displayedHeight) / 2 : 0;
+  // Convert percentage coordinates to stage position.
+  const percentageToStage = useCallback(
+    (xPercent: number, yPercent: number) => {
+      const x = imageX + (xPercent / 100) * displayedWidth;
+      const y = imageY + (yPercent / 100) * displayedHeight;
+      return { x, y };
+    },
+    [imageX, imageY, displayedWidth, displayedHeight],
+  );
 
   // Calculate center point for zoom/pan transforms
   const centerX = validWidth / 2;
@@ -596,7 +608,8 @@ export function EventInventoryViewer({
   return (
     <div
       className={cn(
-        "relative border rounded-lg overflow-hidden bg-gray-100",
+        "relative border rounded-lg bg-gray-100",
+        hasImage ? "overflow-hidden" : "overflow-auto",
         className,
       )}
       style={{ minHeight: "600px", height: "70vh" }}

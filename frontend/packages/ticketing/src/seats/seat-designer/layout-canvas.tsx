@@ -1491,6 +1491,8 @@ export function LayoutCanvas({
     y: number;
   } | null>(null);
   const previewShapeRef = useRef<Konva.Group>(null);
+  // Lock canvas size for no-image mode so markers stay fixed on resize
+  const noImageInitialSizeRef = useRef<{ w: number; h: number } | null>(null);
 
   // Drag layer optimization: track which item is being dragged
   const [draggedSeatId, setDraggedSeatId] = useState<string | null>(null);
@@ -1659,32 +1661,57 @@ export function LayoutCanvas({
     };
   };
 
-  // Compute display dimensions for coordinate conversion (no-image = use container)
+  // Compute display dimensions for coordinate conversion.
+  //
+  // WITH IMAGE: use live container size (responsive); the image letterboxes.
+  // WITHOUT IMAGE: lock the canvas size from the first measurement so the
+  //   Stage stays fixed and markers don't shift on resize — just like the
+  //   image case where the image provides a fixed reference frame.
   const hasImage = !!image && !!image.width && !!image.height;
-  const coordValidWidth = containerWidth > 0 ? containerWidth : 800;
-  const coordValidHeight = containerHeight > 0 ? containerHeight : 600;
-  const imageAspectRatio = hasImage
+
+  // Lock size for no-image; reset when an image appears
+  if (!hasImage && containerWidth > 0 && containerHeight > 0) {
+    if (!noImageInitialSizeRef.current) {
+      noImageInitialSizeRef.current = { w: containerWidth, h: containerHeight };
+    }
+  } else if (hasImage) {
+    noImageInitialSizeRef.current = null;
+  }
+
+  const coordValidWidth = hasImage
+    ? (containerWidth > 0 ? containerWidth : 800)
+    : (noImageInitialSizeRef.current?.w ?? (containerWidth > 0 ? containerWidth : 800));
+  const coordValidHeight = hasImage
+    ? (containerHeight > 0 ? containerHeight : 600)
+    : (noImageInitialSizeRef.current?.h ?? (containerHeight > 0 ? containerHeight : 600));
+
+  // Use a fixed 4:3 AR for no-image (matching the 800×600 default) so that
+  // shapes and positions look identical across designer, viewer, and preview
+  // regardless of container size.  The virtual canvas is letterboxed.
+  const NO_IMAGE_ASPECT_RATIO = 3 / 4; // height/width = 0.75 (4:3)
+
+  const contentAspectRatio = hasImage
     ? image!.height / image!.width
-    : coordValidHeight / coordValidWidth;
-  const containerAspectRatio = coordValidHeight / coordValidWidth;
-  const coordDisplayedWidth =
-    hasImage && imageAspectRatio > containerAspectRatio
-      ? coordValidHeight / imageAspectRatio
-      : coordValidWidth;
-  const coordDisplayedHeight =
-    hasImage && imageAspectRatio > containerAspectRatio
-      ? coordValidHeight
-      : coordValidWidth * imageAspectRatio;
-  const coordImageX = hasImage
-    ? (coordValidWidth - coordDisplayedWidth) / 2
-    : 0;
-  const coordImageY = hasImage
-    ? (coordValidHeight - coordDisplayedHeight) / 2
-    : 0;
+    : NO_IMAGE_ASPECT_RATIO;
+  const canvasAspectRatio = coordValidHeight / coordValidWidth;
+
+  let coordDisplayedWidth: number;
+  let coordDisplayedHeight: number;
+
+  if (contentAspectRatio > canvasAspectRatio) {
+    coordDisplayedHeight = coordValidHeight;
+    coordDisplayedWidth = coordDisplayedHeight / contentAspectRatio;
+  } else {
+    coordDisplayedWidth = coordValidWidth;
+    coordDisplayedHeight = coordDisplayedWidth * contentAspectRatio;
+  }
+
+  const coordImageX = (coordValidWidth - coordDisplayedWidth) / 2;
+  const coordImageY = (coordValidHeight - coordDisplayedHeight) / 2;
 
   // Layer transform params (must match layerTransform below)
-  const centerX = (containerWidth > 0 ? containerWidth : 800) / 2;
-  const centerY = (containerHeight > 0 ? containerHeight : 600) / 2;
+  const centerX = coordValidWidth / 2;
+  const centerY = coordValidHeight / 2;
 
   // Convert percentage to layer coordinates - use SAME coordinate system as background/image
   // so they scale and position together when canvas resizes or zooms.
@@ -1805,9 +1832,9 @@ export function LayoutCanvas({
     [layerToPercentage],
   );
 
-  // Ensure container dimensions are valid
-  const validWidth = containerWidth > 0 ? containerWidth : 800;
-  const validHeight = containerHeight > 0 ? containerHeight : 600;
+  // Use the same locked dimensions for the Stage size
+  const validWidth = coordValidWidth;
+  const validHeight = coordValidHeight;
 
   // Compute display dimensions (no-image = use full container for simple floor mode)
   // centerX/centerY already defined above for coordinate conversion
@@ -2384,12 +2411,12 @@ export function LayoutCanvas({
                 percentage < 100;
                 percentage += gridSize
               ) {
-                const x = (percentage / 100) * containerWidth;
+                const x = (percentage / 100) * validWidth;
                 gridLines.push({
                   x1: x,
                   y1: 0,
                   x2: x,
-                  y2: containerHeight,
+                  y2: validHeight,
                 });
               }
 
@@ -2399,11 +2426,11 @@ export function LayoutCanvas({
                 percentage < 100;
                 percentage += gridSize
               ) {
-                const y = (percentage / 100) * containerHeight;
+                const y = (percentage / 100) * validHeight;
                 gridLines.push({
                   x1: 0,
                   y1: y,
-                  x2: containerWidth,
+                  x2: validWidth,
                   y2: y,
                 });
               }

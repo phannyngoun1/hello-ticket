@@ -407,6 +407,8 @@ export function SeatDesigner({
   });
   const [dimensionsReady, setDimensionsReady] = useState(false);
   const [dragOverActive, setDragOverActive] = useState(false);
+  // Lock canvas size for no-image mode (matches layout-canvas) so drop coords are correct
+  const noImageDropSizeRef = useRef<{ w: number; h: number } | null>(null);
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(5); // 5% grid spacing
   const [showGrid, setShowGrid] = useState(false); // Show grid lines on canvas
@@ -1769,11 +1771,35 @@ export function SeatDesigner({
       const dropX = e.clientX - rect.left;
       const dropY = e.clientY - rect.top;
 
-      // Convert to percentage coordinates (0-100) accounting for zoom and pan
-      const percentageX =
-        ((dropX - panOffset.x) / zoomLevel / containerDimensions.width) * 100;
-      const percentageY =
-        ((dropY - panOffset.y) / zoomLevel / containerDimensions.height) * 100;
+      // Compute letterboxed virtual canvas to match layout-canvas coordinate system.
+      // No-image uses a fixed 4:3 AR so coordinates are consistent everywhere.
+      const NO_IMAGE_AR = 3 / 4; // 0.75 (4:3)
+      if (!mainImageUrl && containerDimensions.width > 0 && containerDimensions.height > 0) {
+        if (!noImageDropSizeRef.current) {
+          noImageDropSizeRef.current = { w: containerDimensions.width, h: containerDimensions.height };
+        }
+      } else if (mainImageUrl) {
+        noImageDropSizeRef.current = null;
+      }
+      const cW = mainImageUrl
+        ? (containerDimensions.width > 0 ? containerDimensions.width : 800)
+        : (noImageDropSizeRef.current?.w ?? (containerDimensions.width > 0 ? containerDimensions.width : 800));
+      const cH = mainImageUrl
+        ? (containerDimensions.height > 0 ? containerDimensions.height : 600)
+        : (noImageDropSizeRef.current?.h ?? (containerDimensions.height > 0 ? containerDimensions.height : 600));
+      const contentAR = mainImageUrl ? (cH / cW) : NO_IMAGE_AR;
+      const canvasAR = cH / cW;
+      let dW: number, dH: number;
+      if (contentAR > canvasAR) { dH = cH; dW = dH / contentAR; }
+      else { dW = cW; dH = dW * contentAR; }
+      const oX = (cW - dW) / 2;
+      const oY = (cH - dH) / 2;
+
+      // Convert to percentage of the letterboxed virtual canvas
+      const layerX = (dropX - panOffset.x) / zoomLevel;
+      const layerY = (dropY - panOffset.y) / zoomLevel;
+      const percentageX = ((layerX - oX) / dW) * 100;
+      const percentageY = ((layerY - oY) / dH) * 100;
 
       // Create default shape based on selected shape type
       const defaultShapes: Record<PlacementShapeType, PlacementShape> = {
