@@ -85,6 +85,13 @@ export interface Event {
     id: string;
     name: string;
   };
+  venue?: {
+    id?: string;
+    name?: string;
+    city?: string;
+    state?: string;
+    state_province?: string;
+  };
   venue_name?: string;
   venue_code?: string;
   statistics?: EventSeatStatistics;
