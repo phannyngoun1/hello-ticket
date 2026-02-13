@@ -700,12 +700,6 @@ export function EventInventoryViewer({
           <EventInventoryLegend className="absolute top-4 left-4" />
         )}
 
-      {showLegend &&
-        layout.design_mode === "section-level" &&
-        selectedSectionId && (
-          <EventInventoryLegend className="absolute bottom-4 left-4" />
-        )}
-
       {layout.design_mode === "section-level" &&
         !selectedSectionId &&
         hoveredSectionId &&
