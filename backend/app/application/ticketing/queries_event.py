@@ -28,4 +28,6 @@ class SearchEventsQuery:
     status: Optional[List[str]] = None
     skip: int = 0
     limit: int = 50
+    sort_by: str = "start_dt"
+    sort_order: str = "asc"
 

@@ -332,5 +332,7 @@ class EventQueryHandler(BaseApplicationHandler):
             status=query.status,
             skip=query.skip,
             limit=query.limit,
+            sort_by=query.sort_by or "start_dt",
+            sort_order=query.sort_order or "asc",
         )
 

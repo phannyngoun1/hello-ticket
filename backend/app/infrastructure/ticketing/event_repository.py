@@ -63,6 +63,8 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
         include_deleted: bool = False,
         skip: int = 0,
         limit: int = 50,
+        sort_by: str = "start_dt",
+        sort_order: str = "asc",
     ) -> EventSearchResult:
         """Search events by term and status"""
         with self._session_factory() as session:
@@ -115,6 +117,12 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
             all_models = session.exec(count_statement).all()
             total = len(all_models)
 
+            # Order by start_dt (asc or desc); only allow known sort fields
+            if sort_by == "start_dt":
+                order_col = EventModel.start_dt.desc() if (sort_order and sort_order.lower() == "desc") else EventModel.start_dt.asc()
+            else:
+                order_col = EventModel.start_dt.asc()
+
             # Get paginated results with JOINs
             statement = (
                 select(EventModel, VenueModel.name, VenueModel.code)
@@ -122,6 +130,7 @@ class SQLEventRepository(BaseSQLRepository[Event, EventModel], EventRepository):
                 .join(VenueModel, EventModel.venue_id == VenueModel.id)
                 .join(OrganizerModel, ShowModel.organizer_id == OrganizerModel.id)
                 .where(and_(*conditions))
+                .order_by(order_col)
                 .offset(skip)
                 .limit(limit)
             )

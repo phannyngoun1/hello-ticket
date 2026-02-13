@@ -67,10 +67,12 @@ async def list_events(
     status: Optional[List[str]] = Query(None, description="Filter by event status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str = Query("start_dt", description="Sort field (e.g. start_dt)"),
+    sort_order: str = Query("asc", description="Sort order (asc or desc)"),
     current_user: AuthenticatedUser = Depends(RequireAnyPermission([VIEW_PERMISSION, MANAGE_PERMISSION])),
     mediator: Mediator = Depends(get_mediator_dependency),
 ):
-    """Search events with optional filters"""
+    """Search events with optional filters, sorted by start date ascending by default."""
 
     try:
         result = await mediator.query(
@@ -82,21 +84,10 @@ async def list_events(
                 status=status,
                 skip=skip,
                 limit=limit,
+                sort_by=sort_by,
+                sort_order=sort_order,
             )
         )
-
-
-        print("result *****************************")
-
-        print(status)
-        print(layout_id)
-        print(show_id)
-        print(search)
-        print(is_active)
-        print(skip)
-        print(limit)
-        print(result)
-        print("*****************************")
         presenter = EventPresenter()
         items = presenter.from_domain_list(result.items)
         return EventListResponse(
