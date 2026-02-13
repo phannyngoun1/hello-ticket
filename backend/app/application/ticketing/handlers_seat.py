@@ -218,12 +218,12 @@ class SeatCommandHandler:
             layout_id=command.layout_id,
         )
         
-        # Extract IDs from frontend seats list (all seats with id, regardless of delete flag)
-        # These are seats that the frontend knows about
+        # Extract IDs from frontend seats list - EXCLUDE seats with delete: true
+        # Seats with delete: true should be removed, so treat them as "not in frontend list"
         frontend_seat_ids = {
             seat_data.get("id")
             for seat_data in command.seats
-            if seat_data.get("id")
+            if seat_data.get("id") and not seat_data.get("delete")
         }
         
         # Delete seats that exist in database but are not in the frontend list
@@ -245,6 +245,10 @@ class SeatCommandHandler:
         # Process all seats from frontend - determine operation type by presence of 'id'
         # Deletion is handled above by comparing existing seats with frontend list
         for seat_data in command.seats:
+            # Skip explicit delete operations - already handled above
+            if seat_data.get("delete"):
+                continue
+
             seat_id = seat_data.get("id")
             
             # Update operation: has id

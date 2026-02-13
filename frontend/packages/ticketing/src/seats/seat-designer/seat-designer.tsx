@@ -583,6 +583,7 @@ export function SeatDesigner({
           }
         }
         const sectionWithExtras = section as {
+          file_id?: string | null;
           canvas_background_color?: string | null;
           marker_fill_transparency?: number | null;
         };
@@ -592,6 +593,7 @@ export function SeatDesigner({
           x: section.x_coordinate || 50,
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
+          file_id: sectionWithExtras.file_id ?? undefined,
           // Preserve section's own values - undefined means inherit from layout
           canvasBackgroundColor:
             sectionWithExtras.canvas_background_color !== undefined &&
@@ -644,12 +646,14 @@ export function SeatDesigner({
             console.error("Failed to parse section shape:", e);
           }
         }
+        const sectionWithFileId = section as { file_id?: string | null };
         return {
           id: section.id,
           name: section.name,
           x: section.x_coordinate || 50,
           y: section.y_coordinate || 50,
           imageUrl: section.image_url || undefined,
+          file_id: sectionWithFileId.file_id ?? undefined,
           // Preserve section's own values - use undefined if not set (will inherit from layout)
           // Only use defaults if section explicitly has no value AND we need a fallback for display
           canvasBackgroundColor: section.canvas_background_color !== undefined && section.canvas_background_color !== null
@@ -857,13 +861,13 @@ export function SeatDesigner({
         // Update local state immediately for UI feedback
         setSectionMarkers((prev) =>
           prev.map((s) =>
-            s.id === sectionId ? { ...s, imageUrl: response.url } : s,
+            s.id === sectionId ? { ...s, imageUrl: response.url, file_id: response.id } : s,
           ),
         );
         // Update viewingSection if it's the same section being viewed
         if (viewingSection?.id === sectionId) {
           setViewingSection((prev) =>
-            prev ? { ...prev, imageUrl: response.url } : null,
+            prev ? { ...prev, imageUrl: response.url, file_id: response.id } : null,
           );
         }
 
@@ -902,6 +906,7 @@ export function SeatDesigner({
                       ...s,
                       id: created.id,
                       imageUrl: response.url,
+                      file_id: response.id,
                       isNew: false,
                     }
                   : s,
@@ -914,6 +919,7 @@ export function SeatDesigner({
                       ...prev,
                       id: created.id,
                       imageUrl: response.url,
+                      file_id: response.id,
                       isNew: false,
                     }
                   : null,
@@ -926,6 +932,7 @@ export function SeatDesigner({
                       ...prev,
                       id: created.id,
                       imageUrl: response.url,
+                      file_id: response.id,
                       isNew: false,
                     }
                   : null,
@@ -974,19 +981,20 @@ export function SeatDesigner({
     (sectionId: string) => {
       recordSnapshot(); // Record state before change for undo
       // Update local state only - will be saved when Save button is clicked
+      // Set file_id: null so bulk save sends empty string to clear on server
       setSectionMarkers((prev) =>
         prev.map((s) =>
-          s.id === sectionId ? { ...s, imageUrl: undefined } : s,
+          s.id === sectionId ? { ...s, imageUrl: undefined, file_id: null } : s,
         ),
       );
       if (selectedSectionMarker?.id === sectionId) {
         setSelectedSectionMarker((prev) =>
-          prev ? { ...prev, imageUrl: undefined } : null,
+          prev ? { ...prev, imageUrl: undefined, file_id: null } : null,
         );
       }
       if (viewingSection?.id === sectionId) {
         setViewingSection((prev) =>
-          prev ? { ...prev, imageUrl: undefined } : null,
+          prev ? { ...prev, imageUrl: undefined, file_id: null } : null,
         );
       }
     },
@@ -2582,8 +2590,14 @@ export function SeatDesigner({
             sectionsPayload.push(sectionPayload);
           } else {
             // Update: has id field
-            // Find original section from query result to preserve file_id
-            const originalSection = effectiveSectionsData?.find((s) => s.id === section.id);
+            // Use section.file_id from local state: null = user removed (send ""), string = keep/set, undefined = preserve from original
+            const originalSection = effectiveSectionsData?.find((s) => s.id === section.id) as { file_id?: string | null } | undefined;
+            const fileIdValue =
+              section.file_id === null
+                ? "" // User removed background - send empty to clear on server
+                : section.file_id !== undefined
+                  ? section.file_id
+                  : (originalSection?.file_id ?? undefined);
             const sectionPayload: Record<string, any> = {
               id: section.id,
               name: section.name,
@@ -2592,8 +2606,7 @@ export function SeatDesigner({
               canvas_background_color: section.canvasBackgroundColor || undefined,
               marker_fill_transparency: finalTransparency, // Always include, always a number
               shape: section.shape ? JSON.stringify(section.shape) : undefined,
-              // Preserve file_id from original section (from query result)
-              file_id: originalSection?.file_id || undefined,
+              file_id: fileIdValue,
             };
             sectionsPayload.push(sectionPayload);
           }

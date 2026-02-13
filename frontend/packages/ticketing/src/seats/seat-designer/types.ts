@@ -86,6 +86,8 @@ export interface SectionMarker {
   x: number;
   y: number;
   imageUrl?: string;
+  /** File ID for section floor plan. null = user explicitly removed; undefined = not modified. */
+  file_id?: string | null;
   /** Canvas background color when no section image (hex). Stored per section. */
   canvasBackgroundColor?: string;
   /** Marker fill transparency for seats in this section (0.0 to 1.0). Differentiates from main layout. */
