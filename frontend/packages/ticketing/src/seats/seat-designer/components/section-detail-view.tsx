@@ -25,6 +25,7 @@ import {
   Minimize,
   Maximize,
   Palette,
+  Layers,
   BrushCleaning,
   Undo2,
   Redo2,
@@ -289,26 +290,23 @@ export function SectionDetailView({
       ),
       onMarkerFillTransparencyChange && (
         <DropdownMenuItem onSelect={(e) => e.preventDefault()} asChild>
-          <label className="flex cursor-pointer flex-col items-start gap-3 px-2 py-1.5">
-            <div className="flex items-center gap-2 w-full">
-              <span className="text-xs text-muted-foreground flex-shrink-0">
-                Marker Fill Transparency:
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={(markerFillTransparency || 1.0) * 100}
-                onChange={(e) =>
-                  onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
-                }
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                title="Adjust marker fill transparency for this section"
-              />
-              <span className="text-xs text-muted-foreground w-8 text-right">
-                {Math.round((markerFillTransparency || 1.0) * 100)}%
-              </span>
-            </div>
+          <label className="flex cursor-pointer items-center gap-2 px-2 py-1.5">
+            <Layers className="h-4 w-4 shrink-0" />
+            <span className="flex-1">Transparency</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={(markerFillTransparency ?? 1.0) * 100}
+              onChange={(e) =>
+                onMarkerFillTransparencyChange(parseInt(e.target.value) / 100)
+              }
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer min-w-0"
+              title="Adjust marker fill transparency for this section"
+            />
+            <span className="text-xs text-muted-foreground w-8 text-right shrink-0">
+              {Math.round((markerFillTransparency ?? 1.0) * 100)}%
+            </span>
           </label>
         </DropdownMenuItem>
       ),
@@ -325,7 +323,11 @@ export function SectionDetailView({
         </>
       ),
     ];
-  }, [onClearSectionSeats, markerFillTransparency, onMarkerFillTransparencyChange]);
+  }, [
+    onClearSectionSeats,
+    markerFillTransparency,
+    onMarkerFillTransparencyChange,
+  ]);
   return (
     <Card className={className}>
       <div className={innerClassName}>
@@ -356,7 +358,9 @@ export function SectionDetailView({
                 className="h-7 w-7 p-0"
                 title="Refresh data from server"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </Button>
             )}
             {!isFullscreen && (
