@@ -120,19 +120,20 @@ export class AuditService {
     sortBy?: string,
     sortOrder?: string
   ): AuditLogParams {
-    return {
+    const params: AuditLogParams = {
       entity_type: entityType,
       entity_id: entityId,
       limit,
       skip,
-      event_types: filters.eventTypes,
-      severities: filters.severities,
-      user_email: filters.userEmail,
-      date_from: filters.dateFrom,
-      date_to: filters.dateTo,
-      search: filters.search,
-      sort_by: sortBy,
-      sort_order: sortOrder,
     };
+    if (filters.eventTypes !== undefined) params.event_types = filters.eventTypes;
+    if (filters.severities !== undefined) params.severities = filters.severities;
+    if (filters.userEmail !== undefined) params.user_email = filters.userEmail;
+    if (filters.dateFrom !== undefined) params.date_from = filters.dateFrom;
+    if (filters.dateTo !== undefined) params.date_to = filters.dateTo;
+    if (filters.search !== undefined) params.search = filters.search;
+    if (sortBy !== undefined) params.sort_by = sortBy;
+    if (sortOrder !== undefined) params.sort_order = sortOrder;
+    return params;
   }
 }

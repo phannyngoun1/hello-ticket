@@ -165,16 +165,17 @@ export function useAuditLogs(
 
         const currentSkip = reset ? 0 : skipRef.current;
 
+        const options: Parameters<typeof service.getEntityAuditLogs>[2] = {
+          limit: limitRef.current,
+          skip: currentSkip,
+          filters,
+        };
+        if (sortByRef.current !== undefined) options.sortBy = sortByRef.current;
+        if (sortOrderRef.current !== undefined) options.sortOrder = sortOrderRef.current;
         const response: AuditLogResponse = await service.getEntityAuditLogs(
           entityTypeRef.current,
           entityIdRef.current,
-          {
-            limit: limitRef.current,
-            skip: currentSkip,
-            filters,
-            sortBy: sortByRef.current,
-            sortOrder: sortOrderRef.current,
-          }
+          options
         );
 
         setLogs((prev) => (reset ? response.items : [...prev, ...response.items]));

@@ -1,0 +1,267 @@
+import { API_CONFIG, STORAGE_KEYS } from '@truths/config';
+import { storage } from '@truths/utils';
+// Global session handler - will be set by SessionProvider
+let globalSessionExpiredHandler = null;
+// Global 403 error handler - will be set by SessionProvider or other UI components
+let globalForbiddenErrorHandler = null;
+// Flag to prevent infinite refresh loops
+let isRefreshing = false;
+let failedQueue = [];
+// Grace period after login to prevent session dialog from appearing immediately
+// This gives the authentication state time to settle after login
+const LOGIN_GRACE_PERIOD_MS = 3000; // 3 seconds
+let loginGracePeriodUntil = null;
+// Flag to suppress session dialog during logout
+// When user explicitly logs out, we want to redirect to login page, not show dialog
+let isLoggingOut = false;
+export function setLoginGracePeriod() {
+    // Set grace period for 3 seconds after login
+    loginGracePeriodUntil = Date.now() + LOGIN_GRACE_PERIOD_MS;
+}
+export function setLoggingOut(isLoggingOutFlag) {
+    // Set flag to suppress session dialog during logout
+    isLoggingOut = isLoggingOutFlag;
+}
+function isWithinLoginGracePeriod() {
+    if (!loginGracePeriodUntil) {
+        return false;
+    }
+    const now = Date.now();
+    if (now > loginGracePeriodUntil) {
+        // Grace period expired, clear it
+        loginGracePeriodUntil = null;
+        return false;
+    }
+    return true;
+}
+export function setGlobalSessionExpiredHandler(handler) {
+    globalSessionExpiredHandler = handler;
+}
+export function setGlobalForbiddenErrorHandler(handler) {
+    globalForbiddenErrorHandler = handler;
+}
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        }
+        else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+export class ApiError extends Error {
+    constructor(status, statusText, message) {
+        super(ApiError.parseErrorMessage(message || statusText));
+        Object.defineProperty(this, "status", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "statusText", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        this.name = 'ApiError';
+        this.status = status;
+        this.statusText = statusText;
+        // Ensure properties are enumerable for better debugging
+        Object.defineProperty(this, 'status', {
+            enumerable: true,
+            value: status,
+            writable: false
+        });
+        Object.defineProperty(this, 'statusText', {
+            enumerable: true,
+            value: statusText,
+            writable: false
+        });
+    }
+    /**
+     * Parse error messages from various API formats to user-friendly strings
+     */
+    static parseErrorMessage(rawMessage) {
+        try {
+            // Try to parse as JSON
+            const errorData = JSON.parse(rawMessage);
+            // Handle common error formats (FastAPI uses detail as string or array of { msg, loc, ... })
+            if (errorData.detail !== undefined && errorData.detail !== null) {
+                const d = errorData.detail;
+                if (typeof d === 'string')
+                    return d;
+                if (Array.isArray(d)) {
+                    const parts = d.map((item) => {
+                        if (item && typeof item === 'object' && 'msg' in item)
+                            return String(item.msg);
+                        return String(item);
+                    });
+                    return parts.filter(Boolean).join(' ') || 'Validation error';
+                }
+            }
+            if (errorData.message) {
+                return errorData.message;
+            }
+            if (errorData.error?.message) {
+                return errorData.error.message;
+            }
+            if (errorData.error?.detail) {
+                return errorData.error.detail;
+            }
+            // If JSON parsing succeeded but no known field, return stringified
+            return rawMessage;
+        }
+        catch {
+            // Not JSON, return as-is
+            return rawMessage;
+        }
+    }
+    // Helper method to check if error is authentication related
+    isAuthError() {
+        return this.status === 401 || this.status === 403;
+    }
+    // Helper method to check if error is a permission error (not auth)
+    isPermissionError() {
+        if (this.status !== 403)
+            return false;
+        // Check if error message indicates a permission error (not authentication)
+        // Message is already parsed, so just check the string
+        return this.message.includes("Permission") && this.message.includes("required");
+    }
+    // Better toString for logging
+    toString() {
+        return `${this.name} [${this.status} ${this.statusText}]: ${this.message}`;
+    }
+}
+let authServiceRefresh = null;
+let authServiceLogoutSync = null;
+export function registerAuthService(refresh, logoutSync) {
+    authServiceRefresh = refresh;
+    authServiceLogoutSync = logoutSync;
+}
+export async function apiClient(endpoint, options = {}) {
+    const { requiresAuth = false, ...fetchOptions } = options;
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+    const headers = {
+        ...fetchOptions.headers,
+    };
+    if (!(fetchOptions.body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+    }
+    if (requiresAuth) {
+        const token = storage.get(STORAGE_KEYS.AUTH_TOKEN);
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    const response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        // Suppress console errors for specific endpoints that may not exist
+        // (browser will still log fetch errors, but we can prevent our own logging)
+        const silentEndpoints = ['/api/v1/sessions/config'];
+        const isSilent = silentEndpoints.some(ep => endpoint.includes(ep));
+        const error = new ApiError(response.status, response.statusText, errorText);
+        // Add a flag to indicate if this error should be silent
+        if (isSilent && (response.status === 404 || response.status === 401)) {
+            error._silent = true;
+        }
+        // Try to refresh token on 401 error (if not already refreshing)
+        if (error.status === 401 && requiresAuth && !isRefreshing && authServiceRefresh) {
+            // Check if we have a refresh token
+            const refreshToken = storage.get(STORAGE_KEYS.REFRESH_TOKEN);
+            if (refreshToken) {
+                if (isRefreshing) {
+                    // If already refreshing, queue this request
+                    return new Promise((resolve, reject) => {
+                        failedQueue.push({ resolve, reject });
+                    }).then(() => {
+                        // Retry the original request with new token
+                        return apiClient(endpoint, options);
+                    });
+                }
+                isRefreshing = true;
+                try {
+                    // These will be automatically removed in production builds (see vite.config.ts)
+                    // For production logging, consider using logger from @truths/utils
+                    const newTokens = await authServiceRefresh();
+                    // Process any queued requests
+                    processQueue(null, newTokens.access_token);
+                    isRefreshing = false;
+                    // Retry the original request with new token
+                    return apiClient(endpoint, options);
+                }
+                catch (refreshError) {
+                    // Note: Consider using logger.error() for production error tracking
+                    processQueue(refreshError, null);
+                    isRefreshing = false;
+                    // Refresh failed, clear tokens immediately (sync) and show login dialog
+                    // But only if we're not in the login grace period or logging out
+                    if (authServiceLogoutSync) {
+                        authServiceLogoutSync();
+                    }
+                    if (globalSessionExpiredHandler && !isWithinLoginGracePeriod() && !isLoggingOut) {
+                        globalSessionExpiredHandler();
+                    }
+                    throw error;
+                }
+            }
+            else {
+                // No refresh token, show login dialog
+                // But only if we're not in the login grace period or logging out
+                if (globalSessionExpiredHandler && !isWithinLoginGracePeriod() && !isLoggingOut) {
+                    globalSessionExpiredHandler();
+                }
+            }
+        }
+        // For 401 errors (authentication/session issues), show session expired dialog
+        // 403 errors are authorization/permission issues, not session expiration
+        // Session expiration returns 401, not 403
+        // But skip showing dialog during login grace period or logout to prevent dialog reappearing
+        if (error.status === 401 && globalSessionExpiredHandler && !isWithinLoginGracePeriod() && !isLoggingOut) {
+            globalSessionExpiredHandler();
+        }
+        // For 403 errors (authorization/permission issues), show error message
+        // Skip permission errors as they are handled differently by the calling code
+        // Skip during login grace period or logout
+        if (error.status === 403 && !error.isPermissionError() && globalForbiddenErrorHandler && !isWithinLoginGracePeriod() && !isLoggingOut) {
+            globalForbiddenErrorHandler(error.message);
+        }
+        throw error;
+    }
+    // Handle 204 No Content responses (empty body)
+    if (response.status === 204) {
+        return undefined;
+    }
+    return response.json();
+}
+export const api = {
+    get: (endpoint, options) => apiClient(endpoint, { ...options, method: 'GET' }),
+    post: (endpoint, data, options) => apiClient(endpoint, {
+        ...options,
+        method: 'POST',
+        body: JSON.stringify(data),
+    }),
+    patch: (endpoint, data, options) => apiClient(endpoint, {
+        ...options,
+        method: 'PATCH',
+        body: JSON.stringify(data),
+    }),
+    put: (endpoint, data, options) => apiClient(endpoint, {
+        ...options,
+        method: 'PUT',
+        body: JSON.stringify(data),
+    }),
+    delete: (endpoint, options) => apiClient(endpoint, { ...options, method: 'DELETE' }),
+    postForm: (endpoint, formData, options) => apiClient(endpoint, {
+        ...options,
+        method: 'POST',
+        body: formData,
+    }),
+};
