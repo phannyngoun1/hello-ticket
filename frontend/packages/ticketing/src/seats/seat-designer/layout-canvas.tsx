@@ -754,14 +754,12 @@ export function LayoutCanvas({
     offsetY: centerY,
   };
 
-  const staticSeats = displaySeats.filter(
-    (s) => s.id !== selectedSeatId && s.id !== draggedSeatId,
-  );
+  const staticSeats = displaySeats.filter((s) => s.id !== selectedSeatId);
   const selectedSeat = displaySeats.find((s) => s.id === selectedSeatId);
   const draggedSeat = displaySeats.find((s) => s.id === draggedSeatId);
 
   const staticSections = displaySections.filter(
-    (s) => s.id !== selectedSectionId && s.id !== draggedSectionId,
+    (s) => s.id !== selectedSectionId,
   );
   const selectedSection = displaySections.find(
     (s) => s.id === selectedSectionId,
@@ -1561,7 +1559,11 @@ export function LayoutCanvas({
       {/* Static Layer: Non-selected, non-dragged - redraws only on selection/drag-end */}
       <Layer {...layerTransform} listening={true}>
         {staticSeats.map((seat) => {
-          const { x, y } = percentageToStage(seat.x, seat.y);
+          const pos =
+            seat.id === draggedSeatId && dragPosition
+              ? dragPosition
+              : { x: seat.x, y: seat.y };
+          const { x, y } = percentageToStage(pos.x, pos.y);
           const colors = getSeatMarkerColors(seat);
           return (
             <MemoizedSeatMarkerCanvas
@@ -1582,6 +1584,7 @@ export function LayoutCanvas({
               selectedShapeTool={selectedShapeTool}
               onSeatClick={onSeatClick}
               onSeatDragStart={handleSeatDragStart}
+              onSeatDragMove={handleSeatDragMove}
               onSeatDragEnd={handleSeatDragEnd}
               onShapeTransform={onSeatShapeTransform}
               layerToPercentage={layerToPercentage}
@@ -1596,7 +1599,11 @@ export function LayoutCanvas({
         })}
         {venueType === "large" &&
           staticSections.map((section) => {
-            const { x, y } = percentageToStage(section.x, section.y);
+            const pos =
+              section.id === draggedSectionId && dragPosition
+                ? dragPosition
+                : { x: section.x, y: section.y };
+            const { x, y } = percentageToStage(pos.x, pos.y);
             return (
               <MemoizedSectionMarkerCanvas
                 key={section.id}
@@ -1616,6 +1623,7 @@ export function LayoutCanvas({
                 onSectionClick={onSectionClick}
                 onSectionDoubleClick={onSectionDoubleClick}
                 onSectionDragEnd={handleSectionDragEnd}
+                onSectionDragMove={handleSectionDragMove}
                 onSectionDragStart={handleSectionDragStart}
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
