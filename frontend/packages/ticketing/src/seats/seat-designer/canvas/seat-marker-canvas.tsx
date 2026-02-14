@@ -123,6 +123,7 @@ export function SeatMarkerCanvas({
         };
       }
     } else if (!useLowDetail) {
+      group.clearCache();
       group.cache();
     }
     // Include x,y so Transformer updates when marker position changes (e.g. on container resize)

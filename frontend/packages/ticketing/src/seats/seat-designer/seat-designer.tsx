@@ -295,19 +295,19 @@ function applyScaleToShape(
   return updated;
 }
 
-/** Compute scale factor from old shape to new shape */
+/** Compute scale factor from old shape to new shape. Clamped to prevent extreme resizing. */
 function getShapeScale(
   oldShape: PlacementShape | undefined,
   newShape: PlacementShape,
   defaults: { radius?: number; width?: number; height?: number },
 ): number {
   const type = newShape.type ?? PlacementShapeType.CIRCLE;
+  let scale = 1;
   if (type === PlacementShapeType.CIRCLE) {
     const oldR = oldShape?.radius ?? defaults.radius ?? 0.8;
     const newR = newShape.radius ?? oldR;
-    return oldR > 0 ? newR / oldR : 1;
-  }
-  if (
+    scale = oldR > 0 ? newR / oldR : 1;
+  } else if (
     type === PlacementShapeType.RECTANGLE ||
     type === PlacementShapeType.ELLIPSE
   ) {
@@ -317,22 +317,20 @@ function getShapeScale(
     const newH = newShape.height ?? oldH;
     const scaleX = oldW > 0 ? newW / oldW : 1;
     const scaleY = oldH > 0 ? newH / oldH : 1;
-    return (scaleX + scaleY) / 2;
-  }
-  if (
-    (type === PlacementShapeType.POLYGON || type === PlacementShapeType.FREEFORM) &&
+    scale = Math.sqrt(scaleX * scaleY);
+  } else if (
+    (type === PlacementShapeType.POLYGON ||
+      type === PlacementShapeType.FREEFORM) &&
     oldShape?.points?.length &&
     newShape.points?.length
   ) {
-    const oldMag = Math.sqrt(
-      oldShape.points.reduce((s, p) => s + p * p, 0),
-    ) || 1;
-    const newMag = Math.sqrt(
-      newShape.points.reduce((s, p) => s + p * p, 0),
-    ) || 1;
-    return newMag / oldMag;
+    const oldMag =
+      Math.sqrt(oldShape.points.reduce((s, p) => s + p * p, 0)) || 1;
+    const newMag =
+      Math.sqrt(newShape.points.reduce((s, p) => s + p * p, 0)) || 1;
+    scale = newMag / oldMag;
   }
-  return 1;
+  return Math.max(0.25, Math.min(4, scale));
 }
 
 export function SeatDesigner({

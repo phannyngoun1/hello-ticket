@@ -133,6 +133,7 @@ export function SectionMarkerCanvas({
         };
       }
     } else if (!useLowDetail && section.shape) {
+      group.clearCache();
       group.cache();
     }
     // Include x,y so Transformer updates when marker position changes (e.g. on container resize)
