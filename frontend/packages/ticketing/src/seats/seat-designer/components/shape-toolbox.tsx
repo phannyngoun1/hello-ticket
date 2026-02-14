@@ -188,6 +188,7 @@ export interface ShapeToolboxProps {
       | "bottom"
       | "space-between-h"
       | "space-between-v"
+      | "space-between-both"
       | "same-width"
       | "same-height",
   ) => void;
@@ -624,6 +625,18 @@ export function ShapeToolbox({
                 title="Space between vertically"
               >
                 <AlignVerticalSpaceBetween className="h-3.5 w-3.5 transition-transform duration-200" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onAlign?.("space-between-both")}
+                className={cn(
+                  "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                  "hover:bg-primary hover:border-primary hover:text-white hover:shadow-md hover:scale-110 active:scale-95",
+                  "bg-background border-border",
+                )}
+                title="Spread (space between horizontally and vertically)"
+              >
+                <LayoutTemplate className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
               <button
                 type="button"

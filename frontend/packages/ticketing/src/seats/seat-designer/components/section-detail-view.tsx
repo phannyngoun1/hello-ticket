@@ -123,6 +123,7 @@ export interface SectionDetailViewProps {
       | "bottom"
       | "space-between-h"
       | "space-between-v"
+      | "space-between-both"
       | "same-width"
       | "same-height",
   ) => void;

@@ -149,6 +149,7 @@ type AlignmentType =
   | "bottom"
   | "space-between-h"
   | "space-between-v"
+  | "space-between-both"
   | "same-width"
   | "same-height";
 
@@ -172,31 +173,57 @@ function applyAlignment<T extends { id: string; x: number; y: number; shape?: Pl
   if (
     alignment === "space-between-h" ||
     alignment === "space-between-v" ||
+    alignment === "space-between-both" ||
     alignment === "same-width" ||
     alignment === "same-height"
   ) {
-    if (alignment === "space-between-h") {
+    const runSpaceBetweenH = () => {
       const sorted = markers
         .map((m, i) => ({ marker: m, bounds: bounds[i], idx: i }))
         .sort((a, b) => a.bounds.centerX - b.bounds.centerX);
       const n = sorted.length;
-      const leftCenter = sorted[0].bounds.centerX;
-      const rightCenter = sorted[n - 1].bounds.centerX;
+      const leftmostLeft = sorted[0].bounds.left;
+      const rightmostRight = sorted[n - 1].bounds.right;
+      const totalSpan = rightmostRight - leftmostLeft;
+      const widths = sorted.map((s) => s.bounds.right - s.bounds.left);
+      const totalWidth = widths.reduce((sum, w) => sum + w, 0);
+      const totalGap = Math.max(0, totalSpan - totalWidth);
+      const gap = n > 1 ? totalGap / (n - 1) : 0;
+      let runningLeft = leftmostLeft;
       sorted.forEach(({ marker }, i) => {
-        const newCenterX = n > 1 ? leftCenter + ((rightCenter - leftCenter) * i) / (n - 1) : leftCenter;
-        updates.set(marker.id, { x: newCenterX } as Partial<T>);
+        const w = widths[i];
+        const newCenterX = runningLeft + w / 2;
+        updates.set(marker.id, { ...updates.get(marker.id), x: newCenterX } as Partial<T>);
+        runningLeft += w + gap;
       });
-    } else if (alignment === "space-between-v") {
+    };
+    const runSpaceBetweenV = () => {
       const sorted = markers
         .map((m, i) => ({ marker: m, bounds: bounds[i], idx: i }))
         .sort((a, b) => a.bounds.centerY - b.bounds.centerY);
       const n = sorted.length;
-      const topCenter = sorted[0].bounds.centerY;
-      const bottomCenter = sorted[n - 1].bounds.centerY;
+      const topmostTop = sorted[0].bounds.top;
+      const bottommostBottom = sorted[n - 1].bounds.bottom;
+      const totalSpan = bottommostBottom - topmostTop;
+      const heights = sorted.map((s) => s.bounds.bottom - s.bounds.top);
+      const totalHeight = heights.reduce((sum, h) => sum + h, 0);
+      const totalGap = Math.max(0, totalSpan - totalHeight);
+      const gap = n > 1 ? totalGap / (n - 1) : 0;
+      let runningTop = topmostTop;
       sorted.forEach(({ marker }, i) => {
-        const newCenterY = n > 1 ? topCenter + ((bottomCenter - topCenter) * i) / (n - 1) : topCenter;
-        updates.set(marker.id, { y: newCenterY } as Partial<T>);
+        const h = heights[i];
+        const newCenterY = runningTop + h / 2;
+        updates.set(marker.id, { ...updates.get(marker.id), y: newCenterY } as Partial<T>);
+        runningTop += h + gap;
       });
+    };
+    if (alignment === "space-between-h") {
+      runSpaceBetweenH();
+    } else if (alignment === "space-between-v") {
+      runSpaceBetweenV();
+    } else if (alignment === "space-between-both") {
+      runSpaceBetweenH();
+      runSpaceBetweenV();
     } else if (alignment === "same-width") {
       let maxW = 0;
       markers.forEach((m, i) => {
