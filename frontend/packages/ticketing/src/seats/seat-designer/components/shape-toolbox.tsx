@@ -174,6 +174,7 @@ export interface ShapeToolboxProps {
   seatEditControls?: React.ReactNode;
   className?: string;
   readOnly?: boolean;
+  level?: "seat" | "section";
 }
 
 export function ShapeToolbox({
@@ -196,6 +197,7 @@ export function ShapeToolbox({
   seatEditControls,
   className,
   readOnly = false,
+  level = "seat",
 }: ShapeToolboxProps) {
   const totalSelected = selectedSeatCount + selectedSectionCount;
   const showAlignment = !readOnly && onAlign && totalSelected >= 2;
@@ -213,6 +215,29 @@ export function ShapeToolbox({
     const newShapes = [...quickAccessShapes];
     newShapes[index] = shapeType;
     setQuickAccessShapes(newShapes);
+  };
+
+  // State to control popover open status
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  const handleShapeDoubleClick = (newShapeType: PlacementShapeType) => {
+    // If the currently selected shape is in the toolbar, replace it.
+    // Otherwise replace the last slot.
+    const selectedIndex = selectedShapeType 
+      ? quickAccessShapes.indexOf(selectedShapeType) 
+      : -1;
+    
+    const targetIndex = selectedIndex !== -1 ? selectedIndex : 3;
+    
+    const newShapes = [...quickAccessShapes];
+    newShapes[targetIndex] = newShapeType;
+    setQuickAccessShapes(newShapes);
+    
+    // Select the new shape
+    onShapeTypeSelect?.(newShapeType);
+    
+    // Close popover
+    setIsPopoverOpen(false);
   };
 
   // Get marker name and edit/delete handlers
@@ -367,7 +392,7 @@ export function ShapeToolbox({
               })}
 
                {/* More Shapes Popover */}
-               <Popover>
+               <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                   <PopoverTrigger asChild>
                     <button
                         type="button"
@@ -388,10 +413,16 @@ export function ShapeToolbox({
                     <div className="space-y-2">
                         <Label className="text-xs font-semibold text-muted-foreground">Available Shapes</Label>
                         <div className="grid grid-cols-4 gap-2">
-                            {ALL_SHAPES.map((shape) => {
+                            {ALL_SHAPES.filter(s => {
+                              // Filter out shapes already in quick access
+                              if (quickAccessShapes.includes(s.type)) return false;
+                              
+                              // Filter out shapes based on level
+                              if (level === "section" && s.type === PlacementShapeType.SOFA) return false;
+                              
+                              return true;
+                            }).map((shape) => {
                                 const Icon = shape.icon;
-                                // Check if already in toolbar to maybe highlight or disable? 
-                                // Actually, allowing duplicates is fine, user can arrange as they want.
                                 return (
                                     <button
                                         key={shape.type}
@@ -412,12 +443,13 @@ export function ShapeToolbox({
                                             // For now just select it.
                                             onShapeTypeSelect?.(shape.type);
                                         }}
+                                        onDoubleClick={() => handleShapeDoubleClick(shape.type)}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-2 rounded border transition-all gap-1 h-16",
                                             "hover:bg-accent hover:border-accent-foreground cursor-grab active:cursor-grabbing",
                                             selectedShapeType === shape.type && "bg-accent border-accent-foreground"
                                         )}
-                                        title={`Select or Drag to Toolbox to Pin`}
+                                        title={`${shape.label} - Double click to add to toolbar`}
                                     >
                                         <Icon className="h-5 w-5" />
                                         <span className="text-[10px] truncate w-full text-center">{shape.label}</span>
@@ -426,7 +458,7 @@ export function ShapeToolbox({
                             })}
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-2">
-                            Drag a shape to the toolbar to pin it.
+                            Drag to toolbar or double-click to pin.
                         </p>
                     </div>
                   </PopoverContent>

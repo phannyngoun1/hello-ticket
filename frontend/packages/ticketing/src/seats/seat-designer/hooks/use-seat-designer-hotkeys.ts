@@ -7,6 +7,9 @@ interface UseSeatDesignerHotkeysProps {
     onDelete?: () => void;
     onEscape?: () => void;
     onSelectAll?: () => void;
+    onCopy?: () => void;
+    onPaste?: () => void;
+    onArrowMove?: (direction: 'up' | 'down' | 'left' | 'right', precise: boolean) => void;
 }
 
 export function useSeatDesignerHotkeys({
@@ -16,6 +19,9 @@ export function useSeatDesignerHotkeys({
     onDelete,
     onEscape,
     onSelectAll,
+    onCopy,
+    onPaste,
+    onArrowMove,
 }: UseSeatDesignerHotkeysProps) {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -66,11 +72,31 @@ export function useSeatDesignerHotkeys({
                 e.preventDefault();
                 onSelectAll?.();
             }
+
+            // Copy: Ctrl+C or Cmd+C
+            if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+                e.preventDefault();
+                onCopy?.();
+            }
+
+            // Paste: Ctrl+V or Cmd+V
+            if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+                e.preventDefault();
+                onPaste?.();
+            }
+
+            // Arrow keys for movement
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const direction = e.key.replace('Arrow', '').toLowerCase() as 'up' | 'down' | 'left' | 'right';
+                const precise = e.shiftKey; // Shift for precise/smaller movement
+                onArrowMove?.(direction, precise);
+            }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [onUndo, onRedo, onSave, onDelete, onEscape, onSelectAll]);
+    }, [onUndo, onRedo, onSave, onDelete, onEscape, onSelectAll, onCopy, onPaste, onArrowMove]);
 }

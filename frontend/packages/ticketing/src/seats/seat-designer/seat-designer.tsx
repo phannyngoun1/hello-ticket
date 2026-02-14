@@ -310,6 +310,12 @@ export function SeatDesigner({
     y: number;
   } | null>(null);
 
+  // Clipboard state for copy/paste
+  const [clipboard, setClipboard] = useState<{
+    seats?: SeatMarker[];
+    sections?: SectionMarker[];
+  }>({});
+
   // Section Form
   const sectionForm = useForm<SectionFormData>({
     resolver: zodResolver(sectionFormSchema),
@@ -859,6 +865,70 @@ export function SeatDesigner({
           // Select all displayed seats
           const ids = displayedSeats.map(s => s.id);
           setSelectedSeatIds(ids);
+      },
+      onCopy: () => {
+          // Copy selected seats and sections to clipboard
+          const copiedSeats = seats.filter(s => selectedSeatIds.includes(s.id));
+          const copiedSections = sectionMarkers.filter(s => selectedSectionIds.includes(s.id));
+          setClipboard({ seats: copiedSeats, sections: copiedSections });
+      },
+      onPaste: () => {
+          // Paste from clipboard with offset
+          recordSnapshot();
+          const pasteOffset = 1; // 1 unit offset
+          
+          if (clipboard.seats?.length) {
+              const newSeats = clipboard.seats.map(seat => ({
+                  ...seat,
+                  id: crypto.randomUUID(),
+                  x: seat.x + pasteOffset,
+                  y: seat.y + pasteOffset,
+                  isNew: true,
+              }));
+              setSeats(prev => [...prev, ...newSeats]);
+              setSelectedSeatIds(newSeats.map(s => s.id));
+          }
+          
+          if (clipboard.sections?.length) {
+              const newSections = clipboard.sections.map(section => ({
+                  ...section,
+                  id: crypto.randomUUID(),
+                  x: section.x + pasteOffset,
+                  y: section.y + pasteOffset,
+                  isNew: true,
+              }));
+              setSectionMarkers(prev => [...prev, ...newSections]);
+              setSelectedSectionIds(newSections.map(s => s.id));
+          }
+      },
+      onArrowMove: (direction, precise) => {
+          // Move selected seats/sections with arrow keys
+          recordSnapshot();
+          const distance = precise ? 0.1 : 1; // Shift = precise (0.1), normal = 1
+          
+          let dx = 0, dy = 0;
+          switch (direction) {
+              case 'left': dx = -distance; break;
+              case 'right': dx = distance; break;
+              case 'up': dy = -distance; break;
+              case 'down': dy = distance; break;
+          }
+          
+          if (selectedSeatIds.length > 0) {
+              setSeats(prev => prev.map(seat => 
+                  selectedSeatIds.includes(seat.id)
+                      ? { ...seat, x: seat.x + dx, y: seat.y + dy }
+                      : seat
+              ));
+          }
+          
+          if (selectedSectionIds.length > 0) {
+              setSectionMarkers(prev => prev.map(section =>
+                  selectedSectionIds.includes(section.id)
+                      ? { ...section, x: section.x + dx, y: section.y + dy }
+                      : section
+              ));
+          }
       }
   });
 
@@ -1106,12 +1176,213 @@ export function SeatDesigner({
     onDelete: handleDelete,
     onEscape: handleDeselect, 
     onSelectAll: handleSelectAll,
+    onCopy: () => {
+        const copiedSeats = seats.filter(s => selectedSeatIds.includes(s.id));
+        const copiedSections = sectionMarkers.filter(s => selectedSectionIds.includes(s.id));
+        setClipboard({ seats: copiedSeats, sections: copiedSections });
+    },
+    onPaste: () => {
+        recordSnapshot();
+        const pasteOffset = 1;
+        
+        if (clipboard.seats?.length) {
+            const newSeats = clipboard.seats.map(seat => ({
+                ...seat,
+                id: crypto.randomUUID(),
+                x: seat.x + pasteOffset,
+                y: seat.y + pasteOffset,
+                isNew: true,
+            }));
+            setSeats(prev => [...prev, ...newSeats]);
+            setSelectedSeatIds(newSeats.map(s => s.id));
+        }
+        
+        if (clipboard.sections?.length) {
+            const newSections = clipboard.sections.map(section => ({
+                ...section,
+                id: crypto.randomUUID(),
+                x: section.x + pasteOffset,
+                y: section.y + pasteOffset,
+                isNew: true,
+            }));
+            setSectionMarkers(prev => [...prev, ...newSections]);
+            setSelectedSectionIds(newSections.map(s => s.id));
+        }
+    },
+    onArrowMove: (direction, precise) => {
+        recordSnapshot();
+        const distance = precise ? 0.1 : 1;
+        
+        let dx = 0, dy = 0;
+        switch (direction) {
+            case 'left': dx = -distance; break;
+            case 'right': dx = distance; break;
+            case 'up': dy = -distance; break;
+            case 'down': dy = distance; break;
+        }
+        
+        if (selectedSeatIds.length > 0) {
+            setSeats(prev => prev.map(seat => 
+                selectedSeatIds.includes(seat.id)
+                    ? { ...seat, x: seat.x + dx, y: seat.y + dy }
+                    : seat
+            ));
+        }
+        
+        if (selectedSectionIds.length > 0) {
+            setSectionMarkers(prev => prev.map(section =>
+                selectedSectionIds.includes(section.id)
+                    ? { ...section, x: section.x + dx, y: section.y + dy }
+                    : section
+            ));
+        }
+    }
   });
 
   // Render logic...
   // (Structure matches original)
 
-  const designerContent = (
+  const designerContent = venueType === "large" && viewingSection ? (
+    <SectionDetailView
+      viewingSection={viewingSection}
+      readOnly={readOnly}
+      displayedSeats={displayedSeats}
+      selectedSeat={selectedSeat}
+      seatPlacementForm={seatPlacementForm}
+      uniqueSections={getUniqueSectionsUtil(seats, effectiveSectionsData, sectionMarkers, designMode)}
+      sectionsData={effectiveSectionsData}
+      sectionSelectValue={sectionSelectValue}
+      onSectionSelectValueChange={setSectionSelectValue}
+      containerRef={containerRef}
+      dimensionsReady={dimensionsReady}
+      containerDimensions={containerDimensions}
+      zoomLevel={zoomLevel}
+      panOffset={panOffset}
+      isPlacingSeats={isPlacingSeats}
+      isUploadingImage={isUploadingImage}
+      onBack={() => {
+        setViewingSection(null);
+        seatPlacementForm.setValue("section", "");
+        setSelectedSeat(null);
+      }}
+      onSave={() => setShowSaveConfirmDialog(true)}
+      onClearSectionSeats={() => {
+        recordSnapshot();
+        setSeats(prev => prev.filter(s => s.seat.section !== viewingSection.name));
+      }}
+      onSectionImageSelect={handleSectionImageSelect}
+      onRemoveSectionImage={handleRemoveSectionImage}
+      onSeatClick={handleSeatClick}
+      onSeatDragEnd={handleKonvaSeatDragEnd}
+      onSeatShapeTransform={(id, shape) => updateSeat(id, { shape })}
+      onSeatShapeStyleChange={(seatId, style) => {
+        recordSnapshot();
+        setSeats(prev => prev.map(s => s.id === seatId ? { ...s, shape: { ...(s.shape || { type: PlacementShapeType.CIRCLE, radius: 0.8 }), ...style } as PlacementShape } : s));
+      }}
+      onImageClick={handleKonvaImageClick}
+      onDeselect={handleDeselect}
+      onWheel={(e, isSpace) => {
+        if (isSpace) {
+          e.evt.preventDefault();
+          const delta = e.evt.deltaY > 0 ? -0.1 : 0.1;
+          setZoomLevel(prev => Math.max(0.5, Math.min(3, prev + delta)));
+        }
+      }}
+      onPan={(delta) => handlePanDelta(delta)}
+      onZoomIn={handleZoomIn}
+      onZoomOut={handleZoomOut}
+      onResetZoom={handleResetZoomAndPan}
+      onNewSection={() => {
+        setIsSectionFormOpen(true);
+        setEditingSectionId(null);
+        sectionForm.reset({ name: "" });
+      }}
+      saveSeatsMutationPending={bulkDesignerSaveMutation.isPending}
+      seats={seats}
+      onDeleteSeat={(seat) => removeSeat(seat.id)}
+      onSetViewingSeat={setViewingSeat}
+      onEditSeat={(seat) => {
+        setIsEditingSeat(true);
+        seatEditForm.reset({
+          section: seat.seat.section,
+          sectionId: seat.seat.sectionId,
+          row: seat.seat.row,
+          seatNumber: seat.seat.seatNumber,
+          seatType: seat.seat.seatType,
+        });
+      }}
+      onSetSelectedSeat={setSelectedSeat}
+      seatEditFormReset={(data) => seatEditForm.reset(data)}
+      selectedSeatIds={selectedSeatIds}
+      onSelectSeatIds={setSelectedSeatIds}
+      anchorSeatId={anchorSeatId}
+      placementShape={placementShape}
+      onPlacementShapeChange={setPlacementShape}
+      selectedShapeTool={selectedShapeTool}
+      onShapeToolSelect={setSelectedShapeTool}
+      onShapeDraw={handleShapeDraw}
+      shapeOverlays={displayedShapeOverlays}
+      selectedOverlayId={selectedOverlayId}
+      onShapeOverlayClick={(id) => setSelectedOverlayId(id)}
+      onDetectSeats={viewingSection.imageUrl ? handleDetectSeatsClick : undefined}
+      isDetectingSeats={isDetectingSeats}
+      onMarkersInRect={(seatIds, sectionIds) => {
+        if (selectedShapeTool) return;
+        setSelectedSeatIds(seatIds);
+        setSelectedSectionIds(sectionIds);
+      }}
+      onAlign={(alignment) => {
+        // Alignment logic for section detail view
+      }}
+      seatEditControls={
+        isEditingSeat && selectedSeat && !readOnly ? (
+          <SeatEditControls
+            form={seatEditForm}
+            uniqueSections={getUniqueSectionsUtil(seats, effectiveSectionsData, sectionMarkers, designMode)}
+            sectionsData={effectiveSectionsData}
+            sectionMarkers={sectionMarkers}
+            designMode={designMode}
+            viewingSection={viewingSection}
+            onSave={(data) => {
+              if (selectedSeat) {
+                recordSnapshot();
+                updateSeat(selectedSeat.id, { seat: data });
+                setIsEditingSeat(false);
+                seatEditForm.reset();
+              }
+            }}
+            onCancel={() => {
+              setIsEditingSeat(false);
+              seatEditForm.reset();
+            }}
+            isUpdating={false}
+            standalone
+          />
+        ) : undefined
+      }
+      canvasBackgroundColor={canvasBackgroundColor}
+      onCanvasBackgroundColorChange={(color) => {
+        recordSnapshot();
+        setSectionMarkers(prev => prev.map(s => s.id === viewingSection.id ? { ...s, canvasBackgroundColor: color } : s));
+      }}
+      markerFillTransparency={viewingSection.markerFillTransparency}
+      onMarkerFillTransparencyChange={(transparency) => {
+        recordSnapshot();
+        setSectionMarkers(prev => prev.map(s => s.id === viewingSection.id ? { ...s, markerFillTransparency: transparency } : s));
+      }}
+      showGrid={showGrid}
+      gridSize={gridSize}
+      isFullscreen={isFullscreen}
+      onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+      onUndo={!readOnly ? undo : undefined}
+      onRedo={!readOnly ? redo : undefined}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      isDirty={isDirty}
+      onRefresh={handleRefresh}
+      isRefreshing={isLoading}
+    />
+  ) : (
     <div className={isFullscreen ? "flex flex-col flex-1 min-h-0 space-y-4" : "space-y-4"}>
        <DesignerHeader 
           layoutName={layoutName}
@@ -1215,13 +1486,77 @@ export function SeatDesigner({
                   setSectionMarkers(prev => prev.map(s => s.id === sectionId ? { ...s, shape: { ...(s.shape || { type: PlacementShapeType.RECTANGLE, width: 2, height: 1.5 }), ...style } as PlacementShape } : s));
               }}
               onAlign={(alignment) => {
-                  // Simply use state hook if available or reimplement align logic
-                  // For now, assume we leave align blank or implement it briefly.
-                  // Since I didn't port align logic to a hook, I should probably omit it or stub it.
-                  // I'll omit it for now to save space, or rely on future refactor.
-                  // Actually invalid prop error if I omit it? Types say optional? 
-                  // SeatDesignToolbar needs onAlign.
-                  // I'll define a dummy one or bring back the logic if I have space.
+                  recordSnapshot();
+                  
+                  if (selectedSeatIds.length > 1 && anchorSeatId) {
+                      const anchorSeat = seats.find(s => s.id === anchorSeatId);
+                      if (!anchorSeat) return;
+                      
+                      setSeats(prev => prev.map(seat => {
+                          if (selectedSeatIds.includes(seat.id) && seat.id !== anchorSeatId) {
+                              const updates: Partial<SeatMarker> = {};
+                              
+                              switch (alignment) {
+                                  case 'left':
+                                      updates.x = anchorSeat.x;
+                                      break;
+                                  case 'center':
+                                      updates.x = anchorSeat.x;
+                                      break;
+                                  case 'right':
+                                      updates.x = anchorSeat.x;
+                                      break;
+                                  case 'top':
+                                      updates.y = anchorSeat.y;
+                                      break;
+                                  case 'middle':
+                                      updates.y = anchorSeat.y;
+                                      break;
+                                  case 'bottom':
+                                      updates.y = anchorSeat.y;
+                                      break;
+                              }
+                              
+                              return { ...seat, ...updates };
+                          }
+                          return seat;
+                      }));
+                  }
+                  
+                  if (selectedSectionIds.length > 1 && anchorSectionId) {
+                      const anchorSection = sectionMarkers.find(s => s.id === anchorSectionId);
+                      if (!anchorSection) return;
+                      
+                      setSectionMarkers(prev => prev.map(section => {
+                          if (selectedSectionIds.includes(section.id) && section.id !== anchorSectionId) {
+                              const updates: Partial<SectionMarker> = {};
+                              
+                              switch (alignment) {
+                                  case 'left':
+                                      updates.x = anchorSection.x;
+                                      break;
+                                  case 'center':
+                                      updates.x = anchorSection.x;
+                                      break;
+                                  case 'right':
+                                      updates.x = anchorSection.x;
+                                      break;
+                                  case 'top':
+                                      updates.y = anchorSection.y;
+                                      break;
+                                  case 'middle':
+                                      updates.y = anchorSection.y;
+                                      break;
+                                  case 'bottom':
+                                      updates.y = anchorSection.y;
+                                      break;
+                              }
+                              
+                              return { ...section, ...updates };
+                          }
+                          return section;
+                      }));
+                  }
               }}
               selectedSeatCount={selectedSeatIds.length}
               selectedSectionCount={selectedSectionIds.length}
@@ -1342,6 +1677,7 @@ export function SeatDesigner({
                   selectedSeatCount={0}
                   selectedSectionCount={selectedSectionIds.length}
                   readOnly={readOnly}
+                  level="section"
                 />
               )}
             </>
