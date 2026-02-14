@@ -239,7 +239,10 @@ export function SeatMarkerCanvas({
         y={y}
         rotation={shape.rotation || 0}
         draggable={
-          !readOnly && (forceDraggable || (isPlacingSeats && isSelected))
+          !readOnly &&
+          (forceDraggable ||
+            (isSelected &&
+              (isPlacingSeats || isPlacingSections || !selectedShapeTool)))
         }
         onDragStart={
           !readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined

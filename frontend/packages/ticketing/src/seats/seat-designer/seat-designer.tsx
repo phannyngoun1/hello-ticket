@@ -139,6 +139,132 @@ function getMarkerBounds(
   };
 }
 
+type AlignmentType =
+  | "left"
+  | "center"
+  | "right"
+  | "top"
+  | "middle"
+  | "bottom"
+  | "space-between-h"
+  | "space-between-v"
+  | "same-width"
+  | "same-height";
+
+/** Apply alignment to markers; returns updates (x, y, shape) per marker id */
+function applyAlignment<T extends { id: string; x: number; y: number; shape?: PlacementShape }>(
+  markers: T[],
+  bounds: MarkerBounds[],
+  alignment: AlignmentType,
+  defaults: { radius?: number; width?: number; height?: number },
+): Map<string, Partial<T>> {
+  const updates = new Map<string, Partial<T>>();
+  if (markers.length < 2) return updates;
+
+  const minLeft = Math.min(...bounds.map((b) => b.left));
+  const maxRight = Math.max(...bounds.map((b) => b.right));
+  const minTop = Math.min(...bounds.map((b) => b.top));
+  const maxBottom = Math.max(...bounds.map((b) => b.bottom));
+  const targetCenterX = (minLeft + maxRight) / 2;
+  const targetCenterY = (minTop + maxBottom) / 2;
+
+  if (
+    alignment === "space-between-h" ||
+    alignment === "space-between-v" ||
+    alignment === "same-width" ||
+    alignment === "same-height"
+  ) {
+    if (alignment === "space-between-h") {
+      const sorted = markers
+        .map((m, i) => ({ marker: m, bounds: bounds[i], idx: i }))
+        .sort((a, b) => a.bounds.centerX - b.bounds.centerX);
+      const n = sorted.length;
+      const leftCenter = sorted[0].bounds.centerX;
+      const rightCenter = sorted[n - 1].bounds.centerX;
+      sorted.forEach(({ marker }, i) => {
+        const newCenterX = n > 1 ? leftCenter + ((rightCenter - leftCenter) * i) / (n - 1) : leftCenter;
+        updates.set(marker.id, { x: newCenterX } as Partial<T>);
+      });
+    } else if (alignment === "space-between-v") {
+      const sorted = markers
+        .map((m, i) => ({ marker: m, bounds: bounds[i], idx: i }))
+        .sort((a, b) => a.bounds.centerY - b.bounds.centerY);
+      const n = sorted.length;
+      const topCenter = sorted[0].bounds.centerY;
+      const bottomCenter = sorted[n - 1].bounds.centerY;
+      sorted.forEach(({ marker }, i) => {
+        const newCenterY = n > 1 ? topCenter + ((bottomCenter - topCenter) * i) / (n - 1) : topCenter;
+        updates.set(marker.id, { y: newCenterY } as Partial<T>);
+      });
+    } else if (alignment === "same-width") {
+      let maxW = 0;
+      markers.forEach((m, i) => {
+        const b = bounds[i];
+        const w = b.right - b.left;
+        if (w > maxW) maxW = w;
+      });
+      markers.forEach((marker) => {
+        const shape = marker.shape ?? ({} as PlacementShape);
+        const type = shape.type ?? PlacementShapeType.CIRCLE;
+        if (type === PlacementShapeType.CIRCLE) {
+          updates.set(marker.id, {
+            shape: { ...shape, type, radius: maxW / 2 } as PlacementShape,
+          } as Partial<T>);
+        } else if (
+          type === PlacementShapeType.RECTANGLE ||
+          type === PlacementShapeType.ELLIPSE
+        ) {
+          updates.set(marker.id, {
+            shape: { ...shape, type, width: maxW } as PlacementShape,
+          } as Partial<T>);
+        }
+      });
+    } else if (alignment === "same-height") {
+      let maxH = 0;
+      markers.forEach((m, i) => {
+        const b = bounds[i];
+        const h = b.bottom - b.top;
+        if (h > maxH) maxH = h;
+      });
+      markers.forEach((marker) => {
+        const shape = marker.shape ?? ({} as PlacementShape);
+        const type = shape.type ?? PlacementShapeType.CIRCLE;
+        if (type === PlacementShapeType.CIRCLE) {
+          updates.set(marker.id, {
+            shape: { ...shape, type, radius: maxH / 2 } as PlacementShape,
+          } as Partial<T>);
+        } else if (
+          type === PlacementShapeType.RECTANGLE ||
+          type === PlacementShapeType.ELLIPSE
+        ) {
+          updates.set(marker.id, {
+            shape: { ...shape, type, height: maxH } as PlacementShape,
+          } as Partial<T>);
+        }
+      });
+    }
+    return updates;
+  }
+
+  // Original alignments: left, center, right, top, middle, bottom
+  markers.forEach((marker, i) => {
+    const b = bounds[i];
+    const u: Partial<T> = {};
+    if (alignment === "left" || alignment === "center" || alignment === "right") {
+      if (alignment === "left") u.x = marker.x + (minLeft - b.left);
+      else if (alignment === "right") u.x = marker.x + (maxRight - b.right);
+      else u.x = targetCenterX;
+    }
+    if (alignment === "top" || alignment === "middle" || alignment === "bottom") {
+      if (alignment === "top") u.y = marker.y + (minTop - b.top);
+      else if (alignment === "bottom") u.y = marker.y + (maxBottom - b.bottom);
+      else u.y = targetCenterY;
+    }
+    if (Object.keys(u).length > 0) updates.set(marker.id, u);
+  });
+  return updates;
+}
+
 export function SeatDesigner({
   venueId,
   layoutId,
@@ -231,6 +357,7 @@ export function SeatDesigner({
     removeSeat,
     addSection,
     updateSection,
+    batchUpdateSections,
     removeSection,
     undo,
     redo,
@@ -927,6 +1054,52 @@ export function SeatDesigner({
       });
   }, [recordSnapshot, snapToGrid, gridSize, updateSection]);
 
+  const handleBatchSeatDragEnd = useCallback(
+    (updates: Array<{ id: string; x: number; y: number }>) => {
+      recordSnapshot();
+      const snapped = updates.map(({ id, x, y }) => {
+        let snappedX = x;
+        let snappedY = y;
+        if (snapToGrid) {
+          snappedX = Math.round(x / gridSize) * gridSize;
+          snappedY = Math.round(y / gridSize) * gridSize;
+        }
+        return {
+          id,
+          updates: {
+            x: Math.max(0, Math.min(100, snappedX)),
+            y: Math.max(0, Math.min(100, snappedY)),
+          },
+        };
+      });
+      batchUpdateSeats(snapped);
+    },
+    [recordSnapshot, snapToGrid, gridSize, batchUpdateSeats],
+  );
+
+  const handleBatchSectionDragEnd = useCallback(
+    (updates: Array<{ id: string; x: number; y: number }>) => {
+      recordSnapshot();
+      const snapped = updates.map(({ id, x, y }) => {
+        let snappedX = x;
+        let snappedY = y;
+        if (snapToGrid) {
+          snappedX = Math.round(x / gridSize) * gridSize;
+          snappedY = Math.round(y / gridSize) * gridSize;
+        }
+        return {
+          id,
+          updates: {
+            x: Math.max(0, Math.min(100, snappedX)),
+            y: Math.max(0, Math.min(100, snappedY)),
+          },
+        };
+      });
+      batchUpdateSections(snapped);
+    },
+    [recordSnapshot, snapToGrid, gridSize, batchUpdateSections],
+  );
+
   // Handle Hotkeys
   useSeatDesignerHotkeys({
       onUndo: !readOnly ? undo : undefined,
@@ -1357,6 +1530,7 @@ export function SeatDesigner({
       onRemoveSectionImage={handleRemoveSectionImage}
       onSeatClick={handleSeatClickWithToolSwitch}
       onSeatDragEnd={handleKonvaSeatDragEnd}
+      onBatchSeatDragEnd={handleBatchSeatDragEnd}
       onSeatShapeTransform={(id, shape, position) =>
         updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
       }
@@ -1428,41 +1602,17 @@ export function SeatDesigner({
         const bounds = selectedSeatsList.map((s) =>
           getMarkerBounds(s, { radius: 0.8 }),
         );
-        const minLeft = Math.min(...bounds.map((b) => b.left));
-        const maxRight = Math.max(...bounds.map((b) => b.right));
-        const minTop = Math.min(...bounds.map((b) => b.top));
-        const maxBottom = Math.max(...bounds.map((b) => b.bottom));
-        const targetCenterX = (minLeft + maxRight) / 2;
-        const targetCenterY = (minTop + maxBottom) / 2;
-
+        const updatesMap = applyAlignment(
+          selectedSeatsList,
+          bounds,
+          alignment as AlignmentType,
+          { radius: 0.8 },
+        );
         setSeats((prev) =>
           prev.map((seat) => {
-            if (!selectedSeatIds.includes(seat.id)) return seat;
-            const b = getMarkerBounds(seat, { radius: 0.8 });
-            const updates: Partial<SeatMarker> = {};
-            if (
-              alignment === "left" ||
-              alignment === "center" ||
-              alignment === "right"
-            ) {
-              if (alignment === "left")
-                updates.x = seat.x + (minLeft - b.left);
-              else if (alignment === "right")
-                updates.x = seat.x + (maxRight - b.right);
-              else updates.x = targetCenterX;
-            }
-            if (
-              alignment === "top" ||
-              alignment === "middle" ||
-              alignment === "bottom"
-            ) {
-              if (alignment === "top")
-                updates.y = seat.y + (minTop - b.top);
-              else if (alignment === "bottom")
-                updates.y = seat.y + (maxBottom - b.bottom);
-              else updates.y = targetCenterY;
-            }
-            return { ...seat, ...updates };
+            const u = updatesMap.get(seat.id);
+            if (!u) return seat;
+            return { ...seat, ...u };
           }),
         );
       }}
@@ -1619,6 +1769,7 @@ export function SeatDesigner({
               }}
               onAlign={(alignment) => {
                   recordSnapshot();
+                  const align = alignment as AlignmentType;
 
                   if (selectedSeatIds.length > 1) {
                       const selectedSeats = seats.filter((s) =>
@@ -1627,42 +1778,17 @@ export function SeatDesigner({
                       const bounds = selectedSeats.map((s) =>
                           getMarkerBounds(s, { radius: 0.8 }),
                       );
-                      const minLeft = Math.min(...bounds.map((b) => b.left));
-                      const maxRight = Math.max(...bounds.map((b) => b.right));
-                      const minTop = Math.min(...bounds.map((b) => b.top));
-                      const maxBottom = Math.max(...bounds.map((b) => b.bottom));
-                      const targetCenterX = (minLeft + maxRight) / 2;
-                      const targetCenterY = (minTop + maxBottom) / 2;
-
+                      const updatesMap = applyAlignment(
+                          selectedSeats,
+                          bounds,
+                          align,
+                          { radius: 0.8 },
+                      );
                       setSeats((prev) =>
                           prev.map((seat) => {
-                              if (!selectedSeatIds.includes(seat.id)) return seat;
-                              const b = getMarkerBounds(seat, { radius: 0.8 });
-                              const updates: Partial<SeatMarker> = {};
-                              if (
-                                  alignment === "left" ||
-                                  alignment === "center" ||
-                                  alignment === "right"
-                              ) {
-                                  if (alignment === "left")
-                                      updates.x = seat.x + (minLeft - b.left);
-                                  else if (alignment === "right")
-                                      updates.x = seat.x + (maxRight - b.right);
-                                  else updates.x = targetCenterX;
-                              }
-                              if (
-                                  alignment === "top" ||
-                                  alignment === "middle" ||
-                                  alignment === "bottom"
-                              ) {
-                                  if (alignment === "top")
-                                      updates.y = seat.y + (minTop - b.top);
-                                  else if (alignment === "bottom")
-                                      updates.y =
-                                          seat.y + (maxBottom - b.bottom);
-                                  else updates.y = targetCenterY;
-                              }
-                              return { ...seat, ...updates };
+                              const u = updatesMap.get(seat.id);
+                              if (!u) return seat;
+                              return { ...seat, ...u };
                           }),
                       );
                   }
@@ -1672,54 +1798,19 @@ export function SeatDesigner({
                           selectedSectionIds.includes(s.id),
                       );
                       const bounds = selectedSections.map((s) =>
-                          getMarkerBounds(s, {
-                              width: 2,
-                              height: 1.5,
-                          }),
+                          getMarkerBounds(s, { width: 2, height: 1.5 }),
                       );
-                      const minLeft = Math.min(...bounds.map((b) => b.left));
-                      const maxRight = Math.max(...bounds.map((b) => b.right));
-                      const minTop = Math.min(...bounds.map((b) => b.top));
-                      const maxBottom = Math.max(...bounds.map((b) => b.bottom));
-                      const targetCenterX = (minLeft + maxRight) / 2;
-                      const targetCenterY = (minTop + maxBottom) / 2;
-
+                      const updatesMap = applyAlignment(
+                          selectedSections,
+                          bounds,
+                          align,
+                          { width: 2, height: 1.5 },
+                      );
                       setSectionMarkers((prev) =>
                           prev.map((section) => {
-                              if (!selectedSectionIds.includes(section.id))
-                                  return section;
-                              const b = getMarkerBounds(section, {
-                                  width: 2,
-                                  height: 1.5,
-                              });
-                              const updates: Partial<SectionMarker> = {};
-                              if (
-                                  alignment === "left" ||
-                                  alignment === "center" ||
-                                  alignment === "right"
-                              ) {
-                                  if (alignment === "left")
-                                      updates.x =
-                                          section.x + (minLeft - b.left);
-                                  else if (alignment === "right")
-                                      updates.x =
-                                          section.x + (maxRight - b.right);
-                                  else updates.x = targetCenterX;
-                              }
-                              if (
-                                  alignment === "top" ||
-                                  alignment === "middle" ||
-                                  alignment === "bottom"
-                              ) {
-                                  if (alignment === "top")
-                                      updates.y =
-                                          section.y + (minTop - b.top);
-                                  else if (alignment === "bottom")
-                                      updates.y =
-                                          section.y + (maxBottom - b.bottom);
-                                  else updates.y = targetCenterY;
-                              }
-                              return { ...section, ...updates };
+                              const u = updatesMap.get(section.id);
+                              if (!u) return section;
+                              return { ...section, ...u };
                           }),
                       );
                   }
@@ -1848,45 +1939,17 @@ export function SeatDesigner({
                     const bounds = selectedSectionsList.map((s) =>
                       getMarkerBounds(s, { width: 2, height: 1.5 }),
                     );
-                    const minLeft = Math.min(...bounds.map((b) => b.left));
-                    const maxRight = Math.max(...bounds.map((b) => b.right));
-                    const minTop = Math.min(...bounds.map((b) => b.top));
-                    const maxBottom = Math.max(...bounds.map((b) => b.bottom));
-                    const targetCenterX = (minLeft + maxRight) / 2;
-                    const targetCenterY = (minTop + maxBottom) / 2;
-
+                    const updatesMap = applyAlignment(
+                      selectedSectionsList,
+                      bounds,
+                      alignment as AlignmentType,
+                      { width: 2, height: 1.5 },
+                    );
                     setSectionMarkers((prev) =>
                       prev.map((section) => {
-                        if (!selectedSectionIds.includes(section.id))
-                          return section;
-                        const b = getMarkerBounds(section, {
-                          width: 2,
-                          height: 1.5,
-                        });
-                        const updates: Partial<SectionMarker> = {};
-                        if (
-                          alignment === "left" ||
-                          alignment === "center" ||
-                          alignment === "right"
-                        ) {
-                          if (alignment === "left")
-                            updates.x = section.x + (minLeft - b.left);
-                          else if (alignment === "right")
-                            updates.x = section.x + (maxRight - b.right);
-                          else updates.x = targetCenterX;
-                        }
-                        if (
-                          alignment === "top" ||
-                          alignment === "middle" ||
-                          alignment === "bottom"
-                        ) {
-                          if (alignment === "top")
-                            updates.y = section.y + (minTop - b.top);
-                          else if (alignment === "bottom")
-                            updates.y = section.y + (maxBottom - b.bottom);
-                          else updates.y = targetCenterY;
-                        }
-                        return { ...section, ...updates };
+                        const u = updatesMap.get(section.id);
+                        if (!u) return section;
+                        return { ...section, ...u };
                       }),
                     );
                   }}
@@ -1931,6 +1994,7 @@ export function SeatDesigner({
                      panOffset={panOffset}
                      onSeatClick={handleSeatClickWithToolSwitch}
                      onSeatDragEnd={handleKonvaSeatDragEnd}
+                     onBatchSeatDragEnd={handleBatchSeatDragEnd}
                      onSeatShapeTransform={(id, shape, position) =>
         updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
       }
@@ -1988,6 +2052,8 @@ export function SeatDesigner({
                      onSectionClick={handleSectionClickWithToolSwitch}
                      onSectionDragEnd={handleKonvaSectionDragEnd}
                      onSeatDragEnd={handleKonvaSeatDragEnd}
+                     onBatchSeatDragEnd={handleBatchSeatDragEnd}
+                     onBatchSectionDragEnd={handleBatchSectionDragEnd}
                      onSeatShapeTransform={(id, shape, position) =>
         updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
       }

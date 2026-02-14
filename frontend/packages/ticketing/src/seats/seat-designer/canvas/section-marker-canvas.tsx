@@ -263,7 +263,9 @@ export function SectionMarkerCanvas({
         rotation={shape.rotation || 0}
         draggable={
           !readOnly &&
-          (forceDraggable || (isPlacingSections && isSelected))
+          (forceDraggable ||
+            (isSelected &&
+              (isPlacingSections || isPlacingSeats || !selectedShapeTool)))
         }
         onDragStart={
           !readOnly && onSectionDragStart

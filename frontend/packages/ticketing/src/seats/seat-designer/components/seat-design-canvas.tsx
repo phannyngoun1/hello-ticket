@@ -39,6 +39,9 @@ export interface SeatDesignCanvasProps {
   panOffset: { x: number; y: number };
   onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+  onBatchSeatDragEnd?: (
+    updates: Array<{ id: string; x: number; y: number }>,
+  ) => void;
   onSeatShapeTransform?: (
     seatId: string,
     shape: PlacementShape,
@@ -109,6 +112,7 @@ export function SeatDesignCanvas({
   panOffset,
   onSeatClick,
   onSeatDragEnd,
+  onBatchSeatDragEnd,
   onSeatShapeTransform,
   onImageClick,
   onDeselect,
@@ -330,6 +334,7 @@ export function SeatDesignCanvas({
             panOffset={panOffset}
             onSeatClick={onSeatClick}
             onSeatDragEnd={onSeatDragEnd}
+            onBatchSeatDragEnd={onBatchSeatDragEnd}
             onSeatShapeTransform={onSeatShapeTransform}
             onImageClick={onImageClick}
             onDeselect={onDeselect}

@@ -66,6 +66,9 @@ export interface SectionDetailViewProps {
   onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+  onBatchSeatDragEnd?: (
+    updates: Array<{ id: string; x: number; y: number }>,
+  ) => void;
   onSeatShapeTransform?: (
     seatId: string,
     shape: PlacementShape,
@@ -111,7 +114,17 @@ export interface SectionDetailViewProps {
     sectionIds: string[],
   ) => void; /** Called when user aligns multiple selected markers */
   onAlign?: (
-    alignment: "left" | "center" | "right" | "top" | "middle" | "bottom",
+    alignment:
+      | "left"
+      | "center"
+      | "right"
+      | "top"
+      | "middle"
+      | "bottom"
+      | "space-between-h"
+      | "space-between-v"
+      | "same-width"
+      | "same-height",
   ) => void;
   /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
   seatEditControls?: React.ReactNode;
@@ -170,6 +183,7 @@ export function SectionDetailView({
   onRemoveSectionImage,
   onSeatClick,
   onSeatDragEnd,
+  onBatchSeatDragEnd,
   onSeatShapeTransform,
   onSeatShapeStyleChange,
   onImageClick,
@@ -622,6 +636,7 @@ export function SectionDetailView({
             panOffset={panOffset}
             onSeatClick={onSeatClick}
             onSeatDragEnd={onSeatDragEnd}
+            onBatchSeatDragEnd={onBatchSeatDragEnd}
             onSeatShapeTransform={onSeatShapeTransform}
             onImageClick={onImageClick}
             onDeselect={onDeselect}

@@ -78,6 +78,12 @@ interface LayoutCanvasProps {
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+  /** Batch move multiple selected seats (called when dragging one of multiple selected) */
+  onBatchSeatDragEnd?: (updates: Array<{ id: string; x: number; y: number }>) => void;
+  /** Batch move multiple selected sections */
+  onBatchSectionDragEnd?: (
+    updates: Array<{ id: string; x: number; y: number }>,
+  ) => void;
   onSeatShapeTransform?: (
     seatId: string,
     shape: PlacementShape,
@@ -159,6 +165,8 @@ export function LayoutCanvas({
   onSectionDoubleClick,
   onSectionDragEnd,
   onSeatDragEnd,
+  onBatchSeatDragEnd,
+  onBatchSectionDragEnd,
   onSeatShapeTransform,
   onSectionShapeTransform,
   onImageClick,
@@ -213,6 +221,16 @@ export function LayoutCanvas({
   const [dragPosition, setDragPosition] = useState<{
     x: number;
     y: number;
+  } | null>(null);
+  // Batch drag: move all selected items together
+  const [batchDragState, setBatchDragState] = useState<{
+    type: "seats" | "sections";
+    initialPositions: Map<string, { x: number; y: number }>;
+    draggedId: string;
+  } | null>(null);
+  const [batchDragDelta, setBatchDragDelta] = useState<{
+    dx: number;
+    dy: number;
   } | null>(null);
 
   // Drag-to-select marquee (stage coordinates)
@@ -427,9 +445,33 @@ export function LayoutCanvas({
       const { x, y } = layerToPercentage(node.x(), node.y());
       setDraggedSeatId(null);
       setDragPosition(null);
-      onSeatDragEnd(seatId, x, y);
+
+      if (batchDragState?.type === "seats" && onBatchSeatDragEnd) {
+        const initial = batchDragState.initialPositions.get(seatId);
+        if (initial) {
+          const dx = x - initial.x;
+          const dy = y - initial.y;
+          const updates = Array.from(batchDragState.initialPositions.entries()).map(
+            ([id, pos]) => ({
+              id,
+              x: Math.max(0, Math.min(100, pos.x + dx)),
+              y: Math.max(0, Math.min(100, pos.y + dy)),
+            }),
+          );
+          onBatchSeatDragEnd(updates);
+        }
+        setBatchDragState(null);
+        setBatchDragDelta(null);
+      } else {
+        onSeatDragEnd(seatId, x, y);
+      }
     },
-    [onSeatDragEnd, layerToPercentage],
+    [
+      onSeatDragEnd,
+      onBatchSeatDragEnd,
+      layerToPercentage,
+      batchDragState,
+    ],
   );
 
   const handleSeatDragStart = useCallback(
@@ -437,26 +479,77 @@ export function LayoutCanvas({
       setDraggedSeatId(seatId);
       const seat = seats.find((s) => s.id === seatId);
       if (seat) setDragPosition({ x: seat.x, y: seat.y });
+
+      if (
+        selectedSeatIdSet.size > 1 &&
+        selectedSeatIdSet.has(seatId) &&
+        onBatchSeatDragEnd
+      ) {
+        const initialPositions = new Map<string, { x: number; y: number }>();
+        seats
+          .filter((s) => selectedSeatIdSet.has(s.id))
+          .forEach((s) => initialPositions.set(s.id, { x: s.x, y: s.y }));
+        setBatchDragState({
+          type: "seats",
+          initialPositions,
+          draggedId: seatId,
+        });
+        setBatchDragDelta({ dx: 0, dy: 0 });
+      }
     },
-    [seats],
+    [seats, selectedSeatIdSet, onBatchSeatDragEnd],
   );
 
   const handleSeatDragMove = useCallback(
     (seatId: string, layerX: number, layerY: number) => {
       const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
+
+      if (batchDragState?.type === "seats" && batchDragState.draggedId === seatId) {
+        const initial = batchDragState.initialPositions.get(seatId);
+        if (initial) {
+          setBatchDragDelta({ dx: x - initial.x, dy: y - initial.y });
+        }
+      }
     },
-    [layerToPercentage],
+    [layerToPercentage, batchDragState],
   );
 
   const handleSectionDragEnd = useCallback(
     (sectionId: string, layerX: number, layerY: number) => {
+      const { x, y } = layerToPercentage(layerX, layerY);
       setDraggedSectionId(null);
       setDragPosition(null);
-      const { x, y } = layerToPercentage(layerX, layerY);
-      onSectionDragEnd?.(sectionId, x, y);
+
+      if (
+        batchDragState?.type === "sections" &&
+        onBatchSectionDragEnd
+      ) {
+        const initial = batchDragState.initialPositions.get(sectionId);
+        if (initial) {
+          const dx = x - initial.x;
+          const dy = y - initial.y;
+          const updates = Array.from(batchDragState.initialPositions.entries()).map(
+            ([id, pos]) => ({
+              id,
+              x: Math.max(0, Math.min(100, pos.x + dx)),
+              y: Math.max(0, Math.min(100, pos.y + dy)),
+            }),
+          );
+          onBatchSectionDragEnd(updates);
+        }
+        setBatchDragState(null);
+        setBatchDragDelta(null);
+      } else {
+        onSectionDragEnd?.(sectionId, x, y);
+      }
     },
-    [onSectionDragEnd, layerToPercentage],
+    [
+      onSectionDragEnd,
+      onBatchSectionDragEnd,
+      layerToPercentage,
+      batchDragState,
+    ],
   );
 
   const handleSectionDragStart = useCallback(
@@ -464,16 +557,43 @@ export function LayoutCanvas({
       setDraggedSectionId(sectionId);
       const section = sections.find((s) => s.id === sectionId);
       if (section) setDragPosition({ x: section.x, y: section.y });
+
+      if (
+        selectedSectionIdSet.size > 1 &&
+        selectedSectionIdSet.has(sectionId) &&
+        onBatchSectionDragEnd
+      ) {
+        const initialPositions = new Map<string, { x: number; y: number }>();
+        sections
+          .filter((s) => selectedSectionIdSet.has(s.id))
+          .forEach((s) => initialPositions.set(s.id, { x: s.x, y: s.y }));
+        setBatchDragState({
+          type: "sections",
+          initialPositions,
+          draggedId: sectionId,
+        });
+        setBatchDragDelta({ dx: 0, dy: 0 });
+      }
     },
-    [sections],
+    [sections, selectedSectionIdSet, onBatchSectionDragEnd],
   );
 
   const handleSectionDragMove = useCallback(
     (sectionId: string, layerX: number, layerY: number) => {
       const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
+
+      if (
+        batchDragState?.type === "sections" &&
+        batchDragState.draggedId === sectionId
+      ) {
+        const initial = batchDragState.initialPositions.get(sectionId);
+        if (initial) {
+          setBatchDragDelta({ dx: x - initial.x, dy: y - initial.y });
+        }
+      }
     },
-    [layerToPercentage],
+    [layerToPercentage, batchDragState],
   );
 
   // Use the same locked dimensions for the Stage size
@@ -570,6 +690,61 @@ export function LayoutCanvas({
   const disableHoverAnimation = totalVisibleCount > HOVER_ANIMATION_THRESHOLD;
   const useLowDetail = zoomLevel < 0.4;
 
+  // Apply batch drag position overrides so all selected items move together
+  const displaySeats = useMemo(() => {
+    if (
+      !batchDragState ||
+      batchDragState.type !== "seats" ||
+      !batchDragDelta
+    ) {
+      return visibleSeats;
+    }
+    return visibleSeats.map((s) => {
+      const initial = batchDragState.initialPositions.get(s.id);
+      if (!initial) return s;
+      if (s.id === batchDragState.draggedId && dragPosition) {
+        return { ...s, x: dragPosition.x, y: dragPosition.y };
+      }
+      return {
+        ...s,
+        x: initial.x + batchDragDelta.dx,
+        y: initial.y + batchDragDelta.dy,
+      };
+    });
+  }, [
+    visibleSeats,
+    batchDragState,
+    batchDragDelta,
+    dragPosition,
+  ]);
+
+  const displaySections = useMemo(() => {
+    if (
+      !batchDragState ||
+      batchDragState.type !== "sections" ||
+      !batchDragDelta
+    ) {
+      return visibleSections;
+    }
+    return visibleSections.map((s) => {
+      const initial = batchDragState.initialPositions.get(s.id);
+      if (!initial) return s;
+      if (s.id === batchDragState.draggedId && dragPosition) {
+        return { ...s, x: dragPosition.x, y: dragPosition.y };
+      }
+      return {
+        ...s,
+        x: initial.x + batchDragDelta.dx,
+        y: initial.y + batchDragDelta.dy,
+      };
+    });
+  }, [
+    visibleSections,
+    batchDragState,
+    batchDragDelta,
+    dragPosition,
+  ]);
+
   const layerTransform = {
     x: centerX + panOffset.x,
     y: centerY + panOffset.y,
@@ -579,19 +754,19 @@ export function LayoutCanvas({
     offsetY: centerY,
   };
 
-  const staticSeats = visibleSeats.filter(
+  const staticSeats = displaySeats.filter(
     (s) => s.id !== selectedSeatId && s.id !== draggedSeatId,
   );
-  const selectedSeat = visibleSeats.find((s) => s.id === selectedSeatId);
-  const draggedSeat = visibleSeats.find((s) => s.id === draggedSeatId);
+  const selectedSeat = displaySeats.find((s) => s.id === selectedSeatId);
+  const draggedSeat = displaySeats.find((s) => s.id === draggedSeatId);
 
-  const staticSections = visibleSections.filter(
+  const staticSections = displaySections.filter(
     (s) => s.id !== selectedSectionId && s.id !== draggedSectionId,
   );
-  const selectedSection = visibleSections.find(
+  const selectedSection = displaySections.find(
     (s) => s.id === selectedSectionId,
   );
-  const draggedSection = visibleSections.find((s) => s.id === draggedSectionId);
+  const draggedSection = displaySections.find((s) => s.id === draggedSectionId);
 
   // Image has priority over canvas background color: only use canvas background when there is no image.
   // Show loading indicator when imageUrl is set but image not yet loaded (use neutral bg, not canvas color).

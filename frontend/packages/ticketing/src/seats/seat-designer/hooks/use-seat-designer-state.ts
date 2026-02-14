@@ -141,6 +141,23 @@ export function useSeatDesignerState({
         );
     }, [recordSnapshot]);
 
+    const batchUpdateSections = useCallback(
+        (updates: { id: string; updates: Partial<SectionMarker> }[]) => {
+            recordSnapshot();
+            setSectionMarkers((prev) => {
+                const newSections = [...prev];
+                updates.forEach(({ id, updates }) => {
+                    const index = newSections.findIndex((s) => s.id === id);
+                    if (index !== -1) {
+                        newSections[index] = { ...newSections[index], ...updates };
+                    }
+                });
+                return newSections;
+            });
+        },
+        [recordSnapshot]
+    );
+
     const removeSection = useCallback((id: string) => {
         recordSnapshot();
         const sectionToRemove = sectionMarkers.find((s) => s.id === id);
@@ -186,6 +203,7 @@ export function useSeatDesignerState({
         removeSeat,
         addSection,
         updateSection,
+        batchUpdateSections,
         removeSection,
         isDirty
     };
