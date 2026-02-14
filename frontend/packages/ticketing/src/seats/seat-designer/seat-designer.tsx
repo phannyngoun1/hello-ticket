@@ -75,6 +75,70 @@ import {
 
 export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
 
+/** Bounding box of a marker in percentage coordinates */
+interface MarkerBounds {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  centerX: number;
+  centerY: number;
+}
+
+/** Compute bounding box for a seat or section marker based on its position and shape */
+function getMarkerBounds(
+  marker: { x: number; y: number; shape?: PlacementShape },
+  defaults: { radius?: number; width?: number; height?: number },
+): MarkerBounds {
+  const { x, y } = marker;
+  const shape = marker.shape;
+  const type = shape?.type ?? PlacementShapeType.CIRCLE;
+
+  if (type === PlacementShapeType.CIRCLE) {
+    const radius = shape?.radius ?? defaults.radius ?? 0.8;
+    return {
+      left: x - radius,
+      right: x + radius,
+      top: y - radius,
+      bottom: y + radius,
+      centerX: x,
+      centerY: y,
+    };
+  }
+
+  if (
+    type === PlacementShapeType.RECTANGLE ||
+    type === PlacementShapeType.ELLIPSE
+  ) {
+    const w = shape?.width ?? defaults.width ?? 2;
+    const h = shape?.height ?? defaults.height ?? 1.5;
+    const halfW = w / 2;
+    const halfH = h / 2;
+    return {
+      left: x - halfW,
+      right: x + halfW,
+      top: y - halfH,
+      bottom: y + halfH,
+      centerX: x,
+      centerY: y,
+    };
+  }
+
+  // Polygon, freeform, sofa, stage: use width/height if available, else treat as point
+  const w = shape?.width ?? defaults.width ?? 0;
+  const h = shape?.height ?? defaults.height ?? 0;
+  const halfW = w / 2;
+  const halfH = h / 2;
+  return {
+    left: x - halfW,
+    right: x + halfW,
+    top: y - halfH,
+    bottom: y + halfH,
+    centerX: x,
+    centerY: y,
+  };
+}
+
 export function SeatDesigner({
   venueId,
   layoutId,
@@ -1332,7 +1396,51 @@ export function SeatDesigner({
         setSelectedSectionIds(sectionIds);
       }}
       onAlign={(alignment) => {
-        // Alignment logic for section detail view
+        if (selectedSeatIds.length <= 1) return;
+        recordSnapshot();
+        const selectedSeatsList = seats.filter((s) =>
+          selectedSeatIds.includes(s.id),
+        );
+        const bounds = selectedSeatsList.map((s) =>
+          getMarkerBounds(s, { radius: 0.8 }),
+        );
+        const minLeft = Math.min(...bounds.map((b) => b.left));
+        const maxRight = Math.max(...bounds.map((b) => b.right));
+        const minTop = Math.min(...bounds.map((b) => b.top));
+        const maxBottom = Math.max(...bounds.map((b) => b.bottom));
+        const targetCenterX = (minLeft + maxRight) / 2;
+        const targetCenterY = (minTop + maxBottom) / 2;
+
+        setSeats((prev) =>
+          prev.map((seat) => {
+            if (!selectedSeatIds.includes(seat.id)) return seat;
+            const b = getMarkerBounds(seat, { radius: 0.8 });
+            const updates: Partial<SeatMarker> = {};
+            if (
+              alignment === "left" ||
+              alignment === "center" ||
+              alignment === "right"
+            ) {
+              if (alignment === "left")
+                updates.x = seat.x + (minLeft - b.left);
+              else if (alignment === "right")
+                updates.x = seat.x + (maxRight - b.right);
+              else updates.x = targetCenterX;
+            }
+            if (
+              alignment === "top" ||
+              alignment === "middle" ||
+              alignment === "bottom"
+            ) {
+              if (alignment === "top")
+                updates.y = seat.y + (minTop - b.top);
+              else if (alignment === "bottom")
+                updates.y = seat.y + (maxBottom - b.bottom);
+              else updates.y = targetCenterY;
+            }
+            return { ...seat, ...updates };
+          }),
+        );
       }}
       seatEditControls={
         isEditingSeat && selectedSeat && !readOnly ? (
@@ -1487,75 +1595,109 @@ export function SeatDesigner({
               }}
               onAlign={(alignment) => {
                   recordSnapshot();
-                  
-                  if (selectedSeatIds.length > 1 && anchorSeatId) {
-                      const anchorSeat = seats.find(s => s.id === anchorSeatId);
-                      if (!anchorSeat) return;
-                      
-                      setSeats(prev => prev.map(seat => {
-                          if (selectedSeatIds.includes(seat.id) && seat.id !== anchorSeatId) {
+
+                  if (selectedSeatIds.length > 1) {
+                      const selectedSeats = seats.filter((s) =>
+                          selectedSeatIds.includes(s.id),
+                      );
+                      const bounds = selectedSeats.map((s) =>
+                          getMarkerBounds(s, { radius: 0.8 }),
+                      );
+                      const minLeft = Math.min(...bounds.map((b) => b.left));
+                      const maxRight = Math.max(...bounds.map((b) => b.right));
+                      const minTop = Math.min(...bounds.map((b) => b.top));
+                      const maxBottom = Math.max(...bounds.map((b) => b.bottom));
+                      const targetCenterX = (minLeft + maxRight) / 2;
+                      const targetCenterY = (minTop + maxBottom) / 2;
+
+                      setSeats((prev) =>
+                          prev.map((seat) => {
+                              if (!selectedSeatIds.includes(seat.id)) return seat;
+                              const b = getMarkerBounds(seat, { radius: 0.8 });
                               const updates: Partial<SeatMarker> = {};
-                              
-                              switch (alignment) {
-                                  case 'left':
-                                      updates.x = anchorSeat.x;
-                                      break;
-                                  case 'center':
-                                      updates.x = anchorSeat.x;
-                                      break;
-                                  case 'right':
-                                      updates.x = anchorSeat.x;
-                                      break;
-                                  case 'top':
-                                      updates.y = anchorSeat.y;
-                                      break;
-                                  case 'middle':
-                                      updates.y = anchorSeat.y;
-                                      break;
-                                  case 'bottom':
-                                      updates.y = anchorSeat.y;
-                                      break;
+                              if (
+                                  alignment === "left" ||
+                                  alignment === "center" ||
+                                  alignment === "right"
+                              ) {
+                                  if (alignment === "left")
+                                      updates.x = seat.x + (minLeft - b.left);
+                                  else if (alignment === "right")
+                                      updates.x = seat.x + (maxRight - b.right);
+                                  else updates.x = targetCenterX;
                               }
-                              
+                              if (
+                                  alignment === "top" ||
+                                  alignment === "middle" ||
+                                  alignment === "bottom"
+                              ) {
+                                  if (alignment === "top")
+                                      updates.y = seat.y + (minTop - b.top);
+                                  else if (alignment === "bottom")
+                                      updates.y =
+                                          seat.y + (maxBottom - b.bottom);
+                                  else updates.y = targetCenterY;
+                              }
                               return { ...seat, ...updates };
-                          }
-                          return seat;
-                      }));
+                          }),
+                      );
                   }
-                  
-                  if (selectedSectionIds.length > 1 && anchorSectionId) {
-                      const anchorSection = sectionMarkers.find(s => s.id === anchorSectionId);
-                      if (!anchorSection) return;
-                      
-                      setSectionMarkers(prev => prev.map(section => {
-                          if (selectedSectionIds.includes(section.id) && section.id !== anchorSectionId) {
+
+                  if (selectedSectionIds.length > 1) {
+                      const selectedSections = sectionMarkers.filter((s) =>
+                          selectedSectionIds.includes(s.id),
+                      );
+                      const bounds = selectedSections.map((s) =>
+                          getMarkerBounds(s, {
+                              width: 2,
+                              height: 1.5,
+                          }),
+                      );
+                      const minLeft = Math.min(...bounds.map((b) => b.left));
+                      const maxRight = Math.max(...bounds.map((b) => b.right));
+                      const minTop = Math.min(...bounds.map((b) => b.top));
+                      const maxBottom = Math.max(...bounds.map((b) => b.bottom));
+                      const targetCenterX = (minLeft + maxRight) / 2;
+                      const targetCenterY = (minTop + maxBottom) / 2;
+
+                      setSectionMarkers((prev) =>
+                          prev.map((section) => {
+                              if (!selectedSectionIds.includes(section.id))
+                                  return section;
+                              const b = getMarkerBounds(section, {
+                                  width: 2,
+                                  height: 1.5,
+                              });
                               const updates: Partial<SectionMarker> = {};
-                              
-                              switch (alignment) {
-                                  case 'left':
-                                      updates.x = anchorSection.x;
-                                      break;
-                                  case 'center':
-                                      updates.x = anchorSection.x;
-                                      break;
-                                  case 'right':
-                                      updates.x = anchorSection.x;
-                                      break;
-                                  case 'top':
-                                      updates.y = anchorSection.y;
-                                      break;
-                                  case 'middle':
-                                      updates.y = anchorSection.y;
-                                      break;
-                                  case 'bottom':
-                                      updates.y = anchorSection.y;
-                                      break;
+                              if (
+                                  alignment === "left" ||
+                                  alignment === "center" ||
+                                  alignment === "right"
+                              ) {
+                                  if (alignment === "left")
+                                      updates.x =
+                                          section.x + (minLeft - b.left);
+                                  else if (alignment === "right")
+                                      updates.x =
+                                          section.x + (maxRight - b.right);
+                                  else updates.x = targetCenterX;
                               }
-                              
+                              if (
+                                  alignment === "top" ||
+                                  alignment === "middle" ||
+                                  alignment === "bottom"
+                              ) {
+                                  if (alignment === "top")
+                                      updates.y =
+                                          section.y + (minTop - b.top);
+                                  else if (alignment === "bottom")
+                                      updates.y =
+                                          section.y + (maxBottom - b.bottom);
+                                  else updates.y = targetCenterY;
+                              }
                               return { ...section, ...updates };
-                          }
-                          return section;
-                      }));
+                          }),
+                      );
                   }
               }}
               selectedSeatCount={selectedSeatIds.length}
@@ -1673,7 +1815,57 @@ export function SeatDesigner({
                       recordSnapshot();
                       setSectionMarkers(prev => prev.map(s => s.id === id ? { ...s, shape: { ...(s.shape || { type: PlacementShapeType.RECTANGLE, width: 2, height: 1.5 }), ...style } as PlacementShape } : s));
                   }}
-                  onAlign={() => {}}
+                  onAlign={(alignment) => {
+                    if (selectedSectionIds.length <= 1) return;
+                    recordSnapshot();
+                    const selectedSectionsList = sectionMarkers.filter((s) =>
+                      selectedSectionIds.includes(s.id),
+                    );
+                    const bounds = selectedSectionsList.map((s) =>
+                      getMarkerBounds(s, { width: 2, height: 1.5 }),
+                    );
+                    const minLeft = Math.min(...bounds.map((b) => b.left));
+                    const maxRight = Math.max(...bounds.map((b) => b.right));
+                    const minTop = Math.min(...bounds.map((b) => b.top));
+                    const maxBottom = Math.max(...bounds.map((b) => b.bottom));
+                    const targetCenterX = (minLeft + maxRight) / 2;
+                    const targetCenterY = (minTop + maxBottom) / 2;
+
+                    setSectionMarkers((prev) =>
+                      prev.map((section) => {
+                        if (!selectedSectionIds.includes(section.id))
+                          return section;
+                        const b = getMarkerBounds(section, {
+                          width: 2,
+                          height: 1.5,
+                        });
+                        const updates: Partial<SectionMarker> = {};
+                        if (
+                          alignment === "left" ||
+                          alignment === "center" ||
+                          alignment === "right"
+                        ) {
+                          if (alignment === "left")
+                            updates.x = section.x + (minLeft - b.left);
+                          else if (alignment === "right")
+                            updates.x = section.x + (maxRight - b.right);
+                          else updates.x = targetCenterX;
+                        }
+                        if (
+                          alignment === "top" ||
+                          alignment === "middle" ||
+                          alignment === "bottom"
+                        ) {
+                          if (alignment === "top")
+                            updates.y = section.y + (minTop - b.top);
+                          else if (alignment === "bottom")
+                            updates.y = section.y + (maxBottom - b.bottom);
+                          else updates.y = targetCenterY;
+                        }
+                        return { ...section, ...updates };
+                      }),
+                    );
+                  }}
                   selectedSeatCount={0}
                   selectedSectionCount={selectedSectionIds.length}
                   readOnly={readOnly}
