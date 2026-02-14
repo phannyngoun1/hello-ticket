@@ -454,6 +454,13 @@ export function LayoutCanvas({
       setDraggedSeatId(null);
       setDragPosition(null);
 
+      // Select on drag end when was unselected: one motion to drag without prior click
+      const wasUnselected = !selectedSeatIdSet.has(seatId);
+      if (wasUnselected) {
+        const seat = seats.find((s) => s.id === seatId);
+        if (seat && onSeatClick) onSeatClick(seat, { shiftKey: false });
+      }
+
       if (batchDragState?.type === "seats" && onBatchSeatDragEnd) {
         const initial = batchDragState.initialPositions.get(seatId);
         if (initial) {
@@ -474,7 +481,15 @@ export function LayoutCanvas({
         onSeatDragEnd(seatId, x, y);
       }
     },
-    [onSeatDragEnd, onBatchSeatDragEnd, layerToPercentage, batchDragState],
+    [
+      onSeatDragEnd,
+      onBatchSeatDragEnd,
+      layerToPercentage,
+      batchDragState,
+      seats,
+      selectedSeatIdSet,
+      onSeatClick,
+    ],
   );
 
   const handleSeatDragStart = useCallback(
@@ -527,6 +542,13 @@ export function LayoutCanvas({
       setDraggedSectionId(null);
       setDragPosition(null);
 
+      // Select on drag end when was unselected: one motion to drag without prior click
+      const wasUnselected = !selectedSectionIdSet.has(sectionId);
+      if (wasUnselected) {
+        const section = sections.find((s) => s.id === sectionId);
+        if (section && onSectionClick) onSectionClick(section, { shiftKey: false });
+      }
+
       if (batchDragState?.type === "sections" && onBatchSectionDragEnd) {
         const initial = batchDragState.initialPositions.get(sectionId);
         if (initial) {
@@ -552,6 +574,9 @@ export function LayoutCanvas({
       onBatchSectionDragEnd,
       layerToPercentage,
       batchDragState,
+      sections,
+      selectedSectionIdSet,
+      onSectionClick,
     ],
   );
 

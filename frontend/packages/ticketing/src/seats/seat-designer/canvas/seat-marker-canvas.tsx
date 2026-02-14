@@ -263,8 +263,7 @@ export function SeatMarkerCanvas({
         draggable={
           !readOnly &&
           (forceDraggable ||
-            (isSelected &&
-              (isPlacingSeats || isPlacingSections || !selectedShapeTool)))
+            (isPlacingSeats || isPlacingSections || !selectedShapeTool))
         }
         onDragStart={
           !readOnly && onSeatDragStart ? () => onSeatDragStart(seat.id) : undefined
@@ -297,7 +296,9 @@ export function SeatMarkerCanvas({
               ? "crosshair"
               : isSelected
                 ? "move"
-                : "pointer";
+                : isPlacingSeats || isPlacingSections || !selectedShapeTool
+                  ? "grab"
+                  : "pointer";
           }
           setIsHovered(true);
         }}

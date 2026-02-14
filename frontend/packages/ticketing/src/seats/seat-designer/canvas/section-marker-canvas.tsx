@@ -286,8 +286,7 @@ export function SectionMarkerCanvas({
         draggable={
           !readOnly &&
           (forceDraggable ||
-            (isSelected &&
-              (isPlacingSections || isPlacingSeats || !selectedShapeTool)))
+            (isPlacingSections || isPlacingSeats || !selectedShapeTool))
         }
         onDragStart={
           !readOnly && onSectionDragStart
@@ -340,6 +339,9 @@ export function SectionMarkerCanvas({
               ? "crosshair"
               : isSelected && section.shape
                 ? "move"
+                : (isPlacingSections || isPlacingSeats || !selectedShapeTool) &&
+                    section.shape
+                  ? "grab"
                 : "pointer";
           }
           setIsHovered(true);
