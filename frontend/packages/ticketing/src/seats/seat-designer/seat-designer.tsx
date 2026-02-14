@@ -265,6 +265,76 @@ function applyAlignment<T extends { id: string; x: number; y: number; shape?: Pl
   return updates;
 }
 
+/** Apply scale factor to a shape (for batch resize) */
+function applyScaleToShape(
+  shape: PlacementShape | undefined,
+  scale: number,
+  defaults: { radius?: number; width?: number; height?: number },
+): PlacementShape | undefined {
+  if (!shape) return shape;
+  const type = shape.type ?? PlacementShapeType.CIRCLE;
+  const updated: PlacementShape = { ...shape, type };
+
+  if (type === PlacementShapeType.CIRCLE) {
+    const r = shape.radius ?? defaults.radius ?? 0.8;
+    updated.radius = Math.max(0.1, r * scale);
+  } else if (
+    type === PlacementShapeType.RECTANGLE ||
+    type === PlacementShapeType.ELLIPSE
+  ) {
+    const w = shape.width ?? defaults.width ?? 2;
+    const h = shape.height ?? defaults.height ?? 1.5;
+    updated.width = Math.max(0.1, w * scale);
+    updated.height = Math.max(0.1, h * scale);
+  } else if (
+    (type === PlacementShapeType.POLYGON || type === PlacementShapeType.FREEFORM) &&
+    shape.points?.length
+  ) {
+    updated.points = shape.points.map((p) => p * scale);
+  }
+  return updated;
+}
+
+/** Compute scale factor from old shape to new shape */
+function getShapeScale(
+  oldShape: PlacementShape | undefined,
+  newShape: PlacementShape,
+  defaults: { radius?: number; width?: number; height?: number },
+): number {
+  const type = newShape.type ?? PlacementShapeType.CIRCLE;
+  if (type === PlacementShapeType.CIRCLE) {
+    const oldR = oldShape?.radius ?? defaults.radius ?? 0.8;
+    const newR = newShape.radius ?? oldR;
+    return oldR > 0 ? newR / oldR : 1;
+  }
+  if (
+    type === PlacementShapeType.RECTANGLE ||
+    type === PlacementShapeType.ELLIPSE
+  ) {
+    const oldW = oldShape?.width ?? defaults.width ?? 2;
+    const oldH = oldShape?.height ?? defaults.height ?? 1.5;
+    const newW = newShape.width ?? oldW;
+    const newH = newShape.height ?? oldH;
+    const scaleX = oldW > 0 ? newW / oldW : 1;
+    const scaleY = oldH > 0 ? newH / oldH : 1;
+    return (scaleX + scaleY) / 2;
+  }
+  if (
+    (type === PlacementShapeType.POLYGON || type === PlacementShapeType.FREEFORM) &&
+    oldShape?.points?.length &&
+    newShape.points?.length
+  ) {
+    const oldMag = Math.sqrt(
+      oldShape.points.reduce((s, p) => s + p * p, 0),
+    ) || 1;
+    const newMag = Math.sqrt(
+      newShape.points.reduce((s, p) => s + p * p, 0),
+    ) || 1;
+    return newMag / oldMag;
+  }
+  return 1;
+}
+
 export function SeatDesigner({
   venueId,
   layoutId,
@@ -1100,6 +1170,89 @@ export function SeatDesigner({
     [recordSnapshot, snapToGrid, gridSize, batchUpdateSections],
   );
 
+  const handleSeatShapeTransform = useCallback(
+    (id: string, shape: PlacementShape, position?: { x: number; y: number }) => {
+      recordSnapshot();
+      const seat = seats.find((s) => s.id === id);
+      const oldShape = seat?.shape;
+      updateSeat(id, {
+        shape,
+        ...(position && { x: position.x, y: position.y }),
+      });
+
+      if (selectedSeatIds.length > 1 && selectedSeatIds.includes(id)) {
+        const scale = getShapeScale(oldShape, shape, { radius: 0.8 });
+        if (scale !== 1) {
+          const others = seats.filter(
+            (s) => selectedSeatIds.includes(s.id) && s.id !== id,
+          );
+          const updates = others.map((s) => {
+            const scaled = applyScaleToShape(s.shape, scale, { radius: 0.8 });
+            return scaled ? { id: s.id, updates: { shape: scaled } } : null;
+          }).filter(Boolean) as { id: string; updates: Partial<SeatMarker> }[];
+          if (updates.length) batchUpdateSeats(updates);
+        }
+      }
+    },
+    [
+      recordSnapshot,
+      updateSeat,
+      batchUpdateSeats,
+      seats,
+      selectedSeatIds,
+    ],
+  );
+
+  const handleSectionShapeTransform = useCallback(
+    (
+      id: string,
+      shape: PlacementShape,
+      position?: { x: number; y: number },
+    ) => {
+      recordSnapshot();
+      const section = sectionMarkers.find((s) => s.id === id);
+      const oldShape = section?.shape;
+      updateSection(id, {
+        shape,
+        ...(position && { x: position.x, y: position.y }),
+      });
+
+      if (selectedSectionIds.length > 1 && selectedSectionIds.includes(id)) {
+        const scale = getShapeScale(oldShape, shape, {
+          width: 2,
+          height: 1.5,
+        });
+        if (scale !== 1) {
+          const others = sectionMarkers.filter(
+            (s) => selectedSectionIds.includes(s.id) && s.id !== id,
+          );
+          const updates = others
+            .map((s) => {
+              const scaled = applyScaleToShape(s.shape, scale, {
+                width: 2,
+                height: 1.5,
+              });
+              return scaled
+                ? { id: s.id, updates: { shape: scaled } }
+                : null;
+            })
+            .filter(Boolean) as {
+              id: string;
+              updates: Partial<SectionMarker>;
+            }[];
+          if (updates.length) batchUpdateSections(updates);
+        }
+      }
+    },
+    [
+      recordSnapshot,
+      updateSection,
+      batchUpdateSections,
+      sectionMarkers,
+      selectedSectionIds,
+    ],
+  );
+
   // Handle Hotkeys
   useSeatDesignerHotkeys({
       onUndo: !readOnly ? undo : undefined,
@@ -1531,9 +1684,7 @@ export function SeatDesigner({
       onSeatClick={handleSeatClickWithToolSwitch}
       onSeatDragEnd={handleKonvaSeatDragEnd}
       onBatchSeatDragEnd={handleBatchSeatDragEnd}
-      onSeatShapeTransform={(id, shape, position) =>
-        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
-      }
+      onSeatShapeTransform={handleSeatShapeTransform}
       onSeatShapeStyleChange={(seatId, style) => {
         recordSnapshot();
         setSeats(prev => prev.map(s => s.id === seatId ? { ...s, shape: { ...(s.shape || { type: PlacementShapeType.CIRCLE, radius: 0.8 }), ...style } as PlacementShape } : s));
@@ -1995,9 +2146,7 @@ export function SeatDesigner({
                      onSeatClick={handleSeatClickWithToolSwitch}
                      onSeatDragEnd={handleKonvaSeatDragEnd}
                      onBatchSeatDragEnd={handleBatchSeatDragEnd}
-                     onSeatShapeTransform={(id, shape, position) =>
-        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
-      }
+                     onSeatShapeTransform={handleSeatShapeTransform}
                      onImageClick={handleKonvaImageClick}
                      onDeselect={handleDeselect}
                      onShapeDraw={handleShapeDraw}
@@ -2054,13 +2203,8 @@ export function SeatDesigner({
                      onSeatDragEnd={handleKonvaSeatDragEnd}
                      onBatchSeatDragEnd={handleBatchSeatDragEnd}
                      onBatchSectionDragEnd={handleBatchSectionDragEnd}
-                     onSeatShapeTransform={(id, shape, position) =>
-        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
-      }
-                     onSectionShapeTransform={(id, shape, position) => {
-                         recordSnapshot();
-                         updateSection(id, { shape, ...(position && { x: position.x, y: position.y }) });
-                     }}
+                     onSeatShapeTransform={handleSeatShapeTransform}
+                     onSectionShapeTransform={handleSectionShapeTransform}
                      onSectionDoubleClick={(section) => {
                          setViewingSection(section);
                          seatPlacementForm.setValue("section", section.name);
