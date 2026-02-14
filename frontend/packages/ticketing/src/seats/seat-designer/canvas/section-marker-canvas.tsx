@@ -51,6 +51,8 @@ export interface SectionMarkerCanvasProps {
   useLowDetail?: boolean;
   colors: { fill: string; stroke: string };
   forceDraggable?: boolean;
+  /** Called during transform to force redraw (e.g. so other selected objects' boxes update) */
+  onTransformProgress?: () => void;
 }
 
 export function SectionMarkerCanvas({
@@ -78,6 +80,7 @@ export function SectionMarkerCanvas({
   useLowDetail = false,
   colors,
   forceDraggable = false,
+  onTransformProgress,
 }: SectionMarkerCanvasProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -399,6 +402,8 @@ export function SectionMarkerCanvas({
       {isSelected && !readOnly && section.shape && (
         <Transformer
           ref={transformerRef}
+          onTransform={onTransformProgress}
+          onTransformStart={onTransformProgress}
           boundBoxFunc={(oldBox, newBox) => {
             const minSize = 10;
             if (

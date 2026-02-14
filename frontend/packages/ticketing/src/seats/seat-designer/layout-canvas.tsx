@@ -262,6 +262,16 @@ export function LayoutCanvas({
   // Ref to prevent click event after drag-to-draw
   const ignoreClickRef = useRef(false);
 
+  // Throttled redraw during transform so other selected objects' boxes update in real time
+  const transformProgressRafRef = useRef<number | null>(null);
+  const handleTransformProgress = useCallback(() => {
+    if (transformProgressRafRef.current !== null) return;
+    transformProgressRafRef.current = requestAnimationFrame(() => {
+      stageRef.current?.batchDraw();
+      transformProgressRafRef.current = null;
+    });
+  }, []);
+
   // Handle Space key for panning
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -768,12 +778,18 @@ export function LayoutCanvas({
     offsetY: centerY,
   };
 
-  const staticSeats = displaySeats.filter((s) => s.id !== selectedSeatId);
+  const staticSeats = displaySeats.filter(
+    (s) => !selectedSeatIdSet.has(s.id),
+  );
+  const selectedSeats = displaySeats.filter((s) => selectedSeatIdSet.has(s.id));
   const selectedSeat = displaySeats.find((s) => s.id === selectedSeatId);
   const draggedSeat = displaySeats.find((s) => s.id === draggedSeatId);
 
   const staticSections = displaySections.filter(
-    (s) => s.id !== selectedSectionId,
+    (s) => !selectedSectionIdSet.has(s.id),
+  );
+  const selectedSections = displaySections.filter((s) =>
+    selectedSectionIdSet.has(s.id),
   );
   const selectedSection = displaySections.find(
     (s) => s.id === selectedSectionId,
@@ -1698,68 +1714,64 @@ export function LayoutCanvas({
         })}
       </Layer>
 
-      {/* Interactive Layer: Selected seat/section + Transformer; position follows cursor during drag via dragPosition */}
+      {/* Interactive Layer: All selected seats/sections + Transformers; each shows its own box, redraw during transform for real-time visualization */}
       <Layer {...layerTransform} listening={true}>
-        {selectedSeat && (
-          <>
-            {(() => {
-              const pos =
-                draggedSeatId === selectedSeat.id && dragPosition
-                  ? dragPosition
-                  : { x: selectedSeat.x, y: selectedSeat.y };
-              const { x, y } = percentageToStage(pos.x, pos.y);
-              const colors = getSeatMarkerColors(selectedSeat);
-              return (
-                <MemoizedSeatMarkerCanvas
-                  key={selectedSeat.id}
-                  seat={selectedSeat}
-                  x={x}
-                  y={y}
-                  isSelected={true}
-                  isAnchor={
-                    anchorSeatId === selectedSeat.id &&
-                    selectedSeatIdsProp &&
-                    selectedSeatIdsProp.length > 1
-                  }
-                  isPlacingSeats={isPlacingSeats}
-                  isPanning={isPanning}
-                  isSpacePressed={isSpacePressed}
-                  isPlacingSections={isPlacingSections}
-                  selectedShapeTool={selectedShapeTool}
-                  onSeatClick={onSeatClick}
-                  onSeatDragStart={handleSeatDragStart}
-                  onSeatDragMove={handleSeatDragMove}
-                  onSeatDragEnd={handleSeatDragEnd}
-                  onShapeTransform={onSeatShapeTransform}
-                  layerToPercentage={layerToPercentage}
-                  colors={colors}
-                  imageWidth={displayedWidth}
-                  imageHeight={displayedHeight}
-                  readOnly={readOnly}
-                  disableHoverAnimation={disableHoverAnimation}
-                  useLowDetail={false}
-                />
-              );
-            })()}
-          </>
-        )}
+        {selectedSeats.map((seat) => {
+          const pos =
+            seat.id === draggedSeatId && dragPosition
+              ? dragPosition
+              : { x: seat.x, y: seat.y };
+          const { x, y } = percentageToStage(pos.x, pos.y);
+          const colors = getSeatMarkerColors(seat);
+          return (
+            <MemoizedSeatMarkerCanvas
+              key={seat.id}
+              seat={seat}
+              x={x}
+              y={y}
+              isSelected={true}
+              isAnchor={
+                anchorSeatId === seat.id &&
+                selectedSeatIdsProp &&
+                selectedSeatIdsProp.length > 1
+              }
+              isPlacingSeats={isPlacingSeats}
+              isPanning={isPanning}
+              isSpacePressed={isSpacePressed}
+              isPlacingSections={isPlacingSections}
+              selectedShapeTool={selectedShapeTool}
+              onSeatClick={onSeatClick}
+              onSeatDragStart={handleSeatDragStart}
+              onSeatDragMove={handleSeatDragMove}
+              onSeatDragEnd={handleSeatDragEnd}
+              onShapeTransform={onSeatShapeTransform}
+              layerToPercentage={layerToPercentage}
+              colors={colors}
+              imageWidth={displayedWidth}
+              imageHeight={displayedHeight}
+              readOnly={readOnly}
+              disableHoverAnimation={disableHoverAnimation}
+              useLowDetail={false}
+              onTransformProgress={handleTransformProgress}
+            />
+          );
+        })}
         {venueType === "large" &&
-          selectedSection &&
-          (() => {
+          selectedSections.map((section) => {
             const pos =
-              draggedSectionId === selectedSection.id && dragPosition
+              section.id === draggedSectionId && dragPosition
                 ? dragPosition
-                : { x: selectedSection.x, y: selectedSection.y };
+                : { x: section.x, y: section.y };
             const { x, y } = percentageToStage(pos.x, pos.y);
             return (
               <MemoizedSectionMarkerCanvas
-                key={selectedSection.id}
-                section={selectedSection}
+                key={section.id}
+                section={section}
                 x={x}
                 y={y}
                 isSelected={true}
                 isAnchor={
-                  anchorSectionId === selectedSection.id &&
+                  anchorSectionId === section.id &&
                   selectedSectionIdsProp &&
                   selectedSectionIdsProp.length > 1
                 }
@@ -1775,18 +1787,20 @@ export function LayoutCanvas({
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
                 layerToPercentage={layerToPercentage}
-                colors={getSectionMarkerColors(selectedSection)}
+                colors={getSectionMarkerColors(section)}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
                 readOnly={readOnly}
                 disableHoverAnimation={disableHoverAnimation}
                 useLowDetail={false}
+                onTransformProgress={handleTransformProgress}
               />
             );
-          })()}
-        {/* Dragged shape when different from selected (selected one moves via dragPosition above) */}
+          })}
+        {/* Dragged shape when not in selection (e.g. mid-drag before select-on-drop) */}
         {draggedSeat &&
-          (!selectedSeat || selectedSeat.id !== draggedSeatId) &&
+          draggedSeatId &&
+          !selectedSeatIdSet.has(draggedSeatId) &&
           (() => {
             const pos = dragPosition ?? { x: draggedSeat.x, y: draggedSeat.y };
             const { x, y } = percentageToStage(pos.x, pos.y);
@@ -1825,7 +1839,8 @@ export function LayoutCanvas({
           })()}
         {venueType === "large" &&
           draggedSection &&
-          (!selectedSection || selectedSection.id !== draggedSectionId) &&
+          draggedSectionId &&
+          !selectedSectionIdSet.has(draggedSectionId) &&
           (() => {
             const pos = dragPosition ?? {
               x: draggedSection.x,

@@ -43,6 +43,8 @@ export interface SeatMarkerCanvasProps {
   onSeatDragStart?: (seatId: string) => void;
   useLowDetail?: boolean;
   forceDraggable?: boolean;
+  /** Called during transform to force redraw (e.g. so other selected objects' boxes update) */
+  onTransformProgress?: () => void;
 }
 
 export function SeatMarkerCanvas({
@@ -69,6 +71,7 @@ export function SeatMarkerCanvas({
   onSeatDragStart,
   useLowDetail = false,
   forceDraggable = false,
+  onTransformProgress,
 }: SeatMarkerCanvasProps) {
   const shapeRef = useRef<Konva.Group>(null);
   const groupRef = useRef<Konva.Group>(null);
@@ -342,6 +345,8 @@ export function SeatMarkerCanvas({
       {isSelected && !readOnly && (
         <Transformer
           ref={transformerRef}
+          onTransform={onTransformProgress}
+          onTransformStart={onTransformProgress}
           boundBoxFunc={(oldBox, newBox) => {
             const minSize = 10;
             if (
