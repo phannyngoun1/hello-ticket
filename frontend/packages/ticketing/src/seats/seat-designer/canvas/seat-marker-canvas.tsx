@@ -28,7 +28,13 @@ export interface SeatMarkerCanvasProps {
   onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
   onSeatDragMove?: (seatId: string, stageX: number, stageY: number) => void;
-  onShapeTransform?: (seatId: string, shape: PlacementShape) => void;
+  onShapeTransform?: (
+    seatId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
+  /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
+  layerToPercentage?: (layerX: number, layerY: number) => { x: number; y: number };
   colors: { fill: string; stroke: string };
   imageWidth: number;
   imageHeight: number;
@@ -54,6 +60,7 @@ export function SeatMarkerCanvas({
   onSeatDragEnd,
   onSeatDragMove,
   onShapeTransform,
+  layerToPercentage,
   colors,
   imageWidth,
   imageHeight,
@@ -95,22 +102,30 @@ export function SeatMarkerCanvas({
   );
 
   useEffect(() => {
-    if (!readOnly && isSelected && groupRef.current && transformerRef.current) {
-      transformerRef.current.nodes([groupRef.current]);
-      transformerRef.current.forceUpdate();
-      transformerRef.current.getLayer()?.batchDraw();
-    }
-  }, [isSelected, shapeKey, readOnly]);
-
-  useEffect(() => {
     const group = groupRef.current;
     if (!group) return;
     if (isSelected) {
       group.clearCache();
+      // Update Transformer after cache is cleared; defer 2 frames so canvas has fully rendered
+      if (!readOnly && transformerRef.current) {
+        const tr = transformerRef.current;
+        let rafId2: number | undefined;
+        const rafId = requestAnimationFrame(() => {
+          rafId2 = requestAnimationFrame(() => {
+            tr.nodes([group]);
+            tr.forceUpdate();
+            tr.getLayer()?.batchDraw();
+          });
+        });
+        return () => {
+          cancelAnimationFrame(rafId);
+          if (rafId2 !== undefined) cancelAnimationFrame(rafId2);
+        };
+      }
     } else if (!useLowDetail) {
       group.cache();
     }
-  }, [isSelected, useLowDetail, shapeKey]);
+  }, [isSelected, useLowDetail, shapeKey, readOnly]);
 
   useEffect(() => {
     if (disableHoverAnimation) return;
@@ -141,6 +156,13 @@ export function SeatMarkerCanvas({
 
     node.scaleX(1);
     node.scaleY(1);
+
+    // Konva Transformer can change node position when resizing (keeps opposite corner fixed).
+    // Capture and propagate the new position to prevent unpredictable position shifts.
+    let position: { x: number; y: number } | undefined;
+    if (layerToPercentage) {
+      position = layerToPercentage(node.x(), node.y());
+    }
 
     const updatedShape: PlacementShape = { ...shape };
 
@@ -196,15 +218,16 @@ export function SeatMarkerCanvas({
     }
 
     updatedShape.rotation = rotation;
-    onShapeTransform(seat.id, updatedShape);
+    onShapeTransform(seat.id, updatedShape, position);
 
     setTimeout(() => {
       if (transformerRef.current && groupRef.current) {
         transformerRef.current.nodes([groupRef.current]);
+        transformerRef.current.forceUpdate();
         transformerRef.current.getLayer()?.batchDraw();
       }
     }, 0);
-  }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id]);
+  }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id, layerToPercentage]);
 
   return (
     <>
@@ -311,7 +334,8 @@ export function SeatMarkerCanvas({
           anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
-          ignoreStroke={false}
+          padding={0}
+          ignoreStroke={true}
           keepRatio={false}
           flipEnabled={false}
           enabledAnchors={[

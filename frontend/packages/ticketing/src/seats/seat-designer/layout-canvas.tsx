@@ -78,8 +78,16 @@ interface LayoutCanvasProps {
   onSectionDoubleClick?: (section: SectionMarker) => void;
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
-  onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
-  onSectionShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
+  onSeatShapeTransform?: (
+    seatId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
+  onSectionShapeTransform?: (
+    sectionId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
   onImageClick?: (
     e: Konva.KonvaEventObject<MouseEvent>,
     percentageCoords?: { x: number; y: number },
@@ -1401,6 +1409,7 @@ export function LayoutCanvas({
               onSeatDragStart={handleSeatDragStart}
               onSeatDragEnd={handleSeatDragEnd}
               onShapeTransform={onSeatShapeTransform}
+              layerToPercentage={layerToPercentage}
               colors={colors}
               imageWidth={displayedWidth}
               imageHeight={displayedHeight}
@@ -1435,6 +1444,7 @@ export function LayoutCanvas({
                 onSectionDragStart={handleSectionDragStart}
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
+                layerToPercentage={layerToPercentage}
                 colors={getSectionMarkerColors(section)}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
@@ -1499,6 +1509,7 @@ export function LayoutCanvas({
                   onSeatDragMove={handleSeatDragMove}
                   onSeatDragEnd={handleSeatDragEnd}
                   onShapeTransform={onSeatShapeTransform}
+                  layerToPercentage={layerToPercentage}
                   colors={colors}
                   imageWidth={displayedWidth}
                   imageHeight={displayedHeight}
@@ -1541,6 +1552,7 @@ export function LayoutCanvas({
                 onSectionDragStart={handleSectionDragStart}
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
+                layerToPercentage={layerToPercentage}
                 colors={getSectionMarkerColors(selectedSection)}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}
@@ -1621,6 +1633,7 @@ export function LayoutCanvas({
                 onSectionDragStart={handleSectionDragStart}
                 selectedShapeTool={selectedShapeTool}
                 onShapeTransform={onSectionShapeTransform}
+                layerToPercentage={layerToPercentage}
                 colors={getSectionMarkerColors(draggedSection)}
                 imageWidth={displayedWidth}
                 imageHeight={displayedHeight}

@@ -36,7 +36,13 @@ export interface SectionMarkerCanvasProps {
     stageX: number,
     stageY: number,
   ) => void;
-  onShapeTransform?: (sectionId: string, shape: PlacementShape) => void;
+  onShapeTransform?: (
+    sectionId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
+  /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
+  layerToPercentage?: (layerX: number, layerY: number) => { x: number; y: number };
   imageWidth: number;
   imageHeight: number;
   readOnly?: boolean;
@@ -63,6 +69,7 @@ export function SectionMarkerCanvas({
   onSectionDragEnd,
   onSectionDragMove,
   onShapeTransform,
+  layerToPercentage,
   imageWidth,
   imageHeight,
   readOnly = false,
@@ -105,28 +112,30 @@ export function SectionMarkerCanvas({
   ]);
 
   useEffect(() => {
-    if (
-      !readOnly &&
-      isSelected &&
-      section.shape &&
-      groupRef.current &&
-      transformerRef.current
-    ) {
-      transformerRef.current.nodes([groupRef.current]);
-      transformerRef.current.forceUpdate();
-      transformerRef.current.getLayer()?.batchDraw();
-    }
-  }, [isSelected, shapeKey, readOnly]);
-
-  useEffect(() => {
     const group = groupRef.current;
     if (!group) return;
-    if (isSelected) {
+    if (isSelected && section.shape) {
       group.clearCache();
+      // Update Transformer after cache is cleared; defer 2 frames so canvas has fully rendered
+      if (!readOnly && transformerRef.current) {
+        const tr = transformerRef.current;
+        let rafId2: number | undefined;
+        const rafId = requestAnimationFrame(() => {
+          rafId2 = requestAnimationFrame(() => {
+            tr.nodes([group]);
+            tr.forceUpdate();
+            tr.getLayer()?.batchDraw();
+          });
+        });
+        return () => {
+          cancelAnimationFrame(rafId);
+          if (rafId2 !== undefined) cancelAnimationFrame(rafId2);
+        };
+      }
     } else if (!useLowDetail && section.shape) {
       group.cache();
     }
-  }, [isSelected, useLowDetail, section.shape, shapeKey]);
+  }, [isSelected, useLowDetail, section.shape, shapeKey, readOnly]);
 
   const handleTransformEnd = useCallback(() => {
     if (!groupRef.current || !onShapeTransform || !section.shape) return;
@@ -138,6 +147,13 @@ export function SectionMarkerCanvas({
 
     node.scaleX(1);
     node.scaleY(1);
+
+    // Konva Transformer can change node position when resizing (keeps opposite corner fixed).
+    // Capture and propagate the new position to prevent unpredictable position shifts.
+    let position: { x: number; y: number } | undefined;
+    if (layerToPercentage) {
+      position = layerToPercentage(node.x(), node.y());
+    }
 
     const updatedShape: PlacementShape = { ...shape };
 
@@ -193,11 +209,12 @@ export function SectionMarkerCanvas({
     }
 
     updatedShape.rotation = rotation;
-    onShapeTransform(section.id, updatedShape);
+    onShapeTransform(section.id, updatedShape, position);
 
     setTimeout(() => {
       if (transformerRef.current && groupRef.current) {
         transformerRef.current.nodes([groupRef.current]);
+        transformerRef.current.forceUpdate();
         transformerRef.current.getLayer()?.batchDraw();
       }
     }, 0);
@@ -208,6 +225,7 @@ export function SectionMarkerCanvas({
     onShapeTransform,
     section.id,
     section.shape,
+    layerToPercentage,
   ]);
 
   useEffect(() => {
@@ -373,7 +391,8 @@ export function SectionMarkerCanvas({
           anchorStrokeWidth={1.5}
           anchorSize={10}
           anchorCornerRadius={2}
-          ignoreStroke={false}
+          padding={0}
+          ignoreStroke={true}
           keepRatio={false}
           flipEnabled={false}
           enabledAnchors={[

@@ -39,7 +39,11 @@ export interface SeatDesignCanvasProps {
   panOffset: { x: number; y: number };
   onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
-  onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
+  onSeatShapeTransform?: (
+    seatId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
   onImageClick?: (
     e: Konva.KonvaEventObject<MouseEvent>,
     percentageCoords?: { x: number; y: number },

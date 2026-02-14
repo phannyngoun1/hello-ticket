@@ -66,7 +66,11 @@ export interface SectionDetailViewProps {
   onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
   onSeatClick: (seat: SeatMarker) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
-  onSeatShapeTransform?: (seatId: string, shape: PlacementShape) => void;
+  onSeatShapeTransform?: (
+    seatId: string,
+    shape: PlacementShape,
+    position?: { x: number; y: number },
+  ) => void;
   onSeatShapeStyleChange?: (
     seatId: string,
     style: { fillColor?: string; strokeColor?: string },

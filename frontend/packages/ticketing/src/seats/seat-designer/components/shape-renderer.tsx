@@ -46,6 +46,7 @@ export function ShapeRenderer({
     opacity,
     dash,
     perfectDrawEnabled: false,
+    strokeScaleEnabled: false,
   };
 
   if (!shape || !shape.type) {

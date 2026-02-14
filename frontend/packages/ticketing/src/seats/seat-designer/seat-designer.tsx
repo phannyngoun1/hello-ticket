@@ -464,6 +464,23 @@ export function SeatDesigner({
   const [selectedShapeTool, setSelectedShapeTool] =
     useState<PlacementShapeType | null>(null);
 
+  // When a shape tool is selected and user clicks on a seat/section, switch to select tool
+  const handleSeatClickWithToolSwitch = useCallback(
+    (seat: SeatMarker, event?: { shiftKey?: boolean }) => {
+      if (selectedShapeTool) setSelectedShapeTool(null);
+      handleSeatClick(seat, event);
+    },
+    [selectedShapeTool, handleSeatClick]
+  );
+
+  const handleSectionClickWithToolSwitch = useCallback(
+    (section: SectionMarker, event?: { shiftKey?: boolean }) => {
+      if (selectedShapeTool) setSelectedShapeTool(null);
+      handleSectionClick(section, event);
+    },
+    [selectedShapeTool, handleSectionClick]
+  );
+
   // Shape overlays for making areas clickable
   const [shapeOverlays, setShapeOverlays] = useState<
     Array<{
@@ -1336,9 +1353,11 @@ export function SeatDesigner({
       }}
       onSectionImageSelect={handleSectionImageSelect}
       onRemoveSectionImage={handleRemoveSectionImage}
-      onSeatClick={handleSeatClick}
+      onSeatClick={handleSeatClickWithToolSwitch}
       onSeatDragEnd={handleKonvaSeatDragEnd}
-      onSeatShapeTransform={(id, shape) => updateSeat(id, { shape })}
+      onSeatShapeTransform={(id, shape, position) =>
+        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
+      }
       onSeatShapeStyleChange={(seatId, style) => {
         recordSnapshot();
         setSeats(prev => prev.map(s => s.id === seatId ? { ...s, shape: { ...(s.shape || { type: PlacementShapeType.CIRCLE, radius: 0.8 }), ...style } as PlacementShape } : s));
@@ -1387,7 +1406,10 @@ export function SeatDesigner({
       onShapeDraw={handleShapeDraw}
       shapeOverlays={displayedShapeOverlays}
       selectedOverlayId={selectedOverlayId}
-      onShapeOverlayClick={(id) => setSelectedOverlayId(id)}
+      onShapeOverlayClick={(id) => {
+        if (selectedShapeTool) setSelectedShapeTool(null);
+        setSelectedOverlayId(id);
+      }}
       onDetectSeats={viewingSection.imageUrl ? handleDetectSeatsClick : undefined}
       isDetectingSeats={isDetectingSeats}
       onMarkersInRect={(seatIds, sectionIds) => {
@@ -1905,13 +1927,18 @@ export function SeatDesigner({
                      readOnly={readOnly}
                      zoomLevel={zoomLevel}
                      panOffset={panOffset}
-                     onSeatClick={handleSeatClick}
+                     onSeatClick={handleSeatClickWithToolSwitch}
                      onSeatDragEnd={handleKonvaSeatDragEnd}
-                     onSeatShapeTransform={(id, shape) => updateSeat(id, { shape })}
+                     onSeatShapeTransform={(id, shape, position) =>
+        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
+      }
                      onImageClick={handleKonvaImageClick}
                      onDeselect={handleDeselect}
                      onShapeDraw={handleShapeDraw}
-                     onShapeOverlayClick={(id) => setSelectedOverlayId(id)}
+                     onShapeOverlayClick={(id) => {
+                         if (selectedShapeTool) setSelectedShapeTool(null);
+                         setSelectedOverlayId(id);
+                     }}
                      onWheel={(e, isSpace) => {
                          if (isSpace) {
                              e.evt.preventDefault();
@@ -1955,14 +1982,16 @@ export function SeatDesigner({
                      readOnly={readOnly}
                      zoomLevel={zoomLevel}
                      panOffset={panOffset}
-                     onSeatClick={handleSeatClick}
-                     onSectionClick={handleSectionClick}
+                     onSeatClick={handleSeatClickWithToolSwitch}
+                     onSectionClick={handleSectionClickWithToolSwitch}
                      onSectionDragEnd={handleKonvaSectionDragEnd}
                      onSeatDragEnd={handleKonvaSeatDragEnd}
-                     onSeatShapeTransform={(id, shape) => updateSeat(id, { shape })}
-                     onSectionShapeTransform={(id, shape) => {
+                     onSeatShapeTransform={(id, shape, position) =>
+        updateSeat(id, { shape, ...(position && { x: position.x, y: position.y }) })
+      }
+                     onSectionShapeTransform={(id, shape, position) => {
                          recordSnapshot();
-                         updateSection(id, { shape });
+                         updateSection(id, { shape, ...(position && { x: position.x, y: position.y }) });
                      }}
                      onSectionDoubleClick={(section) => {
                          setViewingSection(section);
@@ -1974,7 +2003,10 @@ export function SeatDesigner({
                      onImageClick={handleKonvaImageClick}
                      onDeselect={handleDeselect}
                      onShapeDraw={handleShapeDraw}
-                     onShapeOverlayClick={(id) => setSelectedOverlayId(id)}
+                     onShapeOverlayClick={(id) => {
+                         if (selectedShapeTool) setSelectedShapeTool(null);
+                         setSelectedOverlayId(id);
+                     }}
                      onWheel={(e, isSpace) => {
                          if (isSpace) {
                              e.evt.preventDefault();
