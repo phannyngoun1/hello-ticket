@@ -36,6 +36,10 @@ export interface UseLetterboxingResult {
   percentageToStage: (xPercent: number, yPercent: number) => { x: number; y: number };
   /** Convert layer coords to percentage */
   layerToPercentage: (layerX: number, layerY: number) => { x: number; y: number };
+  /** Convert stage/pointer coords to percentage (requires panOffset and zoomLevel) */
+  stageToPercentage: (stageX: number, stageY: number) => { x: number; y: number };
+  /** Alias for stageToPercentage - converts pointer position (stage coords) to percentage */
+  pointerToPercentage: (pointerX: number, pointerY: number) => { x: number; y: number };
 }
 
 /** Fixed aspect ratio for no-image mode (4:3, matching 800x600 default) */
@@ -98,6 +102,22 @@ export function useLetterboxing({
     [imageX, imageY, displayedWidth, displayedHeight],
   );
 
+  const stageToPercentage = useCallback(
+    (stageX: number, stageY: number) => {
+      const layerX =
+        (stageX - centerX - panOffset.x) / zoomLevel + centerX;
+      const layerY =
+        (stageY - centerY - panOffset.y) / zoomLevel + centerY;
+      return layerToPercentage(layerX, layerY);
+    },
+    [centerX, centerY, panOffset, zoomLevel, layerToPercentage],
+  );
+
+  const pointerToPercentage = useCallback(
+    (pointerX: number, pointerY: number) => stageToPercentage(pointerX, pointerY),
+    [stageToPercentage],
+  );
+
   return {
     displayedWidth,
     displayedHeight,
@@ -107,5 +127,7 @@ export function useLetterboxing({
     centerY,
     percentageToStage,
     layerToPercentage,
+    stageToPercentage,
+    pointerToPercentage,
   };
 }

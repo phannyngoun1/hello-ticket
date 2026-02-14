@@ -38,6 +38,9 @@ import {
   type SeatFormData,
 } from "./form-schemas";
 import { useDesignerHistory } from "./hooks/use-designer-history";
+import { useDesignerData } from "./hooks/use-designer-data";
+import { useCanvasZoom } from "./hooks/use-canvas-zoom";
+import { useCanvasPan } from "./hooks/use-canvas-pan";
 import type { DesignerSnapshot } from "./types";
 import {
   ZoomControls,
@@ -267,8 +270,20 @@ export function SeatDesigner({
 
   const [sectionSelectValue, setSectionSelectValue] = useState<string>("");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+
+  const {
+    zoomLevel,
+    setZoomLevel,
+    handleZoomIn,
+    handleZoomOut,
+    handleResetZoom,
+  } = useCanvasZoom({ step: 0.25, minZoom: 0.5, maxZoom: 3 });
+  const { panOffset, setPanOffset, handlePanDelta, resetPan } = useCanvasPan();
+
+  const handleResetZoomAndPan = useCallback(() => {
+    handleResetZoom();
+    resetPan();
+  }, [handleResetZoom, resetPan]);
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const [viewingSeat, setViewingSeat] = useState<SeatMarker | null>(null);
   /** Inline seat edit in toolbox (similar to section designer) */
@@ -430,33 +445,14 @@ export function SeatDesigner({
     prevSectionImageUrlRef.current = sectionImageUrl;
   }, [venueType, viewingSection?.id, viewingSection?.imageUrl]);
 
-  // Fetch existing seats only if initialSeats not provided (for backward compatibility)
-  const {
-    data: existingSeats,
-    isLoading,
-    error: seatsError,
-  } = useQuery({
-    queryKey: ["seats", layoutId],
-    queryFn: () => seatService.getByLayout(layoutId),
-    enabled: !!layoutId && !initialSeats, // Only fetch if initialSeats not provided
-    retry: false, // Don't retry if column doesn't exist
-    refetchOnMount: false, // Don't refetch on mount - use cache, refresh button will invalidate
-    refetchOnWindowFocus: false,
+  const { isLoading, seatsError, effectiveSectionsData } = useDesignerData({
+    layoutId,
+    designMode,
+    initialSeats,
+    initialSections,
+    setSeats,
+    setSectionMarkers,
   });
-
-  // Fetch sections for the layout only if initialSections not provided
-  // If initialSections is provided (from /with-seats), use that instead to avoid duplicate API calls
-  const { data: sectionsData } = useQuery({
-    queryKey: ["sections", "layout", layoutId],
-    queryFn: () => sectionService.getByLayout(layoutId),
-    enabled: !!layoutId && !initialSections, // Only fetch if initialSections not provided
-    refetchOnMount: false, // Don't refetch on mount - use cache, refresh button will invalidate
-    refetchOnWindowFocus: false,
-  });
-  
-  // Use initialSections if provided, otherwise use sectionsData from query
-  // Both should have the same structure (Section[]), so this is safe
-  const effectiveSectionsData = (initialSections || sectionsData) as typeof sectionsData;
 
   // Ensure a default section exists in UI for section-level (large) mode
   // Only create temporary marker if no sections from API and no initialSections
@@ -488,7 +484,7 @@ export function SeatDesigner({
     effectiveSectionsData,
   ]);
 
-  // Initial synchronous measurement to avoid first-render resizing
+  // Initial synchronous measurement to avoid first-render resizing (useDesignerData handles data loading)
   useLayoutEffect(() => {
     if (dimensionsReady) return;
     const measure = () => {
@@ -557,246 +553,7 @@ export function SeatDesigner({
     };
   }, [dimensionsReady]);
 
-  // Load existing sections when initialSections provided (from layoutWithSeats)
-  useEffect(() => {
-    if (initialSections && designMode === "section-level") {
-      const markers: SectionMarker[] = initialSections.map((section) => {
-        let shape: PlacementShape | undefined;
-        if ("shape" in section && section.shape) {
-          try {
-            const parsed = JSON.parse(section.shape);
-            // Normalize the type to ensure it matches the enum
-            if (parsed && typeof parsed === "object" && parsed.type) {
-              shape = {
-                ...parsed,
-                type: parsed.type as PlacementShapeType,
-              };
-            } else {
-              console.warn(
-                "Parsed shape is invalid from initialSections:",
-                parsed,
-              );
-            }
-          } catch (e) {
-            console.error(
-              "Failed to parse section shape from initialSections:",
-              e,
-            );
-          }
-        }
-        const sectionWithExtras = section as {
-          file_id?: string | null;
-          canvas_background_color?: string | null;
-          marker_fill_transparency?: number | null;
-        };
-        return {
-          id: section.id,
-          name: section.name,
-          x: section.x_coordinate || 50,
-          y: section.y_coordinate || 50,
-          imageUrl: section.image_url || undefined,
-          file_id: sectionWithExtras.file_id ?? undefined,
-          // Preserve section's own values - undefined means inherit from layout
-          canvasBackgroundColor:
-            sectionWithExtras.canvas_background_color !== undefined &&
-            sectionWithExtras.canvas_background_color !== null
-              ? sectionWithExtras.canvas_background_color
-              : undefined,
-          markerFillTransparency:
-            sectionWithExtras.marker_fill_transparency !== undefined &&
-            sectionWithExtras.marker_fill_transparency !== null
-              ? sectionWithExtras.marker_fill_transparency
-              : undefined,
-          shape,
-          isNew: false,
-        };
-      });
-      setSectionMarkers(markers);
-      // Don't auto-select the first section to avoid opening the Selected Section sheet immediately
-      // if (markers.length > 0) {
-      //   setSelectedSectionMarker((prev) => prev || markers[0]);
-      //   sectionForm.setValue("name", markers[0].name);
-      // }
-    }
-  }, [initialSections, designMode]);
-
-  // Load existing sections from API query when initialSections not provided
-  // This ensures sections created by the backend (like default section) are loaded
-  useEffect(() => {
-    if (
-      !initialSections &&
-      effectiveSectionsData !== undefined && // effectiveSectionsData has been loaded (could be empty array)
-      designMode === "section-level"
-    ) {
-      // Always sync effectiveSectionsData to sectionMarkers, even if empty
-      // This replaces any temporary "section-default" markers with real sections
-      const markers: SectionMarker[] = effectiveSectionsData.map((section) => {
-        let shape: PlacementShape | undefined;
-        if (section.shape) {
-          try {
-            const parsed = JSON.parse(section.shape);
-            // Normalize the type to ensure it matches the enum
-            if (parsed && typeof parsed === "object" && parsed.type) {
-              shape = {
-                ...parsed,
-                type: parsed.type as PlacementShapeType,
-              };
-            } else {
-              console.warn("Parsed shape is invalid:", parsed);
-            }
-          } catch (e) {
-            console.error("Failed to parse section shape:", e);
-          }
-        }
-        const sectionWithFileId = section as { file_id?: string | null };
-        return {
-          id: section.id,
-          name: section.name,
-          x: section.x_coordinate || 50,
-          y: section.y_coordinate || 50,
-          imageUrl: section.image_url || undefined,
-          file_id: sectionWithFileId.file_id ?? undefined,
-          // Preserve section's own values - use undefined if not set (will inherit from layout)
-          // Only use defaults if section explicitly has no value AND we need a fallback for display
-          canvasBackgroundColor: section.canvas_background_color !== undefined && section.canvas_background_color !== null
-            ? section.canvas_background_color
-            : undefined, // undefined means inherit from layout
-          markerFillTransparency: section.marker_fill_transparency !== undefined && section.marker_fill_transparency !== null
-            ? section.marker_fill_transparency
-            : undefined, // undefined means inherit from layout
-          shape,
-          isNew: false,
-        };
-      });
-      setSectionMarkers(markers);
-    }
-  }, [effectiveSectionsData, initialSections, designMode]);
-
-  // Track the last loaded data to prevent unnecessary reloads
-  const lastInitialSeatsRef = useRef<typeof initialSeats>();
-  const lastExistingSeatsRef = useRef<typeof existingSeats>();
-
-  // Load existing seats when fetched or when initialSeats provided
-  useEffect(() => {
-    // Only reload if the data source actually changed
-    const initialSeatsChanged = initialSeats !== lastInitialSeatsRef.current;
-    const existingSeatsChanged = existingSeats !== lastExistingSeatsRef.current;
-
-    if (
-      !initialSeatsChanged &&
-      !existingSeatsChanged &&
-      lastInitialSeatsRef.current !== undefined
-    ) {
-      // Data hasn't changed, don't reload (preserves newly created seats)
-      return;
-    }
-
-    // If initialSeats is provided, use it directly (from combined endpoint)
-    if (initialSeats) {
-      lastInitialSeatsRef.current = initialSeats;
-      if (initialSeats.length > 0) {
-        const markers: SeatMarker[] = initialSeats.map((seat) => {
-          // Parse shape from JSON string if available
-          let shape: PlacementShape | undefined;
-          if ("shape" in seat && seat.shape) {
-            try {
-              const parsed = JSON.parse(seat.shape);
-              // Normalize the type to ensure it matches the enum
-              if (parsed && typeof parsed === "object" && parsed.type) {
-                shape = {
-                  ...parsed,
-                  type: parsed.type as PlacementShapeType,
-                };
-              } else {
-                console.warn(
-                  "Parsed seat shape is invalid from initialSeats:",
-                  parsed,
-                );
-              }
-            } catch (e) {
-              console.error("Failed to parse seat shape from initialSeats:", e);
-            }
-          }
-
-          return {
-            id: seat.id,
-            x: seat.x_coordinate || 0,
-            y: seat.y_coordinate || 0,
-            seat: {
-              section: seat.section_name || seat.section_id || "Unknown",
-              sectionId: seat.section_id,
-              row: seat.row,
-              seatNumber: seat.seat_number,
-              seatType: seat.seat_type as SeatType,
-            },
-            shape,
-          };
-        });
-        setSeats(markers);
-      } else {
-        // Layout exists but has no seats yet - start with empty array
-        setSeats([]);
-      }
-    } else if (existingSeats) {
-      // Fallback to query result if initialSeats not provided
-      lastExistingSeatsRef.current = existingSeats;
-      if (existingSeats.items && existingSeats.items.length > 0) {
-        const markers: SeatMarker[] = existingSeats.items.map((seat) => {
-          // Parse shape from JSON string if available
-          let shape: PlacementShape | undefined;
-          if (seat.shape) {
-            try {
-              const parsed = JSON.parse(seat.shape);
-              // Normalize the type to ensure it matches the enum
-              if (parsed && typeof parsed === "object" && parsed.type) {
-                shape = {
-                  ...parsed,
-                  type: parsed.type as PlacementShapeType,
-                };
-              } else {
-                console.warn(
-                  "Parsed seat shape is invalid from existingSeats:",
-                  parsed,
-                );
-              }
-            } catch (e) {
-              console.error("Failed to parse seat shape from existingSeats:", e);
-            }
-          }
-
-          return {
-            id: seat.id,
-            x: seat.x_coordinate || 0,
-            y: seat.y_coordinate || 0,
-            seat: {
-              section: seat.section_name || seat.section_id || "Unknown",
-              sectionId: seat.section_id,
-              row: seat.row,
-              seatNumber: seat.seat_number,
-              seatType: seat.seat_type,
-            },
-            shape,
-          };
-        });
-        setSeats(markers);
-      } else if (
-        lastInitialSeatsRef.current === undefined &&
-        lastExistingSeatsRef.current === undefined
-      ) {
-        // Only reset on first load when no data exists
-        setSeats([]);
-      }
-    } else if (
-      !isLoading &&
-      !seatsError &&
-      !initialSeats &&
-      lastInitialSeatsRef.current === undefined &&
-      lastExistingSeatsRef.current === undefined
-    ) {
-      // Query completed but no data - reset seats only on first load
-      setSeats([]);
-    }
-  }, [existingSeats, initialSeats, isLoading, seatsError]);
+  // Data loading (seats + sections) is handled by useDesignerData hook above
 
   // Get seats for current context
   const displayedSeats =
@@ -1169,20 +926,6 @@ export function SeatDesigner({
     }
   };
 
-  // Zoom functions
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.25, 3)); // Max zoom 3x
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.25, 0.5)); // Min zoom 0.5x
-  };
-
-  const handleResetZoom = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
   // Helper function to snap coordinates to grid
   const snapToGridCoordinates = (
     x: number,
@@ -1461,13 +1204,13 @@ export function SeatDesigner({
     [],
   );
 
-  // Handle pan events from canvas
-  const handlePan = useCallback((delta: { x: number; y: number }) => {
-    setPanOffset((prev) => ({
-      x: prev.x + delta.x,
-      y: prev.y + delta.y,
-    }));
-  }, []);
+  // Handle pan events from canvas (uses handlePanDelta from useCanvasPan)
+  const handlePan = useCallback(
+    (delta: { x: number; y: number }) => {
+      handlePanDelta(delta);
+    },
+    [handlePanDelta],
+  );
 
   // Handle seat drag end from Konva
   const handleKonvaSeatDragEnd = useCallback(
@@ -1595,8 +1338,7 @@ export function SeatDesigner({
     seatPlacementForm.setValue("section", section.name);
     setSelectedSectionMarker(null);
     // Reset zoom when switching sections
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
+    handleResetZoomAndPan();
   };
 
   // Handle seat marker click - select (shift+click adds to selection)
@@ -3393,7 +3135,7 @@ export function SeatDesigner({
                   <SeatEditControls
                     form={seatEditForm}
                     uniqueSections={getUniqueSections()}
-                    sectionsData={sectionsData}
+                    sectionsData={effectiveSectionsData}
                     sectionMarkers={sectionMarkers}
                     designMode={designMode}
                     onSave={handleSeatEditSave}
@@ -3489,7 +3231,7 @@ export function SeatDesigner({
                 onMarkersInRect={handleMarkersInRect}
                 onZoomIn={handleZoomIn}
                 onZoomOut={handleZoomOut}
-                onResetZoom={handleResetZoom}
+                onResetZoom={handleResetZoomAndPan}
                 selectedShapeTool={selectedShapeTool}
                 shapeOverlays={displayedShapeOverlays}
                 selectedOverlayId={selectedOverlayId}
@@ -3566,7 +3308,7 @@ export function SeatDesigner({
                 panOffset={panOffset}
                 onZoomIn={handleZoomIn}
                 onZoomOut={handleZoomOut}
-                onResetZoom={handleResetZoom}
+                onResetZoom={handleResetZoomAndPan}
               />
             </div>
           )}
@@ -3676,7 +3418,7 @@ export function SeatDesigner({
         selectedSeat={selectedSeat}
         seatPlacementForm={seatPlacementForm}
         uniqueSections={getUniqueSections()}
-        sectionsData={sectionsData}
+        sectionsData={effectiveSectionsData}
         sectionSelectValue={sectionSelectValue}
         onSectionSelectValueChange={setSectionSelectValue}
         containerRef={containerRef}
@@ -3688,8 +3430,7 @@ export function SeatDesigner({
         isUploadingImage={isUploadingImage}
         onBack={() => {
           setViewingSection(null);
-          setZoomLevel(1);
-          setPanOffset({ x: 0, y: 0 });
+          handleResetZoomAndPan();
         }}
         onSave={handleSave}
         onClearSectionSeats={handleClearSectionSeats}
@@ -3708,7 +3449,7 @@ export function SeatDesigner({
         onMarkersInRect={handleMarkersInRect}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
+        onResetZoom={handleResetZoomAndPan}
         onNewSection={() => {
           setViewingSection(null);
           setIsSectionCreationPending(true);
@@ -3752,7 +3493,7 @@ export function SeatDesigner({
             <SeatEditControls
               form={seatEditForm}
               uniqueSections={getUniqueSections()}
-              sectionsData={sectionsData}
+              sectionsData={effectiveSectionsData}
               sectionMarkers={sectionMarkers}
               designMode={designMode}
               viewingSection={viewingSection}
@@ -3867,7 +3608,7 @@ export function SeatDesigner({
         <ManageSectionsSheet
           open={isManageSectionsOpen}
           onOpenChange={setIsManageSectionsOpen}
-          sections={sectionsData}
+          sections={effectiveSectionsData ?? []}
           onEdit={handleEditSectionFromData}
           onDelete={handleDeleteSection}
           isDeleting={false}

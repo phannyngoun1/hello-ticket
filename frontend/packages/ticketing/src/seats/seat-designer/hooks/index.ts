@@ -1,4 +1,5 @@
 export { useDesignerHistory } from "./use-designer-history";
+export { useDesignerData } from "./use-designer-data";
 export type { UseDesignerHistoryOptions, UseDesignerHistoryReturn } from "./use-designer-history";
 export { useContainerSize } from "./use-container-size";
 export type { UseContainerSizeOptions } from "./use-container-size";
