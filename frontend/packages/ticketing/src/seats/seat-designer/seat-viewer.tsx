@@ -24,10 +24,7 @@ import {
   Stage,
   Layer,
   Image,
-  Circle,
   Rect,
-  Ellipse,
-  Line,
   Group,
   Text,
 } from "react-konva";
@@ -38,6 +35,7 @@ import {
   GRAY_STROKE,
   getSeatTypeColors,
 } from "./colors";
+import { ShapeRenderer } from "./components/shape-renderer";
 
 export interface SeatViewerProps {
   venueId: string;
@@ -296,89 +294,17 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
               const y = (seat.y_coordinate / 100) * noImageHeight;
               const colors = getSeatColorNoImage(seat.seat_type as SeatType);
               const markerLabel = `${seat.section_name || "?"} ${seat.row}-${seat.seat_number}`;
-              const shapeEl = seat.parsedShape ? (
-                (() => {
-                  const s = seat.parsedShape!;
-                  const bp = {
-                    fill: colors.fill,
-                    stroke: colors.stroke,
-                    strokeWidth: 2,
-                    opacity: 0.8,
-                  };
-                  if (s.type === PlacementShapeType.CIRCLE) {
-                    const r = s.radius
-                      ? (s.radius / 100) *
-                        Math.min(noImageWidth, noImageHeight) *
-                        noImageScale
-                      : 6 * noImageScale;
-                    return <Circle {...bp} radius={Math.max(1, r)} />;
-                  }
-                  if (s.type === PlacementShapeType.RECTANGLE) {
-                    const w = s.width
-                      ? (s.width / 100) * noImageWidth * noImageScale
-                      : 24;
-                    const h = s.height
-                      ? (s.height / 100) * noImageHeight * noImageScale
-                      : 24;
-                    return (
-                      <Rect
-                        {...bp}
-                        x={-w / 2}
-                        y={-h / 2}
-                        width={w}
-                        height={h}
-                        cornerRadius={
-                          s.cornerRadius
-                            ? Math.min(
-                                (s.cornerRadius / 100) * noImageWidth,
-                                Math.min(w, h) / 2,
-                              )
-                            : 0
-                        }
-                      />
-                    );
-                  }
-                  if (s.type === PlacementShapeType.ELLIPSE) {
-                    const rx = s.width
-                      ? ((s.width / 100) * noImageWidth) / 2
-                      : 12;
-                    const ry = s.height
-                      ? ((s.height / 100) * noImageHeight) / 2
-                      : 12;
-                    return <Ellipse {...bp} radiusX={rx} radiusY={ry} />;
-                  }
-                  if (
-                    (s.type === PlacementShapeType.POLYGON ||
-                      s.type === PlacementShapeType.FREEFORM) &&
-                    (s.points?.length ?? 0) >= 4
-                  ) {
-                    const pts = (s.points ?? []).map((p, i) =>
-                      i % 2 === 0
-                        ? (p / 100) * noImageWidth * noImageScale
-                        : (p / 100) * noImageHeight * noImageScale,
-                    );
-                    return <Line {...bp} points={pts} closed tension={0} />;
-                  }
-                  return (
-                    <Circle
-                      radius={6 * noImageScale}
-                      fill={colors.fill}
-                      stroke={colors.stroke}
-                      strokeWidth={2}
-                    />
-                  );
-                })()
-              ) : (
-                <Circle
-                  radius={6 * noImageScale}
-                  fill={colors.fill}
-                  stroke={colors.stroke}
-                  strokeWidth={2}
-                />
-              );
               return (
                 <Group key={seat.id} x={x} y={y}>
-                  {shapeEl}
+                  <ShapeRenderer
+                    shape={seat.parsedShape}
+                    fill={colors.fill}
+                    stroke={colors.stroke}
+                    strokeWidth={2}
+                    imageWidth={noImageWidth}
+                    imageHeight={noImageHeight}
+                    opacity={0.8}
+                  />
                   <Text
                     text={markerLabel}
                     fontSize={10}
@@ -404,9 +330,8 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
     );
   }
 
-  const imageWidth = image.width;
-  const imageHeight = image.height;
-  const scale = containerSize.width / imageWidth;
+  const imageWidth = containerSize.width;
+  const imageHeight = containerSize.height;
 
   const getSeatColor = (seatType: SeatType) => {
     switch (seatType) {
@@ -416,116 +341,6 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
         return { fill: "#34d399", stroke: "#059669" };
       default:
         return { fill: "#d1d5db", stroke: "#6b7280" };
-    }
-  };
-
-  const renderShape = (
-    shape: PlacementShape | undefined,
-    colors: { fill: string; stroke: string },
-    imgWidth: number,
-    imgHeight: number,
-    defaultRadius: number = 6,
-  ) => {
-    if (!shape) {
-      return (
-        <Circle
-          radius={defaultRadius * scale}
-          fill={colors.fill}
-          stroke={colors.stroke}
-          strokeWidth={2}
-        />
-      );
-    }
-
-    const baseProps = {
-      fill: colors.fill,
-      stroke: colors.stroke,
-      strokeWidth: 2,
-      opacity: 0.8,
-    };
-
-    switch (shape.type) {
-      case PlacementShapeType.CIRCLE: {
-        const radius = shape.radius
-          ? (shape.radius / 100) * Math.min(imgWidth, imgHeight) * scale
-          : defaultRadius * scale;
-        const validRadius = Math.max(1, Math.abs(radius));
-        return (
-          <Circle
-            {...baseProps}
-            radius={validRadius}
-            rotation={shape.rotation || 0}
-          />
-        );
-      }
-      case PlacementShapeType.RECTANGLE: {
-        const width = shape.width
-          ? (shape.width / 100) * imgWidth * scale
-          : 24 * scale;
-        const height = shape.height
-          ? (shape.height / 100) * imgHeight * scale
-          : 24 * scale;
-        const validWidth = Math.max(1, Math.abs(width));
-        const validHeight = Math.max(1, Math.abs(height));
-        const cornerRadius = shape.cornerRadius
-          ? Math.min(
-              (shape.cornerRadius / 100) * imgWidth * scale,
-              Math.min(validWidth, validHeight) / 2,
-            )
-          : 0;
-        return (
-          <Rect
-            {...baseProps}
-            x={-validWidth / 2}
-            y={-validHeight / 2}
-            width={validWidth}
-            height={validHeight}
-            cornerRadius={cornerRadius}
-            rotation={shape.rotation || 0}
-          />
-        );
-      }
-      case PlacementShapeType.ELLIPSE: {
-        const radiusX = shape.width
-          ? ((shape.width / 100) * imgWidth * scale) / 2
-          : 12 * scale;
-        const radiusY = shape.height
-          ? ((shape.height / 100) * imgHeight * scale) / 2
-          : 12 * scale;
-        const validRadiusX = Math.max(1, Math.abs(radiusX));
-        const validRadiusY = Math.max(1, Math.abs(radiusY));
-        return (
-          <Ellipse
-            {...baseProps}
-            radiusX={validRadiusX}
-            radiusY={validRadiusY}
-            rotation={shape.rotation || 0}
-          />
-        );
-      }
-      case PlacementShapeType.POLYGON:
-      case PlacementShapeType.FREEFORM: {
-        if (!shape.points || shape.points.length < 4) {
-          return <Circle {...baseProps} radius={defaultRadius * scale} />;
-        }
-        const points = shape.points.map((p, index) => {
-          if (index % 2 === 0) {
-            return (p / 100) * imgWidth * scale;
-          } else {
-            return (p / 100) * imgHeight * scale;
-          }
-        });
-        return (
-          <Line
-            {...baseProps}
-            points={points}
-            closed={true}
-            tension={shape.type === PlacementShapeType.FREEFORM ? 0 : undefined}
-          />
-        );
-      }
-      default:
-        return <Circle {...baseProps} radius={defaultRadius * scale} />;
     }
   };
 
@@ -564,7 +379,15 @@ function FloorPlanView({ imageUrl, seats }: FloorPlanViewProps) {
 
             return (
               <Group key={seat.id} x={x} y={y}>
-                {renderShape(seat.parsedShape, colors, imageWidth, imageHeight)}
+                <ShapeRenderer
+                  shape={seat.parsedShape}
+                  fill={colors.fill}
+                  stroke={colors.stroke}
+                  strokeWidth={2}
+                  imageWidth={imageWidth}
+                  imageHeight={imageHeight}
+                  opacity={0.8}
+                />
                 <Text
                   text={markerLabel}
                   fontSize={10}

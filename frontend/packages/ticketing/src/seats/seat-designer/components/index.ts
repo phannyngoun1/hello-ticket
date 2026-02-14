@@ -1,3 +1,4 @@
+export * from "./shape-renderer";
 export * from "./zoom-controls";
 export * from "./image-upload-card";
 export * from "./instructions-panel";

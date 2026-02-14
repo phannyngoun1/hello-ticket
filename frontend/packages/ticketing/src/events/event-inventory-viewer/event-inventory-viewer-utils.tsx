@@ -2,12 +2,12 @@
  * Event Inventory Viewer – shared helpers and shape rendering
  */
 
-import { Circle, Rect, Ellipse, Line } from "react-konva";
 import type { EventSeatStatus } from "../types";
 import {
   PlacementShapeType,
   type PlacementShape,
 } from "../../seats/seat-designer/types";
+import { ShapeRenderer } from "../../seats/seat-designer/components/shape-renderer";
 import {
   AMBER_FILL,
   AMBER_STROKE,
@@ -161,100 +161,15 @@ export function renderShape(
 ) {
   const activeColors =
     options?.isHover && options?.hoverColors ? options.hoverColors : colors;
-  const baseProps = {
-    fill: activeColors.fill || "transparent",
-    stroke: activeColors.stroke || "transparent",
-    strokeWidth,
-    opacity,
-  };
-
-  if (!shape) {
-    return <Circle {...baseProps} radius={12} />;
-  }
-
-  switch (shape.type) {
-    case PlacementShapeType.CIRCLE: {
-      const radius = shape.radius
-        ? (shape.radius / 100) * Math.min(imageWidth, imageHeight)
-        : 12;
-      const validRadius = Math.max(1, Math.abs(radius));
-      return (
-        <Circle
-          {...baseProps}
-          radius={validRadius}
-          rotation={shape.rotation || 0}
-        />
-      );
-    }
-
-    case PlacementShapeType.RECTANGLE: {
-      const width = shape.width ? (shape.width / 100) * imageWidth : 24;
-      const height = shape.height ? (shape.height / 100) * imageHeight : 24;
-      const validWidth = Math.max(1, Math.abs(width));
-      const validHeight = Math.max(1, Math.abs(height));
-      const rawCornerRadius = shape.cornerRadius || 0;
-      const maxCornerRadius = Math.min(validWidth, validHeight) / 2;
-      const validCornerRadius = Math.max(
-        0,
-        Math.min(Math.abs(rawCornerRadius), maxCornerRadius),
-      );
-      return (
-        <Rect
-          {...baseProps}
-          x={-validWidth / 2}
-          y={-validHeight / 2}
-          width={validWidth}
-          height={validHeight}
-          cornerRadius={validCornerRadius}
-          rotation={shape.rotation || 0}
-        />
-      );
-    }
-
-    case PlacementShapeType.ELLIPSE: {
-      const radiusX = shape.width ? ((shape.width / 100) * imageWidth) / 2 : 12;
-      const radiusY = shape.height
-        ? ((shape.height / 100) * imageHeight) / 2
-        : 12;
-      const validRadiusX = Math.max(1, Math.abs(radiusX));
-      const validRadiusY = Math.max(1, Math.abs(radiusY));
-      return (
-        <Ellipse
-          {...baseProps}
-          radiusX={validRadiusX}
-          radiusY={validRadiusY}
-          rotation={shape.rotation || 0}
-        />
-      );
-    }
-
-    case PlacementShapeType.POLYGON: {
-      if (!shape.points || shape.points.length < 6) {
-        return <Circle {...baseProps} radius={12} />;
-      }
-      const points = shape.points.map((p, index) => {
-        if (index % 2 === 0) {
-          return (p / 100) * imageWidth;
-        }
-        return (p / 100) * imageHeight;
-      });
-      return <Line {...baseProps} points={points} closed={true} />;
-    }
-
-    case PlacementShapeType.FREEFORM: {
-      if (!shape.points || shape.points.length < 4) {
-        return <Circle {...baseProps} radius={12} />;
-      }
-      const points = shape.points.map((p, index) => {
-        if (index % 2 === 0) {
-          return (p / 100) * imageWidth;
-        }
-        return (p / 100) * imageHeight;
-      });
-      return <Line {...baseProps} points={points} closed={true} tension={0} />;
-    }
-
-    default:
-      return <Circle {...baseProps} radius={12} />;
-  }
+  return (
+    <ShapeRenderer
+      shape={shape ?? undefined}
+      fill={activeColors.fill || "transparent"}
+      stroke={activeColors.stroke || "transparent"}
+      strokeWidth={strokeWidth}
+      imageWidth={imageWidth}
+      imageHeight={imageHeight}
+      opacity={opacity}
+    />
+  );
 }
