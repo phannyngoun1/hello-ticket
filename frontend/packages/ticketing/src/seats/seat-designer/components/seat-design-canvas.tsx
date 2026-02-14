@@ -235,9 +235,23 @@ export function SeatDesignCanvas({
         },
         [PlacementShapeType.FREEFORM]: {
           type: PlacementShapeType.FREEFORM,
-          points: [0, 0, 2, 0, 3, 2, 2, 3, 0, 3, -1, 2],
-          fillColor: "#60a5fa",
-          strokeColor: "#2563eb",
+          points: [0, 50, 50, 0, 100, 50, 50, 100], // Diamond shape
+          fillColor: "#60a5fa", // Assuming DEFAULT_SHAPE_FILL is #60a5fa
+          strokeColor: "#2563eb", // Assuming DEFAULT_SHAPE_STROKE is #2563eb
+        },
+        [PlacementShapeType.SOFA]: {
+          type: PlacementShapeType.SOFA,
+          width: 36,
+          height: 24,
+          fillColor: "#60a5fa", // Assuming DEFAULT_SHAPE_FILL
+          strokeColor: "#2563eb", // Assuming DEFAULT_SHAPE_STROKE
+        },
+        [PlacementShapeType.STAGE]: {
+          type: PlacementShapeType.STAGE,
+          width: 150,
+          height: 80,
+          fillColor: "#333333", // Darker for stage
+          strokeColor: "#2563eb", // Assuming DEFAULT_SHAPE_STROKE
         },
       };
 

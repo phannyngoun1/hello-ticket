@@ -1,11 +1,5 @@
-/**
- * Shape Toolbox Component
- *
- * Toolbox for selecting shape tools to draw on the canvas
- */
-
 import { useState, useEffect, useCallback } from "react";
-import { Card, Input, Label } from "@truths/ui";
+import { Card, Input, Label, Popover, PopoverContent, PopoverTrigger } from "@truths/ui";
 import {
   Circle,
   Square,
@@ -22,6 +16,10 @@ import {
   AlignStartVertical,
   AlignCenterVertical,
   AlignEndVertical,
+  MoreHorizontal,
+  Armchair,
+  Presentation,
+  LayoutTemplate
 } from "lucide-react";
 import {
   PlacementShapeType,
@@ -90,6 +88,44 @@ function BlurNumberInput({
     />
   );
 }
+
+const ALL_SHAPES = [
+  {
+    type: PlacementShapeType.CIRCLE,
+    icon: Circle,
+    label: "Circle",
+  },
+  {
+    type: PlacementShapeType.RECTANGLE,
+    icon: Square,
+    label: "Rectangle",
+  },
+  {
+    type: PlacementShapeType.ELLIPSE,
+    icon: Circle, // Using Circle as proxy for Ellipse if Ellipse icon n/a
+    label: "Ellipse",
+  },
+  {
+    type: PlacementShapeType.POLYGON,
+    icon: Hexagon,
+    label: "Polygon",
+  },
+  {
+    type: PlacementShapeType.FREEFORM,
+    icon: PenTool,
+    label: "Freeform",
+  },
+  {
+    type: PlacementShapeType.SOFA,
+    icon: Armchair,
+    label: "Sofa",
+  },
+  {
+    type: PlacementShapeType.STAGE,
+    icon: Presentation,
+    label: "Stage",
+  }
+];
 
 export interface ShapeToolboxProps {
   selectedShapeType: PlacementShapeType | null;
@@ -163,33 +199,21 @@ export function ShapeToolbox({
 }: ShapeToolboxProps) {
   const totalSelected = selectedSeatCount + selectedSectionCount;
   const showAlignment = !readOnly && onAlign && totalSelected >= 2;
-  const shapes = [
-    {
-      type: PlacementShapeType.CIRCLE,
-      icon: Circle,
-      label: "Circle",
-    },
-    {
-      type: PlacementShapeType.RECTANGLE,
-      icon: Square,
-      label: "Rectangle",
-    },
-    {
-      type: PlacementShapeType.ELLIPSE,
-      icon: Circle,
-      label: "Ellipse",
-    },
-    {
-      type: PlacementShapeType.POLYGON,
-      icon: Hexagon,
-      label: "Polygon",
-    },
-    {
-      type: PlacementShapeType.FREEFORM,
-      icon: PenTool,
-      label: "Polygon",
-    },
-  ];
+
+  // Persist quick access shapes in local storage or just state? State is fine for now.
+  // Defaults: Circle, Rectangle, Ellipse, Polygon
+  const [quickAccessShapes, setQuickAccessShapes] = useState<PlacementShapeType[]>([
+    PlacementShapeType.CIRCLE,
+    PlacementShapeType.RECTANGLE,
+    PlacementShapeType.ELLIPSE,
+    PlacementShapeType.POLYGON,
+  ]);
+
+  const handleShapeDrop = (index: number, shapeType: PlacementShapeType) => {
+    const newShapes = [...quickAccessShapes];
+    newShapes[index] = shapeType;
+    setQuickAccessShapes(newShapes);
+  };
 
   // Get marker name and edit/delete handlers
   const selectedMarker = selectedSeat || selectedSection;
@@ -275,13 +299,14 @@ export function ShapeToolbox({
                 <MousePointer2 className="h-3.5 w-3.5 transition-transform duration-200" />
               </button>
 
-              {/* Shape tools */}
-              {shapes.map((shape) => {
-                const Icon = shape.icon;
-                const isSelected = selectedShapeType === shape.type;
+              {/* Quick Access Shapes */}
+              {quickAccessShapes.map((shapeType, index) => {
+                const shapeDef = ALL_SHAPES.find(s => s.type === shapeType) || ALL_SHAPES[0];
+                const Icon = shapeDef.icon;
+                const isSelected = selectedShapeType === shapeType;
                 return (
                   <button
-                    key={shape.type}
+                    key={`${shapeType}-${index}`}
                     type="button"
                     draggable={!readOnly}
                     onDragStart={(e) => {
@@ -289,21 +314,40 @@ export function ShapeToolbox({
                       e.dataTransfer.setData(
                         "application/json",
                         JSON.stringify({
-                          shapeType: shape.type,
+                          shapeType: shapeType,
                           dragSource: "shape-toolbox",
                         }),
                       );
                       // Set a drag image
                       const dragImage = new Image();
+                      // Simple circle SVG for drag image
                       dragImage.src =
                         "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%235b21b6' stroke='%235b21b6'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E";
                       e.dataTransfer.setDragImage(dragImage, 12, 12);
+                    }}
+                    onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        const data = e.dataTransfer.getData("application/json");
+                        if (data) {
+                            try {
+                                const parsed = JSON.parse(data);
+                                if (parsed.dragSource === "shape-library" && parsed.shapeType) {
+                                    handleShapeDrop(index, parsed.shapeType as PlacementShapeType);
+                                }
+                            } catch (err) {
+                                // ignore
+                            }
+                        }
                     }}
                     onDragEnd={(e) => {
                       e.dataTransfer.dropEffect = "copy";
                     }}
                     onClick={() => {
-                      onShapeTypeSelect?.(shape.type);
+                      onShapeTypeSelect?.(shapeType);
                     }}
                     disabled={readOnly || !onShapeTypeSelect}
                     className={cn(
@@ -315,12 +359,78 @@ export function ShapeToolbox({
                         ? "bg-primary text-primary-foreground border-primary shadow-sm"
                         : "bg-background border-border",
                     )}
-                    title={`${shape.label} (drag to canvas to place)`}
+                    title={`${shapeDef.label} (drag to canvas to place, drop from More to replace)`}
                   >
                     <Icon className="h-3.5 w-3.5 transition-transform duration-200" />
                   </button>
                 );
               })}
+
+               {/* More Shapes Popover */}
+               <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                        type="button"
+                        disabled={readOnly}
+                        className={cn(
+                        "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                        !readOnly &&
+                            "hover:bg-accent hover:border-accent-foreground hover:shadow-md active:scale-95",
+                        readOnly && "opacity-50 cursor-not-allowed",
+                        "bg-background border-border"
+                        )}
+                        title="More Shapes (drag to toolbox to customize)"
+                    >
+                        <MoreHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" align="start">
+                    <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground">Available Shapes</Label>
+                        <div className="grid grid-cols-4 gap-2">
+                            {ALL_SHAPES.map((shape) => {
+                                const Icon = shape.icon;
+                                // Check if already in toolbar to maybe highlight or disable? 
+                                // Actually, allowing duplicates is fine, user can arrange as they want.
+                                return (
+                                    <button
+                                        key={shape.type}
+                                        type="button"
+                                        draggable={!readOnly}
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.effectAllowed = "copy";
+                                            e.dataTransfer.setData(
+                                                "application/json",
+                                                JSON.stringify({
+                                                shapeType: shape.type,
+                                                dragSource: "shape-library",
+                                                }),
+                                            );
+                                        }}
+                                        onClick={() => {
+                                            // Select it temporarily? logic for "replace checked" could be here
+                                            // For now just select it.
+                                            onShapeTypeSelect?.(shape.type);
+                                        }}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-2 rounded border transition-all gap-1 h-16",
+                                            "hover:bg-accent hover:border-accent-foreground cursor-grab active:cursor-grabbing",
+                                            selectedShapeType === shape.type && "bg-accent border-accent-foreground"
+                                        )}
+                                        title={`Select or Drag to Toolbox to Pin`}
+                                    >
+                                        <Icon className="h-5 w-5" />
+                                        <span className="text-[10px] truncate w-full text-center">{shape.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                            Drag a shape to the toolbar to pin it.
+                        </p>
+                    </div>
+                  </PopoverContent>
+               </Popover>
             </div>
           </div>
         )}

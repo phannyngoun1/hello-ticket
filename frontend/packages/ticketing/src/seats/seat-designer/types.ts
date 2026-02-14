@@ -13,6 +13,8 @@ export enum PlacementShapeType {
   ELLIPSE = "ellipse",
   POLYGON = "polygon",
   FREEFORM = "freeform",
+  SOFA = "sofa",
+  STAGE = "stage",
 }
 
 /**

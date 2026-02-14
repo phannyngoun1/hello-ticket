@@ -28,6 +28,10 @@ import { EventInventorySectionPopover } from "./event-inventory-section-popover"
 import { EventInventorySeatPopover } from "./event-inventory-seat-popover";
 import { DEFAULT_CANVAS_BACKGROUND } from "./event-inventory-viewer-colors";
 
+// ... imports ...
+import { useSectionStats } from "./hooks/use-section-stats";
+import { usePopoverPosition } from "./hooks/use-popover-position";
+
 export interface EventInventoryViewerProps {
   layout: Layout;
   layoutSeats: Seat[];
@@ -65,10 +69,6 @@ export function EventInventoryViewer({
   const stageRef = useRef<Konva.Stage>(null);
 
   const [hoveredSeatId, setHoveredSeatId] = useState<string | null>(null);
-  const [hoveredSeatPosition, setHoveredSeatPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
   const [hoveredSeatData, setHoveredSeatData] = useState<{
     seat: Seat;
     eventSeat?: EventSeat;
@@ -80,6 +80,7 @@ export function EventInventoryViewer({
     eventSeatCount: number;
     statusSummary: Record<string, number>;
   } | null>(null);
+
   // Use controlled state if provided, otherwise use internal state
   const [internalSelectedSectionId, setInternalSelectedSectionId] = useState<
     string | null
@@ -103,75 +104,18 @@ export function EventInventoryViewer({
     return map;
   }, [sections]);
 
-  // Calculate section statistics for section-level layouts
-  const sectionStats = useMemo(() => {
-    if (layout.design_mode !== "section-level") return new Map();
-
-    const stats = new Map<
-      string,
-      {
-        section: Section;
-        totalSeats: number;
-        eventSeats: EventSeat[];
-        statusCounts: Record<string, number>;
-        eventSeatCount: number;
-      }
-    >();
-
-    sections.forEach((section) => {
-      // Get all seats in this section
-      const sectionSeats = layoutSeats.filter(
-        (seat) => seat.section_id === section.id,
-      );
-
-      // Get all event seats for this section
-      const sectionEventSeats: EventSeat[] = [];
-      sectionSeats.forEach((seat) => {
-        // Try by seat_id
-        if (seat.id && seatStatusMap.has(seat.id)) {
-          sectionEventSeats.push(seatStatusMap.get(seat.id)!);
-        } else if (seat.row && seat.seat_number) {
-          // Try by location
-          const sectionName = section.name;
-          const key = `${sectionName}|${seat.row}|${seat.seat_number}`;
-          const eventSeat = locationStatusMap.get(key);
-          if (eventSeat) {
-            sectionEventSeats.push(eventSeat);
-          }
-        }
-      });
-
-      // Count statuses
-      const statusCounts: Record<string, number> = {};
-
-      // Initialize all statuses to 0
-      Object.values(EventSeatStatusEnum).forEach((status) => {
-        statusCounts[status] = 0;
-      });
-
-      sectionEventSeats.forEach((eventSeat) => {
-        const status = eventSeat.status;
-        statusCounts[status] = (statusCounts[status] || 0) + 1;
-      });
-
-      stats.set(section.id, {
-        section,
-        totalSeats: sectionSeats.length,
-        eventSeats: sectionEventSeats,
-        statusCounts,
-        eventSeatCount: sectionEventSeats.length,
-      });
-    });
-
-    return stats;
-  }, [
-    layout.design_mode,
+  // Use custom hooks
+  const sectionStats = useSectionStats(
+    layout,
     sections,
     layoutSeats,
     seatStatusMap,
     locationStatusMap,
-    sectionNameMap,
-  ]);
+    sectionNameMap
+  );
+
+  const { hoveredSeatPosition, setHoveredSeatPosition, updatePopoverPosition } =
+    usePopoverPosition({ containerRef });
 
   // Get selected section for drill-down
   const selectedSection = useMemo(() => {
@@ -307,14 +251,10 @@ export function EventInventoryViewer({
       const clampedScale = Math.max(0.1, Math.min(5, newScale));
 
       // Convert pointer position to Layer coordinates
-      // Layer transform: stageX = (lx - centerX) * zoomLevel + (centerX + panOffset.x)
-      // Reverse: lx = (stageX - (centerX + panOffset.x)) / zoomLevel + centerX
       const layerX = (pointer.x - (centerX + panOffset.x)) / oldScale + centerX;
       const layerY = (pointer.y - (centerY + panOffset.y)) / oldScale + centerY;
 
       // Calculate new pan offset so the point at (layerX, layerY) stays at pointer position
-      // stageX = (layerX - centerX) * newScale + (centerX + newPanX)
-      // newPanX = stageX - centerX - (layerX - centerX) * newScale
       const newPanX = pointer.x - centerX - (layerX - centerX) * clampedScale;
       const newPanY = pointer.y - centerY - (layerY - centerY) * clampedScale;
 
@@ -324,102 +264,7 @@ export function EventInventoryViewer({
         y: newPanY,
       });
     },
-    [zoomLevel, panOffset, containerSize],
-  );
-
-  // Helper function to calculate and update popover position
-  const updatePopoverPosition = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      const group = e.target.getParent();
-      const evt = e.evt;
-      const stage = e.target.getStage();
-
-      if (group && stage && containerRef.current) {
-        try {
-          // Get the container's bounding rect to account for its position on the page
-          const containerRect = containerRef.current.getBoundingClientRect();
-
-          // Use Konva's getClientRect to get the bounding box
-          // This gives us coordinates relative to the stage container
-          const box = group.getClientRect();
-
-          // Convert to absolute screen coordinates by adding container position
-          // This accounts for scroll position since getBoundingClientRect() is relative to viewport
-          const absoluteX = containerRect.left + box.x;
-          const absoluteY = containerRect.top + box.y;
-
-          const popoverWidth = 320; // Width of the popover
-          const popoverHeight = 200; // Estimated height
-          const offset = 15; // Offset from seat
-
-          // Calculate preferred position (to the right of seat)
-          let screenX = absoluteX + box.width + offset;
-          let screenY = absoluteY + box.height / 2 - popoverHeight / 2;
-
-          // Get viewport dimensions
-          const viewportWidth = window.innerWidth;
-          const viewportHeight = window.innerHeight;
-
-          // Check if popover would go off right edge of viewport
-          if (screenX + popoverWidth > viewportWidth) {
-            // Position to the left of seat instead
-            screenX = absoluteX - popoverWidth - offset;
-          }
-
-          // Check if popover would go off left edge
-          if (screenX < 0) {
-            screenX = Math.max(offset, absoluteX + box.width + offset);
-            // If still off screen, position at edge
-            if (screenX + popoverWidth > viewportWidth) {
-              screenX = viewportWidth - popoverWidth - offset;
-            }
-          }
-
-          // Check if popover would go off bottom edge
-          if (screenY + popoverHeight > viewportHeight) {
-            screenY = viewportHeight - popoverHeight - offset;
-          }
-
-          // Check if popover would go off top edge
-          if (screenY < 0) {
-            screenY = offset;
-          }
-
-          setHoveredSeatPosition({ x: screenX, y: screenY });
-        } catch (error) {
-          // Fallback to mouse position if getClientRect fails
-          const popoverWidth = 320;
-          let screenX = evt.clientX + 20;
-          let screenY = evt.clientY - 100;
-
-          // Keep on screen
-          if (screenX + popoverWidth > window.innerWidth) {
-            screenX = evt.clientX - popoverWidth - 20;
-          }
-          if (screenY < 0) {
-            screenY = 10;
-          }
-
-          setHoveredSeatPosition({ x: screenX, y: screenY });
-        }
-      } else {
-        // Fallback to mouse position
-        const popoverWidth = 320;
-        let screenX = evt.clientX + 20;
-        let screenY = evt.clientY - 100;
-
-        // Keep on screen
-        if (screenX + popoverWidth > window.innerWidth) {
-          screenX = evt.clientX - popoverWidth - 20;
-        }
-        if (screenY < 0) {
-          screenY = 10;
-        }
-
-        setHoveredSeatPosition({ x: screenX, y: screenY });
-      }
-    },
-    [],
+    [zoomLevel, panOffset, containerSize, setZoomLevel, setPanOffset],
   );
 
   // Letterboxing: compute displayed dimensions and coordinate conversion
@@ -468,111 +313,111 @@ export function EventInventoryViewer({
         </div>
       ) : (
         <>
-      <EventInventoryStage
-        containerRef={containerRef}
-        stageRef={stageRef}
-        validWidth={validWidth}
-        validHeight={validHeight}
-        centerX={centerX}
-        centerY={centerY}
-        imageX={imageX}
-        imageY={imageY}
-        displayedWidth={displayedWidth}
-        displayedHeight={displayedHeight}
-        image={image}
-        zoomLevel={zoomLevel}
-        panOffset={panOffset}
-        isSpacePressed={isSpacePressed}
-        isPanning={isPanning}
-        hoveredSeatId={hoveredSeatId}
-        layout={layout}
-        selectedSectionId={selectedSectionId}
-        sections={sections}
-        sectionStats={sectionStats}
-        displayedSeats={displayedSeats}
-        seatStatusMap={seatStatusMap}
-        locationStatusMap={locationStatusMap}
-        sectionNameMap={sectionNameMap}
-        selectedSeatIds={selectedSeatIds}
-        hoveredSectionId={hoveredSectionId}
-        percentageToStage={percentageToStage}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        setHoveredSectionId={setHoveredSectionId}
-        setHoveredSectionData={setHoveredSectionData}
-        setHoveredSeatPosition={setHoveredSeatPosition}
-        setHoveredSeatId={setHoveredSeatId}
-        setHoveredSeatData={setHoveredSeatData}
-        updatePopoverPosition={updatePopoverPosition}
-        setSelectedSectionId={setSelectedSectionId}
-        setZoomLevel={setZoomLevel}
-        setPanOffset={setPanOffset}
-        onSeatClick={onSeatClick}
-        canvasBackgroundColor={canvasBackgroundColor}
-      />
-
-      {layout.design_mode === "section-level" &&
-        selectedSectionId &&
-        selectedSection && (
-          <EventInventoryBreadcrumb
-            section={selectedSection}
-            onBack={handleBackToSections}
-            className="absolute top-4 left-4"
+          <EventInventoryStage
+            containerRef={containerRef}
+            stageRef={stageRef}
+            validWidth={validWidth}
+            validHeight={validHeight}
+            centerX={centerX}
+            centerY={centerY}
+            imageX={imageX}
+            imageY={imageY}
+            displayedWidth={displayedWidth}
+            displayedHeight={displayedHeight}
+            image={image}
+            zoomLevel={zoomLevel}
+            panOffset={panOffset}
+            isSpacePressed={isSpacePressed}
+            isPanning={isPanning}
+            hoveredSeatId={hoveredSeatId}
+            layout={layout}
+            selectedSectionId={selectedSectionId}
+            sections={sections}
+            sectionStats={sectionStats}
+            displayedSeats={displayedSeats}
+            seatStatusMap={seatStatusMap}
+            locationStatusMap={locationStatusMap}
+            sectionNameMap={sectionNameMap}
+            selectedSeatIds={selectedSeatIds}
+            hoveredSectionId={hoveredSectionId}
+            percentageToStage={percentageToStage}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            setHoveredSectionId={setHoveredSectionId}
+            setHoveredSectionData={setHoveredSectionData}
+            setHoveredSeatPosition={setHoveredSeatPosition}
+            setHoveredSeatId={setHoveredSeatId}
+            setHoveredSeatData={setHoveredSeatData}
+            updatePopoverPosition={updatePopoverPosition}
+            setSelectedSectionId={setSelectedSectionId}
+            setZoomLevel={setZoomLevel}
+            setPanOffset={setPanOffset}
+            onSeatClick={onSeatClick}
+            canvasBackgroundColor={canvasBackgroundColor}
           />
-        )}
 
-      {/* Zoom Controls */}
-      <ZoomControls
-        zoomLevel={zoomLevel}
-        panOffset={panOffset}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
-      />
+          {layout.design_mode === "section-level" &&
+            selectedSectionId &&
+            selectedSection && (
+              <EventInventoryBreadcrumb
+                section={selectedSection}
+                onBack={handleBackToSections}
+                className="absolute top-4 left-4"
+              />
+            )}
 
-      {showLegend &&
-        !(layout.design_mode === "section-level" && selectedSectionId) && (
-          <EventInventoryLegend className="absolute top-4 left-4" />
-        )}
+          {/* Zoom Controls */}
+          <ZoomControls
+            zoomLevel={zoomLevel}
+            panOffset={panOffset}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onResetZoom={handleResetZoom}
+          />
 
-      {layout.design_mode === "section-level" &&
-        !selectedSectionId &&
-        hoveredSectionId &&
-        hoveredSeatPosition &&
-        hoveredSectionData &&
-        createPortal(
-          <EventInventorySectionPopover
-            section={hoveredSectionData.section}
-            seatCount={hoveredSectionData.seatCount}
-            eventSeatCount={hoveredSectionData.eventSeatCount}
-            statusSummary={hoveredSectionData.statusSummary}
-            x={hoveredSeatPosition.x}
-            y={hoveredSeatPosition.y}
-          />,
-          document.body,
-        )}
+          {showLegend &&
+            !(layout.design_mode === "section-level" && selectedSectionId) && (
+              <EventInventoryLegend className="absolute top-4 left-4" />
+            )}
 
-      {(layout.design_mode !== "section-level" || selectedSectionId) &&
-        hoveredSeatId &&
-        hoveredSeatPosition &&
-        hoveredSeatData &&
-        createPortal(
-          <EventInventorySeatPopover
-            seat={hoveredSeatData.seat}
-            eventSeat={hoveredSeatData.eventSeat}
-            sectionName={
-              hoveredSeatData.seat.section_name ||
-              sectionNameMap.get(hoveredSeatData.seat.section_id) ||
-              "N/A"
-            }
-            x={hoveredSeatPosition.x}
-            y={hoveredSeatPosition.y}
-          />,
-          document.body,
-        )}
+          {layout.design_mode === "section-level" &&
+            !selectedSectionId &&
+            hoveredSectionId &&
+            hoveredSeatPosition &&
+            hoveredSectionData &&
+            createPortal(
+              <EventInventorySectionPopover
+                section={hoveredSectionData.section}
+                seatCount={hoveredSectionData.seatCount}
+                eventSeatCount={hoveredSectionData.eventSeatCount}
+                statusSummary={hoveredSectionData.statusSummary}
+                x={hoveredSeatPosition.x}
+                y={hoveredSeatPosition.y}
+              />,
+              document.body,
+            )}
+
+          {(layout.design_mode !== "section-level" || selectedSectionId) &&
+            hoveredSeatId &&
+            hoveredSeatPosition &&
+            hoveredSeatData &&
+            createPortal(
+              <EventInventorySeatPopover
+                seat={hoveredSeatData.seat}
+                eventSeat={hoveredSeatData.eventSeat}
+                sectionName={
+                  hoveredSeatData.seat.section_name ||
+                  sectionNameMap.get(hoveredSeatData.seat.section_id) ||
+                  "N/A"
+                }
+                x={hoveredSeatPosition.x}
+                y={hoveredSeatPosition.y}
+              />,
+              document.body,
+            )}
         </>
       )}
     </div>
