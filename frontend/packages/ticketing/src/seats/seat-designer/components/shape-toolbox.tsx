@@ -355,6 +355,12 @@ export function ShapeToolbox({
 
               {/* Quick Access Shapes */}
               {quickAccessShapes.map((shapeType, index) => {
+                if (
+                  level === "section" &&
+                  shapeType === PlacementShapeType.SEAT
+                ) {
+                  return null;
+                }
                 const shapeDef =
                   ALL_SHAPES.find((s) => s.type === shapeType) || ALL_SHAPES[0];
                 const Icon = shapeDef.icon;
@@ -458,7 +464,8 @@ export function ShapeToolbox({
                         // Filter out shapes based on level
                         if (
                           level === "section" &&
-                          s.type === PlacementShapeType.SOFA
+                          (s.type === PlacementShapeType.SOFA ||
+                            s.type === PlacementShapeType.SEAT)
                         )
                           return false;
 
