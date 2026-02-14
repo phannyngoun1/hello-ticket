@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Circle, Rect, Ellipse, Line } from "react-konva";
+import { Circle, Rect, Ellipse, Line, Path, Group } from "react-konva";
 import {
   PlacementShapeType,
   type PlacementShape,
@@ -24,9 +24,15 @@ export interface ShapeRendererProps {
   dash?: number[];
   /** Rotation in degrees (applied to shapes that support it) */
   rotation?: number;
+  /** When true, do not apply rotation (parent Group handles it). Use for Transformer-wrapped shapes. */
+  rotationFromParent?: boolean;
 }
 
 const DEFAULT_RADIUS = 12;
+
+/** Lucide Sofa icon path data (viewBox 0 0 24 24) */
+const SOFA_ICON_PATH =
+  "M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3 M2 16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z M4 18v2 M20 18v2 M12 4v9";
 
 export function ShapeRenderer({
   shape,
@@ -38,6 +44,7 @@ export function ShapeRenderer({
   opacity = 1,
   dash,
   rotation = 0,
+  rotationFromParent = false,
 }: ShapeRendererProps) {
   const baseProps = {
     fill,
@@ -58,7 +65,7 @@ export function ShapeRenderer({
     return <Circle {...baseProps} radius={DEFAULT_RADIUS} />;
   }
 
-  const rot = shape.rotation ?? rotation;
+  const rot = rotationFromParent ? 0 : (shape.rotation ?? rotation);
 
   switch (shapeType) {
     case PlacementShapeType.CIRCLE: {
@@ -137,51 +144,19 @@ export function ShapeRenderer({
       const height = shape.height ? (shape.height / 100) * imageHeight : 24;
       const validWidth = Math.max(1, Math.abs(width));
       const validHeight = Math.max(1, Math.abs(height));
-      // Render as a rounded rectangle with "arms" (two smaller rects) or just a distinct rounded rect for now
-      // Let's make it look like a sofa: Main body + backrest + arms
-      // Simplified: Just a rounded rect with a backrest line
+      // Use Lucide sofa icon path, scaled to fit and centered
+      const scaleX = validWidth / 24;
+      const scaleY = validHeight / 24;
       return (
-        <React.Fragment>
-           {/* Backrest */}
-           <Rect
+        <Group x={-validWidth / 2} y={-validHeight / 2} scaleX={scaleX} scaleY={scaleY}>
+          <Path
             {...baseProps}
-            x={-validWidth / 2}
-            y={-validHeight / 2}
-            width={validWidth}
-            height={validHeight * 0.3}
-            cornerRadius={[5, 5, 0, 0]}
+            data={SOFA_ICON_PATH}
+            x={0}
+            y={0}
             rotation={rot}
-           />
-           {/* Seat */}
-           <Rect
-            {...baseProps}
-            x={-validWidth / 2}
-            y={-validHeight / 2 + validHeight * 0.3}
-            width={validWidth}
-            height={validHeight * 0.7}
-            cornerRadius={[0, 0, 5, 5]}
-            rotation={rot}
-           />
-           {/* Arms */}
-           <Rect
-            {...baseProps}
-            x={-validWidth / 2 - validWidth * 0.1}
-            y={-validHeight / 2 + validHeight * 0.3}
-            width={validWidth * 0.1}
-            height={validHeight * 0.7}
-            cornerRadius={[5, 0, 0, 5]}
-            rotation={rot}
-           />
-           <Rect
-            {...baseProps}
-            x={validWidth / 2}
-            y={-validHeight / 2 + validHeight * 0.3}
-            width={validWidth * 0.1}
-            height={validHeight * 0.7}
-            cornerRadius={[0, 5, 5, 0]}
-            rotation={rot}
-           />
-        </React.Fragment>
+          />
+        </Group>
       );
     }
 

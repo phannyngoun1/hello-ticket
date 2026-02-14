@@ -217,6 +217,26 @@ export function SeatMarkerCanvas({
     } else if (shape.type === PlacementShapeType.POLYGON && shape.points) {
       const avgScale = Math.abs((scaleX + scaleY) / 2);
       updatedShape.points = shape.points.map((p) => p * avgScale);
+    } else if (
+      shape.type === PlacementShapeType.SOFA ||
+      shape.type === PlacementShapeType.STAGE
+    ) {
+      // Sofa and stage: fixed aspect ratio - use uniform scale for both dimensions
+      const avgScale = Math.abs((scaleX + scaleY) / 2);
+      const currentWidth = shape.width ? (shape.width / 100) * imageWidth : 36;
+      const currentHeight = shape.height
+        ? (shape.height / 100) * imageHeight
+        : 24;
+      const minWidthPercent = shape.type === PlacementShapeType.STAGE ? 5 : 2;
+      const minHeightPercent = shape.type === PlacementShapeType.STAGE ? 3 : 1.5;
+      updatedShape.width = Math.max(
+        minWidthPercent,
+        (Math.abs(currentWidth * avgScale) / imageWidth) * 100,
+      );
+      updatedShape.height = Math.max(
+        minHeightPercent,
+        (Math.abs(currentHeight * avgScale) / imageHeight) * 100,
+      );
     }
 
     updatedShape.rotation = rotation;
@@ -312,6 +332,7 @@ export function SeatMarkerCanvas({
               imageWidth={imageWidth}
               imageHeight={imageHeight}
               opacity={fillOpacity}
+              rotationFromParent={true}
             />
           )}
         </Group>
@@ -341,18 +362,26 @@ export function SeatMarkerCanvas({
           anchorCornerRadius={2}
           padding={0}
           ignoreStroke={true}
-          keepRatio={false}
+          keepRatio={
+            shape.type === PlacementShapeType.SOFA ||
+            shape.type === PlacementShapeType.STAGE
+          }
           flipEnabled={false}
-          enabledAnchors={[
-            "top-left",
-            "top-center",
-            "top-right",
-            "middle-left",
-            "middle-right",
-            "bottom-left",
-            "bottom-center",
-            "bottom-right",
-          ]}
+          enabledAnchors={
+            shape.type === PlacementShapeType.SOFA ||
+            shape.type === PlacementShapeType.STAGE
+              ? ["top-left", "top-right", "bottom-left", "bottom-right"]
+              : [
+                  "top-left",
+                  "top-center",
+                  "top-right",
+                  "middle-left",
+                  "middle-right",
+                  "bottom-left",
+                  "bottom-center",
+                  "bottom-right",
+                ]
+          }
           onMouseDown={(e) => {
             e.cancelBubble = true;
             const target = e.target;

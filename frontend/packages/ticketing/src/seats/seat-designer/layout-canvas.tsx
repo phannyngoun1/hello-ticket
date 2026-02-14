@@ -1179,6 +1179,24 @@ export function LayoutCanvas({
                 };
 
                 onShapeDraw(shape, centerX, centerY);
+              } else if (selectedShapeTool === PlacementShapeType.SOFA) {
+                shape = {
+                  type: PlacementShapeType.SOFA,
+                  width: Math.max(5, width),
+                  height: Math.max(4, height),
+                  fillColor: "#60a5fa",
+                  strokeColor: "#2563eb",
+                };
+                onShapeDraw(shape, centerX, centerY, width, height);
+              } else if (selectedShapeTool === PlacementShapeType.STAGE) {
+                shape = {
+                  type: PlacementShapeType.STAGE,
+                  width: Math.max(20, width),
+                  height: Math.max(15, height),
+                  fillColor: "#333333",
+                  strokeColor: "#2563eb",
+                };
+                onShapeDraw(shape, centerX, centerY, width, height);
               }
             }
           }
@@ -2224,6 +2242,22 @@ export function LayoutCanvas({
                 previewShape = {
                   type: PlacementShapeType.POLYGON,
                   points: scaledPoints,
+                };
+              } else if (selectedShapeTool === PlacementShapeType.SOFA) {
+                previewShape = {
+                  type: PlacementShapeType.SOFA,
+                  width: Math.max(5, width),
+                  height: Math.max(4, height),
+                  fillColor: "#60a5fa",
+                  strokeColor: "#2563eb",
+                };
+              } else if (selectedShapeTool === PlacementShapeType.STAGE) {
+                previewShape = {
+                  type: PlacementShapeType.STAGE,
+                  width: Math.max(20, width),
+                  height: Math.max(15, height),
+                  fillColor: "#333333",
+                  strokeColor: "#2563eb",
                 };
               } else {
                 // Fallback (shouldn't happen)
