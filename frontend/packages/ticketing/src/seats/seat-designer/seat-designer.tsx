@@ -1172,13 +1172,17 @@ export function SeatDesigner({
 
   const handleSeatShapeTransform = useCallback(
     (id: string, shape: PlacementShape, position?: { x: number; y: number }) => {
-      recordSnapshot();
       const seat = seats.find((s) => s.id === id);
       const oldShape = seat?.shape;
-      updateSeat(id, {
-        shape,
-        ...(position && { x: position.x, y: position.y }),
-      });
+      const updates: { id: string; updates: Partial<SeatMarker> }[] = [
+        {
+          id,
+          updates: {
+            shape,
+            ...(position && { x: position.x, y: position.y }),
+          },
+        },
+      ];
 
       if (selectedSeatIds.length > 1 && selectedSeatIds.includes(id)) {
         const scale = getShapeScale(oldShape, shape, { radius: 0.8 });
@@ -1186,16 +1190,19 @@ export function SeatDesigner({
           const others = seats.filter(
             (s) => selectedSeatIds.includes(s.id) && s.id !== id,
           );
-          const updates = others.map((s) => {
+          others.forEach((s) => {
             const scaled = applyScaleToShape(s.shape, scale, { radius: 0.8 });
-            return scaled ? { id: s.id, updates: { shape: scaled } } : null;
-          }).filter(Boolean) as { id: string; updates: Partial<SeatMarker> }[];
-          if (updates.length) batchUpdateSeats(updates);
+            if (scaled) updates.push({ id: s.id, updates: { shape: scaled } });
+          });
         }
+      }
+      if (updates.length === 1) {
+        updateSeat(updates[0].id, updates[0].updates);
+      } else if (updates.length > 1) {
+        batchUpdateSeats(updates);
       }
     },
     [
-      recordSnapshot,
       updateSeat,
       batchUpdateSeats,
       seats,
@@ -1209,13 +1216,17 @@ export function SeatDesigner({
       shape: PlacementShape,
       position?: { x: number; y: number },
     ) => {
-      recordSnapshot();
       const section = sectionMarkers.find((s) => s.id === id);
       const oldShape = section?.shape;
-      updateSection(id, {
-        shape,
-        ...(position && { x: position.x, y: position.y }),
-      });
+      const updates: { id: string; updates: Partial<SectionMarker> }[] = [
+        {
+          id,
+          updates: {
+            shape,
+            ...(position && { x: position.x, y: position.y }),
+          },
+        },
+      ];
 
       if (selectedSectionIds.length > 1 && selectedSectionIds.includes(id)) {
         const scale = getShapeScale(oldShape, shape, {
@@ -1226,26 +1237,23 @@ export function SeatDesigner({
           const others = sectionMarkers.filter(
             (s) => selectedSectionIds.includes(s.id) && s.id !== id,
           );
-          const updates = others
-            .map((s) => {
-              const scaled = applyScaleToShape(s.shape, scale, {
-                width: 2,
-                height: 1.5,
-              });
-              return scaled
-                ? { id: s.id, updates: { shape: scaled } }
-                : null;
-            })
-            .filter(Boolean) as {
-              id: string;
-              updates: Partial<SectionMarker>;
-            }[];
-          if (updates.length) batchUpdateSections(updates);
+          others.forEach((s) => {
+            const scaled = applyScaleToShape(s.shape, scale, {
+              width: 2,
+              height: 1.5,
+            });
+            if (scaled)
+              updates.push({ id: s.id, updates: { shape: scaled } });
+          });
         }
+      }
+      if (updates.length === 1) {
+        updateSection(updates[0].id, updates[0].updates);
+      } else if (updates.length > 1) {
+        batchUpdateSections(updates);
       }
     },
     [
-      recordSnapshot,
       updateSection,
       batchUpdateSections,
       sectionMarkers,
