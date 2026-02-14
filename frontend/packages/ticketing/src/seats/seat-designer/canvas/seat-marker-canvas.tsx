@@ -125,7 +125,8 @@ export function SeatMarkerCanvas({
     } else if (!useLowDetail) {
       group.cache();
     }
-  }, [isSelected, useLowDetail, shapeKey, readOnly]);
+    // Include x,y so Transformer updates when marker position changes (e.g. on container resize)
+  }, [isSelected, useLowDetail, shapeKey, readOnly, Math.round(x), Math.round(y)]);
 
   useEffect(() => {
     if (disableHoverAnimation) return;
@@ -419,7 +420,7 @@ export function SeatMarkerCanvas({
             if (isNearRotationHandle) {
               container.style.cursor = "grab";
             } else {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
           onMouseEnter={(e) => {
@@ -430,7 +431,7 @@ export function SeatMarkerCanvas({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
           onMouseUp={(e) => {
@@ -439,7 +440,7 @@ export function SeatMarkerCanvas({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
         />

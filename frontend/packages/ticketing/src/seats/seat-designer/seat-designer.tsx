@@ -575,7 +575,8 @@ export function SeatDesigner({
       setContainerDimensions((prev) => {
         const widthDiff = Math.abs(prev.width - width);
         const heightDiff = Math.abs(prev.height - height);
-        if (widthDiff <= 2 && heightDiff <= 2) {
+        // Ignore tiny changes to avoid blink/flicker from layout thrashing
+        if (widthDiff <= 4 && heightDiff <= 4) {
           return prev;
         }
         return { width, height };
@@ -588,7 +589,8 @@ export function SeatDesigner({
       }
       rafId = requestAnimationFrame(() => {
         clearTimeout(timeoutId);
-        timeoutId = setTimeout(updateDimensions, 150);
+        // Debounce 250ms to let resize settle and avoid blink/flicker
+        timeoutId = setTimeout(updateDimensions, 250);
       });
     };
 

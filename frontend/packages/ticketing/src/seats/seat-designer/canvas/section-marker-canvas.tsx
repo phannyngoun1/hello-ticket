@@ -135,7 +135,8 @@ export function SectionMarkerCanvas({
     } else if (!useLowDetail && section.shape) {
       group.cache();
     }
-  }, [isSelected, useLowDetail, section.shape, shapeKey, readOnly]);
+    // Include x,y so Transformer updates when marker position changes (e.g. on container resize)
+  }, [isSelected, useLowDetail, section.shape, shapeKey, readOnly, Math.round(x), Math.round(y)]);
 
   const handleTransformEnd = useCallback(() => {
     if (!groupRef.current || !onShapeTransform || !section.shape) return;
@@ -476,7 +477,7 @@ export function SectionMarkerCanvas({
             if (isNearRotationHandle) {
               container.style.cursor = "grab";
             } else {
-              container.style.cursor = "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
           onMouseEnter={(e) => {
@@ -487,7 +488,7 @@ export function SectionMarkerCanvas({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
           onMouseUp={(e) => {
@@ -496,7 +497,7 @@ export function SectionMarkerCanvas({
             const stage = target.getStage();
             const container = stage?.container();
             if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "";
+              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
             }
           }}
         />

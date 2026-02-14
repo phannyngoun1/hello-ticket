@@ -143,11 +143,9 @@ export function ShapeOverlayCanvas({
           container.style.cursor =
             isPanning || isSpacePressed
               ? "grab"
-              : selectedShapeTool
+              : selectedShapeTool || isPlacingSeats || isPlacingSections
                 ? "crosshair"
-                : isPlacingSeats || isPlacingSections
-                  ? "crosshair"
-                  : "default";
+                : "pointer";
         }
         setIsHovered(false);
       }}
