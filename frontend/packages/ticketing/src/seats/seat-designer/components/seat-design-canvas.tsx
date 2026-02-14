@@ -139,7 +139,11 @@ export function SeatDesignCanvas({
   const NO_IMAGE_ASPECT_RATIO = 3 / 4; // 0.75 (4:3)
   const noImageInitialSizeRef = useRef<{ w: number; h: number } | null>(null);
   const hasImage = !!imageUrl;
-  if (!hasImage && containerDimensions.width > 0 && containerDimensions.height > 0) {
+  if (
+    !hasImage &&
+    containerDimensions.width > 0 &&
+    containerDimensions.height > 0
+  ) {
     if (!noImageInitialSizeRef.current) {
       noImageInitialSizeRef.current = {
         w: containerDimensions.width,
@@ -150,13 +154,21 @@ export function SeatDesignCanvas({
     noImageInitialSizeRef.current = null;
   }
   const dropCanvasW = hasImage
-    ? (containerDimensions.width > 0 ? containerDimensions.width : 800)
-    : (noImageInitialSizeRef.current?.w ?? (containerDimensions.width > 0 ? containerDimensions.width : 800));
+    ? containerDimensions.width > 0
+      ? containerDimensions.width
+      : 800
+    : (noImageInitialSizeRef.current?.w ??
+      (containerDimensions.width > 0 ? containerDimensions.width : 800));
   const dropCanvasH = hasImage
-    ? (containerDimensions.height > 0 ? containerDimensions.height : 600)
-    : (noImageInitialSizeRef.current?.h ?? (containerDimensions.height > 0 ? containerDimensions.height : 600));
+    ? containerDimensions.height > 0
+      ? containerDimensions.height
+      : 600
+    : (noImageInitialSizeRef.current?.h ??
+      (containerDimensions.height > 0 ? containerDimensions.height : 600));
   // Letterbox the content AR into the locked canvas
-  const dropContentAR = hasImage ? (dropCanvasH / dropCanvasW) : NO_IMAGE_ASPECT_RATIO;
+  const dropContentAR = hasImage
+    ? dropCanvasH / dropCanvasW
+    : NO_IMAGE_ASPECT_RATIO;
   const dropCanvasAR = dropCanvasH / dropCanvasW;
   let dropDisplayedW: number, dropDisplayedH: number;
   if (dropContentAR > dropCanvasAR) {
@@ -260,6 +272,13 @@ export function SeatDesignCanvas({
           height: 80,
           fillColor: "#333333", // Darker for stage
           strokeColor: "#2563eb", // Assuming DEFAULT_SHAPE_STROKE
+        },
+        [PlacementShapeType.SEAT]: {
+          type: PlacementShapeType.SEAT,
+          width: 4,
+          height: 3,
+          fillColor: "#60a5fa",
+          strokeColor: "#2563eb",
         },
       };
 

@@ -172,7 +172,8 @@ export function SectionMarkerCanvas({
       );
     } else if (
       shape.type === PlacementShapeType.RECTANGLE ||
-      shape.type === PlacementShapeType.ELLIPSE
+      shape.type === PlacementShapeType.ELLIPSE ||
+      shape.type === PlacementShapeType.SEAT
     ) {
       const currentWidth = shape.width ? (shape.width / 100) * imageWidth : 30;
       const currentHeight = shape.height

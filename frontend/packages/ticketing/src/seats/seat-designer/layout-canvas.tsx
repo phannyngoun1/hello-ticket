@@ -79,7 +79,9 @@ interface LayoutCanvasProps {
   onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
   onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
   /** Batch move multiple selected seats (called when dragging one of multiple selected) */
-  onBatchSeatDragEnd?: (updates: Array<{ id: string; x: number; y: number }>) => void;
+  onBatchSeatDragEnd?: (
+    updates: Array<{ id: string; x: number; y: number }>,
+  ) => void;
   /** Batch move multiple selected sections */
   onBatchSectionDragEnd?: (
     updates: Array<{ id: string; x: number; y: number }>,
@@ -409,11 +411,17 @@ export function LayoutCanvas({
   }
 
   const coordValidWidth = hasImage
-    ? (containerWidth > 0 ? containerWidth : 800)
-    : (noImageInitialSizeRef.current?.w ?? (containerWidth > 0 ? containerWidth : 800));
+    ? containerWidth > 0
+      ? containerWidth
+      : 800
+    : (noImageInitialSizeRef.current?.w ??
+      (containerWidth > 0 ? containerWidth : 800));
   const coordValidHeight = hasImage
-    ? (containerHeight > 0 ? containerHeight : 600)
-    : (noImageInitialSizeRef.current?.h ?? (containerHeight > 0 ? containerHeight : 600));
+    ? containerHeight > 0
+      ? containerHeight
+      : 600
+    : (noImageInitialSizeRef.current?.h ??
+      (containerHeight > 0 ? containerHeight : 600));
 
   const contentAspectRatio = hasImage
     ? image!.height / image!.width
@@ -451,13 +459,13 @@ export function LayoutCanvas({
         if (initial) {
           const dx = x - initial.x;
           const dy = y - initial.y;
-          const updates = Array.from(batchDragState.initialPositions.entries()).map(
-            ([id, pos]) => ({
-              id,
-              x: Math.max(0, Math.min(100, pos.x + dx)),
-              y: Math.max(0, Math.min(100, pos.y + dy)),
-            }),
-          );
+          const updates = Array.from(
+            batchDragState.initialPositions.entries(),
+          ).map(([id, pos]) => ({
+            id,
+            x: Math.max(0, Math.min(100, pos.x + dx)),
+            y: Math.max(0, Math.min(100, pos.y + dy)),
+          }));
           onBatchSeatDragEnd(updates);
         }
         setBatchDragState(null);
@@ -466,12 +474,7 @@ export function LayoutCanvas({
         onSeatDragEnd(seatId, x, y);
       }
     },
-    [
-      onSeatDragEnd,
-      onBatchSeatDragEnd,
-      layerToPercentage,
-      batchDragState,
-    ],
+    [onSeatDragEnd, onBatchSeatDragEnd, layerToPercentage, batchDragState],
   );
 
   const handleSeatDragStart = useCallback(
@@ -505,7 +508,10 @@ export function LayoutCanvas({
       const { x, y } = layerToPercentage(layerX, layerY);
       setDragPosition({ x, y });
 
-      if (batchDragState?.type === "seats" && batchDragState.draggedId === seatId) {
+      if (
+        batchDragState?.type === "seats" &&
+        batchDragState.draggedId === seatId
+      ) {
         const initial = batchDragState.initialPositions.get(seatId);
         if (initial) {
           setBatchDragDelta({ dx: x - initial.x, dy: y - initial.y });
@@ -521,21 +527,18 @@ export function LayoutCanvas({
       setDraggedSectionId(null);
       setDragPosition(null);
 
-      if (
-        batchDragState?.type === "sections" &&
-        onBatchSectionDragEnd
-      ) {
+      if (batchDragState?.type === "sections" && onBatchSectionDragEnd) {
         const initial = batchDragState.initialPositions.get(sectionId);
         if (initial) {
           const dx = x - initial.x;
           const dy = y - initial.y;
-          const updates = Array.from(batchDragState.initialPositions.entries()).map(
-            ([id, pos]) => ({
-              id,
-              x: Math.max(0, Math.min(100, pos.x + dx)),
-              y: Math.max(0, Math.min(100, pos.y + dy)),
-            }),
-          );
+          const updates = Array.from(
+            batchDragState.initialPositions.entries(),
+          ).map(([id, pos]) => ({
+            id,
+            x: Math.max(0, Math.min(100, pos.x + dx)),
+            y: Math.max(0, Math.min(100, pos.y + dy)),
+          }));
           onBatchSectionDragEnd(updates);
         }
         setBatchDragState(null);
@@ -692,11 +695,7 @@ export function LayoutCanvas({
 
   // Apply batch drag position overrides so all selected items move together
   const displaySeats = useMemo(() => {
-    if (
-      !batchDragState ||
-      batchDragState.type !== "seats" ||
-      !batchDragDelta
-    ) {
+    if (!batchDragState || batchDragState.type !== "seats" || !batchDragDelta) {
       return visibleSeats;
     }
     return visibleSeats.map((s) => {
@@ -711,12 +710,7 @@ export function LayoutCanvas({
         y: initial.y + batchDragDelta.dy,
       };
     });
-  }, [
-    visibleSeats,
-    batchDragState,
-    batchDragDelta,
-    dragPosition,
-  ]);
+  }, [visibleSeats, batchDragState, batchDragDelta, dragPosition]);
 
   const displaySections = useMemo(() => {
     if (
@@ -738,12 +732,7 @@ export function LayoutCanvas({
         y: initial.y + batchDragDelta.dy,
       };
     });
-  }, [
-    visibleSections,
-    batchDragState,
-    batchDragDelta,
-    dragPosition,
-  ]);
+  }, [visibleSections, batchDragState, batchDragDelta, dragPosition]);
 
   const layerTransform = {
     x: centerX + panOffset.x,
@@ -1195,6 +1184,13 @@ export function LayoutCanvas({
                   height: Math.max(15, height),
                   fillColor: "#333333",
                   strokeColor: "#2563eb",
+                };
+                onShapeDraw(shape, centerX, centerY, width, height);
+              } else if (selectedShapeTool === PlacementShapeType.SEAT) {
+                shape = {
+                  type: PlacementShapeType.SEAT,
+                  width: Math.max(1.0, width),
+                  height: Math.max(1.0, height),
                 };
                 onShapeDraw(shape, centerX, centerY, width, height);
               }
@@ -2258,6 +2254,12 @@ export function LayoutCanvas({
                   height: Math.max(15, height),
                   fillColor: "#333333",
                   strokeColor: "#2563eb",
+                };
+              } else if (selectedShapeTool === PlacementShapeType.SEAT) {
+                previewShape = {
+                  type: PlacementShapeType.SEAT,
+                  width: Math.max(1.0, width),
+                  height: Math.max(1.0, height),
                 };
               } else {
                 // Fallback (shouldn't happen)

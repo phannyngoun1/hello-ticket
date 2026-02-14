@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, Input, Label, Popover, PopoverContent, PopoverTrigger } from "@truths/ui";
+import {
+  Card,
+  Input,
+  Label,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@truths/ui";
 import {
   Circle,
   Square,
@@ -23,7 +30,8 @@ import {
   MoreHorizontal,
   Armchair,
   Presentation,
-  LayoutTemplate
+  LayoutTemplate,
+  Pill,
 } from "lucide-react";
 import {
   PlacementShapeType,
@@ -128,7 +136,12 @@ const ALL_SHAPES = [
     type: PlacementShapeType.STAGE,
     icon: Presentation,
     label: "Stage",
-  }
+  },
+  {
+    type: PlacementShapeType.SEAT,
+    icon: Pill,
+    label: "Seat",
+  },
 ];
 
 export interface ShapeToolboxProps {
@@ -218,7 +231,9 @@ export function ShapeToolbox({
 
   // Persist quick access shapes in local storage or just state? State is fine for now.
   // Defaults: Circle, Rectangle, Ellipse, Polygon
-  const [quickAccessShapes, setQuickAccessShapes] = useState<PlacementShapeType[]>([
+  const [quickAccessShapes, setQuickAccessShapes] = useState<
+    PlacementShapeType[]
+  >([
     PlacementShapeType.CIRCLE,
     PlacementShapeType.RECTANGLE,
     PlacementShapeType.ELLIPSE,
@@ -237,19 +252,19 @@ export function ShapeToolbox({
   const handleShapeDoubleClick = (newShapeType: PlacementShapeType) => {
     // If the currently selected shape is in the toolbar, replace it.
     // Otherwise replace the last slot.
-    const selectedIndex = selectedShapeType 
-      ? quickAccessShapes.indexOf(selectedShapeType) 
+    const selectedIndex = selectedShapeType
+      ? quickAccessShapes.indexOf(selectedShapeType)
       : -1;
-    
+
     const targetIndex = selectedIndex !== -1 ? selectedIndex : 3;
-    
+
     const newShapes = [...quickAccessShapes];
     newShapes[targetIndex] = newShapeType;
     setQuickAccessShapes(newShapes);
-    
+
     // Select the new shape
     onShapeTypeSelect?.(newShapeType);
-    
+
     // Close popover
     setIsPopoverOpen(false);
   };
@@ -340,7 +355,8 @@ export function ShapeToolbox({
 
               {/* Quick Access Shapes */}
               {quickAccessShapes.map((shapeType, index) => {
-                const shapeDef = ALL_SHAPES.find(s => s.type === shapeType) || ALL_SHAPES[0];
+                const shapeDef =
+                  ALL_SHAPES.find((s) => s.type === shapeType) || ALL_SHAPES[0];
                 const Icon = shapeDef.icon;
                 const isSelected = selectedShapeType === shapeType;
                 return (
@@ -365,22 +381,28 @@ export function ShapeToolbox({
                       e.dataTransfer.setDragImage(dragImage, 12, 12);
                     }}
                     onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = "copy";
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "copy";
                     }}
                     onDrop={(e) => {
-                        e.preventDefault();
-                        const data = e.dataTransfer.getData("application/json");
-                        if (data) {
-                            try {
-                                const parsed = JSON.parse(data);
-                                if (parsed.dragSource === "shape-library" && parsed.shapeType) {
-                                    handleShapeDrop(index, parsed.shapeType as PlacementShapeType);
-                                }
-                            } catch (err) {
-                                // ignore
-                            }
+                      e.preventDefault();
+                      const data = e.dataTransfer.getData("application/json");
+                      if (data) {
+                        try {
+                          const parsed = JSON.parse(data);
+                          if (
+                            parsed.dragSource === "shape-library" &&
+                            parsed.shapeType
+                          ) {
+                            handleShapeDrop(
+                              index,
+                              parsed.shapeType as PlacementShapeType,
+                            );
+                          }
+                        } catch (err) {
+                          // ignore
                         }
+                      }
                     }}
                     onDragEnd={(e) => {
                       e.dataTransfer.dropEffect = "copy";
@@ -405,78 +427,89 @@ export function ShapeToolbox({
                 );
               })}
 
-               {/* More Shapes Popover */}
-               <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <button
-                        type="button"
-                        disabled={readOnly}
-                        className={cn(
-                        "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
-                        !readOnly &&
-                            "hover:bg-accent hover:border-accent-foreground hover:shadow-md active:scale-95",
-                        readOnly && "opacity-50 cursor-not-allowed",
-                        "bg-background border-border"
-                        )}
-                        title="More Shapes (drag to toolbox to customize)"
-                    >
-                        <MoreHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-3" align="start">
-                    <div className="space-y-2">
-                        <Label className="text-xs font-semibold text-muted-foreground">Available Shapes</Label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {ALL_SHAPES.filter(s => {
-                              // Filter out shapes already in quick access
-                              if (quickAccessShapes.includes(s.type)) return false;
-                              
-                              // Filter out shapes based on level
-                              if (level === "section" && s.type === PlacementShapeType.SOFA) return false;
-                              
-                              return true;
-                            }).map((shape) => {
-                                const Icon = shape.icon;
-                                return (
-                                    <button
-                                        key={shape.type}
-                                        type="button"
-                                        draggable={!readOnly}
-                                        onDragStart={(e) => {
-                                            e.dataTransfer.effectAllowed = "copy";
-                                            e.dataTransfer.setData(
-                                                "application/json",
-                                                JSON.stringify({
-                                                shapeType: shape.type,
-                                                dragSource: "shape-library",
-                                                }),
-                                            );
-                                        }}
-                                        onClick={() => {
-                                            // Select it temporarily? logic for "replace checked" could be here
-                                            // For now just select it.
-                                            onShapeTypeSelect?.(shape.type);
-                                        }}
-                                        onDoubleClick={() => handleShapeDoubleClick(shape.type)}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-2 rounded border transition-all gap-1 h-16",
-                                            "hover:bg-accent hover:border-accent-foreground cursor-grab active:cursor-grabbing",
-                                            selectedShapeType === shape.type && "bg-accent border-accent-foreground"
-                                        )}
-                                        title={`${shape.label} - Double click to add to toolbar`}
-                                    >
-                                        <Icon className="h-5 w-5" />
-                                        <span className="text-[10px] truncate w-full text-center">{shape.label}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                            Drag to toolbar or double-click to pin.
-                        </p>
+              {/* More Shapes Popover */}
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    className={cn(
+                      "flex items-center justify-center p-1.5 rounded border transition-all duration-200 ease-in-out",
+                      !readOnly &&
+                        "hover:bg-accent hover:border-accent-foreground hover:shadow-md active:scale-95",
+                      readOnly && "opacity-50 cursor-not-allowed",
+                      "bg-background border-border",
+                    )}
+                    title="More Shapes (drag to toolbox to customize)"
+                  >
+                    <MoreHorizontal className="h-3.5 w-3.5 transition-transform duration-200" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground">
+                      Available Shapes
+                    </Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {ALL_SHAPES.filter((s) => {
+                        // Filter out shapes already in quick access
+                        if (quickAccessShapes.includes(s.type)) return false;
+
+                        // Filter out shapes based on level
+                        if (
+                          level === "section" &&
+                          s.type === PlacementShapeType.SOFA
+                        )
+                          return false;
+
+                        return true;
+                      }).map((shape) => {
+                        const Icon = shape.icon;
+                        return (
+                          <button
+                            key={shape.type}
+                            type="button"
+                            draggable={!readOnly}
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "copy";
+                              e.dataTransfer.setData(
+                                "application/json",
+                                JSON.stringify({
+                                  shapeType: shape.type,
+                                  dragSource: "shape-library",
+                                }),
+                              );
+                            }}
+                            onClick={() => {
+                              // Select it temporarily? logic for "replace checked" could be here
+                              // For now just select it.
+                              onShapeTypeSelect?.(shape.type);
+                            }}
+                            onDoubleClick={() =>
+                              handleShapeDoubleClick(shape.type)
+                            }
+                            className={cn(
+                              "flex flex-col items-center justify-center p-2 rounded border transition-all gap-1 h-16",
+                              "hover:bg-accent hover:border-accent-foreground cursor-grab active:cursor-grabbing",
+                              selectedShapeType === shape.type &&
+                                "bg-accent border-accent-foreground",
+                            )}
+                            title={`${shape.label} - Double click to add to toolbar`}
+                          >
+                            <Icon className="h-5 w-5" />
+                            <span className="text-[10px] truncate w-full text-center">
+                              {shape.label}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </PopoverContent>
-               </Popover>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Drag to toolbar or double-click to pin.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         )}
@@ -614,11 +647,14 @@ export function ShapeToolbox({
         )}
 
         {/* Compact seat placement controls - hidden when pointer selected or an object is selected (only shown with active shape tool) */}
-        {!isEditMode && !selectedMarker && selectedShapeType && seatPlacementControls && (
-          <div className="flex items-center gap-2 border-l pl-2.5">
-            {seatPlacementControls}
-          </div>
-        )}
+        {!isEditMode &&
+          !selectedMarker &&
+          selectedShapeType &&
+          seatPlacementControls && (
+            <div className="flex items-center gap-2 border-l pl-2.5">
+              {seatPlacementControls}
+            </div>
+          )}
 
         {/* Fill and border color - in line with shapes when a seat or section (with shape) is selected */}
         {!isEditMode && showColorControls && (

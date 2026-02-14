@@ -29,11 +29,15 @@ export function pointInShape(
     }
 
     case PlacementShapeType.RECTANGLE:
-    case PlacementShapeType.ELLIPSE: {
+    case PlacementShapeType.ELLIPSE:
+    case PlacementShapeType.SEAT: {
       const halfW = (shape.width ?? 3) / 2;
       const halfH = (shape.height ?? 2) / 2;
 
-      if (shapeType === PlacementShapeType.RECTANGLE) {
+      if (
+        shapeType === PlacementShapeType.RECTANGLE ||
+        shapeType === PlacementShapeType.SEAT
+      ) {
         return (
           px >= shapeX - halfW &&
           px <= shapeX + halfW &&

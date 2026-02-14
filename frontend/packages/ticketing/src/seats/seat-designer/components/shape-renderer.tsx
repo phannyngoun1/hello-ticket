@@ -7,10 +7,7 @@
 
 import React from "react";
 import { Circle, Rect, Ellipse, Line, Path, Group } from "react-konva";
-import {
-  PlacementShapeType,
-  type PlacementShape,
-} from "../types";
+import { PlacementShapeType, type PlacementShape } from "../types";
 
 export interface ShapeRendererProps {
   /** Shape to render. When undefined, renders default circle. */
@@ -61,7 +58,9 @@ export function ShapeRenderer({
   }
 
   const shapeType = shape.type;
-  if (!Object.values(PlacementShapeType).includes(shapeType as PlacementShapeType)) {
+  if (
+    !Object.values(PlacementShapeType).includes(shapeType as PlacementShapeType)
+  ) {
     return <Circle {...baseProps} radius={DEFAULT_RADIUS} />;
   }
 
@@ -101,7 +100,9 @@ export function ShapeRenderer({
     }
 
     case PlacementShapeType.ELLIPSE: {
-      const radiusX = shape.width ? ((shape.width / 100) * imageWidth) / 2 : DEFAULT_RADIUS;
+      const radiusX = shape.width
+        ? ((shape.width / 100) * imageWidth) / 2
+        : DEFAULT_RADIUS;
       const radiusY = shape.height
         ? ((shape.height / 100) * imageHeight) / 2
         : DEFAULT_RADIUS;
@@ -124,7 +125,9 @@ export function ShapeRenderer({
       const points = shape.points.map((p, index) =>
         index % 2 === 0 ? (p / 100) * imageWidth : (p / 100) * imageHeight,
       );
-      return <Line {...baseProps} points={points} closed={true} rotation={rot} />;
+      return (
+        <Line {...baseProps} points={points} closed={true} rotation={rot} />
+      );
     }
 
     case PlacementShapeType.FREEFORM: {
@@ -135,7 +138,13 @@ export function ShapeRenderer({
         index % 2 === 0 ? (p / 100) * imageWidth : (p / 100) * imageHeight,
       );
       return (
-        <Line {...baseProps} points={points} closed={true} tension={0} rotation={rot} />
+        <Line
+          {...baseProps}
+          points={points}
+          closed={true}
+          tension={0}
+          rotation={rot}
+        />
       );
     }
 
@@ -148,7 +157,12 @@ export function ShapeRenderer({
       const scaleX = validWidth / 24;
       const scaleY = validHeight / 24;
       return (
-        <Group x={-validWidth / 2} y={-validHeight / 2} scaleX={scaleX} scaleY={scaleY}>
+        <Group
+          x={-validWidth / 2}
+          y={-validHeight / 2}
+          scaleX={scaleX}
+          scaleY={scaleY}
+        >
           <Path
             {...baseProps}
             data={SOFA_ICON_PATH}
@@ -161,37 +175,56 @@ export function ShapeRenderer({
     }
 
     case PlacementShapeType.STAGE: {
-        const width = shape.width ? (shape.width / 100) * imageWidth : 100;
-        const height = shape.height ? (shape.height / 100) * imageHeight : 50;
-        const validWidth = Math.max(1, Math.abs(width));
-        const validHeight = Math.max(1, Math.abs(height));
-        return (
-            <React.Fragment>
-                <Rect
-                    {...baseProps}
-                    x={-validWidth / 2}
-                    y={-validHeight / 2}
-                    width={validWidth}
-                    height={validHeight}
-                    cornerRadius={2}
-                    rotation={rot}
-                />
-                {/* Stage Label/Indicator - simplified as a line or inner rect */}
-                <Rect
-                    {...baseProps}
-                    fill="transparent"
-                    stroke={baseProps.stroke}
-                    strokeWidth={1}
-                    x={-validWidth / 2 + 5}
-                    y={-validHeight / 2 + 5}
-                    width={validWidth - 10}
-                    height={validHeight - 10}
-                    cornerRadius={1}
-                    rotation={rot}
-                    dash={[5, 5]}
-                />
-            </React.Fragment>
-        );
+      const width = shape.width ? (shape.width / 100) * imageWidth : 100;
+      const height = shape.height ? (shape.height / 100) * imageHeight : 50;
+      const validWidth = Math.max(1, Math.abs(width));
+      const validHeight = Math.max(1, Math.abs(height));
+      return (
+        <React.Fragment>
+          <Rect
+            {...baseProps}
+            x={-validWidth / 2}
+            y={-validHeight / 2}
+            width={validWidth}
+            height={validHeight}
+            cornerRadius={2}
+            rotation={rot}
+          />
+          {/* Stage Label/Indicator - simplified as a line or inner rect */}
+          <Rect
+            {...baseProps}
+            fill="transparent"
+            stroke={baseProps.stroke}
+            strokeWidth={1}
+            x={-validWidth / 2 + 5}
+            y={-validHeight / 2 + 5}
+            width={validWidth - 10}
+            height={validHeight - 10}
+            cornerRadius={1}
+            rotation={rot}
+            dash={[5, 5]}
+          />
+        </React.Fragment>
+      );
+    }
+
+    case PlacementShapeType.SEAT: {
+      const width = shape.width ? (shape.width / 100) * imageWidth : 24;
+      const height = shape.height ? (shape.height / 100) * imageHeight : 24;
+      const validWidth = Math.max(1, Math.abs(width));
+      const validHeight = Math.max(1, Math.abs(height));
+      const halfW = validWidth / 2;
+      const halfH = validHeight / 2;
+      const r = Math.min(halfW, halfH);
+      // Rectangle with one curved end (right): left edge straight, right edge semicircle
+      const pathData = `M ${-halfW} ${-halfH} L ${halfW - r} ${-halfH} A ${r} ${r} 0 0 1 ${halfW - r} ${halfH} L ${-halfW} ${halfH} Z`;
+      return (
+        <Path
+          {...baseProps}
+          data={pathData}
+          rotation={rot}
+        />
+      );
     }
 
     default:

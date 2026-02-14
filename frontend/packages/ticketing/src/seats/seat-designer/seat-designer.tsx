@@ -108,7 +108,8 @@ function getMarkerBounds(
 
   if (
     type === PlacementShapeType.RECTANGLE ||
-    type === PlacementShapeType.ELLIPSE
+    type === PlacementShapeType.ELLIPSE ||
+    type === PlacementShapeType.SEAT
   ) {
     const w = shape?.width ?? defaults.width ?? 2;
     const h = shape?.height ?? defaults.height ?? 1.5;
@@ -212,7 +213,8 @@ function applyAlignment<T extends { id: string; x: number; y: number; shape?: Pl
           } as Partial<T>);
         } else if (
           type === PlacementShapeType.RECTANGLE ||
-          type === PlacementShapeType.ELLIPSE
+          type === PlacementShapeType.ELLIPSE ||
+          type === PlacementShapeType.SEAT
         ) {
           updates.set(marker.id, {
             shape: { ...shape, type, width: maxW } as PlacementShape,
@@ -235,7 +237,8 @@ function applyAlignment<T extends { id: string; x: number; y: number; shape?: Pl
           } as Partial<T>);
         } else if (
           type === PlacementShapeType.RECTANGLE ||
-          type === PlacementShapeType.ELLIPSE
+          type === PlacementShapeType.ELLIPSE ||
+          type === PlacementShapeType.SEAT
         ) {
           updates.set(marker.id, {
             shape: { ...shape, type, height: maxH } as PlacementShape,
@@ -280,7 +283,8 @@ function applyScaleToShape(
     updated.radius = Math.max(0.1, r * scale);
   } else if (
     type === PlacementShapeType.RECTANGLE ||
-    type === PlacementShapeType.ELLIPSE
+    type === PlacementShapeType.ELLIPSE ||
+    type === PlacementShapeType.SEAT
   ) {
     const w = shape.width ?? defaults.width ?? 2;
     const h = shape.height ?? defaults.height ?? 1.5;
@@ -309,7 +313,8 @@ function getShapeScale(
     scale = oldR > 0 ? newR / oldR : 1;
   } else if (
     type === PlacementShapeType.RECTANGLE ||
-    type === PlacementShapeType.ELLIPSE
+    type === PlacementShapeType.ELLIPSE ||
+    type === PlacementShapeType.SEAT
   ) {
     const oldW = oldShape?.width ?? defaults.width ?? 2;
     const oldH = oldShape?.height ?? defaults.height ?? 1.5;

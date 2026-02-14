@@ -15,6 +15,8 @@ export enum PlacementShapeType {
   FREEFORM = "freeform",
   SOFA = "sofa",
   STAGE = "stage",
+  /** Rectangle with one curved end (typical seat representation) */
+  SEAT = "seat",
 }
 
 /**
