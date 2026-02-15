@@ -556,7 +556,8 @@ export function LayoutCanvas({
       const wasUnselected = !selectedSectionIdSet.has(sectionId);
       if (wasUnselected) {
         const section = sections.find((s) => s.id === sectionId);
-        if (section && onSectionClick) onSectionClick(section, { shiftKey: false });
+        if (section && onSectionClick)
+          onSectionClick(section, { shiftKey: false });
       }
 
       if (batchDragState?.type === "sections" && onBatchSectionDragEnd) {
@@ -778,9 +779,7 @@ export function LayoutCanvas({
     offsetY: centerY,
   };
 
-  const staticSeats = displaySeats.filter(
-    (s) => !selectedSeatIdSet.has(s.id),
-  );
+  const staticSeats = displaySeats.filter((s) => !selectedSeatIdSet.has(s.id));
   const selectedSeats = displaySeats.filter((s) => selectedSeatIdSet.has(s.id));
   const selectedSeat = displaySeats.find((s) => s.id === selectedSeatId);
   const draggedSeat = displaySeats.find((s) => s.id === draggedSeatId);
@@ -1609,6 +1608,18 @@ export function LayoutCanvas({
             }}
           />
         )}
+        {/* Border to show the actual canvas bounds */}
+        <Rect
+          name="canvas-border"
+          x={imageX}
+          y={imageY}
+          width={displayedWidth}
+          height={displayedHeight}
+          fill="transparent"
+          stroke="rgba(100, 116, 139, 0.4)"
+          strokeWidth={1.5}
+          listening={false}
+        />
       </Layer>
 
       {/* Static Layer: Non-selected, non-dragged - redraws only on selection/drag-end */}

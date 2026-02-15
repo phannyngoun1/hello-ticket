@@ -17,8 +17,6 @@ import { Card } from "@truths/ui";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { seatService } from "../../seats/seat-service";
-import { sectionService } from "../../sections/section-service";
 import { Seat, SeatType } from "../../seats/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@truths/api";
@@ -45,11 +43,8 @@ import { useSeatDesignerHotkeys } from "./hooks/use-seat-designer-hotkeys";
 import {
   ZoomControls,
   SectionFormSheet,
-  SeatEditSheet,
   SeatEditControls,
   SectionDetailView,
-  DatasheetView,
-  SelectedSectionSheet,
   ManageSectionsSheet,
   SeatDesignToolbar,
   SeatDesignCanvas,
@@ -67,11 +62,7 @@ import type {
   SeatMarker,
 } from "./types";
 import { PlacementShapeType, type PlacementShape } from "./types";
-import {
-  DEFAULT_CANVAS_BACKGROUND,
-  DEFAULT_SHAPE_FILL,
-  DEFAULT_SHAPE_STROKE,
-} from "./colors";
+import { DEFAULT_CANVAS_BACKGROUND } from "./colors";
 import { Section } from "../../layouts/types";
 
 export type { SeatDesignerProps, SectionMarker, SeatInfo, SeatMarker };
