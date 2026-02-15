@@ -18,3 +18,4 @@ export * from './customer-provider';
 export * from './customer-list-container';
 
 export * from './customer-filter-sheet';
+export * from './view-customer-page';

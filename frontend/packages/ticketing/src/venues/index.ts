@@ -18,5 +18,6 @@ export * from './venue-list-container';
 
 export * from './venue-filter-sheet';
 export * from './venue-profile-photo-upload';
+export * from './view-venue-page';
 
 

@@ -1,118 +1,58 @@
-import { useEffect } from "react";
 import { useParams, useNavigate } from "@tanstack/react-router";
-import {
-  ShowDetail,
-  ShowProvider,
-  OrganizerProvider,
-  EventProvider,
-  VenueProvider,
-  LayoutProvider,
-  useShow,
-  useShowService,
-} from "@truths/ticketing";
-import { AuditProvider } from "@truths/shared";
+import { ViewShowPage as ViewShowPageComponent } from "@truths/ticketing";
+import { useRequireAuth } from "../../hooks/use-require-auth";
 import { api } from "@truths/api";
 
-function ShowDetailContent({ id }: { id: string | undefined }) {
-  const navigate = useNavigate();
-  const service = useShowService();
-  const { data, isLoading, error } = useShow(service, id ?? null);
-
-  const handleNavigateToInventory = (eventId: string) => {
-    navigate({
-      to: "/ticketing/events/$eventId/inventory",
-      params: { eventId },
-    });
-  };
-
-  const handleNavigateToVenue = (venueId: string) => {
-    navigate({
-      to: "/ticketing/venues/$id",
-      params: { id: venueId },
-    });
-  };
-
-  useEffect(() => {
-    if (!data) return;
-    const title = data.code || data.id;
-    window.dispatchEvent(
-      new CustomEvent("update-tab-title", {
-        detail: {
-          path: `/ticketing/shows/${id}`,
-          title,
-        },
-      }),
-    );
-  }, [id, data]);
-
-  return (
-    <ShowDetail
-      data={data ?? undefined}
-      loading={isLoading}
-      error={error as Error | null}
-      editable={true}
-      onNavigateToInventory={handleNavigateToInventory}
-      onNavigateToVenue={handleNavigateToVenue}
-    />
-  );
-}
-
 export function ViewShowPage() {
-  const { id } = useParams({ from: "/ticketing/shows/$id" });
+  useRequireAuth();
 
-  const serviceConfig = {
-    apiClient: api,
-    endpoints: {
-      shows: "/api/v1/ticketing/shows",
+  const { id } = useParams({ from: "/ticketing/shows/$id" });
+  const navigate = useNavigate();
+
+  if (!id) {
+    return <div className="p-4">Invalid show ID</div>;
+  }
+
+  const config = {
+    show: {
+      apiClient: api,
+      endpoints: { shows: "/api/v1/ticketing/shows" },
+    },
+    organizer: {
+      apiClient: api,
+      endpoints: { organizers: "/api/v1/ticketing/organizers" },
+    },
+    event: {
+      apiClient: api,
+      endpoints: { events: "/api/v1/ticketing/events" },
+    },
+    venue: {
+      apiClient: api,
+      endpoints: { venues: "/api/v1/ticketing/venues" },
+    },
+    layout: {
+      apiClient: api,
+      endpoints: { layouts: "/api/v1/ticketing/layouts" },
+    },
+    audit: {
+      apiClient: api,
+      baseUrl: "/api/v1",
     },
   };
 
   return (
-    <ShowProvider config={serviceConfig}>
-      <OrganizerProvider
-        config={{
-          apiClient: api,
-          endpoints: {
-            organizers: "/api/v1/ticketing/organizers",
-          },
-        }}
-      >
-        <EventProvider
-          config={{
-            apiClient: api,
-            endpoints: {
-              events: "/api/v1/ticketing/events",
-            },
-          }}
-        >
-          <VenueProvider
-            config={{
-              apiClient: api,
-              endpoints: {
-                venues: "/api/v1/ticketing/venues",
-              },
-            }}
-          >
-            <LayoutProvider
-              config={{
-                apiClient: api,
-                endpoints: {
-                  layouts: "/api/v1/ticketing/layouts",
-                },
-              }}
-            >
-              <AuditProvider
-                config={{
-                  apiClient: api,
-                  baseUrl: "/api/v1",
-                }}
-              >
-                <ShowDetailContent id={id} />
-              </AuditProvider>
-            </LayoutProvider>
-          </VenueProvider>
-        </EventProvider>
-      </OrganizerProvider>
-    </ShowProvider>
+    <ViewShowPageComponent
+      showId={id}
+      config={config}
+      onNavigateToInventory={(eventId) =>
+        navigate({
+          to: "/ticketing/events/$eventId/inventory",
+          params: { eventId },
+        })
+      }
+      onNavigateToVenue={(venueId) =>
+        navigate({ to: "/ticketing/venues/$id", params: { id: venueId } })
+      }
+    />
   );
 }

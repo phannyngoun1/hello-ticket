@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as MyPageRouteImport } from './routes/my-page'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
@@ -64,11 +63,6 @@ const UsersRoute = UsersRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MyPageRoute = MyPageRouteImport.update({
-  id: '/my-page',
-  path: '/my-page',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplatRoute = SplatRouteImport.update({
@@ -298,7 +292,6 @@ const TicketingVenuesIdSeatsDesignerRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/my-page': typeof MyPageRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRouteWithChildren
   '/change-password': typeof authChangePasswordRoute
@@ -346,7 +339,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/my-page': typeof MyPageRoute
   '/profile': typeof ProfileRoute
   '/change-password': typeof authChangePasswordRoute
   '/login': typeof authLoginRoute
@@ -386,7 +378,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/my-page': typeof MyPageRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRouteWithChildren
   '/(auth)/change-password': typeof authChangePasswordRoute
@@ -436,7 +427,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
-    | '/my-page'
     | '/profile'
     | '/users'
     | '/change-password'
@@ -484,7 +474,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
-    | '/my-page'
     | '/profile'
     | '/change-password'
     | '/login'
@@ -523,7 +512,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
-    | '/my-page'
     | '/profile'
     | '/users'
     | '/(auth)/change-password'
@@ -572,7 +560,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
-  MyPageRoute: typeof MyPageRoute
   ProfileRoute: typeof ProfileRoute
   UsersRoute: typeof UsersRouteWithChildren
   authChangePasswordRoute: typeof authChangePasswordRoute
@@ -614,13 +601,6 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/my-page': {
-      id: '/my-page'
-      path: '/my-page'
-      fullPath: '/my-page'
-      preLoaderRoute: typeof MyPageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$': {
@@ -1062,7 +1042,6 @@ const TicketingVenuesRouteWithChildren = TicketingVenuesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
-  MyPageRoute: MyPageRoute,
   ProfileRoute: ProfileRoute,
   UsersRoute: UsersRouteWithChildren,
   authChangePasswordRoute: authChangePasswordRoute,

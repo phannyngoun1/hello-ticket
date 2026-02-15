@@ -17,4 +17,5 @@ export * from './show-list-container';
 
 export * from './show-filter-sheet';
 export * from './show-image-manager';
+export * from './view-show-page';
 

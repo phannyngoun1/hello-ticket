@@ -16,5 +16,6 @@ export * from './booking-provider';
 export * from './booking-list-container';
 
 export * from './booking-filter-sheet';
+export * from './view-booking-page';
 
 

@@ -19,5 +19,6 @@ export * from './employee-provider';
 export * from './employee-list-container';
 
 export * from './employee-filter-sheet';
+export * from './view-employee-page';
 
 
