@@ -3,7 +3,7 @@
  */
 
 import type { Section } from "../../layouts/types";
-import type { EventSeatStatus } from "../types";
+import type { EventSeatStatus } from "../../events/types";
 import { getSeatStatusColor } from "./event-inventory-viewer-utils";
 
 export interface EventInventorySectionPopoverProps {

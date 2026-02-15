@@ -5,9 +5,9 @@
 
 import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { seatService } from "../../seat-service";
+import { seatService } from "../../../seats/seat-service";
 import { sectionService } from "../../../sections/section-service";
-import { SeatType } from "../../types";
+import { SeatType } from "../../../seats/types";
 import type { SectionMarker, SeatMarker } from "../types";
 import { PlacementShapeType, type PlacementShape } from "../types";
 

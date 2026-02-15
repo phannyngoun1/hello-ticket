@@ -2,12 +2,12 @@
  * Event Inventory Viewer – shared helpers and shape rendering
  */
 
-import type { EventSeatStatus } from "../types";
+import type { EventSeatStatus } from "../../events/types";
 import {
   PlacementShapeType,
   type PlacementShape,
-} from "../../seats/seat-designer/types";
-import { ShapeRenderer } from "../../seats/seat-designer/components/shape-renderer";
+} from "../seat-designer/types";
+import { ShapeRenderer } from "../seat-designer/components/shape-renderer";
 import {
   AMBER_FILL,
   AMBER_STROKE,

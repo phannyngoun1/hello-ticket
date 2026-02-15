@@ -3,7 +3,7 @@ import { uploadService } from "@truths/shared";
 import { detectMarkers } from "../../../ai/detect-markers";
 import { detectSeats } from "../../../ai/detect-seats";
 import type { SeatMarker, SectionMarker } from "../types";
-import { SeatType } from "../../types";
+import { SeatType } from "../../../seats/types";
 import { useToast } from "@truths/ui";
 
 export function useSeatDesignerImage(

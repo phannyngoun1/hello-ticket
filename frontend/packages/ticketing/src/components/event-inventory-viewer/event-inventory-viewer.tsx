@@ -8,19 +8,19 @@ import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import Konva from "konva";
 import { createPortal } from "react-dom";
 import { cn } from "@truths/ui/lib/utils";
-import { ZoomControls } from "../../seats/seat-designer/components/zoom-controls";
+import { ZoomControls } from "../seat-designer/components/zoom-controls";
 import {
   useContainerSize,
   useCanvasZoom,
   useCanvasPan,
   useLetterboxing,
   NO_IMAGE_ASPECT_RATIO,
-} from "../../seats/seat-designer/hooks";
+} from "../seat-designer/hooks";
 import type { Layout } from "../../layouts/types";
 import type { Section } from "../../layouts/types";
 import type { Seat } from "../../seats/types";
-import type { EventSeat } from "../types";
-import { EventSeatStatus as EventSeatStatusEnum } from "../types";
+import type { EventSeat } from "../../events/types";
+import { EventSeatStatus as EventSeatStatusEnum } from "../../events/types";
 import { EventInventoryStage } from "./event-inventory-stage";
 import { EventInventoryLegend } from "./event-inventory-legend";
 import { EventInventoryBreadcrumb } from "./event-inventory-breadcrumb";

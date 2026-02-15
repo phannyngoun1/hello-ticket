@@ -9,7 +9,7 @@ import { toast } from "@truths/ui";
 import type { Layout } from "../../layouts/types";
 import type { Section } from "../../layouts/types";
 import type { Seat } from "../../seats/types";
-import type { EventSeat } from "../types";
+import type { EventSeat } from "../../events/types";
 import { SeatMarker } from "./event-inventory-seat-marker";
 import { SectionMarker } from "./event-inventory-section-marker";
 

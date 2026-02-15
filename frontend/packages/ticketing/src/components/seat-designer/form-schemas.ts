@@ -3,7 +3,7 @@
  */
 
 import * as z from "zod";
-import { SeatType } from "../types";
+import { SeatType } from "../../seats/types";
 
 /**
  * Section Form Schema

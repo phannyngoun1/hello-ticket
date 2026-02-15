@@ -5,7 +5,7 @@
  */
 import { api } from "@truths/api";
 import type { Seat, CreateSeatInput, UpdateSeatInput, SeatListResponse } from "./types";
-import type { PlacementShape } from "./seat-designer/types";
+import type { PlacementShape } from "../components/seat-designer/types";
 
 const BASE_ENDPOINT = "/api/v1/ticketing/seats";
 

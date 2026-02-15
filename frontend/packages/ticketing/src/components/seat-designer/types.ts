@@ -2,7 +2,7 @@
  * Types for Seat Designer
  */
 
-import { SeatType } from "../types";
+import { SeatType } from "../../seats/types";
 
 /**
  * Shape types for placement marks

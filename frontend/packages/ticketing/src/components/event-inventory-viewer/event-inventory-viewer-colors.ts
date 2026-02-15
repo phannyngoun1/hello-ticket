@@ -69,4 +69,4 @@ export {
     getSeatTypeColors,
     getSeatStatusColor,
     getCanvasBackgroundColor,
-} from "../../seats/seat-designer/colors";
+} from "../seat-designer/colors";

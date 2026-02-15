@@ -2,7 +2,7 @@
  * Event Inventory Viewer – seat status legend
  */
 
-import { EventSeatStatus } from "../types";
+import { EventSeatStatus } from "../../events/types";
 import { getSeatStatusColor } from "./event-inventory-viewer-utils";
 import { cn } from "@truths/ui/lib/utils";
 

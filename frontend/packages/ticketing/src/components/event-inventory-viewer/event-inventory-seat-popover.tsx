@@ -3,8 +3,8 @@
  */
 
 import type { Seat } from "../../seats/types";
-import type { EventSeat } from "../types";
-import { EventSeatStatus as EventSeatStatusEnum } from "../types";
+import type { EventSeat } from "../../events/types";
+import { EventSeatStatus as EventSeatStatusEnum } from "../../events/types";
 import { getSeatStatusColor } from "./event-inventory-viewer-utils";
 
 export interface EventInventorySeatPopoverProps {

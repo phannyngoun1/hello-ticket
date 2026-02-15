@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import type { Layout, Section } from "../../../layouts/types";
 import type { Seat } from "../../../seats/types";
-import type { EventSeat } from "../../types";
-import { EventSeatStatus as EventSeatStatusEnum } from "../../types";
+import type { EventSeat } from "../../../events/types";
+import { EventSeatStatus as EventSeatStatusEnum } from "../../../events/types";
 
 export interface SectionStats {
     section: Section;
@@ -52,7 +52,7 @@ export function useSectionStats(
             const statusCounts: Record<string, number> = {};
 
             // Initialize all statuses to 0
-            Object.values(EventSeatStatusEnum).forEach((status) => {
+            Object.values(EventSeatStatusEnum).forEach((status: string) => {
                 statusCounts[status] = 0;
             });
 

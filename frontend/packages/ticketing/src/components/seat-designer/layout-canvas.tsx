@@ -23,7 +23,7 @@ import {
   Transformer,
 } from "react-konva";
 import Konva from "konva";
-import { SeatType } from "../types";
+import { SeatType } from "../../seats/types";
 import {
   PlacementShapeType,
   type PlacementShape,

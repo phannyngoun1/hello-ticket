@@ -9,7 +9,7 @@ import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } 
 import { cn } from "@truths/ui/lib/utils";
 import { Check, X } from "lucide-react";
 import { Controller, UseFormReturn } from "react-hook-form";
-import { SeatType } from "../../types";
+import { SeatType } from "../../../seats/types";
 import type { SeatFormData } from "../form-schemas";
 
 export interface SeatEditControlsProps {

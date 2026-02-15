@@ -15,10 +15,10 @@ import {
   Button,
 } from "@truths/ui";
 import { ArrowLeft } from "lucide-react";
-import { EventInventoryViewer } from "../../../events/event-inventory-viewer";
-import type { Layout, Section } from "../../../layouts/types";
-import type { Seat } from "../../types";
-import type { EventSeat } from "../../../events/types";
+import { EventInventoryViewer } from "../event-inventory-viewer";
+import type { Layout, Section } from "../../layouts/types";
+import type { Seat } from "../../seats/types";
+import type { EventSeat } from "../../events/types";
 
 export interface LayoutPreviewDialogProps {
   open: boolean;

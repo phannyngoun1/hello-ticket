@@ -6,7 +6,7 @@ import { useRef, useEffect, useState } from "react";
 import { Group, Circle, Text } from "react-konva";
 import Konva from "konva";
 import type { Seat } from "../../seats/types";
-import type { EventSeat } from "../types";
+import type { EventSeat } from "../../events/types";
 import {
   AMBER_FILL,
   AMBER_STROKE,

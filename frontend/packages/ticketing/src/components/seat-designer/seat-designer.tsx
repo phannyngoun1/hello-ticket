@@ -17,9 +17,9 @@ import { Card } from "@truths/ui";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { seatService } from "../seat-service";
+import { seatService } from "../../seats/seat-service";
 import { sectionService } from "../../sections/section-service";
-import { SeatType } from "../types";
+import { SeatType } from "../../seats/types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@truths/api";
 import { uploadService } from "@truths/shared";
@@ -56,8 +56,8 @@ import {
   ShapeToolbox,
   SectionCreationToolbar,
   DesignerHeader,
-  LayoutPreviewDialog,
 } from "./components";
+import { LayoutPreviewDialog } from "../layout-preview-dialog";
 
 // Import types from the seat-designer folder
 import type {
