@@ -20,9 +20,13 @@ import {
   GREEN_HOVER_STROKE,
   GREEN_STROKE,
   LABEL_BACKGROUND_FILL,
+  LABEL_BACKGROUND_FILL_DARK,
   LABEL_BACKGROUND_STROKE,
+  LABEL_BACKGROUND_STROKE_DARK,
   LABEL_SHADOW_COLOR,
+  LABEL_SHADOW_COLOR_DARK,
   LABEL_TEXT_FILL,
+  LABEL_TEXT_FILL_DARK,
   PURPLE_FILL,
   PURPLE_STROKE,
   RED_FILL,
@@ -40,6 +44,8 @@ import {
 } from "./event-inventory-viewer-utils";
 
 export interface SectionMarkerProps {
+  /** When true, use dark-mode label colors */
+  isDarkMode?: boolean;
   section: Section;
   x: number;
   y: number;
@@ -59,6 +65,7 @@ export interface SectionMarkerProps {
 }
 
 export function SectionMarker({
+  isDarkMode = false,
   section,
   x,
   y,
@@ -106,10 +113,12 @@ export function SectionMarker({
   const heatMapFill = getSectionHeatMapFill(
     soldRatio,
     markerFillTransparency,
+    isDarkMode,
   );
   const heatMapHoverFill = getSectionHeatMapFill(
     soldRatio,
     Math.min(1, markerFillTransparency + 0.2),
+    isDarkMode,
   );
 
   const configFill = parsedShape?.fillColor?.trim();
@@ -160,6 +169,15 @@ export function SectionMarker({
                   : GREEN_HOVER_STROKE,
   };
   const isHover = isHovered || isHoveredState;
+
+  const labelTextFill = isDarkMode ? LABEL_TEXT_FILL_DARK : LABEL_TEXT_FILL;
+  const labelBackgroundFill = isDarkMode
+    ? LABEL_BACKGROUND_FILL_DARK
+    : LABEL_BACKGROUND_FILL;
+  const labelBackgroundStroke = isDarkMode
+    ? LABEL_BACKGROUND_STROKE_DARK
+    : LABEL_BACKGROUND_STROKE;
+  const labelShadowColor = isDarkMode ? LABEL_SHADOW_COLOR_DARK : LABEL_SHADOW_COLOR;
 
   const baseOpacity = markerFillTransparency;
   const hoverOpacity = 0.3;
@@ -286,7 +304,7 @@ export function SectionMarker({
             text={section.name}
             fontSize={10}
             fontFamily="Arial"
-            fill={LABEL_TEXT_FILL}
+            fill={labelTextFill}
             padding={2}
             align="center"
             verticalAlign="middle"
@@ -296,8 +314,8 @@ export function SectionMarker({
             width={48}
             offsetX={24}
             offsetY={7}
-            backgroundFill={LABEL_BACKGROUND_FILL}
-            backgroundStroke={LABEL_BACKGROUND_STROKE}
+            backgroundFill={labelBackgroundFill}
+            backgroundStroke={labelBackgroundStroke}
             backgroundStrokeWidth={1}
             cornerRadius={2}
           />
@@ -327,7 +345,7 @@ export function SectionMarker({
           offsetX={40}
           offsetY={15}
           shadowBlur={2}
-          shadowColor={LABEL_SHADOW_COLOR}
+          shadowColor={labelShadowColor}
           opacity={currentOpacity}
         />
       )}

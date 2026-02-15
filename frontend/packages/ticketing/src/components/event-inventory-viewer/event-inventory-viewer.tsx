@@ -26,10 +26,12 @@ import { EventInventoryLegend } from "./event-inventory-legend";
 import { EventInventoryBreadcrumb } from "./event-inventory-breadcrumb";
 import { EventInventorySectionPopover } from "./event-inventory-section-popover";
 import { EventInventorySeatPopover } from "./event-inventory-seat-popover";
-import { DEFAULT_CANVAS_BACKGROUND } from "./event-inventory-viewer-colors";
-
-// ... imports ...
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  DARK_MODE_CANVAS_BACKGROUND,
+} from "./event-inventory-viewer-colors";
 import { useSectionStats } from "./hooks/use-section-stats";
+import { useDarkMode } from "./hooks/use-dark-mode";
 import { usePopoverPosition } from "./hooks/use-popover-position";
 
 export interface EventInventoryViewerProps {
@@ -123,6 +125,8 @@ export function EventInventoryViewer({
     return sections.find((s) => s.id === selectedSectionId) || null;
   }, [selectedSectionId, sections]);
 
+  const isDarkMode = useDarkMode();
+
   // Get canvas background color (use section's color when drilled down, otherwise layout's)
   const canvasBackgroundColor = useMemo(() => {
     if (selectedSection?.canvas_background_color) {
@@ -131,8 +135,8 @@ export function EventInventoryViewer({
     if (layout.canvas_background_color) {
       return layout.canvas_background_color;
     }
-    return DEFAULT_CANVAS_BACKGROUND;
-  }, [selectedSection, layout.canvas_background_color]);
+    return isDarkMode ? DARK_MODE_CANVAS_BACKGROUND : DEFAULT_CANVAS_BACKGROUND;
+  }, [selectedSection, layout.canvas_background_color, isDarkMode]);
 
   // Get image URL - use section image if in drill-down mode, otherwise use layout image
   // When drilled into a section, only use that section's own image (don't fall back to layout image)
@@ -291,7 +295,7 @@ export function EventInventoryViewer({
   return (
     <div
       className={cn(
-        "relative border rounded-lg bg-gray-100",
+        "relative border rounded-lg bg-gray-100 dark:bg-gray-900 border-gray-200 dark:border-gray-700",
         hasImage ? "overflow-hidden" : "overflow-auto",
         className,
       )}
@@ -299,14 +303,10 @@ export function EventInventoryViewer({
     >
       {!isCanvasReady ? (
         <div
+          className="flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800"
           style={{
             width: validWidth,
             height: validHeight,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#f3f4f6",
-            borderRadius: "0.5rem",
           }}
         >
           <div className="text-muted-foreground">Loading seats...</div>
@@ -314,6 +314,7 @@ export function EventInventoryViewer({
       ) : (
         <>
           <EventInventoryStage
+            isDarkMode={isDarkMode}
             containerRef={containerRef}
             stageRef={stageRef}
             validWidth={validWidth}

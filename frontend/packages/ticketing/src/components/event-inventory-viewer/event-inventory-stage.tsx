@@ -22,6 +22,8 @@ export interface SectionStats {
 }
 
 export interface EventInventoryStageProps {
+  /** When true, use dark-mode label colors for section markers */
+  isDarkMode?: boolean;
   containerRef: RefObject<HTMLDivElement>;
   stageRef: RefObject<Konva.Stage>;
   validWidth: number;
@@ -84,6 +86,7 @@ export interface EventInventoryStageProps {
 }
 
 export function EventInventoryStage({
+  isDarkMode = false,
   containerRef,
   stageRef,
   validWidth,
@@ -146,6 +149,7 @@ export function EventInventoryStage({
       return (
         <SectionMarker
           key={section.id}
+          isDarkMode={isDarkMode}
           section={section}
           x={x}
           y={y}

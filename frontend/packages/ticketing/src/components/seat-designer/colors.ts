@@ -10,7 +10,10 @@
 /** Canvas background colors */
 export const DEFAULT_CANVAS_BACKGROUND = "#f7f9fd"; // light blue-gray
 export const LIGHT_CANVAS_BACKGROUND = "#f3f4f6"; // gray-100
-export const DARK_CANVAS_BACKGROUND = "#d1d5db"; // gray-300
+export const DARK_CANVAS_BACKGROUND = "#d1d5db"; // gray-300 (light mode variant)
+
+/** Dark mode canvas background (when app theme is dark) */
+export const DARK_MODE_CANVAS_BACKGROUND = "#1f2937"; // gray-800
 
 // ============================================================================
 // SHAPE DEFAULT COLORS (when no custom colors set)
@@ -106,13 +109,19 @@ export const MARQUEE_FILL = "rgba(59, 130, 246, 0.1)"; // blue with low opacity
 // LABEL & TEXT STYLING
 // ============================================================================
 
-/** Section name label */
+/** Section name label (light mode) */
 export const LABEL_TEXT_COLOR = "#1e293b"; // slate-900
 export const LABEL_TEXT_FILL = "#1e293b"; // alias for viewer consistency
 export const LABEL_BACKGROUND_COLOR = "rgba(255, 255, 255, 0.9)"; // white with slight transparency
 export const LABEL_BACKGROUND_FILL = "rgba(255, 255, 255, 0.9)"; // alias for viewer consistency
 export const LABEL_BACKGROUND_STROKE = "#e2e8f0"; // light gray border
 export const LABEL_SHADOW_COLOR = "rgba(0,0,0,0.2)"; // soft shadow
+
+/** Section name label (dark mode) */
+export const LABEL_TEXT_FILL_DARK = "#f1f5f9"; // slate-100
+export const LABEL_BACKGROUND_FILL_DARK = "rgba(31, 41, 55, 0.95)"; // gray-800 with transparency
+export const LABEL_BACKGROUND_STROKE_DARK = "#4b5563"; // gray-600
+export const LABEL_SHADOW_COLOR_DARK = "rgba(0,0,0,0.4)"; // stronger shadow for dark bg
 
 // ============================================================================
 // UTILITY FUNCTIONS
