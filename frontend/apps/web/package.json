@@ -31,6 +31,7 @@
     "react-i18next": "^14.0.0"
   },
   "devDependencies": {
+    "baseline-browser-mapping": "^2.9.7",
     "@tanstack/react-router-devtools": "^1.15.0",
     "@tanstack/router-vite-plugin": "^1.15.0",
     "@types/react": "^18.3.12",

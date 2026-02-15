@@ -7,3 +7,16 @@
 __pycache__/
 *.py[cod]
 *.pyo
+
+# Frontend  
+frontend/node_modules
+frontend/dist
+frontend/build
+frontend/coverage
+frontend/logs
+frontend/tests
+frontend/tests-results
+frontend/tests-results-html
+frontend/tests-results-junit
+frontend/tests-results-junit-html
+frontend/tests-results-junit-html-report
