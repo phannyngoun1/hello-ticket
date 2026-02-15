@@ -15,60 +15,80 @@ import { ShapeRenderer } from "../components/shape-renderer";
 
 export interface SeatMarkerCanvasProps {
   seat: SeatMarker;
-  x: number;
-  y: number;
-  isSelected: boolean;
-  isPlacingSeats: boolean;
-  isPanning: boolean;
-  isSpacePressed: boolean;
-  isPlacingSections: boolean;
-  selectedShapeTool?: PlacementShapeType | null;
-  onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
-  onSeatDragEnd: (seatId: string, e: Konva.KonvaEventObject<DragEvent>) => void;
-  onSeatDragMove?: (seatId: string, stageX: number, stageY: number) => void;
-  onShapeTransform?: (
-    seatId: string,
-    shape: PlacementShape,
-    position?: { x: number; y: number },
-  ) => void;
-  /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
-  layerToPercentage?: (layerX: number, layerY: number) => { x: number; y: number };
-  colors: { fill: string; stroke: string };
-  imageWidth: number;
-  imageHeight: number;
-  readOnly?: boolean;
-  disableHoverAnimation?: boolean;
-  onSeatDragStart?: (seatId: string) => void;
-  useLowDetail?: boolean;
-  forceDraggable?: boolean;
-  /** Called during transform to force redraw (e.g. so other selected objects' boxes update) */
-  onTransformProgress?: () => void;
+  position: { x: number; y: number };
+  selection: { isSelected: boolean };
+  interaction: {
+    isPlacingSeats: boolean;
+    isPanning: boolean;
+    isSpacePressed: boolean;
+    isPlacingSections: boolean;
+    selectedShapeTool?: PlacementShapeType | null;
+  };
+  handlers: {
+    onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
+    onSeatDragEnd: (
+      seatId: string,
+      e: Konva.KonvaEventObject<DragEvent>,
+    ) => void;
+    onSeatDragMove?: (
+      seatId: string,
+      stageX: number,
+      stageY: number,
+    ) => void;
+    onSeatDragStart?: (seatId: string) => void;
+    onShapeTransform?: (
+      seatId: string,
+      shape: PlacementShape,
+      position?: { x: number; y: number },
+    ) => void;
+    /** Called during transform to force redraw (e.g. so other selected objects' boxes update) */
+    onTransformProgress?: () => void;
+  };
+  canvas: {
+    /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
+    layerToPercentage?: (
+      layerX: number,
+      layerY: number,
+    ) => { x: number; y: number };
+    imageWidth: number;
+    imageHeight: number;
+  };
+  display: {
+    readOnly?: boolean;
+    disableHoverAnimation?: boolean;
+    useLowDetail?: boolean;
+    colors: { fill: string; stroke: string };
+    forceDraggable?: boolean;
+  };
 }
 
 export function SeatMarkerCanvas({
   seat,
-  x,
-  y,
-  isSelected,
-  isPlacingSeats,
-  isPanning,
-  isSpacePressed,
-  isPlacingSections,
-  selectedShapeTool,
-  onSeatClick,
-  onSeatDragEnd,
-  onSeatDragMove,
-  onShapeTransform,
-  layerToPercentage,
-  colors,
-  imageWidth,
-  imageHeight,
-  readOnly = false,
-  disableHoverAnimation = false,
-  onSeatDragStart,
-  useLowDetail = false,
-  forceDraggable = false,
-  onTransformProgress,
+  position: { x, y },
+  selection: { isSelected },
+  interaction: {
+    isPlacingSeats,
+    isPanning,
+    isSpacePressed,
+    isPlacingSections,
+    selectedShapeTool,
+  },
+  handlers: {
+    onSeatClick,
+    onSeatDragEnd,
+    onSeatDragMove,
+    onSeatDragStart,
+    onShapeTransform,
+    onTransformProgress,
+  },
+  canvas: { layerToPercentage, imageWidth, imageHeight },
+  display: {
+    readOnly = false,
+    disableHoverAnimation = false,
+    useLowDetail = false,
+    colors,
+    forceDraggable = false,
+  },
 }: SeatMarkerCanvasProps) {
   const shapeRef = useRef<Konva.Group>(null);
   const groupRef = useRef<Konva.Group>(null);

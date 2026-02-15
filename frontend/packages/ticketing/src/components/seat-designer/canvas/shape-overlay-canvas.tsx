@@ -22,32 +22,36 @@ export interface ShapeOverlayCanvasProps {
     isSelected?: boolean;
     isPlacement?: boolean;
   };
-  isSelected: boolean;
-  onShapeOverlayClick?: (overlayId: string) => void;
-  imageWidth: number;
-  imageHeight: number;
-  isPanning: boolean;
-  isSpacePressed: boolean;
-  selectedShapeTool?: PlacementShapeType | null;
-  isPlacingSeats: boolean;
-  isPlacingSections: boolean;
-  percentageToStage: (x: number, y: number) => { x: number; y: number };
-  disableHoverAnimation?: boolean;
+  selection: { isSelected: boolean };
+  handlers: { onShapeOverlayClick?: (overlayId: string) => void };
+  canvas: {
+    imageWidth: number;
+    imageHeight: number;
+    percentageToStage: (x: number, y: number) => { x: number; y: number };
+  };
+  interaction: {
+    isPanning: boolean;
+    isSpacePressed: boolean;
+    selectedShapeTool?: PlacementShapeType | null;
+    isPlacingSeats: boolean;
+    isPlacingSections: boolean;
+  };
+  display?: { disableHoverAnimation?: boolean };
 }
 
 export function ShapeOverlayCanvas({
   overlay,
-  isSelected,
-  onShapeOverlayClick,
-  imageWidth,
-  imageHeight,
-  isPanning,
-  isSpacePressed,
-  selectedShapeTool,
-  isPlacingSeats,
-  isPlacingSections,
-  percentageToStage,
-  disableHoverAnimation = false,
+  selection: { isSelected },
+  handlers: { onShapeOverlayClick },
+  canvas: { imageWidth, imageHeight, percentageToStage },
+  interaction: {
+    isPanning,
+    isSpacePressed,
+    selectedShapeTool,
+    isPlacingSeats,
+    isPlacingSections,
+  },
+  display: { disableHoverAnimation = false } = {},
 }: ShapeOverlayCanvasProps) {
   const [isHovered, setIsHovered] = useState(false);
   const shapeGroupRef = useRef<Konva.Group>(null);

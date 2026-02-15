@@ -21,67 +21,77 @@ import type { SectionMarker, SeatMarker } from "../types";
 import type { SeatFormData } from "../form-schemas";
 
 export interface DatasheetViewProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  readOnly?: boolean;
-  viewingSection: SectionMarker | null;
-  designMode: "seat-level" | "section-level";
-  displayedSeats: SeatMarker[];
-  seats: SeatMarker[];
-  sectionMarkers: SectionMarker[];
-  selectedSeat: SeatMarker | null;
-  isPlacingSeats: boolean;
-  isSectionFormOpen: boolean;
-  editingSectionId: string | null;
-  sectionForm: UseFormReturn<{ name: string }>;
-  selectedSectionMarker: SectionMarker | null;
-  createSectionMutationPending: boolean;
-  updateSectionMutationPending: boolean;
-  onSeatClick: (seat: SeatMarker) => void;
-  onDeleteSeat: (seat: SeatMarker) => void;
-  onOpenNewSectionForm: () => void;
-  onCancelSectionForm: () => void;
-  onSaveSectionForm: () => void;
-  onSectionMarkerClick: (section: SectionMarker, e: React.MouseEvent) => void;
-  onOpenSectionDetail: (section: SectionMarker) => void;
-  onEditSectionFromSheet: (section: SectionMarker) => void;
-  onDeleteSection: (section: SectionMarker) => void;
-  onSetViewingSeat: (seat: SeatMarker | null) => void;
-  onEditSeat?: (seat: SeatMarker) => void;
-  onSetSelectedSeat: (seat: SeatMarker | null) => void;
-  onSetIsDatasheetOpen: (open: boolean) => void;
-  seatEditFormReset: (data: SeatFormData) => void;
+  sheet: { isOpen: boolean; onOpenChange: (open: boolean) => void };
+  data: {
+    viewingSection: SectionMarker | null;
+    designMode: "seat-level" | "section-level";
+    displayedSeats: SeatMarker[];
+    seats: SeatMarker[];
+    sectionMarkers: SectionMarker[];
+  };
+  selection: {
+    selectedSeat: SeatMarker | null;
+    selectedSectionMarker: SectionMarker | null;
+  };
+  forms: {
+    isSectionFormOpen: boolean;
+    editingSectionId: string | null;
+    sectionForm: UseFormReturn<{ name: string }>;
+    createSectionMutationPending: boolean;
+    updateSectionMutationPending: boolean;
+  };
+  handlers: {
+    onSeatClick: (seat: SeatMarker) => void;
+    onDeleteSeat: (seat: SeatMarker) => void;
+    onOpenNewSectionForm: () => void;
+    onCancelSectionForm: () => void;
+    onSaveSectionForm: () => void;
+    onSectionMarkerClick: (section: SectionMarker, e: React.MouseEvent) => void;
+    onOpenSectionDetail: (section: SectionMarker) => void;
+    onEditSectionFromSheet: (section: SectionMarker) => void;
+    onDeleteSection: (section: SectionMarker) => void;
+    onSetViewingSeat: (seat: SeatMarker | null) => void;
+    onEditSeat?: (seat: SeatMarker) => void;
+    onSetSelectedSeat: (seat: SeatMarker | null) => void;
+    onSetIsDatasheetOpen: (open: boolean) => void;
+    seatEditFormReset: (data: SeatFormData) => void;
+  };
+  display?: { readOnly?: boolean; isPlacingSeats?: boolean };
 }
 
 export function DatasheetView({
-  isOpen,
-  onOpenChange,
-  readOnly = false,
-  viewingSection,
-  designMode,
-  displayedSeats,
-  seats,
-  sectionMarkers,
-  selectedSeat,
-  isPlacingSeats,
-  isSectionFormOpen,
-  editingSectionId,
-  sectionForm,
-  selectedSectionMarker,
-  createSectionMutationPending,
-  updateSectionMutationPending,
-  onDeleteSeat,
-  onCancelSectionForm,
-  onSaveSectionForm,
-  onSectionMarkerClick,
-  onOpenSectionDetail,
-  onEditSectionFromSheet,
-  onDeleteSection,
-  onSetViewingSeat,
-  onEditSeat,
-  onSetSelectedSeat,
-  onSetIsDatasheetOpen,
-  seatEditFormReset,
+  sheet: { isOpen, onOpenChange },
+  data: {
+    viewingSection,
+    designMode,
+    displayedSeats,
+    seats,
+    sectionMarkers,
+  },
+  selection: { selectedSeat, selectedSectionMarker },
+  forms: {
+    isSectionFormOpen,
+    editingSectionId,
+    sectionForm,
+    createSectionMutationPending,
+    updateSectionMutationPending,
+  },
+  handlers: {
+    onSeatClick,
+    onDeleteSeat,
+    onCancelSectionForm,
+    onSaveSectionForm,
+    onSectionMarkerClick,
+    onOpenSectionDetail,
+    onEditSectionFromSheet,
+    onDeleteSection,
+    onSetViewingSeat,
+    onEditSeat,
+    onSetSelectedSeat,
+    onSetIsDatasheetOpen,
+    seatEditFormReset,
+  },
+  display: { readOnly = false, isPlacingSeats = false } = {},
 }: DatasheetViewProps) {
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>

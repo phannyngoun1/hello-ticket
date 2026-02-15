@@ -1627,26 +1627,33 @@ export function FloorPlanCanvas({
             <MemoizedSeatMarkerCanvas
               key={seat.id}
               seat={seat}
-              x={x}
-              y={y}
-              isSelected={selectedSeatIdSet.has(seat.id)}
-              isPlacingSeats={isPlacingSeats}
-              isPanning={isPanning}
-              isSpacePressed={isSpacePressed}
-              isPlacingSections={isPlacingSections}
-              selectedShapeTool={selectedShapeTool}
-              onSeatClick={onSeatClick}
-              onSeatDragStart={handleSeatDragStart}
-              onSeatDragMove={handleSeatDragMove}
-              onSeatDragEnd={handleSeatDragEnd}
-              onShapeTransform={onSeatShapeTransform}
-              layerToPercentage={layerToPercentage}
-              colors={colors}
-              imageWidth={displayedWidth}
-              imageHeight={displayedHeight}
-              readOnly={readOnly}
-              disableHoverAnimation={disableHoverAnimation}
-              useLowDetail={useLowDetail}
+              position={{ x, y }}
+              selection={{ isSelected: selectedSeatIdSet.has(seat.id) }}
+              interaction={{
+                isPlacingSeats,
+                isPanning,
+                isSpacePressed,
+                isPlacingSections,
+                selectedShapeTool,
+              }}
+              handlers={{
+                onSeatClick,
+                onSeatDragStart: handleSeatDragStart,
+                onSeatDragMove: handleSeatDragMove,
+                onSeatDragEnd: handleSeatDragEnd,
+                onShapeTransform: onSeatShapeTransform,
+              }}
+              canvas={{
+                layerToPercentage,
+                imageWidth: displayedWidth,
+                imageHeight: displayedHeight,
+              }}
+              display={{
+                readOnly,
+                disableHoverAnimation,
+                useLowDetail,
+                colors,
+              }}
             />
           );
         })}
@@ -1700,17 +1707,21 @@ export function FloorPlanCanvas({
             <MemoizedShapeOverlayCanvas
               key={overlay.id}
               overlay={overlay}
-              isSelected={isSelected}
-              onShapeOverlayClick={onShapeOverlayClick}
-              imageWidth={displayedWidth}
-              imageHeight={displayedHeight}
-              isPanning={isPanning}
-              isSpacePressed={isSpacePressed}
-              selectedShapeTool={selectedShapeTool}
-              isPlacingSeats={isPlacingSeats}
-              isPlacingSections={isPlacingSections}
-              percentageToStage={percentageToStage}
-              disableHoverAnimation={disableHoverAnimation}
+              selection={{ isSelected }}
+              handlers={{ onShapeOverlayClick }}
+              canvas={{
+                imageWidth: displayedWidth,
+                imageHeight: displayedHeight,
+                percentageToStage,
+              }}
+              interaction={{
+                isPanning,
+                isSpacePressed,
+                selectedShapeTool,
+                isPlacingSeats,
+                isPlacingSections,
+              }}
+              display={{ disableHoverAnimation }}
             />
           );
         })}
@@ -1729,27 +1740,34 @@ export function FloorPlanCanvas({
             <MemoizedSeatMarkerCanvas
               key={seat.id}
               seat={seat}
-              x={x}
-              y={y}
-              isSelected={true}
-              isPlacingSeats={isPlacingSeats}
-              isPanning={isPanning}
-              isSpacePressed={isSpacePressed}
-              isPlacingSections={isPlacingSections}
-              selectedShapeTool={selectedShapeTool}
-              onSeatClick={onSeatClick}
-              onSeatDragStart={handleSeatDragStart}
-              onSeatDragMove={handleSeatDragMove}
-              onSeatDragEnd={handleSeatDragEnd}
-              onShapeTransform={onSeatShapeTransform}
-              layerToPercentage={layerToPercentage}
-              colors={colors}
-              imageWidth={displayedWidth}
-              imageHeight={displayedHeight}
-              readOnly={readOnly}
-              disableHoverAnimation={disableHoverAnimation}
-              useLowDetail={false}
-              onTransformProgress={handleTransformProgress}
+              position={{ x, y }}
+              selection={{ isSelected: true }}
+              interaction={{
+                isPlacingSeats,
+                isPanning,
+                isSpacePressed,
+                isPlacingSections,
+                selectedShapeTool,
+              }}
+              handlers={{
+                onSeatClick,
+                onSeatDragStart: handleSeatDragStart,
+                onSeatDragMove: handleSeatDragMove,
+                onSeatDragEnd: handleSeatDragEnd,
+                onShapeTransform: onSeatShapeTransform,
+                onTransformProgress: handleTransformProgress,
+              }}
+              canvas={{
+                layerToPercentage,
+                imageWidth: displayedWidth,
+                imageHeight: displayedHeight,
+              }}
+              display={{
+                readOnly,
+                disableHoverAnimation,
+                useLowDetail: false,
+                colors,
+              }}
             />
           );
         })}
@@ -1810,26 +1828,33 @@ export function FloorPlanCanvas({
               <MemoizedSeatMarkerCanvas
                 key={draggedSeat.id}
                 seat={draggedSeat}
-                x={x}
-                y={y}
-                isSelected={false}
-                isPlacingSeats={isPlacingSeats}
-                isPanning={isPanning}
-                isSpacePressed={isSpacePressed}
-                isPlacingSections={isPlacingSections}
-                selectedShapeTool={selectedShapeTool}
-                onSeatClick={onSeatClick}
-                onSeatDragStart={handleSeatDragStart}
-                onSeatDragMove={handleSeatDragMove}
-                onSeatDragEnd={handleSeatDragEnd}
-                onShapeTransform={onSeatShapeTransform}
-                colors={colors}
-                imageWidth={displayedWidth}
-                imageHeight={displayedHeight}
-                readOnly={readOnly}
-                disableHoverAnimation={disableHoverAnimation}
-                useLowDetail={false}
-                forceDraggable={true}
+                position={{ x, y }}
+                selection={{ isSelected: false }}
+                interaction={{
+                  isPlacingSeats,
+                  isPanning,
+                  isSpacePressed,
+                  isPlacingSections,
+                  selectedShapeTool,
+                }}
+                handlers={{
+                  onSeatClick,
+                  onSeatDragStart: handleSeatDragStart,
+                  onSeatDragMove: handleSeatDragMove,
+                  onSeatDragEnd: handleSeatDragEnd,
+                  onShapeTransform: onSeatShapeTransform,
+                }}
+                canvas={{
+                  imageWidth: displayedWidth,
+                  imageHeight: displayedHeight,
+                }}
+                display={{
+                  readOnly,
+                  disableHoverAnimation,
+                  useLowDetail: false,
+                  colors,
+                  forceDraggable: true,
+                }}
               />
             );
           })()}

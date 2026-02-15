@@ -37,197 +37,205 @@ import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
 import { Fragment, useMemo, useState } from "react";
 
+export type SectionDetailAlign =
+  | "left"
+  | "center"
+  | "right"
+  | "top"
+  | "middle"
+  | "bottom"
+  | "space-between-h"
+  | "space-between-v"
+  | "space-between-both"
+  | "same-width"
+  | "same-height";
+
 export interface SectionDetailViewProps {
-  viewingSection: SectionMarker;
-  className?: string;
-  readOnly?: boolean;
-  displayedSeats: SeatMarker[];
-  selectedSeat: SeatMarker | null;
-  seatPlacementForm: any; // UseFormReturn<SeatFormData>
-  uniqueSections: string[];
-  sectionsData?: Array<{ id: string; name: string }>;
-  sectionSelectValue: string;
-  onSectionSelectValueChange: (value: string) => void;
-  containerRef: React.RefObject<HTMLDivElement>;
-  dimensionsReady: boolean;
-  containerDimensions: { width: number; height: number };
-  zoomLevel: number;
-  panOffset: { x: number; y: number };
-  isPlacingSeats: boolean;
-  isUploadingImage: boolean;
-  onBack: () => void;
-  onSave: () => void;
-  onClearSectionSeats: () => void;
-  onSectionImageSelect: (
-    sectionId: string,
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => void;
-  /** Called when user removes the section floor plan image (file_id becomes optional/empty) */
-  onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
-  onSeatClick: (seat: SeatMarker) => void;
-  onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
-  onBatchSeatDragEnd?: (
-    updates: Array<{ id: string; x: number; y: number }>,
-  ) => void;
-  onSeatShapeTransform?: (
-    seatId: string,
-    shape: PlacementShape,
-    position?: { x: number; y: number },
-  ) => void;
-  onSeatShapeStyleChange?: (
-    seatId: string,
-    style: { fillColor?: string; strokeColor?: string },
-  ) => void;
-  onImageClick: (e: any, coords?: { x: number; y: number }) => void;
-  onDeselect?: () => void;
-  onWheel: (e: any, isSpacePressed: boolean) => void;
-  onPan: (delta: { x: number; y: number }) => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
-  onNewSection: () => void;
-  saveSeatsMutationPending: boolean;
-  // Props for DatasheetView
+  section: {
+    viewingSection: SectionMarker;
+    uniqueSections: string[];
+    sectionsData?: Array<{ id: string; name: string }>;
+    sectionSelectValue: string;
+    onSectionSelectValueChange: (value: string) => void;
+  };
+  canvas: {
+    containerRef: React.RefObject<HTMLDivElement>;
+    dimensionsReady: boolean;
+    containerDimensions: { width: number; height: number };
+    zoomLevel: number;
+    panOffset: { x: number; y: number };
+    /** Canvas background color when no section image (image has priority). */
+    canvasBackgroundColor?: string;
+    onCanvasBackgroundColorChange?: (color: string) => void;
+    /** Marker fill transparency for this section (0.0 to 1.0). */
+    markerFillTransparency?: number;
+    onMarkerFillTransparencyChange?: (transparency: number) => void;
+    showGrid?: boolean;
+    gridSize?: number;
+  };
+  selection: {
+    displayedSeats: SeatMarker[];
+    selectedSeat: SeatMarker | null;
+    selectedSeatIds?: string[];
+    onSelectSeatIds?: (ids: string[]) => void;
+  };
+  forms: { seatPlacementForm: any };
   seats: SeatMarker[];
-  onDeleteSeat: (seat: SeatMarker) => void;
-  onSetViewingSeat: (seat: SeatMarker | null) => void;
-  onEditSeat?: (seat: SeatMarker) => void;
-  onSetSelectedSeat: (seat: SeatMarker | null) => void;
-  seatEditFormReset: (data: any) => void;
-  /** Multi-selection: all selected seat ids */
-  selectedSeatIds?: string[];
-  onSelectSeatIds?: (ids: string[]) => void;
-  placementShape: PlacementShape;
-  onPlacementShapeChange: (shape: PlacementShape) => void;
-  selectedShapeTool?: PlacementShapeType | null;
-  onShapeToolSelect: (tool: PlacementShapeType | null) => void;
-  onShapeDraw?: (shape: PlacementShape, x: number, y: number) => void;
-  shapeOverlays?: any[];
-  selectedOverlayId?: string | null;
-  onShapeOverlayClick: (overlayId: string) => void;
-  onDetectSeats?: () => void;
-  isDetectingSeats?: boolean;
-  onMarkersInRect?: (
-    seatIds: string[],
-    sectionIds: string[],
-  ) => void; /** Called when user aligns multiple selected markers */
-  onAlign?: (
-    alignment:
-      | "left"
-      | "center"
-      | "right"
-      | "top"
-      | "middle"
-      | "bottom"
-      | "space-between-h"
-      | "space-between-v"
-      | "space-between-both"
-      | "same-width"
-      | "same-height",
-  ) => void;
-  /** Inline seat edit controls - when provided and selectedSeat, replaces marker name + View/Edit/Delete */
-  seatEditControls?: React.ReactNode;
-  /** Canvas background color when no section image (image has priority). Section-level or fallback from layout. */
-  canvasBackgroundColor?: string;
-  /** Called when user changes canvas background color. Parent should persist via section update. */
-  onCanvasBackgroundColorChange?: (color: string) => void;
-  /** Marker fill transparency for this section (0.0 to 1.0). Differentiates from main layout. */
-  markerFillTransparency?: number;
-  /** Called when user changes marker fill transparency. Parent should persist via section update. */
-  onMarkerFillTransparencyChange?: (transparency: number) => void;
-  /** Show grid lines on canvas */
-  showGrid?: boolean;
-  /** Grid size in percentage */
-  gridSize?: number;
-  isFullscreen?: boolean;
-  onToggleFullscreen?: () => void;
-  /** Undo last change */
-  onUndo?: () => void;
-  /** Redo last undone change */
-  onRedo?: () => void;
-  /** Whether undo is available */
-  canUndo?: boolean;
-  /** Whether redo is available */
-  canRedo?: boolean;
-  /** Whether there are unsaved changes */
-  isDirty?: boolean;
-  /** Called when user clicks refresh button to reload data from server */
-  onRefresh?: () => void | Promise<void>;
-  /** Whether refresh is in progress */
-  isRefreshing?: boolean;
+  handlers: {
+    onBack: () => void;
+    onSave: () => void;
+    onClearSectionSeats: () => void;
+    onSectionImageSelect: (
+      sectionId: string,
+      e: React.ChangeEvent<HTMLInputElement>,
+    ) => void;
+    onRemoveSectionImage?: (sectionId: string) => void | Promise<void>;
+    onSeatClick: (seat: SeatMarker) => void;
+    onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+    onBatchSeatDragEnd?: (
+      updates: Array<{ id: string; x: number; y: number }>,
+    ) => void;
+    onSeatShapeTransform?: (
+      seatId: string,
+      shape: PlacementShape,
+      position?: { x: number; y: number },
+    ) => void;
+    onSeatShapeStyleChange?: (
+      seatId: string,
+      style: { fillColor?: string; strokeColor?: string },
+    ) => void;
+    onImageClick: (e: any, coords?: { x: number; y: number }) => void;
+    onDeselect?: () => void;
+    onWheel: (e: any, isSpacePressed: boolean) => void;
+    onPan: (delta: { x: number; y: number }) => void;
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+    onResetZoom: () => void;
+    onNewSection: () => void;
+    onDeleteSeat: (seat: SeatMarker) => void;
+    onSetViewingSeat: (seat: SeatMarker | null) => void;
+    onEditSeat?: (seat: SeatMarker) => void;
+    onSetSelectedSeat: (seat: SeatMarker | null) => void;
+    seatEditFormReset: (data: any) => void;
+    onShapeToolSelect: (tool: PlacementShapeType | null) => void;
+    onShapeDraw?: (shape: PlacementShape, x: number, y: number) => void;
+    onShapeOverlayClick: (overlayId: string) => void;
+    onDetectSeats?: () => void;
+    onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
+    onAlign?: (alignment: SectionDetailAlign) => void;
+  };
+  design: {
+    placementShape: PlacementShape;
+    onPlacementShapeChange: (shape: PlacementShape) => void;
+    selectedShapeTool?: PlacementShapeType | null;
+    shapeOverlays?: any[];
+    selectedOverlayId?: string | null;
+  };
+  state: {
+    saveSeatsMutationPending: boolean;
+    isPlacingSeats: boolean;
+    isUploadingImage: boolean;
+    isDetectingSeats?: boolean;
+    isFullscreen?: boolean;
+    onToggleFullscreen?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    isDirty?: boolean;
+    onRefresh?: () => void | Promise<void>;
+    isRefreshing?: boolean;
+  };
+  display?: {
+    className?: string;
+    readOnly?: boolean;
+    seatEditControls?: React.ReactNode;
+  };
 }
 
 export function SectionDetailView({
-  viewingSection,
-  className,
-  readOnly = false,
-  displayedSeats,
-  selectedSeat,
-  seatPlacementForm,
-  uniqueSections,
-  sectionsData,
-  sectionSelectValue,
-  onSectionSelectValueChange,
-  containerRef,
-  dimensionsReady,
-  containerDimensions,
-  zoomLevel,
-  panOffset,
-  isPlacingSeats,
-  isUploadingImage,
-  onBack,
-  onSave,
-  onClearSectionSeats,
-  onSectionImageSelect,
-  onRemoveSectionImage,
-  onSeatClick,
-  onSeatDragEnd,
-  onBatchSeatDragEnd,
-  onSeatShapeTransform,
-  onSeatShapeStyleChange,
-  onImageClick,
-  onDeselect,
-  onWheel,
-  onPan,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  onNewSection,
-  saveSeatsMutationPending,
+  section: {
+    viewingSection,
+    uniqueSections,
+    sectionsData,
+    sectionSelectValue,
+    onSectionSelectValueChange,
+  },
+  canvas: {
+    containerRef,
+    dimensionsReady,
+    containerDimensions,
+    zoomLevel,
+    panOffset,
+    canvasBackgroundColor = "#e5e7eb",
+    onCanvasBackgroundColorChange,
+    markerFillTransparency = 1.0,
+    onMarkerFillTransparencyChange,
+    showGrid = false,
+    gridSize = 5,
+  },
+  selection: {
+    displayedSeats,
+    selectedSeat,
+    selectedSeatIds = [],
+    onSelectSeatIds,
+  },
+  forms: { seatPlacementForm },
   seats,
-  onDeleteSeat,
-  onSetViewingSeat,
-  onEditSeat,
-  onSetSelectedSeat,
-  seatEditFormReset,
-  selectedShapeTool,
-  onShapeToolSelect,
-  onShapeDraw,
-  shapeOverlays,
-  selectedOverlayId,
-  onShapeOverlayClick,
-  onDetectSeats,
-  isDetectingSeats = false,
-  onMarkersInRect,
-  selectedSeatIds = [],
-  onSelectSeatIds,
-  onAlign,
-  seatEditControls,
-  canvasBackgroundColor = "#e5e7eb",
-  onCanvasBackgroundColorChange,
-  markerFillTransparency = 1.0,
-  onMarkerFillTransparencyChange,
-  showGrid = false,
-  gridSize = 5,
-  isFullscreen = false,
-  onToggleFullscreen,
-  onUndo,
-  onRedo,
-  canUndo = false,
-  canRedo = false,
-  isDirty = false,
-  onRefresh,
-  isRefreshing = false,
+  handlers: {
+    onBack,
+    onSave,
+    onClearSectionSeats,
+    onSectionImageSelect,
+    onRemoveSectionImage,
+    onSeatClick,
+    onSeatDragEnd,
+    onBatchSeatDragEnd,
+    onSeatShapeTransform,
+    onSeatShapeStyleChange,
+    onImageClick,
+    onDeselect,
+    onWheel,
+    onPan,
+    onZoomIn,
+    onZoomOut,
+    onResetZoom,
+    onNewSection,
+    onDeleteSeat,
+    onSetViewingSeat,
+    onEditSeat,
+    onSetSelectedSeat,
+    seatEditFormReset,
+    onShapeToolSelect,
+    onShapeDraw,
+    onShapeOverlayClick,
+    onDetectSeats,
+    onMarkersInRect,
+    onAlign,
+  },
+  design: {
+    placementShape,
+    onPlacementShapeChange,
+    selectedShapeTool,
+    shapeOverlays,
+    selectedOverlayId,
+  },
+  state: {
+    saveSeatsMutationPending,
+    isPlacingSeats,
+    isUploadingImage,
+    isDetectingSeats = false,
+    isFullscreen = false,
+    onToggleFullscreen,
+    onUndo,
+    onRedo,
+    canUndo = false,
+    canRedo = false,
+    isDirty = false,
+    onRefresh,
+    isRefreshing = false,
+  },
+  display: { className, readOnly = false, seatEditControls } = {},
 }: SectionDetailViewProps) {
   const [isDatasheetOpen, setIsDatasheetOpen] = useState(false);
   const effectiveCanvasColor =
@@ -575,36 +583,39 @@ export function SectionDetailView({
 
       {/* Seat List Datasheet */}
       <DatasheetView
-        isOpen={isDatasheetOpen}
-        onOpenChange={setIsDatasheetOpen}
-        readOnly={readOnly}
-        viewingSection={viewingSection}
-        designMode="seat-level"
-        displayedSeats={displayedSeats}
-        seats={seats}
-        sectionMarkers={[]}
-        selectedSeat={selectedSeat}
-        isPlacingSeats={isPlacingSeats}
-        isSectionFormOpen={false}
-        editingSectionId={null}
-        sectionForm={{} as any}
-        selectedSectionMarker={null}
-        createSectionMutationPending={false}
-        updateSectionMutationPending={false}
-        onSeatClick={onSeatClick}
-        onDeleteSeat={onDeleteSeat}
-        onOpenNewSectionForm={() => {}}
-        onCancelSectionForm={() => {}}
-        onSaveSectionForm={() => {}}
-        onSectionMarkerClick={() => {}}
-        onOpenSectionDetail={() => {}}
-        onEditSectionFromSheet={() => {}}
-        onDeleteSection={() => {}}
-        onSetViewingSeat={onSetViewingSeat}
-        onEditSeat={onEditSeat}
-        onSetSelectedSeat={onSetSelectedSeat}
-        onSetIsDatasheetOpen={setIsDatasheetOpen}
-        seatEditFormReset={seatEditFormReset}
+        sheet={{ isOpen: isDatasheetOpen, onOpenChange: setIsDatasheetOpen }}
+        data={{
+          viewingSection,
+          designMode: "seat-level",
+          displayedSeats,
+          seats,
+          sectionMarkers: [],
+        }}
+        selection={{ selectedSeat, selectedSectionMarker: null }}
+        forms={{
+          isSectionFormOpen: false,
+          editingSectionId: null,
+          sectionForm: {} as any,
+          createSectionMutationPending: false,
+          updateSectionMutationPending: false,
+        }}
+        handlers={{
+          onSeatClick,
+          onDeleteSeat,
+          onOpenNewSectionForm: () => {},
+          onCancelSectionForm: () => {},
+          onSaveSectionForm: () => {},
+          onSectionMarkerClick: () => {},
+          onOpenSectionDetail: () => {},
+          onEditSectionFromSheet: () => {},
+          onDeleteSection: () => {},
+          onSetViewingSeat,
+          onEditSeat,
+          onSetSelectedSeat,
+          onSetIsDatasheetOpen: setIsDatasheetOpen,
+          seatEditFormReset,
+        }}
+        display={{ readOnly, isPlacingSeats }}
       />
     </Card>
   );

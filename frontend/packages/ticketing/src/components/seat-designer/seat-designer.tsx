@@ -1681,207 +1681,219 @@ export function SeatDesigner({
   const designerContent =
     designMode === "section-level" && viewingSection ? (
       <SectionDetailView
-        viewingSection={viewingSection}
-        readOnly={readOnly}
-        displayedSeats={displayedSeats}
-        selectedSeat={selectedSeat}
-        seatPlacementForm={seatPlacementForm}
-        uniqueSections={getUniqueSectionsUtil(
-          seats,
-          effectiveSectionsData,
-          sectionMarkers,
-          designMode,
-        )}
-        sectionsData={effectiveSectionsData}
-        sectionSelectValue={sectionSelectValue}
-        onSectionSelectValueChange={setSectionSelectValue}
-        containerRef={containerRef}
-        dimensionsReady={dimensionsReady}
-        containerDimensions={containerDimensions}
-        zoomLevel={zoomLevel}
-        panOffset={panOffset}
-        isPlacingSeats={isPlacingSeats}
-        isUploadingImage={isUploadingImage}
-        onBack={() => {
-          setViewingSection(null);
-          seatPlacementForm.setValue("section", "");
-          setSelectedSeat(null);
+        section={{
+          viewingSection,
+          uniqueSections: getUniqueSectionsUtil(
+            seats,
+            effectiveSectionsData,
+            sectionMarkers,
+            designMode,
+          ),
+          sectionsData: effectiveSectionsData,
+          sectionSelectValue,
+          onSectionSelectValueChange: setSectionSelectValue,
         }}
-        onSave={() => setShowSaveConfirmDialog(true)}
-        onClearSectionSeats={() => {
-          recordSnapshot();
-          setSeats((prev) =>
-            prev.filter((s) => s.seat.section !== viewingSection.name),
-          );
+        canvas={{
+          containerRef,
+          dimensionsReady,
+          containerDimensions,
+          zoomLevel,
+          panOffset,
+          canvasBackgroundColor,
+          onCanvasBackgroundColorChange: (color) => {
+            recordSnapshot();
+            setSectionMarkers((prev) =>
+              prev.map((s) =>
+                s.id === viewingSection.id
+                  ? { ...s, canvasBackgroundColor: color }
+                  : s,
+              ),
+            );
+          },
+          markerFillTransparency: viewingSection.markerFillTransparency,
+          onMarkerFillTransparencyChange: (transparency) => {
+            recordSnapshot();
+            setSectionMarkers((prev) =>
+              prev.map((s) =>
+                s.id === viewingSection.id
+                  ? { ...s, markerFillTransparency: transparency }
+                  : s,
+              ),
+            );
+          },
+          showGrid,
+          gridSize,
         }}
-        onSectionImageSelect={handleSectionImageSelect}
-        onRemoveSectionImage={handleRemoveSectionImage}
-        onSeatClick={handleSeatClickWithToolSwitch}
-        onSeatDragEnd={handleKonvaSeatDragEnd}
-        onBatchSeatDragEnd={handleBatchSeatDragEnd}
-        onSeatShapeTransform={handleSeatShapeTransform}
-        onSeatShapeStyleChange={(seatId, style) => {
-          recordSnapshot();
-          setSeats((prev) =>
-            prev.map((s) =>
-              s.id === seatId
-                ? {
-                    ...s,
-                    shape: {
-                      ...(s.shape || {
-                        type: PlacementShapeType.CIRCLE,
-                        radius: 0.8,
-                      }),
-                      ...style,
-                    } as PlacementShape,
-                  }
-                : s,
-            ),
-          );
+        selection={{
+          displayedSeats,
+          selectedSeat,
+          selectedSeatIds,
+          onSelectSeatIds: setSelectedSeatIds,
         }}
-        onImageClick={handleKonvaImageClick}
-        onDeselect={handleDeselect}
-        onWheel={(e, isSpace) => {
-          if (isSpace) {
-            e.evt.preventDefault();
-            const delta = e.evt.deltaY > 0 ? -0.1 : 0.1;
-            setZoomLevel((prev) => Math.max(0.5, Math.min(3, prev + delta)));
-          }
-        }}
-        onPan={(delta) => handlePanDelta(delta)}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoomAndPan}
-        onNewSection={() => {
-          setIsSectionFormOpen(true);
-          setEditingSectionId(null);
-          sectionForm.reset({ name: "" });
-        }}
-        saveSeatsMutationPending={bulkDesignerSaveMutation.isPending}
+        forms={{ seatPlacementForm }}
         seats={seats}
-        onDeleteSeat={(seat) => removeSeat(seat.id)}
-        onSetViewingSeat={setViewingSeat}
-        onEditSeat={(seat) => {
-          setIsEditingSeat(true);
-          seatEditForm.reset({
-            section: seat.seat.section,
-            sectionId: seat.seat.sectionId,
-            row: seat.seat.row,
-            seatNumber: seat.seat.seatNumber,
-            seatType: seat.seat.seatType,
-          });
+        handlers={{
+          onBack: () => {
+            setViewingSection(null);
+            seatPlacementForm.setValue("section", "");
+            setSelectedSeat(null);
+          },
+          onSave: () => setShowSaveConfirmDialog(true),
+          onClearSectionSeats: () => {
+            recordSnapshot();
+            setSeats((prev) =>
+              prev.filter((s) => s.seat.section !== viewingSection.name),
+            );
+          },
+          onSectionImageSelect: handleSectionImageSelect,
+          onRemoveSectionImage: handleRemoveSectionImage,
+          onSeatClick: handleSeatClickWithToolSwitch,
+          onSeatDragEnd: handleKonvaSeatDragEnd,
+          onBatchSeatDragEnd: handleBatchSeatDragEnd,
+          onSeatShapeTransform: handleSeatShapeTransform,
+          onSeatShapeStyleChange: (seatId, style) => {
+            recordSnapshot();
+            setSeats((prev) =>
+              prev.map((s) =>
+                s.id === seatId
+                  ? {
+                      ...s,
+                      shape: {
+                        ...(s.shape || {
+                          type: PlacementShapeType.CIRCLE,
+                          radius: 0.8,
+                        }),
+                        ...style,
+                      } as PlacementShape,
+                    }
+                  : s,
+              ),
+            );
+          },
+          onImageClick: handleKonvaImageClick,
+          onDeselect: handleDeselect,
+          onWheel: (e, isSpace) => {
+            if (isSpace) {
+              e.evt.preventDefault();
+              const delta = e.evt.deltaY > 0 ? -0.1 : 0.1;
+              setZoomLevel((prev) => Math.max(0.5, Math.min(3, prev + delta)));
+            }
+          },
+          onPan: handlePanDelta,
+          onZoomIn: handleZoomIn,
+          onZoomOut: handleZoomOut,
+          onResetZoom: handleResetZoomAndPan,
+          onNewSection: () => {
+            setIsSectionFormOpen(true);
+            setEditingSectionId(null);
+            sectionForm.reset({ name: "" });
+          },
+          onDeleteSeat: (seat) => removeSeat(seat.id),
+          onSetViewingSeat: setViewingSeat,
+          onEditSeat: (seat) => {
+            setIsEditingSeat(true);
+            seatEditForm.reset({
+              section: seat.seat.section,
+              sectionId: seat.seat.sectionId,
+              row: seat.seat.row,
+              seatNumber: seat.seat.seatNumber,
+              seatType: seat.seat.seatType,
+            });
+          },
+          onSetSelectedSeat: setSelectedSeat,
+          seatEditFormReset: (data) => seatEditForm.reset(data),
+          onShapeToolSelect: setSelectedShapeTool,
+          onShapeDraw: handleShapeDraw,
+          onShapeOverlayClick: (id) => {
+            if (selectedShapeTool) setSelectedShapeTool(null);
+            setSelectedOverlayId(id);
+          },
+          onDetectSeats:
+            viewingSection.imageUrl ? handleDetectSeatsClick : undefined,
+          onMarkersInRect: (seatIds, sectionIds) => {
+            if (selectedShapeTool) return;
+            setSelectedSeatIds(seatIds);
+            setSelectedSectionIds(sectionIds);
+          },
+          onAlign: (alignment) => {
+            if (selectedSeatIds.length <= 1) return;
+            recordSnapshot();
+            const selectedSeatsList = seats.filter((s) =>
+              selectedSeatIds.includes(s.id),
+            );
+            const bounds = selectedSeatsList.map((s) =>
+              getMarkerBounds(s, { radius: 0.8 }),
+            );
+            const updatesMap = applyAlignment(
+              selectedSeatsList,
+              bounds,
+              alignment as AlignmentType,
+              { radius: 0.8 },
+            );
+            setSeats((prev) =>
+              prev.map((seat) => {
+                const u = updatesMap.get(seat.id);
+                if (!u) return seat;
+                return { ...seat, ...u };
+              }),
+            );
+          },
         }}
-        onSetSelectedSeat={setSelectedSeat}
-        seatEditFormReset={(data) => seatEditForm.reset(data)}
-        selectedSeatIds={selectedSeatIds}
-        onSelectSeatIds={setSelectedSeatIds}
-        placementShape={placementShape}
-        onPlacementShapeChange={setPlacementShape}
-        selectedShapeTool={selectedShapeTool}
-        onShapeToolSelect={setSelectedShapeTool}
-        onShapeDraw={handleShapeDraw}
-        shapeOverlays={displayedShapeOverlays}
-        selectedOverlayId={selectedOverlayId}
-        onShapeOverlayClick={(id) => {
-          if (selectedShapeTool) setSelectedShapeTool(null);
-          setSelectedOverlayId(id);
+        design={{
+          placementShape,
+          onPlacementShapeChange: setPlacementShape,
+          selectedShapeTool,
+          shapeOverlays: displayedShapeOverlays,
+          selectedOverlayId,
         }}
-        onDetectSeats={
-          viewingSection.imageUrl ? handleDetectSeatsClick : undefined
-        }
-        isDetectingSeats={isDetectingSeats}
-        onMarkersInRect={(seatIds, sectionIds) => {
-          if (selectedShapeTool) return;
-          setSelectedSeatIds(seatIds);
-          setSelectedSectionIds(sectionIds);
+        state={{
+          saveSeatsMutationPending: bulkDesignerSaveMutation.isPending,
+          isPlacingSeats,
+          isUploadingImage,
+          isDetectingSeats,
+          isFullscreen,
+          onToggleFullscreen: () => setIsFullscreen(!isFullscreen),
+          onUndo: !readOnly ? undo : undefined,
+          onRedo: !readOnly ? redo : undefined,
+          canUndo,
+          canRedo,
+          isDirty,
+          onRefresh: handleRefresh,
+          isRefreshing: isLoading,
         }}
-        onAlign={(alignment) => {
-          if (selectedSeatIds.length <= 1) return;
-          recordSnapshot();
-          const selectedSeatsList = seats.filter((s) =>
-            selectedSeatIds.includes(s.id),
-          );
-          const bounds = selectedSeatsList.map((s) =>
-            getMarkerBounds(s, { radius: 0.8 }),
-          );
-          const updatesMap = applyAlignment(
-            selectedSeatsList,
-            bounds,
-            alignment as AlignmentType,
-            { radius: 0.8 },
-          );
-          setSeats((prev) =>
-            prev.map((seat) => {
-              const u = updatesMap.get(seat.id);
-              if (!u) return seat;
-              return { ...seat, ...u };
-            }),
-          );
-        }}
-        seatEditControls={
-          isEditingSeat && selectedSeat && !readOnly ? (
-            <SeatEditControls
-              form={seatEditForm}
-              uniqueSections={getUniqueSectionsUtil(
-                seats,
-                effectiveSectionsData,
-                sectionMarkers,
-                designMode,
-              )}
-              sectionsData={effectiveSectionsData}
-              sectionMarkers={sectionMarkers}
-              designMode={designMode}
-              viewingSection={viewingSection}
-              onSave={(data) => {
-                if (selectedSeat) {
-                  recordSnapshot();
-                  updateSeat(selectedSeat.id, { seat: data });
+        display={{
+          readOnly,
+          seatEditControls:
+            isEditingSeat && selectedSeat && !readOnly ? (
+              <SeatEditControls
+                form={seatEditForm}
+                uniqueSections={getUniqueSectionsUtil(
+                  seats,
+                  effectiveSectionsData,
+                  sectionMarkers,
+                  designMode,
+                )}
+                sectionsData={effectiveSectionsData}
+                sectionMarkers={sectionMarkers}
+                designMode={designMode}
+                viewingSection={viewingSection}
+                onSave={(data) => {
+                  if (selectedSeat) {
+                    recordSnapshot();
+                    updateSeat(selectedSeat.id, { seat: data });
+                    setIsEditingSeat(false);
+                    seatEditForm.reset();
+                  }
+                }}
+                onCancel={() => {
                   setIsEditingSeat(false);
                   seatEditForm.reset();
-                }
-              }}
-              onCancel={() => {
-                setIsEditingSeat(false);
-                seatEditForm.reset();
-              }}
-              isUpdating={false}
-              standalone
-            />
-          ) : undefined
-        }
-        canvasBackgroundColor={canvasBackgroundColor}
-        onCanvasBackgroundColorChange={(color) => {
-          recordSnapshot();
-          setSectionMarkers((prev) =>
-            prev.map((s) =>
-              s.id === viewingSection.id
-                ? { ...s, canvasBackgroundColor: color }
-                : s,
-            ),
-          );
+                }}
+                isUpdating={false}
+                standalone
+              />
+            ) : undefined,
         }}
-        markerFillTransparency={viewingSection.markerFillTransparency}
-        onMarkerFillTransparencyChange={(transparency) => {
-          recordSnapshot();
-          setSectionMarkers((prev) =>
-            prev.map((s) =>
-              s.id === viewingSection.id
-                ? { ...s, markerFillTransparency: transparency }
-                : s,
-            ),
-          );
-        }}
-        showGrid={showGrid}
-        gridSize={gridSize}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
-        onUndo={!readOnly ? undo : undefined}
-        onRedo={!readOnly ? redo : undefined}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        isDirty={isDirty}
-        onRefresh={handleRefresh}
-        isRefreshing={isLoading}
       />
     ) : (
       <div
