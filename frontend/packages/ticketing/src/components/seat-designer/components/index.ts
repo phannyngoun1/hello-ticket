@@ -7,7 +7,7 @@ export * from "./seat-edit-sheet";
 export * from "./seat-edit-controls";
 export * from "./seat-placement-controls";
 export * from "./seat-design-toolbar";
-export * from "./seat-design-canvas";
+export * from "./seat-designer-canvas";
 export * from "./section-detail-view";
 export * from "./datasheet-view";
 export * from "./selected-section-sheet";

@@ -31,7 +31,7 @@ import {
   Redo2,
   RefreshCw,
 } from "lucide-react";
-import { DatasheetView, SeatDesignCanvas, SeatDesignToolbar } from "./index";
+import { DatasheetView, SeatDesignerCanvas, SeatDesignToolbar } from "./index";
 import type { SectionMarker, SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
@@ -614,7 +614,7 @@ export function SectionDetailView({
             isFullscreen ? "flex-1 min-h-0 flex flex-col" : "space-y-4"
           }
         >
-          <SeatDesignCanvas
+          <SeatDesignerCanvas
             imageUrl={viewingSection.imageUrl ?? ""}
             showImageUpload={false}
             imageUploadId={`section-image-${viewingSection.id}`}

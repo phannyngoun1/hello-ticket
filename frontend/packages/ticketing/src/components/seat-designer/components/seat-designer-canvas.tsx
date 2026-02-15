@@ -1,20 +1,20 @@
 /**
- * Seat Design Canvas Component
+ * Seat Designer Canvas Component
  *
- * Wraps LayoutCanvas + ZoomControls with optional ImageUploadCard.
+ * Wraps FloorPlanCanvas + ZoomControls with optional ImageUploadCard.
  * Used when designing seats only (designMode="seat-level", no sections).
  * Shared by seat-level main view and section-level drill-down.
  */
 
 import React, { useRef, useState } from "react";
 import Konva from "konva";
-import { LayoutCanvas } from "../layout-canvas";
+import { FloorPlanCanvas } from "../floor-plan-canvas";
 import { ImageUploadCard, ZoomControls } from "./index";
 import type { SeatMarker } from "../types";
 import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
 
-export interface SeatDesignCanvasProps {
+export interface SeatDesignerCanvasProps {
   /** When undefined/empty, renders blank canvas (simple floor mode) */
   imageUrl?: string;
   /** When true and no imageUrl, render ImageUploadCard instead of canvas. When false, render blank canvas. */
@@ -90,7 +90,7 @@ export interface SeatDesignCanvasProps {
   gridSize?: number;
 }
 
-export function SeatDesignCanvas({
+export function SeatDesignerCanvas({
   imageUrl,
   showImageUpload = false,
   imageUploadId,
@@ -130,7 +130,7 @@ export function SeatDesignCanvas({
   canvasBackgroundColor = "#e5e7eb",
   showGrid = false,
   gridSize = 5,
-}: SeatDesignCanvasProps) {
+}: SeatDesignerCanvasProps) {
   const [dragOverActive, setDragOverActive] = useState(false);
 
   // Compute the virtual canvas dimensions matching layout-canvas logic so drop
@@ -338,7 +338,7 @@ export function SeatDesignCanvas({
     >
       {dimensionsReady ? (
         <>
-          <LayoutCanvas
+          <FloorPlanCanvas
             imageUrl={imageUrl ?? undefined}
             seats={seats}
             sections={[]}

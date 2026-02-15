@@ -48,7 +48,7 @@ import {
   NO_IMAGE_ASPECT_RATIO,
 } from "./hooks/use-letterboxing";
 
-interface LayoutCanvasProps {
+interface FloorPlanCanvasProps {
   /** When undefined/empty, renders blank canvas (simple floor mode) */
   imageUrl?: string;
   seats: SeatMarker[];
@@ -146,7 +146,7 @@ const VIRTUALIZATION_THRESHOLD = 40;
 // Threshold: disable hover animations when total count exceeds this
 const HOVER_ANIMATION_THRESHOLD = 100;
 
-export function LayoutCanvas({
+export function FloorPlanCanvas({
   imageUrl,
   seats,
   sections = [],
@@ -188,7 +188,7 @@ export function LayoutCanvas({
   canvasBackgroundColor = "#e5e7eb",
   showGrid = false,
   gridSize = 5,
-}: LayoutCanvasProps) {
+}: FloorPlanCanvasProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageLoading, setImageLoading] = useState(true);
   const stageRef = useRef<Konva.Stage>(null);

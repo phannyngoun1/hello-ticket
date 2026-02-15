@@ -5,7 +5,7 @@
  * 
  * Structure:
  * - seat-designer.tsx: Main SeatDesigner component
- * - layout-canvas.tsx: Konva-based canvas component
+ * - floor-plan-canvas.tsx: Konva-based canvas component
  * - seat-viewer.tsx: Seat viewer component
  * - placement-panel.tsx: Placement panel component
  * - types.ts: Type definitions and interfaces
@@ -34,8 +34,8 @@ export type {
 // Export utils
 export { getUniqueSections, findSectionId } from "./utils";
 
-// Export layout canvas component
-export { LayoutCanvas } from "./layout-canvas";
+// Export floor plan canvas component
+export { FloorPlanCanvas } from "./floor-plan-canvas";
 
 // Export components
 export * from "./components";

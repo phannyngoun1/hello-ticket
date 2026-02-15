@@ -23,7 +23,7 @@ import { api } from "@truths/api";
 import { uploadService } from "@truths/shared";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { toast } from "@truths/ui";
-import { LayoutCanvas } from "./layout-canvas";
+import { FloorPlanCanvas } from "./floor-plan-canvas";
 import Konva from "konva";
 import { getUniqueSections as getUniqueSectionsUtil } from "./utils";
 import {
@@ -47,7 +47,7 @@ import {
   SectionDetailView,
   ManageSectionsSheet,
   SeatDesignToolbar,
-  SeatDesignCanvas,
+  SeatDesignerCanvas,
   ShapeToolbox,
   SectionCreationToolbar,
   DesignerHeader,
@@ -2390,7 +2390,7 @@ export function SeatDesigner({
             }}
           >
             {designMode === "seat-level" ? (
-              <SeatDesignCanvas
+              <SeatDesignerCanvas
                 imageUrl={mainImageUrl}
                 canvasBackgroundColor={canvasBackgroundColor}
                 containerRef={containerRef}
@@ -2442,7 +2442,7 @@ export function SeatDesigner({
                 gridSize={gridSize}
               />
             ) : (
-              <LayoutCanvas
+              <FloorPlanCanvas
                 imageUrl={mainImageUrl}
                 canvasBackgroundColor={canvasBackgroundColor}
                 seats={[]}
