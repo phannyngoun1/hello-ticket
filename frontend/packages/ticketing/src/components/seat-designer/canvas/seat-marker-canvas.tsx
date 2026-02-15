@@ -13,6 +13,36 @@ import {
 } from "../types";
 import { ShapeRenderer } from "../components/shape-renderer";
 
+function isNearRotationHandle(
+  stage: Konva.Stage,
+  groupRef: React.RefObject<Konva.Group | null>,
+): boolean {
+  const group = groupRef.current;
+  if (!group) return false;
+
+  const stagePos = stage.getPointerPosition();
+  if (!stagePos) return false;
+
+  const layer = group.getLayer();
+  if (!layer) return false;
+
+  const layerScale = layer.scaleX();
+  const nodeX = group.x();
+  const nodeY = group.y();
+  const nodeHeight = group.height();
+
+  const rotationHandleOffset = 25 / layerScale;
+  const rotationHandleY = nodeY - nodeHeight / 2 - rotationHandleOffset;
+  const rotationHandleX = nodeX;
+  const handleSize = 12 / layerScale;
+
+  const distanceX = Math.abs(stagePos.x - rotationHandleX);
+  const distanceY = Math.abs(stagePos.y - rotationHandleY);
+  return (
+    distanceX < handleSize && distanceY < handleSize + 15 / layerScale
+  );
+}
+
 export interface SeatMarkerCanvasProps {
   seat: SeatMarker;
   position: { x: number; y: number };
@@ -288,6 +318,52 @@ export function SeatMarkerCanvas({
         "bottom-right",
       ];
 
+  const getDefaultCursor = useCallback(
+    () => (selectedShapeTool ? "crosshair" : "pointer"),
+    [selectedShapeTool],
+  );
+
+  const handleTransformerMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true;
+      const stage = e.target.getStage();
+      const container = stage?.container();
+      if (!transformerRef.current || !stage || !container) return;
+
+      if (isNearRotationHandle(stage, groupRef)) {
+        container.style.cursor = "grab";
+      }
+    },
+    [],
+  );
+
+  const handleTransformerMouseMove = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true;
+      const stage = e.target.getStage();
+      const container = stage?.container();
+      if (!transformerRef.current || !stage || !container) return;
+
+      if (isNearRotationHandle(stage, groupRef)) {
+        container.style.cursor = "grab";
+      } else {
+        container.style.cursor = getDefaultCursor();
+      }
+    },
+    [getDefaultCursor],
+  );
+
+  const handleTransformerMouseLeaveOrUp = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true;
+      const container = e.target.getStage()?.container();
+      if (container) {
+        container.style.cursor = getDefaultCursor();
+      }
+    },
+    [getDefaultCursor],
+  );
+
   return (
     <>
       <Group
@@ -414,100 +490,11 @@ export function SeatMarkerCanvas({
           }
           flipEnabled={false}
           enabledAnchors={transformerEnabledAnchors}
-          onMouseDown={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (!transformerRef.current || !stage || !container) return;
-
-            const stagePos = stage.getPointerPosition();
-            if (!stagePos) return;
-
-            const transformer = transformerRef.current;
-            const layer = transformer.getLayer();
-            if (!layer || !groupRef.current) return;
-
-            const layerScale = layer.scaleX();
-            const node = groupRef.current;
-            const nodeX = node.x();
-            const nodeY = node.y();
-            const nodeHeight = node.height();
-
-            const rotationHandleOffset = 25 / layerScale;
-            const rotationHandleY =
-              nodeY - nodeHeight / 2 - rotationHandleOffset;
-            const rotationHandleX = nodeX;
-            const handleSize = 12 / layerScale;
-
-            const distanceX = Math.abs(stagePos.x - rotationHandleX);
-            const distanceY = Math.abs(stagePos.y - rotationHandleY);
-            const isNearRotationHandle =
-              distanceX < handleSize &&
-              distanceY < handleSize + 15 / layerScale;
-
-            if (isNearRotationHandle) {
-              container.style.cursor = "grab";
-            }
-          }}
-          onMouseMove={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (!transformerRef.current || !stage || !container) return;
-
-            const stagePos = stage.getPointerPosition();
-            if (!stagePos) return;
-
-            const transformer = transformerRef.current;
-            const layer = transformer.getLayer();
-            if (!layer || !groupRef.current) return;
-
-            const layerScale = layer.scaleX();
-            const node = groupRef.current;
-            const nodeX = node.x();
-            const nodeY = node.y();
-            const nodeHeight = node.height();
-
-            const rotationHandleOffset = 25 / layerScale;
-            const rotationHandleY =
-              nodeY - nodeHeight / 2 - rotationHandleOffset;
-            const rotationHandleX = nodeX;
-            const handleSize = 12 / layerScale;
-
-            const distanceX = Math.abs(stagePos.x - rotationHandleX);
-            const distanceY = Math.abs(stagePos.y - rotationHandleY);
-            const isNearRotationHandle =
-              distanceX < handleSize &&
-              distanceY < handleSize + 15 / layerScale;
-
-            if (isNearRotationHandle) {
-              container.style.cursor = "grab";
-            } else {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
-          onMouseEnter={(e) => {
-            e.cancelBubble = true;
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
-          onMouseUp={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
+          onMouseDown={handleTransformerMouseDown}
+          onMouseMove={handleTransformerMouseMove}
+          onMouseEnter={(e) => e.cancelBubble = true}
+          onMouseLeave={handleTransformerMouseLeaveOrUp}
+          onMouseUp={handleTransformerMouseLeaveOrUp}
         />
       )}
     </>

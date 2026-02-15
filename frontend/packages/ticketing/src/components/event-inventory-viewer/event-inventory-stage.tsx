@@ -22,114 +22,132 @@ export interface SectionStats {
 }
 
 export interface EventInventoryStageProps {
-  /** When true, use dark-mode label colors for section markers */
-  isDarkMode?: boolean;
-  containerRef: RefObject<HTMLDivElement>;
-  stageRef: RefObject<Konva.Stage>;
-  validWidth: number;
-  validHeight: number;
-  centerX: number;
-  centerY: number;
-  imageX: number;
-  imageY: number;
-  displayedWidth: number;
-  displayedHeight: number;
-  image: HTMLImageElement | null;
-  zoomLevel: number;
-  panOffset: { x: number; y: number };
-  isSpacePressed: boolean;
-  isPanning: boolean;
-  hoveredSeatId: string | null;
+  refs: {
+    containerRef: RefObject<HTMLDivElement>;
+    stageRef: RefObject<Konva.Stage>;
+  };
+  stage: { validWidth: number; validHeight: number };
+  view: {
+    centerX: number;
+    centerY: number;
+    imageX: number;
+    imageY: number;
+    displayedWidth: number;
+    displayedHeight: number;
+    zoomLevel: number;
+    panOffset: { x: number; y: number };
+    /** Canvas background color when no image (simple floor mode) */
+    canvasBackgroundColor?: string;
+  };
+  display: {
+    /** When true, use dark-mode label colors for section markers */
+    isDarkMode?: boolean;
+    image: HTMLImageElement | null;
+  };
+  interaction: { isSpacePressed: boolean; isPanning: boolean };
+  hover: {
+    hoveredSeatId: string | null;
+    hoveredSectionId: string | null;
+  };
   layout: Layout;
-  selectedSectionId: string | null;
-  sections: Section[];
-  sectionStats: Map<string, SectionStats>;
-  displayedSeats: Seat[];
-  seatStatusMap: Map<string, EventSeat>;
-  locationStatusMap: Map<string, EventSeat>;
-  sectionNameMap: Map<string, string>;
-  selectedSeatIds: Set<string>;
-  hoveredSectionId: string | null;
-  percentageToStage: (
-    xPercent: number,
-    yPercent: number,
-  ) => { x: number; y: number };
-  onWheel: (
-    e: Konva.KonvaEventObject<WheelEvent>,
-    isSpacePressed: boolean,
-  ) => void;
-  onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseMove: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseUp: () => void;
-  onMouseLeave: () => void;
-  setHoveredSectionId: (id: string | null) => void;
-  setHoveredSectionData: (
-    data: {
-      section: Section;
-      seatCount: number;
-      eventSeatCount: number;
-      statusSummary: Record<string, number>;
-    } | null,
-  ) => void;
-  setHoveredSeatPosition: (pos: { x: number; y: number } | null) => void;
-  setHoveredSeatId: (id: string | null) => void;
-  setHoveredSeatData: (
-    data: { seat: Seat; eventSeat?: EventSeat } | null,
-  ) => void;
-  updatePopoverPosition: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  setSelectedSectionId: (id: string | null) => void;
-  setZoomLevel: (zoom: number) => void;
-  setPanOffset: (offset: { x: number; y: number }) => void;
-  onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
-  /** Canvas background color when no image (simple floor mode) */
-  canvasBackgroundColor?: string;
+  data: {
+    sections: Section[];
+    sectionStats: Map<string, SectionStats>;
+    displayedSeats: Seat[];
+    seatStatusMap: Map<string, EventSeat>;
+    locationStatusMap: Map<string, EventSeat>;
+    sectionNameMap: Map<string, string>;
+  };
+  selection: {
+    selectedSectionId: string | null;
+    selectedSeatIds: Set<string>;
+  };
+  coords: {
+    percentageToStage: (
+      xPercent: number,
+      yPercent: number,
+    ) => { x: number; y: number };
+  };
+  handlers: {
+    onWheel: (
+      e: Konva.KonvaEventObject<WheelEvent>,
+      isSpacePressed: boolean,
+    ) => void;
+    onMouseDown: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseMove: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseUp: () => void;
+    onMouseLeave: () => void;
+    onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
+  };
+  setters: {
+    setHoveredSectionId: (id: string | null) => void;
+    setHoveredSectionData: (
+      data: {
+        section: Section;
+        seatCount: number;
+        eventSeatCount: number;
+        statusSummary: Record<string, number>;
+      } | null,
+    ) => void;
+    setHoveredSeatPosition: (pos: { x: number; y: number } | null) => void;
+    setHoveredSeatId: (id: string | null) => void;
+    setHoveredSeatData: (
+      data: { seat: Seat; eventSeat?: EventSeat } | null,
+    ) => void;
+    updatePopoverPosition: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    setSelectedSectionId: (id: string | null) => void;
+    setZoomLevel: (zoom: number) => void;
+    setPanOffset: (offset: { x: number; y: number }) => void;
+  };
 }
 
 export function EventInventoryStage({
-  isDarkMode = false,
-  containerRef,
-  stageRef,
-  validWidth,
-  validHeight,
-  centerX,
-  centerY,
-  imageX,
-  imageY,
-  displayedWidth,
-  displayedHeight,
-  image,
-  zoomLevel,
-  panOffset,
-  isSpacePressed,
-  isPanning,
-  hoveredSeatId,
+  refs: { containerRef, stageRef },
+  stage: { validWidth, validHeight },
+  view: {
+    centerX,
+    centerY,
+    imageX,
+    imageY,
+    displayedWidth,
+    displayedHeight,
+    zoomLevel,
+    panOffset,
+    canvasBackgroundColor = "#e5e7eb",
+  },
+  display: { isDarkMode = false, image },
+  interaction: { isSpacePressed, isPanning },
+  hover: { hoveredSeatId, hoveredSectionId },
   layout,
-  selectedSectionId,
-  sections,
-  sectionStats,
-  displayedSeats,
-  seatStatusMap,
-  locationStatusMap,
-  sectionNameMap,
-  selectedSeatIds,
-  hoveredSectionId,
-  percentageToStage,
-  onWheel,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
-  onMouseLeave,
-  setHoveredSectionId,
-  setHoveredSectionData,
-  setHoveredSeatPosition,
-  setHoveredSeatId,
-  setHoveredSeatData,
-  updatePopoverPosition,
-  setSelectedSectionId,
-  setZoomLevel,
-  setPanOffset,
-  onSeatClick,
-  canvasBackgroundColor = "#e5e7eb",
+  data: {
+    sections,
+    sectionStats,
+    displayedSeats,
+    seatStatusMap,
+    locationStatusMap,
+    sectionNameMap,
+  },
+  selection: { selectedSectionId, selectedSeatIds },
+  coords: { percentageToStage },
+  handlers: {
+    onWheel,
+    onMouseDown,
+    onMouseMove,
+    onMouseUp,
+    onMouseLeave,
+    onSeatClick,
+  },
+  setters: {
+    setHoveredSectionId,
+    setHoveredSectionData,
+    setHoveredSeatPosition,
+    setHoveredSeatId,
+    setHoveredSeatData,
+    updatePopoverPosition,
+    setSelectedSectionId,
+    setZoomLevel,
+    setPanOffset,
+  },
 }: EventInventoryStageProps) {
   function renderSectionMarkers() {
     return sections.map((section) => {
@@ -234,33 +252,36 @@ export function EventInventoryStage({
           key={seat.id}
           seat={seat}
           eventSeat={eventSeat}
-          x={x}
-          y={y}
-          isHovered={hoveredSeatId === seat.id}
-          isSpacePressed={isSpacePressed}
-          isSelected={isSelected}
-          imageWidth={displayedWidth}
-          imageHeight={displayedHeight}
-          markerFillTransparency={getEffectiveTransparencyForSeat(seat)}
-          onMouseEnter={(e) => {
-            setHoveredSeatId(seat.id);
-            setHoveredSeatData({ seat, eventSeat });
-            updatePopoverPosition(e);
+          position={{ x, y }}
+          display={{
+            isHovered: hoveredSeatId === seat.id,
+            isSpacePressed,
+            isSelected,
+            imageWidth: displayedWidth,
+            imageHeight: displayedHeight,
+            markerFillTransparency: getEffectiveTransparencyForSeat(seat),
           }}
-          onMouseMove={updatePopoverPosition}
-          onMouseLeave={() => {
-            setHoveredSeatId(null);
-            setHoveredSeatPosition(null);
-            setHoveredSeatData(null);
-          }}
-          onClick={() => {
-            if (eventSeat?.status === "available") {
-              if (onSeatClick) {
-                onSeatClick(seat.id, eventSeat);
-              } else {
-                console.log("Seat clicked:", seat, eventSeat);
+          handlers={{
+            onMouseEnter: (e) => {
+              setHoveredSeatId(seat.id);
+              setHoveredSeatData({ seat, eventSeat });
+              updatePopoverPosition(e);
+            },
+            onMouseMove: updatePopoverPosition,
+            onMouseLeave: () => {
+              setHoveredSeatId(null);
+              setHoveredSeatPosition(null);
+              setHoveredSeatData(null);
+            },
+            onClick: () => {
+              if (eventSeat?.status === "available") {
+                if (onSeatClick) {
+                  onSeatClick(seat.id, eventSeat);
+                } else {
+                  console.log("Seat clicked:", seat, eventSeat);
+                }
               }
-            }
+            },
           }}
         />
       );

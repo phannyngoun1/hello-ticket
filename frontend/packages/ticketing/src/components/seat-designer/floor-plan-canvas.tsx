@@ -11,19 +11,8 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import {
-  Stage,
-  Layer,
-  Image,
-  Circle,
-  Group,
-  Text,
-  Rect,
-  Line,
-  Transformer,
-} from "react-konva";
+import { Stage } from "react-konva";
 import Konva from "konva";
-import { SeatType } from "../../seats/types";
 import {
   PlacementShapeType,
   type PlacementShape,
@@ -31,18 +20,16 @@ import {
   type SectionMarker,
 } from "./types";
 import {
-  DEFAULT_SHAPE_FILL,
-  DEFAULT_SHAPE_STROKE,
-  MARQUEE_FILL,
-  MARQUEE_STROKE,
-  SELECTED_FILL,
-  SELECTED_STROKE,
-  getSeatTypeColors,
+  getSeatMarkerColors,
+  getSectionMarkerColors,
 } from "./colors";
-import { ShapeRenderer } from "./components/shape-renderer";
-import { MemoizedShapeOverlayCanvas } from "./canvas/shape-overlay-canvas";
-import { MemoizedSeatMarkerCanvas } from "./canvas/seat-marker-canvas";
-import { MemoizedSectionMarkerCanvas } from "./canvas/section-marker-canvas";
+import {
+  BackgroundLayer,
+  StaticMarkersLayer,
+  InteractiveMarkersLayer,
+  OverlayLayer,
+  SelectionMarqueeLayer,
+} from "./floor-plan-layers";
 import {
   useLetterboxing,
   NO_IMAGE_ASPECT_RATIO,
@@ -151,216 +138,6 @@ const VIRTUALIZATION_THRESHOLD = 40;
 
 // Threshold: disable hover animations when total count exceeds this
 const HOVER_ANIMATION_THRESHOLD = 100;
-
-const PREVIEW_SHAPE_STYLE = {
-  fill: "rgba(59, 130, 246, 0.15)" as const,
-  stroke: "#3b82f6" as const,
-  strokeWidth: 1.5,
-  opacity: 0.8,
-};
-
-function getPreviewShapeForType(
-  type: PlacementShapeType,
-  w: number,
-  h: number,
-): PlacementShape {
-  const shapeByType: Record<PlacementShapeType, () => PlacementShape> = {
-    [PlacementShapeType.CIRCLE]: () => ({
-      type: PlacementShapeType.CIRCLE,
-      radius: Math.max(0.8, Math.max(w, h) / 2),
-    }),
-    [PlacementShapeType.RECTANGLE]: () => ({
-      type: PlacementShapeType.RECTANGLE,
-      width: Math.max(1, w),
-      height: Math.max(1, h),
-      cornerRadius: 2,
-    }),
-    [PlacementShapeType.ELLIPSE]: () => ({
-      type: PlacementShapeType.ELLIPSE,
-      width: Math.max(1, w),
-      height: Math.max(1, h),
-    }),
-    [PlacementShapeType.POLYGON]: () => {
-      const base = [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0];
-      const pts = base.map((p, i) => (i % 2 === 0 ? p * (w / 2) : p * (h / 2)));
-      return { type: PlacementShapeType.POLYGON, points: pts };
-    },
-    [PlacementShapeType.FREEFORM]: () => ({
-      type: PlacementShapeType.POLYGON,
-      points: [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0],
-    }),
-    [PlacementShapeType.SOFA]: () => ({
-      type: PlacementShapeType.SOFA,
-      width: Math.max(5, w),
-      height: Math.max(4, h),
-      fillColor: "#60a5fa",
-      strokeColor: "#2563eb",
-    }),
-    [PlacementShapeType.STAGE]: () => ({
-      type: PlacementShapeType.STAGE,
-      width: Math.max(20, w),
-      height: Math.max(15, h),
-      fillColor: "#333333",
-      strokeColor: "#2563eb",
-    }),
-    [PlacementShapeType.SEAT]: () => ({
-      type: PlacementShapeType.SEAT,
-      width: Math.max(1, w),
-      height: Math.max(1, h),
-    }),
-  };
-  return shapeByType[type]?.() ?? shapeByType[PlacementShapeType.POLYGON]();
-}
-
-interface DrawingPreviewShapeProps {
-  drawStartPos: { x: number; y: number };
-  drawCurrentPos: { x: number; y: number };
-  selectedShapeTool: PlacementShapeType;
-  percentageToStage: (x: number, y: number) => { x: number; y: number };
-  displayedWidth: number;
-  displayedHeight: number;
-  previewShapeRef: React.RefObject<Konva.Group>;
-}
-
-interface GridLinesProps {
-  gridSize: number;
-  validWidth: number;
-  validHeight: number;
-}
-
-const GRID_LINE_STYLE = {
-  stroke: "rgba(100, 150, 255, 0.2)" as const,
-  strokeWidth: 1,
-  dash: [2, 2] as [number, number],
-};
-
-function GridLines({ gridSize, validWidth, validHeight }: GridLinesProps) {
-  const gridLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-
-  for (let p = gridSize; p < 100; p += gridSize) {
-    const x = (p / 100) * validWidth;
-    gridLines.push({ x1: x, y1: 0, x2: x, y2: validHeight });
-  }
-  for (let p = gridSize; p < 100; p += gridSize) {
-    const y = (p / 100) * validHeight;
-    gridLines.push({ x1: 0, y1: y, x2: validWidth, y2: y });
-  }
-
-  return (
-    <>
-      {gridLines.map((line, index) => (
-        <Line
-          key={`grid-line-${index}`}
-          points={[line.x1, line.y1, line.x2, line.y2]}
-          stroke={GRID_LINE_STYLE.stroke}
-          strokeWidth={GRID_LINE_STYLE.strokeWidth}
-          perfectDrawEnabled={false}
-          dash={GRID_LINE_STYLE.dash}
-        />
-      ))}
-    </>
-  );
-}
-
-interface FreeformPreviewLinesProps {
-  freeformPath: Array<{ x: number; y: number }>;
-  freeformHoverPos: { x: number; y: number } | null;
-  percentageToStage: (x: number, y: number) => { x: number; y: number };
-}
-
-const FREEFORM_LINE_STYLE = {
-  stroke: "#3b82f6" as const,
-  strokeWidth: 1.5,
-  opacity: 0.8,
-  dash: [5, 5] as [number, number],
-};
-
-function FreeformPreviewLines({
-  freeformPath,
-  freeformHoverPos,
-  percentageToStage,
-}: FreeformPreviewLinesProps) {
-  const lines: Array<{
-    points: number[];
-    x: number;
-    y: number;
-    dashed?: boolean;
-  }> = [];
-
-  for (let i = 0; i < freeformPath.length - 1; i++) {
-    const a = percentageToStage(freeformPath[i].x, freeformPath[i].y);
-    const b = percentageToStage(freeformPath[i + 1].x, freeformPath[i + 1].y);
-    lines.push({
-      points: [0, 0, b.x - a.x, b.y - a.y],
-      x: a.x,
-      y: a.y,
-    });
-  }
-  if (freeformHoverPos) {
-    const last = percentageToStage(
-      freeformPath[freeformPath.length - 1].x,
-      freeformPath[freeformPath.length - 1].y,
-    );
-    const hover = percentageToStage(freeformHoverPos.x, freeformHoverPos.y);
-    lines.push({
-      points: [0, 0, hover.x - last.x, hover.y - last.y],
-      x: last.x,
-      y: last.y,
-      dashed: true,
-    });
-  }
-
-  return (
-    <>
-      {lines.map((line, i) => (
-        <Line
-          key={`freeform-${i}`}
-          points={line.points}
-          x={line.x}
-          y={line.y}
-          stroke={FREEFORM_LINE_STYLE.stroke}
-          strokeWidth={FREEFORM_LINE_STYLE.strokeWidth}
-          opacity={FREEFORM_LINE_STYLE.opacity}
-          dash={line.dashed ? FREEFORM_LINE_STYLE.dash : undefined}
-        />
-      ))}
-    </>
-  );
-}
-
-function DrawingPreviewShape({
-  drawStartPos,
-  drawCurrentPos,
-  selectedShapeTool,
-  percentageToStage,
-  displayedWidth,
-  displayedHeight,
-  previewShapeRef,
-}: DrawingPreviewShapeProps) {
-  const { x: startX, y: startY } = drawStartPos;
-  const { x: endX, y: endY } = drawCurrentPos;
-  const minSize = 1.5;
-  const w = Math.max(minSize, Math.abs(endX - startX));
-  const h = Math.max(minSize, Math.abs(endY - startY));
-  const cx = (startX + endX) / 2;
-  const cy = (startY + endY) / 2;
-  const { x, y } = percentageToStage(cx, cy);
-  const previewShape = getPreviewShapeForType(selectedShapeTool, w, h);
-
-  return (
-    <Group ref={previewShapeRef} x={x} y={y}>
-      <ShapeRenderer
-        shape={previewShape}
-        fill={PREVIEW_SHAPE_STYLE.fill}
-        stroke={PREVIEW_SHAPE_STYLE.stroke}
-        strokeWidth={PREVIEW_SHAPE_STYLE.strokeWidth}
-        imageWidth={displayedWidth}
-        imageHeight={displayedHeight}
-        opacity={PREVIEW_SHAPE_STYLE.opacity}
-      />
-    </Group>
-  );
-}
 
 /** Returns true if target is a marker (seat/section) or transformer (or related). */
 function isTargetMarkerOrTransformer(target: Konva.Node): boolean {
@@ -489,19 +266,19 @@ export function FloorPlanCanvas({
   } | null>(null);
 
   // Multi-selection sets (derived from props or single selection)
-  const selectedSeatIdSet = useMemo(() => {
+  const selectedSeatIdSet = useMemo((): Set<string> => {
     if (selectedSeatIdsProp && selectedSeatIdsProp.length > 0) {
       return new Set(selectedSeatIdsProp);
     }
     if (selectedSeatId) return new Set([selectedSeatId]);
-    return new Set();
+    return new Set<string>();
   }, [selectedSeatIdsProp, selectedSeatId]);
-  const selectedSectionIdSet = useMemo(() => {
+  const selectedSectionIdSet = useMemo((): Set<string> => {
     if (selectedSectionIdsProp && selectedSectionIdsProp.length > 0) {
       return new Set(selectedSectionIdsProp);
     }
     if (selectedSectionId) return new Set([selectedSectionId]);
-    return new Set();
+    return new Set<string>();
   }, [selectedSectionIdsProp, selectedSectionId]);
 
   // Ref to prevent click event after drag-to-draw
@@ -1065,34 +842,6 @@ export function FloorPlanCanvas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
-  // Get seat color based on type using centralized color constants
-  const getSeatColor = (seatType: SeatType) => {
-    return getSeatTypeColors(seatType);
-  };
-
-  // Use shape fill/stroke when set; fall back to type-based default for the other
-  const getSeatMarkerColors = (seat: SeatMarker) => {
-    const defaults = getSeatColor(seat.seat.seatType);
-    const fill = seat.shape?.fillColor?.trim();
-    const stroke = seat.shape?.strokeColor?.trim();
-    return {
-      fill: fill || defaults.fill,
-      stroke: stroke || defaults.stroke,
-    };
-  };
-
-  // Use shape fill/stroke when set; fall back to default for the other
-  const getSectionMarkerColors = (section: SectionMarker) => {
-    const defaultFill = "#60a5fa";
-    const defaultStroke = "#2563eb";
-    const fill = section.shape?.fillColor?.trim();
-    const stroke = section.shape?.strokeColor?.trim();
-    return {
-      fill: fill || defaultFill,
-      stroke: stroke || defaultStroke,
-    };
-  };
-
   // Compute display dimensions for coordinate conversion.
   //
   // WITH IMAGE: use live container size (responsive); the image letterboxes.
@@ -1549,423 +1298,139 @@ export function FloorPlanCanvas({
               : "pointer", // Pointer tool shows pointer cursor
       }}
     >
-      {/* Background Layer: Grid lines (when enabled), canvas background, and image */}
-      <Layer ref={layerRef} {...layerTransform} listening={true}>
-        {/* Grid lines - rendered behind everything */}
-        {showGrid && gridSize > 0 && (
-          <Group listening={false}>
-            <GridLines
-              gridSize={gridSize}
-              validWidth={validWidth}
-              validHeight={validHeight}
-            />
-          </Group>
-        )}
-        {/* Background rectangle - always rendered to support transparency and consistent background color */}
-        <Rect
-          name="canvas-background"
-          x={imageX}
-          y={imageY}
-          width={displayedWidth}
-          height={displayedHeight}
-          fill={canvasBackgroundColor}
-          listening={false}
-        />
-        {image ? (
-          <Image
-            name="background-image"
-            image={image}
-            x={imageX}
-            y={imageY}
-            width={displayedWidth}
-            height={displayedHeight}
-            listening={true}
-            onMouseMove={handleBackgroundMouseMove}
-            onClick={handleBackgroundClick}
-            onDblClick={handleBackgroundDblClick}
-            onTap={handleBackgroundTap}
-          />
-        ) : (
-          <Rect
-            name="background-image"
-            x={imageX}
-            y={imageY}
-            width={displayedWidth}
-            height={displayedHeight}
-            fill={canvasBackgroundColor}
-            listening={true}
-            onMouseMove={handleBackgroundMouseMove}
-            onClick={handleBackgroundClick}
-            onDblClick={handleBackgroundDblClick}
-            onTap={handleBackgroundTap}
-          />
-        )}
-        {/* Border to show the actual canvas bounds */}
-        <Rect
-          name="canvas-border"
-          x={imageX}
-          y={imageY}
-          width={displayedWidth}
-          height={displayedHeight}
-          fill="transparent"
-          stroke="rgba(100, 116, 139, 0.4)"
-          strokeWidth={1.5}
-          listening={false}
-        />
-      </Layer>
+      <BackgroundLayer
+        layerRef={layerRef}
+        layerTransform={layerTransform}
+        showGrid={showGrid}
+        gridSize={gridSize}
+        validWidth={validWidth}
+        validHeight={validHeight}
+        imageX={imageX}
+        imageY={imageY}
+        displayedWidth={displayedWidth}
+        displayedHeight={displayedHeight}
+        canvasBackgroundColor={canvasBackgroundColor}
+        image={image}
+        onBackgroundMouseMove={handleBackgroundMouseMove}
+        onBackgroundClick={handleBackgroundClick}
+        onBackgroundDblClick={handleBackgroundDblClick}
+        onBackgroundTap={handleBackgroundTap}
+      />
 
-      {/* Static Layer: Non-selected, non-dragged - redraws only on selection/drag-end */}
-      <Layer {...layerTransform} listening={true}>
-        {staticSeats.map((seat) => {
-          const pos =
-            seat.id === draggedSeatId && dragPosition
-              ? dragPosition
-              : { x: seat.x, y: seat.y };
-          const { x, y } = percentageToStage(pos.x, pos.y);
-          const colors = getSeatMarkerColors(seat);
-          return (
-            <MemoizedSeatMarkerCanvas
-              key={seat.id}
-              seat={seat}
-              position={{ x, y }}
-              selection={{ isSelected: selectedSeatIdSet.has(seat.id) }}
-              interaction={{
-                isPlacingSeats,
-                isPanning,
-                isSpacePressed,
-                isPlacingSections,
-                selectedShapeTool,
-              }}
-              handlers={{
-                onSeatClick,
-                onSeatDragStart: handleSeatDragStart,
-                onSeatDragMove: handleSeatDragMove,
-                onSeatDragEnd: handleSeatDragEnd,
-                onShapeTransform: onSeatShapeTransform,
-              }}
-              canvas={{
-                layerToPercentage,
-                imageWidth: displayedWidth,
-                imageHeight: displayedHeight,
-              }}
-              display={{
-                readOnly,
-                disableHoverAnimation,
-                useLowDetail,
-                colors,
-              }}
-            />
-          );
-        })}
-        {designMode === "section-level" &&
-          staticSections.map((section) => {
-            const pos =
-              section.id === draggedSectionId && dragPosition
-                ? dragPosition
-                : { x: section.x, y: section.y };
-            const { x, y } = percentageToStage(pos.x, pos.y);
-            return (
-              <MemoizedSectionMarkerCanvas
-                key={section.id}
-                section={section}
-                position={{ x, y }}
-                selection={{
-                  isSelected: selectedSectionIdSet.has(section.id),
-                }}
-                interaction={{
-                  isPlacingSections,
-                  isPanning,
-                  isSpacePressed,
-                  isPlacingSeats,
-                  selectedShapeTool,
-                }}
-                handlers={{
-                  onSectionClick,
-                  onSectionDoubleClick,
-                  onSectionDragEnd: handleSectionDragEnd,
-                  onSectionDragMove: handleSectionDragMove,
-                  onSectionDragStart: handleSectionDragStart,
-                  onShapeTransform: onSectionShapeTransform,
-                }}
-                canvas={{
-                  layerToPercentage,
-                  imageWidth: displayedWidth,
-                  imageHeight: displayedHeight,
-                }}
-                display={{
-                  readOnly,
-                  disableHoverAnimation,
-                  useLowDetail,
-                  colors: getSectionMarkerColors(section),
-                }}
-              />
-            );
-          })}
-        {visibleShapeOverlays.map((overlay) => {
-          const isSelected = selectedOverlayId === overlay.id;
-          return (
-            <MemoizedShapeOverlayCanvas
-              key={overlay.id}
-              overlay={overlay}
-              selection={{ isSelected }}
-              handlers={{ onShapeOverlayClick }}
-              canvas={{
-                imageWidth: displayedWidth,
-                imageHeight: displayedHeight,
-                percentageToStage,
-              }}
-              interaction={{
-                isPanning,
-                isSpacePressed,
-                selectedShapeTool,
-                isPlacingSeats,
-                isPlacingSections,
-              }}
-              display={{ disableHoverAnimation }}
-            />
-          );
-        })}
-      </Layer>
+      <StaticMarkersLayer
+        layer={{ layerTransform }}
+        data={{
+          staticSeats,
+          staticSections,
+          visibleShapeOverlays,
+          designMode,
+        }}
+        selection={{
+          selectedSeatIdSet,
+          selectedSectionIdSet,
+          selectedOverlayId,
+        }}
+        canvas={{
+          percentageToStage,
+          layerToPercentage,
+          displayedWidth,
+          displayedHeight,
+        }}
+        display={{
+          useLowDetail,
+          disableHoverAnimation,
+          readOnly,
+          selectedShapeTool,
+        }}
+        drag={{
+          draggedSeatId,
+          draggedSectionId,
+          dragPosition,
+        }}
+        handlers={{
+          isPlacingSeats,
+          isPlacingSections,
+          isPanning,
+          isSpacePressed,
+          onSeatClick,
+          onSectionClick,
+          onSectionDoubleClick,
+          onSeatDragEnd: handleSeatDragEnd,
+          onSeatDragStart: handleSeatDragStart,
+          onSeatDragMove: handleSeatDragMove,
+          onSectionDragEnd: handleSectionDragEnd,
+          onSectionDragMove: handleSectionDragMove,
+          onSectionDragStart: handleSectionDragStart,
+          onSeatShapeTransform: onSeatShapeTransform,
+          onSectionShapeTransform: onSectionShapeTransform,
+          onShapeOverlayClick,
+        }}
+        colors={{
+          getSeatMarkerColors,
+          getSectionMarkerColors,
+        }}
+      />
 
-      {/* Interactive Layer: All selected seats/sections + Transformers; each shows its own box, redraw during transform for real-time visualization */}
-      <Layer {...layerTransform} listening={true}>
-        {selectedSeats.map((seat) => {
-          const pos =
-            seat.id === draggedSeatId && dragPosition
-              ? dragPosition
-              : { x: seat.x, y: seat.y };
-          const { x, y } = percentageToStage(pos.x, pos.y);
-          const colors = getSeatMarkerColors(seat);
-          return (
-            <MemoizedSeatMarkerCanvas
-              key={seat.id}
-              seat={seat}
-              position={{ x, y }}
-              selection={{ isSelected: true }}
-              interaction={{
-                isPlacingSeats,
-                isPanning,
-                isSpacePressed,
-                isPlacingSections,
-                selectedShapeTool,
-              }}
-              handlers={{
-                onSeatClick,
-                onSeatDragStart: handleSeatDragStart,
-                onSeatDragMove: handleSeatDragMove,
-                onSeatDragEnd: handleSeatDragEnd,
-                onShapeTransform: onSeatShapeTransform,
-                onTransformProgress: handleTransformProgress,
-              }}
-              canvas={{
-                layerToPercentage,
-                imageWidth: displayedWidth,
-                imageHeight: displayedHeight,
-              }}
-              display={{
-                readOnly,
-                disableHoverAnimation,
-                useLowDetail: false,
-                colors,
-              }}
-            />
-          );
-        })}
-        {designMode === "section-level" &&
-          selectedSections.map((section) => {
-            const pos =
-              section.id === draggedSectionId && dragPosition
-                ? dragPosition
-                : { x: section.x, y: section.y };
-            const { x, y } = percentageToStage(pos.x, pos.y);
-            return (
-              <MemoizedSectionMarkerCanvas
-                key={section.id}
-                section={section}
-                position={{ x, y }}
-                selection={{
-                  isSelected: true,
-                }}
-                interaction={{
-                  isPlacingSections,
-                  isPanning,
-                  isSpacePressed,
-                  isPlacingSeats,
-                  selectedShapeTool,
-                }}
-                handlers={{
-                  onSectionClick,
-                  onSectionDoubleClick,
-                  onSectionDragEnd: handleSectionDragEnd,
-                  onSectionDragMove: handleSectionDragMove,
-                  onSectionDragStart: handleSectionDragStart,
-                  onShapeTransform: onSectionShapeTransform,
-                  onTransformProgress: handleTransformProgress,
-                }}
-                canvas={{
-                  layerToPercentage,
-                  imageWidth: displayedWidth,
-                  imageHeight: displayedHeight,
-                }}
-                display={{
-                  readOnly,
-                  disableHoverAnimation,
-                  useLowDetail: false,
-                  colors: getSectionMarkerColors(section),
-                }}
-              />
-            );
-          })}
-        {/* Dragged shape when not in selection (e.g. mid-drag before select-on-drop) */}
-        {draggedSeat &&
-          draggedSeatId &&
-          !selectedSeatIdSet.has(draggedSeatId) &&
-          (() => {
-            const pos = dragPosition ?? { x: draggedSeat.x, y: draggedSeat.y };
-            const { x, y } = percentageToStage(pos.x, pos.y);
-            const colors = getSeatMarkerColors(draggedSeat);
-            return (
-              <MemoizedSeatMarkerCanvas
-                key={draggedSeat.id}
-                seat={draggedSeat}
-                position={{ x, y }}
-                selection={{ isSelected: false }}
-                interaction={{
-                  isPlacingSeats,
-                  isPanning,
-                  isSpacePressed,
-                  isPlacingSections,
-                  selectedShapeTool,
-                }}
-                handlers={{
-                  onSeatClick,
-                  onSeatDragStart: handleSeatDragStart,
-                  onSeatDragMove: handleSeatDragMove,
-                  onSeatDragEnd: handleSeatDragEnd,
-                  onShapeTransform: onSeatShapeTransform,
-                }}
-                canvas={{
-                  imageWidth: displayedWidth,
-                  imageHeight: displayedHeight,
-                }}
-                display={{
-                  readOnly,
-                  disableHoverAnimation,
-                  useLowDetail: false,
-                  colors,
-                  forceDraggable: true,
-                }}
-              />
-            );
-          })()}
-        {designMode === "section-level" &&
-          draggedSection &&
-          draggedSectionId &&
-          !selectedSectionIdSet.has(draggedSectionId) &&
-          (() => {
-            const pos = dragPosition ?? {
-              x: draggedSection.x,
-              y: draggedSection.y,
-            };
-            const { x, y } = percentageToStage(pos.x, pos.y);
-            return (
-              <MemoizedSectionMarkerCanvas
-                key={draggedSection.id}
-                section={draggedSection}
-                position={{ x, y }}
-                selection={{
-                  isSelected: false,
-                }}
-                interaction={{
-                  isPlacingSections,
-                  isPanning,
-                  isSpacePressed,
-                  isPlacingSeats,
-                  selectedShapeTool,
-                }}
-                handlers={{
-                  onSectionClick,
-                  onSectionDoubleClick,
-                  onSectionDragEnd: handleSectionDragEnd,
-                  onSectionDragMove: handleSectionDragMove,
-                  onSectionDragStart: handleSectionDragStart,
-                  onShapeTransform: onSectionShapeTransform,
-                }}
-                canvas={{
-                  layerToPercentage,
-                  imageWidth: displayedWidth,
-                  imageHeight: displayedHeight,
-                }}
-                display={{
-                  readOnly,
-                  disableHoverAnimation,
-                  useLowDetail: false,
-                  colors: getSectionMarkerColors(draggedSection),
-                  forceDraggable: true,
-                }}
-              />
-            );
-          })()}
-      </Layer>
+      <InteractiveMarkersLayer
+        layerTransform={layerTransform}
+        selectedSeats={selectedSeats}
+        selectedSections={selectedSections}
+        draggedSeat={draggedSeat}
+        draggedSection={draggedSection}
+        designMode={designMode}
+        percentageToStage={percentageToStage}
+        layerToPercentage={layerToPercentage}
+        displayedWidth={displayedWidth}
+        displayedHeight={displayedHeight}
+        disableHoverAnimation={disableHoverAnimation}
+        readOnly={readOnly}
+        selectedShapeTool={selectedShapeTool}
+        dragPosition={dragPosition}
+        handlers={{
+          isPlacingSeats,
+          isPlacingSections,
+          isPanning,
+          isSpacePressed,
+          onSeatClick,
+          onSectionClick,
+          onSectionDoubleClick,
+          onSeatDragEnd: handleSeatDragEnd,
+          onSeatDragStart: handleSeatDragStart,
+          onSeatDragMove: handleSeatDragMove,
+          onSectionDragEnd: handleSectionDragEnd,
+          onSectionDragMove: handleSectionDragMove,
+          onSectionDragStart: handleSectionDragStart,
+          onSeatShapeTransform: onSeatShapeTransform,
+          onSectionShapeTransform: onSectionShapeTransform,
+          onShapeOverlayClick,
+          onTransformProgress: handleTransformProgress,
+        }}
+        getSeatMarkerColors={getSeatMarkerColors}
+        getSectionMarkerColors={getSectionMarkerColors}
+      />
 
-      {/* Overlay Layer: Preview shapes, freeform lines, etc. */}
-      <Layer
-        {...layerTransform}
-        listening={true}
-        onClick={handleOverlayLayerClick}
-      >
-        {/* Transparent overlay - passes through to lower layers for seat clicks */}
-        <Rect
-          x={imageX}
-          y={imageY}
-          width={displayedWidth}
-          height={displayedHeight}
-          fill="transparent"
-          listening={false}
-        />
+      <OverlayLayer
+        layerTransform={layerTransform}
+        imageX={imageX}
+        imageY={imageY}
+        displayedWidth={displayedWidth}
+        displayedHeight={displayedHeight}
+        selectedShapeTool={selectedShapeTool}
+        freeformPath={freeformPath}
+        freeformHoverPos={freeformHoverPos}
+        isDrawingShape={isDrawingShape}
+        drawStartPos={drawStartPos}
+        drawCurrentPos={drawCurrentPos}
+        percentageToStage={percentageToStage}
+        previewShapeRef={previewShapeRef}
+        onOverlayLayerClick={handleOverlayLayerClick}
+      />
 
-        {/* Freeform preview: lines between points + dashed line to cursor */}
-        {selectedShapeTool === PlacementShapeType.FREEFORM &&
-          freeformPath.length > 0 && (
-            <FreeformPreviewLines
-              freeformPath={freeformPath}
-              freeformHoverPos={freeformHoverPos}
-              percentageToStage={percentageToStage}
-            />
-          )}
-
-        {/* Preview shape while drawing - for other shape types */}
-        {isDrawingShape &&
-          drawStartPos &&
-          drawCurrentPos &&
-          selectedShapeTool &&
-          selectedShapeTool !== PlacementShapeType.FREEFORM && (
-            <DrawingPreviewShape
-              drawStartPos={drawStartPos}
-              drawCurrentPos={drawCurrentPos}
-              selectedShapeTool={selectedShapeTool}
-              percentageToStage={percentageToStage}
-              displayedWidth={displayedWidth}
-              displayedHeight={displayedHeight}
-              previewShapeRef={previewShapeRef}
-            />
-          )}
-      </Layer>
-
-      {/* Selection marquee (stage coordinates, on top) */}
       {selectionStart && selectionCurrent && (
-        <Layer listening={false}>
-          <Rect
-            x={Math.min(selectionStart.x, selectionCurrent.x)}
-            y={Math.min(selectionStart.y, selectionCurrent.y)}
-            width={Math.abs(selectionCurrent.x - selectionStart.x)}
-            height={Math.abs(selectionCurrent.y - selectionStart.y)}
-            stroke={MARQUEE_STROKE}
-            strokeWidth={1}
-            dash={[6, 4]}
-            fill={MARQUEE_FILL}
-          />
-        </Layer>
+        <SelectionMarqueeLayer
+          selectionStart={selectionStart}
+          selectionCurrent={selectionCurrent}
+        />
       )}
     </Stage>
   );

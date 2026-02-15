@@ -108,8 +108,7 @@ export function SectionMarker({
 
   // Heat map: dark blue (0% sold) -> grey (100% sold)
   const soldCount = statusCounts["sold"] ?? 0;
-  const soldRatio =
-    totalSeats > 0 ? Math.min(1, soldCount / totalSeats) : 0;
+  const soldRatio = totalSeats > 0 ? Math.min(1, soldCount / totalSeats) : 0;
   const heatMapFill = getSectionHeatMapFill(
     soldRatio,
     markerFillTransparency,
@@ -135,40 +134,47 @@ export function SectionMarker({
       ? undefined
       : configStroke!,
   };
-  /** Brighter colors for mouse-over state (heat map uses slightly more opaque fill on hover) */
-  const hoverColors = {
-    fill: hasShape
-      ? heatMapHoverFill
-      : !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
-        ? configFill!
-        : statusColor.fill === GRAY_FILL
-          ? GRAY_HOVER_FILL
-          : statusColor.fill === BLUE_FILL
-            ? BLUE_HOVER_FILL
-            : statusColor.fill === AMBER_FILL
-              ? AMBER_HOVER_FILL
-              : statusColor.fill === PURPLE_FILL
-                ? PURPLE_HOVER_FILL
-                : statusColor.fill === RED_FILL
-                  ? RED_HOVER_FILL
-                  : GREEN_HOVER_FILL,
-    stroke: hasShape
-      ? "rgba(30, 58, 138, 0.6)"
-      : !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
-        ? configStroke!
-        : statusColor.stroke === GRAY_STROKE
-          ? GRAY_FILL
-          : statusColor.stroke === BLUE_STROKE
-            ? BLUE_FILL
-            : statusColor.stroke === AMBER_STROKE
-              ? AMBER_FILL
-              : statusColor.stroke === PURPLE_STROKE
-                ? PURPLE_FILL
-                : statusColor.stroke === RED_STROKE
-                  ? RED_FILL
-                  : GREEN_HOVER_STROKE,
+
+  /** Map status fill to hover fill variant */
+  const getStatusHoverFill = (fill: string) => {
+    if (fill === GRAY_FILL) return GRAY_HOVER_FILL;
+    if (fill === BLUE_FILL) return BLUE_HOVER_FILL;
+    if (fill === AMBER_FILL) return AMBER_HOVER_FILL;
+    if (fill === PURPLE_FILL) return PURPLE_HOVER_FILL;
+    if (fill === RED_FILL) return RED_HOVER_FILL;
+    return GREEN_HOVER_FILL;
   };
+  /** Map status stroke to hover stroke variant */
+  const getStatusHoverStroke = (stroke: string) => {
+    if (stroke === GRAY_STROKE) return GRAY_FILL;
+    if (stroke === BLUE_STROKE) return BLUE_FILL;
+    if (stroke === AMBER_STROKE) return AMBER_FILL;
+    if (stroke === PURPLE_STROKE) return PURPLE_FILL;
+    if (stroke === RED_STROKE) return RED_FILL;
+    return GREEN_HOVER_STROKE;
+  };
+
+  /** Brighter colors for mouse-over state (heat map uses slightly more opaque fill on hover) */
+  const getHoverFill = () => {
+    if (hasShape) return heatMapHoverFill;
+    if (!isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)) return configFill!;
+    return getStatusHoverFill(statusColor.fill);
+  };
+  const getHoverStroke = () => {
+    if (hasShape) return "rgba(30, 58, 138, 0.6)";
+    if (!isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE))
+      return configStroke!;
+    return getStatusHoverStroke(statusColor.stroke);
+  };
+  const hoverColors = { fill: getHoverFill(), stroke: getHoverStroke() };
   const isHover = isHovered || isHoveredState;
+
+  /** Effective fill/stroke for no-shape label (hover vs default, with status fallback) */
+  const labelFill =
+    (isHover ? hoverColors.fill : shapeCodeColors.fill) ?? statusColor.fill;
+  const labelStroke =
+    (isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
+    statusColor.stroke;
 
   const labelTextFill = isDarkMode ? LABEL_TEXT_FILL_DARK : LABEL_TEXT_FILL;
   const labelBackgroundFill = isDarkMode
@@ -177,7 +183,9 @@ export function SectionMarker({
   const labelBackgroundStroke = isDarkMode
     ? LABEL_BACKGROUND_STROKE_DARK
     : LABEL_BACKGROUND_STROKE;
-  const labelShadowColor = isDarkMode ? LABEL_SHADOW_COLOR_DARK : LABEL_SHADOW_COLOR;
+  const labelShadowColor = isDarkMode
+    ? LABEL_SHADOW_COLOR_DARK
+    : LABEL_SHADOW_COLOR;
 
   const baseOpacity = markerFillTransparency;
   const hoverOpacity = 0.3;
@@ -287,16 +295,14 @@ export function SectionMarker({
             {renderShape(
               parsedShape,
               {
-                fill: hasShape ? heatMapFill : shapeCodeColors.fill,
-                stroke: hasShape
-                  ? "rgba(30, 58, 138, 0.4)"
-                  : shapeCodeColors.stroke,
+                fill: heatMapFill,
+                stroke: "rgba(30, 58, 138, 0.4)",
               },
               imageWidth,
               imageHeight,
               strokeWidth,
               1,
-              { hoverColors, isHover }
+              { hoverColors, isHover },
             )}
           </Group>
           <Text
@@ -329,14 +335,8 @@ export function SectionMarker({
           padding={8}
           align="center"
           verticalAlign="middle"
-          backgroundFill={
-            (isHover ? hoverColors.fill : shapeCodeColors.fill) ??
-            statusColor.fill
-          }
-          backgroundStroke={
-            (isHover ? hoverColors.stroke : shapeCodeColors.stroke) ??
-            statusColor.stroke
-          }
+          backgroundFill={labelFill}
+          backgroundStroke={labelStroke}
           backgroundStrokeWidth={strokeWidth}
           cornerRadius={4}
           x={0}

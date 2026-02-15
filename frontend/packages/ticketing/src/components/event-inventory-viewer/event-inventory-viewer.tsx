@@ -314,50 +314,52 @@ export function EventInventoryViewer({
       ) : (
         <>
           <EventInventoryStage
-            isDarkMode={isDarkMode}
-            containerRef={containerRef}
-            stageRef={stageRef}
-            validWidth={validWidth}
-            validHeight={validHeight}
-            centerX={centerX}
-            centerY={centerY}
-            imageX={imageX}
-            imageY={imageY}
-            displayedWidth={displayedWidth}
-            displayedHeight={displayedHeight}
-            image={image}
-            zoomLevel={zoomLevel}
-            panOffset={panOffset}
-            isSpacePressed={isSpacePressed}
-            isPanning={isPanning}
-            hoveredSeatId={hoveredSeatId}
+            refs={{ containerRef, stageRef }}
+            stage={{ validWidth, validHeight }}
+            view={{
+              centerX,
+              centerY,
+              imageX,
+              imageY,
+              displayedWidth,
+              displayedHeight,
+              zoomLevel,
+              panOffset,
+              canvasBackgroundColor,
+            }}
+            display={{ isDarkMode, image }}
+            interaction={{ isSpacePressed, isPanning }}
+            hover={{ hoveredSeatId, hoveredSectionId }}
             layout={layout}
-            selectedSectionId={selectedSectionId}
-            sections={sections}
-            sectionStats={sectionStats}
-            displayedSeats={displayedSeats}
-            seatStatusMap={seatStatusMap}
-            locationStatusMap={locationStatusMap}
-            sectionNameMap={sectionNameMap}
-            selectedSeatIds={selectedSeatIds}
-            hoveredSectionId={hoveredSectionId}
-            percentageToStage={percentageToStage}
-            onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-            setHoveredSectionId={setHoveredSectionId}
-            setHoveredSectionData={setHoveredSectionData}
-            setHoveredSeatPosition={setHoveredSeatPosition}
-            setHoveredSeatId={setHoveredSeatId}
-            setHoveredSeatData={setHoveredSeatData}
-            updatePopoverPosition={updatePopoverPosition}
-            setSelectedSectionId={setSelectedSectionId}
-            setZoomLevel={setZoomLevel}
-            setPanOffset={setPanOffset}
-            onSeatClick={onSeatClick}
-            canvasBackgroundColor={canvasBackgroundColor}
+            data={{
+              sections,
+              sectionStats,
+              displayedSeats,
+              seatStatusMap,
+              locationStatusMap,
+              sectionNameMap,
+            }}
+            selection={{ selectedSectionId, selectedSeatIds }}
+            coords={{ percentageToStage }}
+            handlers={{
+              onWheel: handleWheel,
+              onMouseDown: handleMouseDown,
+              onMouseMove: handleMouseMove,
+              onMouseUp: handleMouseUp,
+              onMouseLeave: handleMouseLeave,
+              onSeatClick,
+            }}
+            setters={{
+              setHoveredSectionId,
+              setHoveredSectionData,
+              setHoveredSeatPosition,
+              setHoveredSeatId,
+              setHoveredSeatData,
+              updatePopoverPosition,
+              setSelectedSectionId,
+              setZoomLevel,
+              setPanOffset,
+            }}
           />
 
           {layout.design_mode === "section-level" &&

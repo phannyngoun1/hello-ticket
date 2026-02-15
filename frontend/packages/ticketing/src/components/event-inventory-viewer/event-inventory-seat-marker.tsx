@@ -41,35 +41,36 @@ import {
 export interface SeatMarkerProps {
   seat: Seat;
   eventSeat?: EventSeat;
-  x: number;
-  y: number;
-  isHovered: boolean;
-  isSpacePressed: boolean;
-  isSelected?: boolean;
-  imageWidth: number;
-  imageHeight: number;
-  markerFillTransparency?: number;
-  onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseLeave: () => void;
-  onClick: () => void;
+  position: { x: number; y: number };
+  display: {
+    isHovered: boolean;
+    isSpacePressed: boolean;
+    isSelected?: boolean;
+    imageWidth: number;
+    imageHeight: number;
+    markerFillTransparency?: number;
+  };
+  handlers: {
+    onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseLeave: () => void;
+    onClick: () => void;
+  };
 }
 
 export function SeatMarker({
   seat,
   eventSeat,
-  x,
-  y,
-  isHovered,
-  isSpacePressed,
-  isSelected = false,
-  onMouseEnter,
-  onMouseMove,
-  onMouseLeave,
-  onClick,
-  imageWidth,
-  imageHeight,
-  markerFillTransparency = 1.0,
+  position: { x, y },
+  display: {
+    isHovered,
+    isSpacePressed,
+    isSelected = false,
+    imageWidth,
+    imageHeight,
+    markerFillTransparency = 1.0,
+  },
+  handlers: { onMouseEnter, onMouseMove, onMouseLeave, onClick },
 }: SeatMarkerProps) {
   const shapeGroupRef = useRef<Konva.Group>(null);
   const [isHoveredState, setIsHoveredState] = useState(false);
@@ -107,35 +108,34 @@ export function SeatMarker({
       ? undefined
       : configStroke!,
   };
-  /** Brighter colors for mouse-over state */
-  const hoverColors = {
-    fill: !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
-      ? configFill!
-      : statusColors.fill === GRAY_FILL
-        ? GRAY_HOVER_FILL
-        : statusColors.fill === BLUE_FILL
-          ? BLUE_HOVER_FILL
-          : statusColors.fill === AMBER_FILL
-            ? AMBER_HOVER_FILL
-            : statusColors.fill === PURPLE_FILL
-              ? PURPLE_HOVER_FILL
-              : statusColors.fill === RED_FILL
-                ? RED_HOVER_FILL
-                : GREEN_HOVER_FILL,
-    stroke: !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
-      ? configStroke!
-      : statusColors.stroke === GRAY_STROKE
-        ? GRAY_FILL
-        : statusColors.stroke === BLUE_STROKE
-          ? BLUE_FILL
-          : statusColors.stroke === AMBER_STROKE
-            ? AMBER_FILL
-            : statusColors.stroke === PURPLE_STROKE
-              ? PURPLE_FILL
-              : statusColors.stroke === RED_STROKE
-                ? RED_FILL
-                : GREEN_HOVER_STROKE,
+
+  /** Map status fill to hover fill variant */
+  const getStatusHoverFill = (fill: string) => {
+    if (fill === GRAY_FILL) return GRAY_HOVER_FILL;
+    if (fill === BLUE_FILL) return BLUE_HOVER_FILL;
+    if (fill === AMBER_FILL) return AMBER_HOVER_FILL;
+    if (fill === PURPLE_FILL) return PURPLE_HOVER_FILL;
+    if (fill === RED_FILL) return RED_HOVER_FILL;
+    return GREEN_HOVER_FILL;
   };
+  /** Map status stroke to hover stroke variant */
+  const getStatusHoverStroke = (stroke: string) => {
+    if (stroke === GRAY_STROKE) return GRAY_FILL;
+    if (stroke === BLUE_STROKE) return BLUE_FILL;
+    if (stroke === AMBER_STROKE) return AMBER_FILL;
+    if (stroke === PURPLE_STROKE) return PURPLE_FILL;
+    if (stroke === RED_STROKE) return RED_FILL;
+    return GREEN_HOVER_STROKE;
+  };
+
+  /** Brighter colors for mouse-over state */
+  const hoverFill = !isDefaultOrEmpty(configFill, DEFAULT_SHAPE_FILL)
+    ? configFill!
+    : getStatusHoverFill(statusColors.fill);
+  const hoverStroke = !isDefaultOrEmpty(configStroke, DEFAULT_SHAPE_STROKE)
+    ? configStroke!
+    : getStatusHoverStroke(statusColors.stroke);
+  const hoverColors = { fill: hoverFill, stroke: hoverStroke };
 
   const isHover = isHovered || isHoveredState;
   const fillColor = isSelected
@@ -151,13 +151,15 @@ export function SeatMarker({
   const hoverOpacity = 0.3;
   const selectedOpacity = 1;
 
-  const currentOpacity = isSelected
-    ? selectedOpacity
-    : isHover
-      ? hoverOpacity
-      : baseOpacity;
+  let currentOpacity: number;
+  if (isSelected) currentOpacity = selectedOpacity;
+  else if (isHover) currentOpacity = hoverOpacity;
+  else currentOpacity = baseOpacity;
 
-  const strokeWidth = isSelected ? 3 : isHover ? 1.5 : 1;
+  let strokeWidth: number;
+  if (isSelected) strokeWidth = 3;
+  else if (isHover) strokeWidth = 1.5;
+  else strokeWidth = 1;
 
   useEffect(() => {
     const shapeGroup = shapeGroupRef.current;
@@ -205,10 +207,9 @@ export function SeatMarker({
     ? getSeatStatusTransparency(eventSeat.status)
     : 0;
 
-  // Calculate checkmark size based on seat dimensions
-  const checkmarkRadius = parsedShape?.width
-    ? Math.min(Math.max(parsedShape.width * 0.15, 6), 12)
-    : 8;
+  // Calculate checkmark size based on seat dimensions (clamped 6–12, default 8)
+  const rawCheckmarkSize = parsedShape?.width ? parsedShape.width * 0.15 : 8;
+  const checkmarkRadius = Math.min(Math.max(rawCheckmarkSize, 6), 12);
   const checkmarkFontSize = checkmarkRadius * 1.75;
 
   return (

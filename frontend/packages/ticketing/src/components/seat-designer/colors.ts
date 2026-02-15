@@ -180,6 +180,40 @@ export function getSeatStatusColor(
 }
 
 /**
+ * Get marker colors for a seat (Designer usage)
+ * Uses shape fill/stroke when set; falls back to type-based default
+ */
+export function getSeatMarkerColors(seat: {
+  seat: { seatType: string };
+  shape?: { fillColor?: string; strokeColor?: string };
+}): { fill: string; stroke: string } {
+  const defaults = getSeatTypeColors(seat.seat.seatType);
+  const fill = seat.shape?.fillColor?.trim();
+  const stroke = seat.shape?.strokeColor?.trim();
+  return {
+    fill: fill || defaults.fill,
+    stroke: stroke || defaults.stroke,
+  };
+}
+
+/**
+ * Get marker colors for a section (Designer usage)
+ * Uses shape fill/stroke when set; falls back to default
+ */
+export function getSectionMarkerColors(section: {
+  shape?: { fillColor?: string; strokeColor?: string };
+}): { fill: string; stroke: string } {
+  const defaultFill = "#60a5fa";
+  const defaultStroke = "#2563eb";
+  const fill = section.shape?.fillColor?.trim();
+  const stroke = section.shape?.strokeColor?.trim();
+  return {
+    fill: fill || defaultFill,
+    stroke: stroke || defaultStroke,
+  };
+}
+
+/**
  * Get canvas background color variant
  * @param variant The background variant (default, light, dark)
  * @returns Hex color string
