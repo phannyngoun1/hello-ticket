@@ -97,8 +97,6 @@ export interface SectionDetailViewProps {
   /** Multi-selection: all selected seat ids */
   selectedSeatIds?: string[];
   onSelectSeatIds?: (ids: string[]) => void;
-  /** Anchor seat ID for alignment reference */
-  anchorSeatId?: string | null;
   placementShape: PlacementShape;
   onPlacementShapeChange: (shape: PlacementShape) => void;
   selectedShapeTool?: PlacementShapeType | null;
@@ -213,7 +211,6 @@ export function SectionDetailView({
   onMarkersInRect,
   selectedSeatIds = [],
   onSelectSeatIds,
-  anchorSeatId,
   onAlign,
   seatEditControls,
   canvasBackgroundColor = "#e5e7eb",
@@ -347,6 +344,60 @@ export function SectionDetailView({
     markerFillTransparency,
     onMarkerFillTransparencyChange,
   ]);
+
+  const canvasProps = {
+    image: {
+      imageUrl: viewingSection.imageUrl ?? "",
+      showImageUpload: false,
+      imageUploadId: `section-image-${viewingSection.id}`,
+      imageUploadLabel: `Upload Floor Plan Image for ${viewingSection.name}`,
+      onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) =>
+        onSectionImageSelect(viewingSection.id, e),
+      isUploadingImage,
+    },
+    container: {
+      containerRef,
+      dimensionsReady,
+      containerDimensions,
+      containerStyle: "flex" as const,
+    },
+    seats: {
+      seats: displayedSeats,
+      selectedSeatId: selectedSeat?.id ?? null,
+      selectedSeatIds,
+    },
+    view: {
+      zoomLevel,
+      panOffset,
+      canvasBackgroundColor: effectiveCanvasColor,
+    },
+    toolbar: {
+      isPlacingSeats,
+      readOnly,
+      selectedShapeTool: selectedShapeTool ?? null,
+      shapeOverlays,
+      selectedOverlayId,
+      showGrid,
+      gridSize,
+    },
+    handlers: {
+      onSeatClick,
+      onSeatDragEnd,
+      onBatchSeatDragEnd,
+      onSeatShapeTransform,
+      onImageClick,
+      onDeselect,
+      onShapeDraw,
+      onShapeOverlayClick,
+      onMarkersInRect,
+      onWheel,
+      onPan,
+      onZoomIn,
+      onZoomOut,
+      onResetZoom,
+    },
+  };
+
   return (
     <Card className={className}>
       <div className={innerClassName}>
@@ -467,19 +518,25 @@ export function SectionDetailView({
         {onShapeToolSelect && (
           <div className="shrink-0">
             <SeatDesignToolbar
-              selectedShapeType={selectedShapeTool || null}
-              onShapeTypeSelect={onShapeToolSelect}
-              selectedSeat={selectedSeat}
-              onSeatView={(seat) => {
-                onSetViewingSeat(seat);
+              shape={{
+                selectedShapeType: selectedShapeTool || null,
+                onShapeTypeSelect: onShapeToolSelect,
               }}
-              onSeatEdit={(seat) => {
-                onEditSeat?.(seat);
+              selection={{
+                selectedSeat,
+                selectedSection: undefined,
+                selectedSeatCount: selectedSeatIds.length,
+                selectedSectionCount: 0,
               }}
-              onSeatDelete={onDeleteSeat}
-              onSeatShapeStyleChange={onSeatShapeStyleChange}
-              onAlign={onAlign}
-              selectedSeatCount={selectedSeatIds.length}
+              actions={{
+                onSeatView: (seat) => onSetViewingSeat(seat),
+                onSeatEdit: (seat) => onEditSeat?.(seat),
+                onSeatDelete: onDeleteSeat,
+              }}
+              styleActions={{
+                onSeatShapeStyleChange,
+                onAlign,
+              }}
               seatPlacement={
                 selectedSeatIds.length <= 1
                   ? {
@@ -506,45 +563,12 @@ export function SectionDetailView({
           }
         >
           <SeatDesignerCanvas
-            imageUrl={viewingSection.imageUrl ?? ""}
-            showImageUpload={false}
-            imageUploadId={`section-image-${viewingSection.id}`}
-            imageUploadLabel={`Upload Floor Plan Image for ${viewingSection.name}`}
-            onImageUpload={(e) => onSectionImageSelect(viewingSection.id, e)}
-            isUploadingImage={isUploadingImage}
-            containerRef={containerRef}
-            dimensionsReady={dimensionsReady}
-            containerDimensions={containerDimensions}
-            containerStyle="flex"
-            canvasBackgroundColor={effectiveCanvasColor}
-            seats={displayedSeats}
-            selectedSeatId={selectedSeat?.id ?? null}
-            selectedSeatIds={selectedSeatIds}
-            anchorSeatId={anchorSeatId}
-            anchorSectionId={null}
-            isPlacingSeats={isPlacingSeats}
-            readOnly={readOnly}
-            zoomLevel={zoomLevel}
-            panOffset={panOffset}
-            onSeatClick={onSeatClick}
-            onSeatDragEnd={onSeatDragEnd}
-            onBatchSeatDragEnd={onBatchSeatDragEnd}
-            onSeatShapeTransform={onSeatShapeTransform}
-            onImageClick={onImageClick}
-            onDeselect={onDeselect}
-            onShapeDraw={onShapeDraw}
-            onShapeOverlayClick={onShapeOverlayClick}
-            onMarkersInRect={onMarkersInRect}
-            onWheel={onWheel}
-            onPan={onPan}
-            onZoomIn={onZoomIn}
-            onZoomOut={onZoomOut}
-            onResetZoom={onResetZoom}
-            selectedShapeTool={selectedShapeTool ?? null}
-            shapeOverlays={shapeOverlays}
-            selectedOverlayId={selectedOverlayId}
-            showGrid={showGrid}
-            gridSize={gridSize}
+            image={canvasProps.image}
+            container={canvasProps.container}
+            seats={canvasProps.seats}
+            view={canvasProps.view}
+            toolbar={canvasProps.toolbar}
+            handlers={canvasProps.handlers}
           />
         </div>
       </div>

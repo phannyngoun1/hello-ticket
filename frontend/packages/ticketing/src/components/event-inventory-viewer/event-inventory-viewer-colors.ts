@@ -53,8 +53,6 @@ export {
     HOVER_FILL,
     HOVER_STROKE,
     // Interaction & Selection
-    ANCHOR_FILL,
-    ANCHOR_STROKE,
     SELECTED_FILL,
     SELECTED_STROKE,
     MARQUEE_STROKE,

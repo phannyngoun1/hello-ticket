@@ -15,122 +15,148 @@ import type { PlacementShape } from "../types";
 import { PlacementShapeType } from "../types";
 
 export interface SeatDesignerCanvasProps {
-  /** When undefined/empty, renders blank canvas (simple floor mode) */
-  imageUrl?: string;
-  /** When true and no imageUrl, render ImageUploadCard instead of canvas. When false, render blank canvas. */
-  showImageUpload?: boolean;
-  imageUploadId?: string;
-  imageUploadLabel?: string;
-  onImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isUploadingImage?: boolean;
-  containerRef: React.RefObject<HTMLDivElement>;
-  dimensionsReady: boolean;
-  containerDimensions: { width: number; height: number };
-  /** "fixed" = 600px height (seat-level), "flex" = minHeight 600px flex-1 (section drill-down) */
-  containerStyle?: "fixed" | "flex";
-  seats: SeatMarker[];
-  selectedSeatId?: string | null;
-  selectedSeatIds?: string[];
-  anchorSeatId?: string | null;
-  anchorSectionId?: string | null;
-  isPlacingSeats: boolean;
-  readOnly?: boolean;
-  zoomLevel: number;
-  panOffset: { x: number; y: number };
-  onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
-  onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
-  onBatchSeatDragEnd?: (
-    updates: Array<{ id: string; x: number; y: number }>,
-  ) => void;
-  onSeatShapeTransform?: (
-    seatId: string,
-    shape: PlacementShape,
-    position?: { x: number; y: number },
-  ) => void;
-  onImageClick?: (
-    e: Konva.KonvaEventObject<MouseEvent>,
-    percentageCoords?: { x: number; y: number },
-  ) => void;
-  onDeselect?: () => void;
-  onShapeDraw?: (
-    shape: PlacementShape,
-    x: number,
-    y: number,
-    width?: number,
-    height?: number,
-  ) => void;
-  onShapeOverlayClick?: (overlayId: string) => void;
-  onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
-  onWheel?: (
-    e: Konva.KonvaEventObject<WheelEvent>,
-    isSpacePressed: boolean,
-  ) => void;
-  onPan?: (delta: { x: number; y: number }) => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onResetZoom: () => void;
-  selectedShapeTool?: PlacementShapeType | null;
-  shapeOverlays?: Array<{
-    id: string;
-    x: number;
-    y: number;
-    shape: PlacementShape;
-    onClick?: () => void;
-    onHover?: () => void;
-    label?: string;
-    isSelected?: boolean;
-    isPlacement?: boolean;
-  }>;
-  selectedOverlayId?: string | null;
-  /** Background color when no image (simple floor mode). Default #e5e7eb */
-  canvasBackgroundColor?: string;
-  /** Show grid lines on canvas */
-  showGrid?: boolean;
-  /** Grid size in percentage */
-  gridSize?: number;
+  image: {
+    /** When undefined/empty, renders blank canvas (simple floor mode) */
+    imageUrl?: string;
+    /** When true and no imageUrl, render ImageUploadCard instead of canvas. When false, render blank canvas. */
+    showImageUpload?: boolean;
+    imageUploadId?: string;
+    imageUploadLabel?: string;
+    onImageUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    isUploadingImage?: boolean;
+  };
+  container: {
+    containerRef: React.RefObject<HTMLDivElement>;
+    dimensionsReady: boolean;
+    containerDimensions: { width: number; height: number };
+    /** "fixed" = 600px height (seat-level), "flex" = minHeight 600px flex-1 (section drill-down) */
+    containerStyle?: "fixed" | "flex";
+  };
+  seats: {
+    seats: SeatMarker[];
+    selectedSeatId?: string | null;
+    selectedSeatIds?: string[];
+  };
+  view: {
+    zoomLevel: number;
+    panOffset: { x: number; y: number };
+    /** Background color when no image (simple floor mode). Default #e5e7eb */
+    canvasBackgroundColor?: string;
+  };
+  toolbar: {
+    isPlacingSeats: boolean;
+    readOnly?: boolean;
+    selectedShapeTool?: PlacementShapeType | null;
+    shapeOverlays?: Array<{
+      id: string;
+      x: number;
+      y: number;
+      shape: PlacementShape;
+      onClick?: () => void;
+      onHover?: () => void;
+      label?: string;
+      isSelected?: boolean;
+      isPlacement?: boolean;
+    }>;
+    selectedOverlayId?: string | null;
+    /** Show grid lines on canvas */
+    showGrid?: boolean;
+    /** Grid size in percentage */
+    gridSize?: number;
+  };
+  handlers: {
+    onSeatClick?: (seat: SeatMarker, event?: { shiftKey?: boolean }) => void;
+    onSeatDragEnd: (seatId: string, newX: number, newY: number) => void;
+    onBatchSeatDragEnd?: (
+      updates: Array<{ id: string; x: number; y: number }>,
+    ) => void;
+    onSeatShapeTransform?: (
+      seatId: string,
+      shape: PlacementShape,
+      position?: { x: number; y: number },
+    ) => void;
+    onImageClick?: (
+      e: Konva.KonvaEventObject<MouseEvent>,
+      percentageCoords?: { x: number; y: number },
+    ) => void;
+    onDeselect?: () => void;
+    onShapeDraw?: (
+      shape: PlacementShape,
+      x: number,
+      y: number,
+      width?: number,
+      height?: number,
+    ) => void;
+    onShapeOverlayClick?: (overlayId: string) => void;
+    onMarkersInRect?: (seatIds: string[], sectionIds: string[]) => void;
+    onWheel?: (
+      e: Konva.KonvaEventObject<WheelEvent>,
+      isSpacePressed: boolean,
+    ) => void;
+    onPan?: (delta: { x: number; y: number }) => void;
+    onZoomIn: () => void;
+    onZoomOut: () => void;
+    onResetZoom: () => void;
+  };
 }
 
 export function SeatDesignerCanvas({
-  imageUrl,
-  showImageUpload = false,
-  imageUploadId,
-  imageUploadLabel,
-  onImageUpload,
-  isUploadingImage = false,
-  containerRef,
-  dimensionsReady,
-  containerDimensions,
-  containerStyle = "fixed",
+  image,
+  container,
   seats,
-  selectedSeatId,
-  selectedSeatIds = [],
-  anchorSeatId,
-  anchorSectionId,
-  isPlacingSeats,
-  readOnly,
-  zoomLevel,
-  panOffset,
-  onSeatClick,
-  onSeatDragEnd,
-  onBatchSeatDragEnd,
-  onSeatShapeTransform,
-  onImageClick,
-  onDeselect,
-  onShapeDraw,
-  onShapeOverlayClick,
-  onMarkersInRect,
-  onWheel,
-  onPan,
-  onZoomIn,
-  onZoomOut,
-  onResetZoom,
-  selectedShapeTool,
-  shapeOverlays,
-  selectedOverlayId,
-  canvasBackgroundColor = "#e5e7eb",
-  showGrid = false,
-  gridSize = 5,
+  view,
+  toolbar,
+  handlers,
 }: SeatDesignerCanvasProps) {
+  const {
+    imageUrl,
+    showImageUpload = false,
+    imageUploadId,
+    imageUploadLabel,
+    onImageUpload,
+    isUploadingImage = false,
+  } = image;
+  const {
+    containerRef,
+    dimensionsReady,
+    containerDimensions,
+    containerStyle = "fixed",
+  } = container;
+  const {
+    seats: seatsList,
+    selectedSeatId,
+    selectedSeatIds = [],
+  } = seats;
+  const {
+    zoomLevel,
+    panOffset,
+    canvasBackgroundColor = "#e5e7eb",
+  } = view;
+  const {
+    isPlacingSeats,
+    readOnly,
+    selectedShapeTool,
+    shapeOverlays,
+    selectedOverlayId,
+    showGrid = false,
+    gridSize = 5,
+  } = toolbar;
+  const {
+    onSeatClick,
+    onSeatDragEnd,
+    onBatchSeatDragEnd,
+    onSeatShapeTransform,
+    onImageClick,
+    onDeselect,
+    onShapeDraw,
+    onShapeOverlayClick,
+    onMarkersInRect,
+    onWheel,
+    onPan,
+    onZoomIn,
+    onZoomOut,
+    onResetZoom,
+  } = handlers;
   const [dragOverActive, setDragOverActive] = useState(false);
 
   // Compute the virtual canvas dimensions matching layout-canvas logic so drop
@@ -153,18 +179,22 @@ export function SeatDesignerCanvas({
   } else if (hasImage) {
     noImageInitialSizeRef.current = null;
   }
-  const dropCanvasW = hasImage
-    ? containerDimensions.width > 0
-      ? containerDimensions.width
-      : 800
-    : (noImageInitialSizeRef.current?.w ??
-      (containerDimensions.width > 0 ? containerDimensions.width : 800));
-  const dropCanvasH = hasImage
-    ? containerDimensions.height > 0
-      ? containerDimensions.height
-      : 600
-    : (noImageInitialSizeRef.current?.h ??
-      (containerDimensions.height > 0 ? containerDimensions.height : 600));
+  let dropCanvasW = 800;
+  if (hasImage) {
+    dropCanvasW = containerDimensions.width > 0 ? containerDimensions.width : 800;
+  } else {
+    dropCanvasW =
+      noImageInitialSizeRef.current?.w ??
+      (containerDimensions.width > 0 ? containerDimensions.width : 800);
+  }
+  let dropCanvasH = 600;
+  if (hasImage) {
+    dropCanvasH = containerDimensions.height > 0 ? containerDimensions.height : 600;
+  } else {
+    dropCanvasH =
+      noImageInitialSizeRef.current?.h ??
+      (containerDimensions.height > 0 ? containerDimensions.height : 600);
+  }
   // Letterbox the content AR into the locked canvas
   const dropContentAR = hasImage
     ? dropCanvasH / dropCanvasW
@@ -339,38 +369,48 @@ export function SeatDesignerCanvas({
       {dimensionsReady ? (
         <>
           <FloorPlanCanvas
-            imageUrl={imageUrl ?? undefined}
-            seats={seats}
-            sections={[]}
-            selectedSeatId={selectedSeatId ?? null}
-            selectedSeatIds={selectedSeatIds}
-            anchorSeatId={anchorSeatId ?? null}
-            anchorSectionId={anchorSectionId ?? null}
-            isPlacingSeats={isPlacingSeats}
-            isPlacingSections={false}
-            readOnly={readOnly}
-            zoomLevel={zoomLevel}
-            panOffset={panOffset}
-            onSeatClick={onSeatClick}
-            onSeatDragEnd={onSeatDragEnd}
-            onBatchSeatDragEnd={onBatchSeatDragEnd}
-            onSeatShapeTransform={onSeatShapeTransform}
-            onImageClick={onImageClick}
-            onDeselect={onDeselect}
-            onShapeDraw={onShapeDraw}
-            onShapeOverlayClick={onShapeOverlayClick}
-            onWheel={onWheel}
-            onPan={onPan}
-            onMarkersInRect={onMarkersInRect}
-            containerWidth={containerDimensions.width}
-            containerHeight={containerDimensions.height}
-            designMode="seat-level"
-            selectedShapeTool={selectedShapeTool ?? null}
-            shapeOverlays={shapeOverlays}
-            selectedOverlayId={selectedOverlayId}
-            canvasBackgroundColor={canvasBackgroundColor}
-            showGrid={showGrid}
-            gridSize={gridSize}
+            data={{
+              imageUrl: imageUrl ?? undefined,
+              seats: seatsList,
+              sections: [],
+            }}
+            selection={{
+              selectedSeatId: selectedSeatId ?? null,
+              selectedSeatIds,
+            }}
+            placement={{
+              isPlacingSeats,
+              isPlacingSections: false,
+              readOnly,
+            }}
+            view={{
+              zoomLevel,
+              panOffset,
+              containerWidth: containerDimensions.width,
+              containerHeight: containerDimensions.height,
+              canvasBackgroundColor,
+              showGrid,
+              gridSize,
+            }}
+            design={{
+              designMode: "seat-level",
+              selectedShapeTool: selectedShapeTool ?? null,
+              shapeOverlays,
+              selectedOverlayId,
+            }}
+            handlers={{
+              onSeatClick,
+              onSeatDragEnd,
+              onBatchSeatDragEnd,
+              onSeatShapeTransform,
+              onImageClick,
+              onDeselect,
+              onShapeDraw,
+              onShapeOverlayClick,
+              onWheel,
+              onPan,
+              onMarkersInRect,
+            }}
           />
           <ZoomControls
             zoomLevel={zoomLevel}

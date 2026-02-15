@@ -300,8 +300,6 @@ export function SeatDesigner({
     setSelectedSeat,
     selectedSectionMarker,
     setSelectedSectionMarker,
-    anchorSeatId,
-    anchorSectionId,
     handleSeatClick,
     handleSectionClick,
     handleDeselect,
@@ -1574,8 +1572,6 @@ export function SeatDesigner({
     selectedSeatIds,
     selectedSectionIds,
     selectedSectionMarker,
-    anchorSeatId,
-    anchorSectionId,
     seatPlacementForm:
       seatPlacementForm as SeatLevelViewParams["seatPlacementForm"],
     sectionSelectValue,
@@ -1636,8 +1632,6 @@ export function SeatDesigner({
     designMode: designMode as "section-level",
     selectedSectionMarker,
     selectedSectionIds,
-    anchorSeatId,
-    anchorSectionId,
     isSectionCreationPending,
     setIsSectionCreationPending,
     editingSectionId,
@@ -1781,7 +1775,6 @@ export function SeatDesigner({
         seatEditFormReset={(data) => seatEditForm.reset(data)}
         selectedSeatIds={selectedSeatIds}
         onSelectSeatIds={setSelectedSeatIds}
-        anchorSeatId={anchorSeatId}
         placementShape={placementShape}
         onPlacementShapeChange={setPlacementShape}
         selectedShapeTool={selectedShapeTool}

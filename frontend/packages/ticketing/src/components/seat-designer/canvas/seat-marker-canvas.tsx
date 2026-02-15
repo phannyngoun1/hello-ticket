@@ -11,7 +11,6 @@ import {
   type PlacementShape,
   type SeatMarker,
 } from "../types";
-import { ANCHOR_FILL, ANCHOR_STROKE } from "../colors";
 import { ShapeRenderer } from "../components/shape-renderer";
 
 export interface SeatMarkerCanvasProps {
@@ -19,7 +18,6 @@ export interface SeatMarkerCanvasProps {
   x: number;
   y: number;
   isSelected: boolean;
-  isAnchor?: boolean;
   isPlacingSeats: boolean;
   isPanning: boolean;
   isSpacePressed: boolean;
@@ -52,7 +50,6 @@ export function SeatMarkerCanvas({
   x,
   y,
   isSelected,
-  isAnchor = false,
   isPlacingSeats,
   isPanning,
   isSpacePressed,
@@ -146,10 +143,10 @@ export function SeatMarkerCanvas({
     });
   }, [isHovered, isSelected, colors.stroke, disableHoverAnimation]);
 
-  const fillColor = isAnchor ? ANCHOR_FILL : colors.fill;
-  const strokeColor = isAnchor ? ANCHOR_STROKE : colors.stroke;
-  const strokeWidth = isAnchor ? 1 : isSelected ? 1.5 : 1;
-  const fillOpacity = isAnchor ? 0.6 : isSelected ? 0.5 : 0.35;
+  const fillColor = colors.fill;
+  const strokeColor = colors.stroke;
+  const strokeWidth = isSelected ? 1.5 : 1;
+  const fillOpacity = isSelected ? 0.5 : 0.35;
 
   const handleTransformEnd = useCallback(() => {
     if (!groupRef.current || !onShapeTransform) return;
@@ -255,6 +252,22 @@ export function SeatMarkerCanvas({
     }, 0);
   }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id, layerToPercentage]);
 
+  const isFixedAspect =
+    shape.type === PlacementShapeType.SOFA ||
+    shape.type === PlacementShapeType.STAGE;
+  const transformerEnabledAnchors = isFixedAspect
+    ? ["top-left", "top-right", "bottom-left", "bottom-right"]
+    : [
+        "top-left",
+        "top-center",
+        "top-right",
+        "middle-left",
+        "middle-right",
+        "bottom-left",
+        "bottom-center",
+        "bottom-right",
+      ];
+
   return (
     <>
       <Group
@@ -295,25 +308,31 @@ export function SeatMarkerCanvas({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor = selectedShapeTool
-              ? "crosshair"
-              : isSelected
-                ? "move"
-                : isPlacingSeats || isPlacingSections || !selectedShapeTool
-                  ? "grab"
-                  : "pointer";
+            let cursor = "pointer";
+            if (selectedShapeTool) cursor = "crosshair";
+            else if (isSelected) cursor = "move";
+            else if (
+              isPlacingSeats ||
+              isPlacingSections ||
+              !selectedShapeTool
+            )
+              cursor = "grab";
+            container.style.cursor = cursor;
           }
           setIsHovered(true);
         }}
         onMouseLeave={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor =
-              isPanning || isSpacePressed
-                ? "grab"
-                : selectedShapeTool || isPlacingSeats || isPlacingSections
-                  ? "crosshair"
-                  : "pointer";
+            let cursor = "pointer";
+            if (isPanning || isSpacePressed) cursor = "grab";
+            else if (
+              selectedShapeTool ||
+              isPlacingSeats ||
+              isPlacingSections
+            )
+              cursor = "crosshair";
+            container.style.cursor = cursor;
           }
           setIsHovered(false);
         }}
@@ -374,21 +393,7 @@ export function SeatMarkerCanvas({
             shape.type === PlacementShapeType.STAGE
           }
           flipEnabled={false}
-          enabledAnchors={
-            shape.type === PlacementShapeType.SOFA ||
-            shape.type === PlacementShapeType.STAGE
-              ? ["top-left", "top-right", "bottom-left", "bottom-right"]
-              : [
-                  "top-left",
-                  "top-center",
-                  "top-right",
-                  "middle-left",
-                  "middle-right",
-                  "bottom-left",
-                  "bottom-center",
-                  "bottom-right",
-                ]
-          }
+          enabledAnchors={transformerEnabledAnchors}
           onMouseDown={(e) => {
             e.cancelBubble = true;
             const target = e.target;

@@ -43,8 +43,6 @@ export interface SeatLevelViewProps {
     selectedSeatIds: string[];
     selectedSectionIds: string[];
     selectedSectionMarker: SectionMarker | null;
-    anchorSeatId: string | null;
-    anchorSectionId: string | null;
   };
   forms: {
     seatPlacementForm: import("react-hook-form").UseFormReturn<SeatFormData>;
@@ -163,8 +161,6 @@ export function SeatLevelView({
     selectedSeat,
     selectedSeatIds,
     selectedSectionIds,
-    anchorSeatId,
-    anchorSectionId,
   } = selection;
   const {
     seatPlacementForm,
@@ -219,35 +215,43 @@ export function SeatLevelView({
   return (
     <>
       <SeatDesignToolbar
-        selectedShapeType={selectedShapeTool}
-        onShapeTypeSelect={readOnly ? () => {} : forms.setSelectedShapeTool}
-        selectedSeat={selectedSeat}
-        selectedSection={null}
-        onSeatEdit={(seat) => {
-          setIsEditingSeat(true);
-          seatEditForm.reset({
-            section: seat.seat.section,
-            sectionId: seat.seat.sectionId,
-            row: seat.seat.row,
-            seatNumber: seat.seat.seatNumber,
-            seatType: seat.seat.seatType,
-          });
+        shape={{
+          selectedShapeType: selectedShapeTool,
+          onShapeTypeSelect: readOnly ? () => {} : forms.setSelectedShapeTool,
         }}
-        onSeatView={forms.setViewingSeat}
-        onSectionEdit={onSectionEdit}
-        onSectionView={(section) => {
-          setViewingSection(section);
-          seatPlacementForm.setValue("section", section.name);
-          setSelectedSectionMarker(null);
-          handleResetZoomAndPan();
+        selection={{
+          selectedSeat,
+          selectedSection: null,
+          selectedSeatCount: selectedSeatIds.length,
+          selectedSectionCount: selectedSectionIds.length,
         }}
-        onSeatDelete={(seat) => removeSeat(seat.id)}
-        onSectionDelete={(section) => removeSection(section.id)}
-        onSeatShapeStyleChange={onSeatShapeStyleChange}
-        onSectionShapeStyleChange={onSectionShapeStyleChange}
-        onAlign={onAlign}
-        selectedSeatCount={selectedSeatIds.length}
-        selectedSectionCount={selectedSectionIds.length}
+        actions={{
+          onSeatEdit: (seat) => {
+            setIsEditingSeat(true);
+            seatEditForm.reset({
+              section: seat.seat.section,
+              sectionId: seat.seat.sectionId,
+              row: seat.seat.row,
+              seatNumber: seat.seat.seatNumber,
+              seatType: seat.seat.seatType,
+            });
+          },
+          onSeatView: forms.setViewingSeat,
+          onSectionEdit,
+          onSectionView: (section) => {
+            setViewingSection(section);
+            seatPlacementForm.setValue("section", section.name);
+            setSelectedSectionMarker(null);
+            handleResetZoomAndPan();
+          },
+          onSeatDelete: (seat) => removeSeat(seat.id),
+          onSectionDelete: (section) => removeSection(section.id),
+        }}
+        styleActions={{
+          onSeatShapeStyleChange,
+          onSectionShapeStyleChange,
+          onAlign,
+        }}
         seatPlacement={
           selectedSeatIds.length <= 1
             ? {
@@ -316,40 +320,50 @@ export function SeatLevelView({
         }}
       >
         <SeatDesignerCanvas
-          imageUrl={mainImageUrl}
-          canvasBackgroundColor={canvasBackgroundColor}
-          containerRef={containerRef}
-          dimensionsReady={dimensionsReady}
-          containerDimensions={containerDimensions}
-          containerStyle={isFullscreen ? "flex" : "fixed"}
-          seats={displayedSeats}
-          selectedSeatId={selectedSeat?.id ?? null}
-          selectedSeatIds={selectedSeatIds}
-          anchorSeatId={anchorSeatId}
-          anchorSectionId={anchorSectionId}
-          isPlacingSeats={isPlacingSeats}
-          readOnly={readOnly}
-          zoomLevel={zoomLevel}
-          panOffset={panOffset}
-          onSeatClick={handleSeatClickWithToolSwitch}
-          onSeatDragEnd={handleKonvaSeatDragEnd}
-          onBatchSeatDragEnd={handleBatchSeatDragEnd}
-          onSeatShapeTransform={handleSeatShapeTransform}
-          onImageClick={handleKonvaImageClick}
-          onDeselect={handleDeselect}
-          onShapeDraw={handleShapeDraw}
-          onShapeOverlayClick={onShapeOverlayClick}
-          onWheel={onWheel}
-          onPan={handlePanDelta}
-          onMarkersInRect={onMarkersInRect}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onResetZoom={handleResetZoomAndPan}
-          selectedShapeTool={selectedShapeTool}
-          shapeOverlays={displayedShapeOverlays}
-          selectedOverlayId={selectedOverlayId}
-          showGrid={showGrid}
-          gridSize={gridSize}
+          image={{
+            imageUrl: mainImageUrl,
+          }}
+          container={{
+            containerRef,
+            dimensionsReady,
+            containerDimensions,
+            containerStyle: isFullscreen ? "flex" : "fixed",
+          }}
+          seats={{
+            seats: displayedSeats,
+            selectedSeatId: selectedSeat?.id ?? null,
+            selectedSeatIds,
+          }}
+          view={{
+            zoomLevel,
+            panOffset,
+            canvasBackgroundColor,
+          }}
+          toolbar={{
+            isPlacingSeats,
+            readOnly,
+            selectedShapeTool,
+            shapeOverlays: displayedShapeOverlays,
+            selectedOverlayId,
+            showGrid,
+            gridSize,
+          }}
+          handlers={{
+            onSeatClick: handleSeatClickWithToolSwitch,
+            onSeatDragEnd: handleKonvaSeatDragEnd,
+            onBatchSeatDragEnd: handleBatchSeatDragEnd,
+            onSeatShapeTransform: handleSeatShapeTransform,
+            onImageClick: handleKonvaImageClick,
+            onDeselect: handleDeselect,
+            onShapeDraw: handleShapeDraw,
+            onShapeOverlayClick,
+            onWheel,
+            onPan: handlePanDelta,
+            onMarkersInRect,
+            onZoomIn: handleZoomIn,
+            onZoomOut: handleZoomOut,
+            onResetZoom: handleResetZoomAndPan,
+          }}
         />
 
         <ZoomControls

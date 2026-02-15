@@ -30,6 +30,7 @@ export function SeatDesignToolbar({
   seatPlacement,
   seatEditControls,
   readOnly = false,
+  layout,
   ...shapeToolboxProps
 }: SeatDesignToolbarProps) {
   const seatPlacementControls =
@@ -40,8 +41,11 @@ export function SeatDesignToolbar({
   return (
     <ShapeToolbox
       {...shapeToolboxProps}
-      seatPlacementControls={seatPlacementControls}
-      seatEditControls={seatEditControls}
+      layout={{
+        ...layout,
+        seatPlacementControls,
+        seatEditControls,
+      }}
       readOnly={readOnly}
     />
   );

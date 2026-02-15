@@ -16,10 +16,6 @@ export function useSeatDesignerSelection({
     const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
     const [selectedSectionMarker, setSelectedSectionMarker] = useState<SectionMarker | null>(null);
 
-    // Anchor for alignment
-    const [anchorSeatId, setAnchorSeatId] = useState<string | null>(null);
-    const [anchorSectionId, setAnchorSectionId] = useState<string | null>(null);
-
     const handleSelectionChange = useCallback((
         newSelectedSeatIds: string[],
         newSelectedSectionIds: string[],
@@ -105,8 +101,6 @@ export function useSeatDesignerSelection({
         setSelectedSectionIds([]);
         setSelectedSeat(null);
         setSelectedSectionMarker(null);
-        setAnchorSeatId(null);
-        setAnchorSectionId(null);
     }, []);
 
     return {
@@ -118,10 +112,6 @@ export function useSeatDesignerSelection({
         setSelectedSeat,
         selectedSectionMarker,
         setSelectedSectionMarker,
-        anchorSeatId,
-        setAnchorSeatId,
-        anchorSectionId,
-        setAnchorSectionId,
         handleSelectionChange,
         handleSeatClick,
         handleSectionClick,

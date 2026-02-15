@@ -32,8 +32,6 @@ export interface SeatLevelViewParams {
   selectedSeatIds: string[];
   selectedSectionIds: string[];
   selectedSectionMarker: SectionMarker | null;
-  anchorSeatId: string | null;
-  anchorSectionId: string | null;
   seatPlacementForm: UseFormReturn<
     SeatFormData
   >;
@@ -186,8 +184,6 @@ export function useSeatLevelViewProps(
         selectedSeatIds: params.selectedSeatIds,
         selectedSectionIds: params.selectedSectionIds,
         selectedSectionMarker: params.selectedSectionMarker,
-        anchorSeatId: params.anchorSeatId,
-        anchorSectionId: params.anchorSectionId,
       },
       forms: {
         seatPlacementForm: params.seatPlacementForm,
@@ -243,8 +239,6 @@ export interface SectionLevelViewParams {
   designMode: "section-level";
   selectedSectionMarker: SectionMarker | null;
   selectedSectionIds: string[];
-  anchorSeatId: string | null;
-  anchorSectionId: string | null;
   isSectionCreationPending: boolean;
   setIsSectionCreationPending: (pending: boolean) => void;
   editingSectionId: string | null;
@@ -398,8 +392,6 @@ export function useSectionLevelViewProps(
     selection: {
       selectedSectionMarker: params.selectedSectionMarker,
       selectedSectionIds: params.selectedSectionIds,
-      anchorSeatId: params.anchorSeatId,
-      anchorSectionId: params.anchorSectionId,
     },
     sectionCreation: {
       isSectionCreationPending: params.isSectionCreationPending,

@@ -3,84 +3,101 @@
  * Renders section markers with shape, transformer, and drag support.
  */
 
-import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
-import { Group, Circle, Transformer } from "react-konva";
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
+import { Group, Circle } from "react-konva";
 import Konva from "konva";
 import {
   PlacementShapeType,
   type PlacementShape,
   type SectionMarker,
 } from "../types";
-import { ANCHOR_FILL, ANCHOR_STROKE } from "../colors";
 import { ShapeRenderer } from "../components/shape-renderer";
+import { SectionMarkerTransformer } from "./section-marker-transformer";
 
 export interface SectionMarkerCanvasProps {
   section: SectionMarker;
-  x: number;
-  y: number;
-  isSelected: boolean;
-  isAnchor?: boolean;
-  isPlacingSections: boolean;
-  isPanning: boolean;
-  isSpacePressed: boolean;
-  isPlacingSeats: boolean;
-  selectedShapeTool?: PlacementShapeType | null;
-  onSectionClick?: (
-    section: SectionMarker,
-    event?: { shiftKey?: boolean },
-  ) => void;
-  onSectionDoubleClick?: (section: SectionMarker) => void;
-  onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
-  onSectionDragMove?: (
-    sectionId: string,
-    stageX: number,
-    stageY: number,
-  ) => void;
-  onShapeTransform?: (
-    sectionId: string,
-    shape: PlacementShape,
-    position?: { x: number; y: number },
-  ) => void;
-  /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
-  layerToPercentage?: (layerX: number, layerY: number) => { x: number; y: number };
-  imageWidth: number;
-  imageHeight: number;
-  readOnly?: boolean;
-  disableHoverAnimation?: boolean;
-  onSectionDragStart?: (sectionId: string) => void;
-  useLowDetail?: boolean;
-  colors: { fill: string; stroke: string };
-  forceDraggable?: boolean;
-  /** Called during transform to force redraw (e.g. so other selected objects' boxes update) */
-  onTransformProgress?: () => void;
+  position: { x: number; y: number };
+  selection: { isSelected: boolean };
+  interaction: {
+    isPlacingSections: boolean;
+    isPanning: boolean;
+    isSpacePressed: boolean;
+    isPlacingSeats: boolean;
+    selectedShapeTool?: PlacementShapeType | null;
+  };
+  handlers: {
+    onSectionClick?: (
+      section: SectionMarker,
+      event?: { shiftKey?: boolean },
+    ) => void;
+    onSectionDoubleClick?: (section: SectionMarker) => void;
+    onSectionDragEnd?: (sectionId: string, newX: number, newY: number) => void;
+    onSectionDragMove?: (
+      sectionId: string,
+      stageX: number,
+      stageY: number,
+    ) => void;
+    onSectionDragStart?: (sectionId: string) => void;
+    onShapeTransform?: (
+      sectionId: string,
+      shape: PlacementShape,
+      position?: { x: number; y: number },
+    ) => void;
+    /** Called during transform to force redraw */
+    onTransformProgress?: () => void;
+  };
+  canvas: {
+    /** Convert layer coords to percentage (0-100) - needed to propagate position after resize */
+    layerToPercentage?: (
+      layerX: number,
+      layerY: number,
+    ) => { x: number; y: number };
+    imageWidth: number;
+    imageHeight: number;
+  };
+  display: {
+    readOnly?: boolean;
+    disableHoverAnimation?: boolean;
+    useLowDetail?: boolean;
+    colors: { fill: string; stroke: string };
+    forceDraggable?: boolean;
+  };
 }
 
 export function SectionMarkerCanvas({
   section,
-  x,
-  y,
-  isSelected,
-  isAnchor = false,
-  isPlacingSections,
-  isPanning,
-  isSpacePressed,
-  isPlacingSeats,
-  selectedShapeTool,
-  onSectionClick,
-  onSectionDoubleClick,
-  onSectionDragEnd,
-  onSectionDragMove,
-  onShapeTransform,
-  layerToPercentage,
-  imageWidth,
-  imageHeight,
-  readOnly = false,
-  disableHoverAnimation = false,
-  onSectionDragStart,
-  useLowDetail = false,
-  colors,
-  forceDraggable = false,
-  onTransformProgress,
+  position: { x, y },
+  selection: { isSelected },
+  interaction: {
+    isPlacingSections,
+    isPanning,
+    isSpacePressed,
+    isPlacingSeats,
+    selectedShapeTool,
+  },
+  handlers: {
+    onSectionClick,
+    onSectionDoubleClick,
+    onSectionDragEnd,
+    onSectionDragMove,
+    onSectionDragStart,
+    onShapeTransform,
+    onTransformProgress,
+  },
+  canvas: { layerToPercentage, imageWidth, imageHeight },
+  display: {
+    readOnly = false,
+    disableHoverAnimation = false,
+    useLowDetail = false,
+    colors,
+    forceDraggable = false,
+  },
 }: SectionMarkerCanvasProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeRef = useRef<Konva.Shape>(null);
@@ -140,7 +157,15 @@ export function SectionMarkerCanvas({
       group.cache();
     }
     // Include x,y so Transformer updates when marker position changes (e.g. on container resize)
-  }, [isSelected, useLowDetail, section.shape, shapeKey, readOnly, Math.round(x), Math.round(y)]);
+  }, [
+    isSelected,
+    useLowDetail,
+    section.shape,
+    shapeKey,
+    readOnly,
+    Math.round(x),
+    Math.round(y),
+  ]);
 
   const handleTransformEnd = useCallback(() => {
     if (!groupRef.current || !onShapeTransform || !section.shape) return;
@@ -223,7 +248,8 @@ export function SectionMarkerCanvas({
         ? (shape.height / 100) * imageHeight
         : 24;
       const minWidthPercent = shape.type === PlacementShapeType.STAGE ? 5 : 2;
-      const minHeightPercent = shape.type === PlacementShapeType.STAGE ? 3 : 1.5;
+      const minHeightPercent =
+        shape.type === PlacementShapeType.STAGE ? 3 : 1.5;
       updatedShape.width = Math.max(
         minWidthPercent,
         (Math.abs(currentWidth * avgScale) / imageWidth) * 100,
@@ -274,10 +300,10 @@ export function SectionMarkerCanvas({
     colors.stroke,
   ]);
 
-  const fillColor = isAnchor ? ANCHOR_FILL : colors.fill;
-  const strokeColor = isAnchor ? ANCHOR_STROKE : colors.stroke;
-  const strokeWidth = isAnchor ? 1 : isSelected ? 1.5 : 1;
-  const fillOpacity = isAnchor ? 0.6 : isSelected ? 0.5 : 0.35;
+  const fillColor = colors.fill;
+  const strokeColor = colors.stroke;
+  const strokeWidth = isSelected ? 1.5 : 1;
+  const fillOpacity = isSelected ? 0.5 : 0.35;
 
   return (
     <>
@@ -289,7 +315,9 @@ export function SectionMarkerCanvas({
         draggable={
           !readOnly &&
           (forceDraggable ||
-            (isPlacingSections || isPlacingSeats || !selectedShapeTool))
+            isPlacingSections ||
+            isPlacingSeats ||
+            !selectedShapeTool)
         }
         onDragStart={
           !readOnly && onSectionDragStart
@@ -298,8 +326,7 @@ export function SectionMarkerCanvas({
         }
         onDragMove={
           !readOnly && onSectionDragMove
-            ? (e) =>
-                onSectionDragMove(section.id, e.target.x(), e.target.y())
+            ? (e) => onSectionDragMove(section.id, e.target.x(), e.target.y())
             : undefined
         }
         onDragEnd={
@@ -338,32 +365,36 @@ export function SectionMarkerCanvas({
         onMouseEnter={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor = selectedShapeTool
-              ? "crosshair"
-              : isSelected && section.shape
-                ? "move"
-                : (isPlacingSections || isPlacingSeats || !selectedShapeTool) &&
-                    section.shape
-                  ? "grab"
-                : "pointer";
+            let cursor = "pointer";
+            if (selectedShapeTool) cursor = "crosshair";
+            else if (isSelected && section.shape) cursor = "move";
+            else if (
+              (isPlacingSections || isPlacingSeats || !selectedShapeTool) &&
+              section.shape
+            )
+              cursor = "grab";
+            container.style.cursor = cursor;
           }
           setIsHovered(true);
         }}
         onMouseLeave={(e) => {
           const container = e.target.getStage()?.container();
           if (container) {
-            container.style.cursor =
-              isPanning || isSpacePressed
-                ? "grab"
-                : selectedShapeTool || isPlacingSeats || isPlacingSections
-                  ? "crosshair"
-                  : "pointer";
+            let cursor = "pointer";
+            if (isPanning || isSpacePressed) cursor = "grab";
+            else if (
+              selectedShapeTool ||
+              isPlacingSeats ||
+              isPlacingSections
+            )
+              cursor = "crosshair";
+            container.style.cursor = cursor;
           }
           setIsHovered(false);
         }}
       >
         {section.shape && (
-          <Group ref={shapeRef as any}>
+          <Group ref={shapeRef as unknown as React.RefObject<Konva.Group>}>
             {useLowDetail ? (
               <Circle
                 radius={4}
@@ -392,7 +423,7 @@ export function SectionMarkerCanvas({
             radius={isSelected ? 12 : 10}
             fill={fillColor}
             stroke={strokeColor}
-            strokeWidth={isAnchor ? 2 : strokeWidth}
+            strokeWidth={strokeWidth}
             x={0}
             y={0}
             opacity={fillOpacity}
@@ -400,146 +431,12 @@ export function SectionMarkerCanvas({
         )}
       </Group>
       {isSelected && !readOnly && section.shape && (
-        <Transformer
-          ref={transformerRef}
-          onTransform={onTransformProgress}
-          onTransformStart={onTransformProgress}
-          boundBoxFunc={(oldBox, newBox) => {
-            const minSize = 10;
-            if (
-              Math.abs(newBox.width) < minSize ||
-              Math.abs(newBox.height) < minSize
-            ) {
-              return oldBox;
-            }
-            return newBox;
-          }}
-          rotateEnabled={true}
-          resizeEnabled={true}
-          borderEnabled={true}
-          borderStroke="#3b82f6"
-          borderStrokeWidth={1.5}
-          anchorFill="#ffffff"
-          anchorStroke="#3b82f6"
-          anchorStrokeWidth={1.5}
-          anchorSize={10}
-          anchorCornerRadius={2}
-          padding={0}
-          ignoreStroke={true}
-          keepRatio={
-            shape.type === PlacementShapeType.SOFA ||
-            shape.type === PlacementShapeType.STAGE
-          }
-          flipEnabled={false}
-          enabledAnchors={
-            shape.type === PlacementShapeType.SOFA ||
-            shape.type === PlacementShapeType.STAGE
-              ? ["top-left", "top-right", "bottom-left", "bottom-right"]
-              : [
-                  "top-left",
-                  "top-center",
-                  "top-right",
-                  "middle-left",
-                  "middle-right",
-                  "bottom-left",
-                  "bottom-center",
-                  "bottom-right",
-                ]
-          }
-          onMouseDown={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (!transformerRef.current || !stage || !container) return;
-
-            const stagePos = stage.getPointerPosition();
-            if (!stagePos) return;
-
-            const transformer = transformerRef.current;
-            const layer = transformer.getLayer();
-            if (!layer || !groupRef.current) return;
-
-            const layerScale = layer.scaleX();
-            const node = groupRef.current;
-            const nodeX = node.x();
-            const nodeY = node.y();
-            const nodeHeight = node.height();
-
-            const rotationHandleOffset = 25 / layerScale;
-            const rotationHandleY =
-              nodeY - nodeHeight / 2 - rotationHandleOffset;
-            const rotationHandleX = nodeX;
-            const handleSize = 12 / layerScale;
-
-            const distanceX = Math.abs(stagePos.x - rotationHandleX);
-            const distanceY = Math.abs(stagePos.y - rotationHandleY);
-            const isNearRotationHandle =
-              distanceX < handleSize &&
-              distanceY < handleSize + 15 / layerScale;
-
-            if (isNearRotationHandle) {
-              container.style.cursor = "grabbing";
-            }
-          }}
-          onMouseMove={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (!transformerRef.current || !stage || !container) return;
-
-            const stagePos = stage.getPointerPosition();
-            if (!stagePos) return;
-
-            const transformer = transformerRef.current;
-            const layer = transformer.getLayer();
-            if (!layer || !groupRef.current) return;
-
-            const layerScale = layer.scaleX();
-            const node = groupRef.current;
-            const nodeX = node.x();
-            const nodeY = node.y();
-            const nodeHeight = node.height();
-
-            const rotationHandleOffset = 25 / layerScale;
-            const rotationHandleY =
-              nodeY - nodeHeight / 2 - rotationHandleOffset;
-            const rotationHandleX = nodeX;
-            const handleSize = 12 / layerScale;
-
-            const distanceX = Math.abs(stagePos.x - rotationHandleX);
-            const distanceY = Math.abs(stagePos.y - rotationHandleY);
-            const isNearRotationHandle =
-              distanceX < handleSize &&
-              distanceY < handleSize + 15 / layerScale;
-
-            if (isNearRotationHandle) {
-              container.style.cursor = "grab";
-            } else {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
-          onMouseEnter={(e) => {
-            e.cancelBubble = true;
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
-          onMouseUp={(e) => {
-            e.cancelBubble = true;
-            const target = e.target;
-            const stage = target.getStage();
-            const container = stage?.container();
-            if (container) {
-              container.style.cursor = selectedShapeTool ? "crosshair" : "pointer";
-            }
-          }}
+        <SectionMarkerTransformer
+          transformerRef={transformerRef}
+          groupRef={groupRef}
+          shape={shape}
+          selectedShapeTool={selectedShapeTool}
+          onTransformProgress={onTransformProgress}
         />
       )}
     </>

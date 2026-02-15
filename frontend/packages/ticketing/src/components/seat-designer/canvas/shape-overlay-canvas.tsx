@@ -58,21 +58,22 @@ export function ShapeOverlayCanvas({
   const hoverOpacity = 0.3;
   const selectedOpacity = 0.55;
 
-  const currentOpacity = isSelected
-    ? selectedOpacity
-    : isHovered
-      ? hoverOpacity
-      : baseOpacity;
+  let currentOpacity = baseOpacity;
+  if (isSelected) currentOpacity = selectedOpacity;
+  else if (isHovered) currentOpacity = hoverOpacity;
 
-  const fillOpacity = isSelected ? 0.15 : isHovered ? 0.08 : 0.08;
+  let fillOpacity = 0.08;
+  if (isSelected) fillOpacity = 0.15;
 
-  const strokeColor = isSelected
-    ? "#1e40af"
-    : isHovered
-      ? "#2563eb"
-      : "#3b82f6";
+  let strokeColor = "#3b82f6";
+  if (isSelected) strokeColor = "#1e40af";
+  else if (isHovered) strokeColor = "#2563eb";
 
-  const strokeWidth = isSelected ? 2 : isHovered ? 1 : 0.75;
+  let strokeWidth = 0.75;
+  if (isSelected) strokeWidth = 2;
+  else if (isHovered) strokeWidth = 1;
+
+  const isActive = isHovered || isSelected;
 
   useEffect(() => {
     if (disableHoverAnimation) return;
@@ -103,12 +104,12 @@ export function ShapeOverlayCanvas({
     if (!label) return;
 
     label.to({
-      fontSize: isHovered || isSelected ? 13 : 12,
-      shadowBlur: isHovered || isSelected ? 3 : 1,
+      fontSize: isActive ? 13 : 12,
+      shadowBlur: isActive ? 3 : 1,
       duration: 0.2,
       easing: Konva.Easings.EaseInOut,
     });
-  }, [isHovered, isSelected, disableHoverAnimation]);
+  }, [isActive, disableHoverAnimation]);
 
   return (
     <Group
@@ -140,12 +141,15 @@ export function ShapeOverlayCanvas({
       onMouseLeave={(e) => {
         const container = e.target.getStage()?.container();
         if (container) {
-          container.style.cursor =
-            isPanning || isSpacePressed
-              ? "grab"
-              : selectedShapeTool || isPlacingSeats || isPlacingSections
-                ? "crosshair"
-                : "pointer";
+          let cursor = "pointer";
+          if (isPanning || isSpacePressed) cursor = "grab";
+          else if (
+            selectedShapeTool ||
+            isPlacingSeats ||
+            isPlacingSections
+          )
+            cursor = "crosshair";
+          container.style.cursor = cursor;
         }
         setIsHovered(false);
       }}
@@ -168,17 +172,17 @@ export function ShapeOverlayCanvas({
           text={overlay.label}
           fontSize={12}
           fontFamily="Arial"
-          fill={isHovered || isSelected ? "#1e40af" : "#3b82f6"}
+          fill={isActive ? "#1e40af" : "#3b82f6"}
           padding={4}
           align="center"
           verticalAlign="middle"
-          backgroundFill={`rgba(255, 255, 255, ${isHovered || isSelected ? 0.98 : 0.9})`}
+          backgroundFill={`rgba(255, 255, 255, ${isActive ? 0.98 : 0.9})`}
           backgroundStroke={strokeColor}
-          backgroundStrokeWidth={isHovered || isSelected ? 0.75 : 0.5}
+          backgroundStrokeWidth={isActive ? 0.75 : 0.5}
           cornerRadius={2}
           x={-20}
           y={-8}
-          shadowBlur={isHovered || isSelected ? 3 : 1}
+          shadowBlur={isActive ? 3 : 1}
           shadowColor="rgba(0, 0, 0, 0.1)"
         />
       )}

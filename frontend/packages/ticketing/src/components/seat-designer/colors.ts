@@ -93,10 +93,6 @@ export const HOVER_STROKE = "#3b82f6"; // blue-500
 // INTERACTION & SELECTION COLORS
 // ============================================================================
 
-/** Anchor/special marker colors */
-export const ANCHOR_FILL = "#f97316"; // orange-500
-export const ANCHOR_STROKE = "#ea580c"; // orange-600
-
 /** Selected seat (cyan) */
 export const SELECTED_FILL = "#06b6d4"; // cyan-500
 export const SELECTED_STROKE = "#0891b2"; // cyan-600

@@ -42,8 +42,6 @@ export interface SectionLevelViewProps {
   selection: {
     selectedSectionMarker: SectionMarker | null;
     selectedSectionIds: string[];
-    anchorSeatId: string | null;
-    anchorSectionId: string | null;
   };
   sectionCreation: {
     isSectionCreationPending: boolean;
@@ -178,12 +176,7 @@ export function SectionLevelView({
     canvasBackgroundColor,
   } = canvas;
   const { sectionMarkers, designMode } = data;
-  const {
-    selectedSectionMarker,
-    selectedSectionIds,
-    anchorSeatId,
-    anchorSectionId,
-  } = selection;
+  const { selectedSectionMarker, selectedSectionIds } = selection;
   const {
     isSectionCreationPending,
     setIsSectionCreationPending,
@@ -230,6 +223,46 @@ export function SectionLevelView({
     isPlacingSections,
     readOnly,
   } = toolbar;
+
+  const shapeToolboxProps = {
+    shape: {
+      selectedShapeType: selectedShapeTool,
+      onShapeTypeSelect: readOnly ? () => {} : setSelectedShapeTool,
+    },
+    selection: {
+      selectedSeat: null,
+      selectedSection: selectedSectionMarker,
+      selectedSeatCount: 0,
+      selectedSectionCount: selectedSectionIds.length,
+    },
+    actions: {
+      onSeatEdit: () => {},
+      onSeatView: () => {},
+      onSectionEdit: (section: SectionMarker) => {
+        setEditingSectionId(section.id);
+        setIsSectionCreationPending(true);
+        if (section.shape) {
+          setPlacementShape(section.shape);
+          setSelectedShapeTool(section.shape.type);
+        }
+      },
+      onSectionView: (section: SectionMarker) => {
+        setViewingSection(section);
+        seatPlacementForm.setValue("section", section.name);
+        setSelectedSectionMarker(null);
+        handleResetZoomAndPan();
+      },
+      onSeatDelete: () => {},
+      onSectionDelete: (section: SectionMarker) => removeSection(section.id),
+    },
+    styleActions: {
+      onSeatShapeStyleChange: () => {},
+      onSectionShapeStyleChange,
+      onAlign,
+    },
+    readOnly,
+    level: "section" as const,
+  };
 
   return (
     <>
@@ -284,35 +317,12 @@ export function SectionLevelView({
         />
       ) : (
         <ShapeToolbox
-          selectedShapeType={selectedShapeTool}
-          onShapeTypeSelect={readOnly ? () => {} : setSelectedShapeTool}
-          selectedSeat={null}
-          selectedSection={selectedSectionMarker}
-          onSeatEdit={() => {}}
-          onSeatView={() => {}}
-          onSectionEdit={(section) => {
-            setEditingSectionId(section.id);
-            setIsSectionCreationPending(true);
-            if (section.shape) {
-              setPlacementShape(section.shape);
-              setSelectedShapeTool(section.shape.type);
-            }
-          }}
-          onSectionView={(section) => {
-            setViewingSection(section);
-            seatPlacementForm.setValue("section", section.name);
-            setSelectedSectionMarker(null);
-            handleResetZoomAndPan();
-          }}
-          onSeatDelete={() => {}}
-          onSectionDelete={(section) => removeSection(section.id)}
-          onSeatShapeStyleChange={() => {}}
-          onSectionShapeStyleChange={onSectionShapeStyleChange}
-          onAlign={onAlign}
-          selectedSeatCount={0}
-          selectedSectionCount={selectedSectionIds.length}
-          readOnly={readOnly}
-          level="section"
+          shape={shapeToolboxProps.shape}
+          selection={shapeToolboxProps.selection}
+          actions={shapeToolboxProps.actions}
+          styleActions={shapeToolboxProps.styleActions}
+          readOnly={shapeToolboxProps.readOnly}
+          level={shapeToolboxProps.level}
         />
       )}
 
@@ -329,48 +339,58 @@ export function SectionLevelView({
         }}
       >
         <FloorPlanCanvas
-          imageUrl={mainImageUrl}
-          canvasBackgroundColor={canvasBackgroundColor}
-          seats={[]}
-          sections={sectionMarkers}
-          selectedSeatId={null}
-          selectedSectionId={selectedSectionMarker?.id || null}
-          selectedSeatIds={[]}
-          selectedSectionIds={selectedSectionIds}
-          anchorSeatId={anchorSeatId}
-          anchorSectionId={anchorSectionId}
-          onMarkersInRect={onMarkersInRect}
-          isPlacingSeats={false}
-          isPlacingSections={isPlacingSections}
-          readOnly={readOnly}
-          zoomLevel={zoomLevel}
-          panOffset={panOffset}
-          onSeatClick={handleSeatClickWithToolSwitch ?? (() => {})}
-          onSectionClick={handleSectionClickWithToolSwitch}
-          onSectionDoubleClick={(section) => {
-            setViewingSection(section);
-            seatPlacementForm.setValue("section", section.name);
-            setSelectedSectionMarker(null);
-            handleResetZoomAndPan();
+          data={{
+            imageUrl: mainImageUrl,
+            seats: [],
+            sections: sectionMarkers,
           }}
-          onSectionDragEnd={handleKonvaSectionDragEnd}
-          onSeatDragEnd={handleKonvaSeatDragEnd}
-          onBatchSeatDragEnd={handleBatchSeatDragEnd}
-          onBatchSectionDragEnd={handleBatchSectionDragEnd}
-          onSeatShapeTransform={handleSeatShapeTransform}
-          onSectionShapeTransform={handleSectionShapeTransform}
-          onImageClick={handleKonvaImageClick}
-          onDeselect={handleDeselect}
-          onShapeDraw={handleShapeDraw}
-          onShapeOverlayClick={onShapeOverlayClick}
-          onWheel={onWheel}
-          onPan={handlePanDelta}
-          containerWidth={containerDimensions.width}
-          containerHeight={containerDimensions.height}
-          designMode={designMode}
-          selectedShapeTool={selectedShapeTool}
-          selectedOverlayId={selectedOverlayId}
-          shapeOverlays={displayedShapeOverlays}
+          selection={{
+            selectedSeatId: null,
+            selectedSectionId: selectedSectionMarker?.id || null,
+            selectedSeatIds: [],
+            selectedSectionIds,
+          }}
+          placement={{
+            isPlacingSeats: false,
+            isPlacingSections,
+            readOnly,
+          }}
+          view={{
+            zoomLevel,
+            panOffset,
+            containerWidth: containerDimensions.width,
+            containerHeight: containerDimensions.height,
+            canvasBackgroundColor,
+          }}
+          design={{
+            designMode,
+            selectedShapeTool,
+            selectedOverlayId,
+            shapeOverlays: displayedShapeOverlays,
+          }}
+          handlers={{
+            onMarkersInRect,
+            onSeatClick: handleSeatClickWithToolSwitch ?? (() => {}),
+            onSectionClick: handleSectionClickWithToolSwitch,
+            onSectionDoubleClick: (section) => {
+              setViewingSection(section);
+              seatPlacementForm.setValue("section", section.name);
+              setSelectedSectionMarker(null);
+              handleResetZoomAndPan();
+            },
+            onSectionDragEnd: handleKonvaSectionDragEnd,
+            onSeatDragEnd: handleKonvaSeatDragEnd,
+            onBatchSeatDragEnd: handleBatchSeatDragEnd,
+            onBatchSectionDragEnd: handleBatchSectionDragEnd,
+            onSeatShapeTransform: handleSeatShapeTransform,
+            onSectionShapeTransform: handleSectionShapeTransform,
+            onImageClick: handleKonvaImageClick,
+            onDeselect: handleDeselect,
+            onShapeDraw: handleShapeDraw,
+            onShapeOverlayClick,
+            onWheel,
+            onPan: handlePanDelta,
+          }}
         />
 
         <ZoomControls
