@@ -978,18 +978,24 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
             </div>
           ) : (
             <EventInventoryViewer
-              layout={layoutWithSeats.layout}
-              layoutSeats={layoutWithSeats.seats}
-              sections={layoutWithSeats.sections}
-              eventSeats={eventSeats}
-              seatStatusMap={seatStatusMap}
-              locationStatusMap={locationStatusMap}
-              imageUrl={layoutWithSeats.layout.image_url}
-              isLoading={seatsLoading}
-              selectedSectionId={selectedSectionId}
-              onSelectedSectionIdChange={setSelectedSectionId}
-              selectedSeatIds={selectedSeatIds}
-              onSeatClick={handleSeatClick}
+              data={{
+                layout: layoutWithSeats.layout,
+                layoutSeats: layoutWithSeats.seats,
+                sections: layoutWithSeats.sections,
+                eventSeats,
+                seatStatusMap,
+                locationStatusMap,
+              }}
+              display={{
+                imageUrl: layoutWithSeats.layout.image_url,
+                isLoading: seatsLoading,
+              }}
+              selection={{
+                selectedSectionId,
+                onSelectedSectionIdChange: setSelectedSectionId,
+                selectedSeatIds,
+              }}
+              interaction={{ onSeatClick: handleSeatClick }}
             />
           )}
         </Card>

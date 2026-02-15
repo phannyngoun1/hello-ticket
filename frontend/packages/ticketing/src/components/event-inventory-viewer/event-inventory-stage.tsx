@@ -167,46 +167,54 @@ export function EventInventoryStage({
       return (
         <SectionMarker
           key={section.id}
-          isDarkMode={isDarkMode}
-          section={section}
-          x={x}
-          y={y}
-          isHovered={hoveredSectionId === section.id}
-          isSpacePressed={isSpacePressed}
-          totalSeats={stats.totalSeats}
-          eventSeatCount={stats.eventSeatCount}
-          statusCounts={stats.statusCounts}
-          imageWidth={displayedWidth}
-          imageHeight={displayedHeight}
-          markerFillTransparency={effectiveSectionTransparency}
-          onMouseEnter={(e) => {
-            setHoveredSectionId(section.id);
-            setHoveredSectionData({
-              section,
-              seatCount: stats.totalSeats,
-              eventSeatCount: stats.eventSeats.length,
-              statusSummary: stats.statusCounts,
-            });
-            updatePopoverPosition(e);
+          display={{
+            isDarkMode,
+            markerFillTransparency: effectiveSectionTransparency,
           }}
-          onMouseMove={updatePopoverPosition}
-          onMouseLeave={() => {
-            setHoveredSectionId(null);
-            setHoveredSeatPosition(null);
-            setHoveredSectionData(null);
+          section={{ section, x, y }}
+          stats={{
+            totalSeats: stats.totalSeats,
+            eventSeatCount: stats.eventSeatCount,
+            statusCounts: stats.statusCounts,
           }}
-          onClick={() => {
-            if (stats.totalSeats === 0) {
-              toast({
-                title: "No Seats Available",
-                description: `Section "${section.name}" does not have any seats. Please add seats to this section first.`,
-                variant: "destructive",
+          dimensions={{
+            imageWidth: displayedWidth,
+            imageHeight: displayedHeight,
+          }}
+          state={{
+            isHovered: hoveredSectionId === section.id,
+            isSpacePressed,
+          }}
+          handlers={{
+            onMouseEnter: (e) => {
+              setHoveredSectionId(section.id);
+              setHoveredSectionData({
+                section,
+                seatCount: stats.totalSeats,
+                eventSeatCount: stats.eventSeats.length,
+                statusSummary: stats.statusCounts,
               });
-              return;
-            }
-            setSelectedSectionId(section.id);
-            setZoomLevel(1);
-            setPanOffset({ x: 0, y: 0 });
+              updatePopoverPosition(e);
+            },
+            onMouseMove: updatePopoverPosition,
+            onMouseLeave: () => {
+              setHoveredSectionId(null);
+              setHoveredSeatPosition(null);
+              setHoveredSectionData(null);
+            },
+            onClick: () => {
+              if (stats.totalSeats === 0) {
+                toast({
+                  title: "No Seats Available",
+                  description: `Section "${section.name}" does not have any seats. Please add seats to this section first.`,
+                  variant: "destructive",
+                });
+                return;
+              }
+              setSelectedSectionId(section.id);
+              setZoomLevel(1);
+              setPanOffset({ x: 0, y: 0 });
+            },
           }}
         />
       );

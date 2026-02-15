@@ -44,43 +44,48 @@ import {
 } from "./event-inventory-viewer-utils";
 
 export interface SectionMarkerProps {
-  /** When true, use dark-mode label colors */
-  isDarkMode?: boolean;
-  section: Section;
-  x: number;
-  y: number;
-  isHovered: boolean;
-  isSpacePressed: boolean;
-  totalSeats: number;
-  eventSeatCount: number;
-  statusCounts: Record<string, number>;
-  imageWidth: number;
-  imageHeight: number;
-  /** Fill transparency 0-1 for section heat map (1 = opaque). Default 0.5 */
-  markerFillTransparency?: number;
-  onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-  onMouseLeave: () => void;
-  onClick: () => void;
+  display: {
+    /** When true, use dark-mode label colors */
+    isDarkMode?: boolean;
+    /** Fill transparency 0-1 for section heat map (1 = opaque). Default 0.5 */
+    markerFillTransparency?: number;
+  };
+  section: {
+    section: Section;
+    x: number;
+    y: number;
+  };
+  stats: {
+    totalSeats: number;
+    eventSeatCount: number;
+    statusCounts: Record<string, number>;
+  };
+  dimensions: {
+    imageWidth: number;
+    imageHeight: number;
+  };
+  state: {
+    isHovered: boolean;
+    isSpacePressed: boolean;
+  };
+  handlers: {
+    onMouseEnter: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseMove?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
+    onMouseLeave: () => void;
+    onClick: () => void;
+  };
 }
 
 export function SectionMarker({
-  isDarkMode = false,
-  section,
-  x,
-  y,
-  isHovered,
-  isSpacePressed,
-  totalSeats,
-  eventSeatCount,
-  statusCounts,
-  imageWidth,
-  imageHeight,
-  markerFillTransparency = 0.5,
-  onMouseEnter,
-  onMouseMove,
-  onMouseLeave,
-  onClick,
+  display: {
+    isDarkMode = false,
+    markerFillTransparency = 0.5,
+  },
+  section: { section, x, y },
+  stats: { totalSeats, eventSeatCount, statusCounts },
+  dimensions: { imageWidth, imageHeight },
+  state: { isHovered, isSpacePressed },
+  handlers: { onMouseEnter, onMouseMove, onMouseLeave, onClick },
 }: SectionMarkerProps) {
   const groupRef = useRef<Konva.Group>(null);
   const shapeGroupRef = useRef<Konva.Group>(null);

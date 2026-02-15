@@ -50,16 +50,19 @@ export function BookingSeatSelection({
         layoutWithSeats ? (
           <div className="h-full overflow-hidden">
             <EventInventoryViewer
-              layout={layoutWithSeats.layout}
-              layoutSeats={layoutWithSeats.seats}
-              sections={layoutWithSeats.sections}
-              eventSeats={eventSeats}
-              seatStatusMap={seatStatusMap}
-              locationStatusMap={locationStatusMap}
-              imageUrl={layoutWithSeats.layout.image_url}
-              onSeatClick={onSeatClick}
-              selectedSeatIds={
-                new Set(
+              data={{
+                layout: layoutWithSeats.layout,
+                layoutSeats: layoutWithSeats.seats,
+                sections: layoutWithSeats.sections,
+                eventSeats,
+                seatStatusMap,
+                locationStatusMap,
+              }}
+              display={{
+                imageUrl: layoutWithSeats.layout.image_url,
+              }}
+              selection={{
+                selectedSeatIds: new Set(
                   selectedTickets
                     .map((t) => {
                       // Find the seat ID from layout seats
@@ -75,10 +78,11 @@ export function BookingSeatSelection({
                       return t.seatId;
                     })
                     .filter(Boolean) as string[]
-                )
-              }
-              selectedSectionId={selectedSectionId}
-              onSelectedSectionIdChange={onSelectedSectionIdChange}
+                ),
+                selectedSectionId,
+                onSelectedSectionIdChange,
+              }}
+              interaction={{ onSeatClick }}
             />
           </div>
         ) : (

@@ -35,37 +35,45 @@ import { useDarkMode } from "./hooks/use-dark-mode";
 import { usePopoverPosition } from "./hooks/use-popover-position";
 
 export interface EventInventoryViewerProps {
-  layout: Layout;
-  layoutSeats: Seat[];
-  sections: Section[];
-  eventSeats: EventSeat[];
-  seatStatusMap: Map<string, EventSeat>;
-  locationStatusMap: Map<string, EventSeat>;
-  imageUrl?: string;
-  isLoading?: boolean;
-  className?: string;
-  onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
-  selectedSeatIds?: Set<string>;
-  selectedSectionId?: string | null;
-  onSelectedSectionIdChange?: (sectionId: string | null) => void;
-  /** Hide the seat-status legend overlay on the canvas (default false) */
-  showLegend?: boolean;
+  data: {
+    layout: Layout;
+    layoutSeats: Seat[];
+    sections: Section[];
+    eventSeats: EventSeat[];
+    seatStatusMap: Map<string, EventSeat>;
+    locationStatusMap: Map<string, EventSeat>;
+  };
+  display?: {
+    imageUrl?: string;
+    isLoading?: boolean;
+    /** Hide the seat-status legend overlay on the canvas (default false) */
+    showLegend?: boolean;
+    className?: string;
+  };
+  selection?: {
+    selectedSeatIds?: Set<string>;
+    selectedSectionId?: string | null;
+    onSelectedSectionIdChange?: (sectionId: string | null) => void;
+  };
+  interaction?: {
+    onSeatClick?: (seatId: string, eventSeat?: EventSeat) => void;
+  };
 }
 
 export function EventInventoryViewer({
-  layout,
-  layoutSeats,
-  sections,
-  seatStatusMap,
-  locationStatusMap,
-  imageUrl,
-  isLoading = false,
-  className,
-  onSeatClick,
-  selectedSeatIds = new Set(),
-  selectedSectionId: controlledSelectedSectionId,
-  onSelectedSectionIdChange,
-  showLegend = true,
+  data: { layout, layoutSeats, sections, seatStatusMap, locationStatusMap },
+  display: {
+    imageUrl,
+    isLoading = false,
+    showLegend = true,
+    className,
+  } = {},
+  selection: {
+    selectedSeatIds = new Set<string>(),
+    selectedSectionId: controlledSelectedSectionId,
+    onSelectedSectionIdChange,
+  } = {},
+  interaction: { onSeatClick } = {},
 }: EventInventoryViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);

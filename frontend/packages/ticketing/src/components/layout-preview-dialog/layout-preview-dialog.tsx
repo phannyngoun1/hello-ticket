@@ -172,18 +172,24 @@ export function LayoutPreviewDialog({
               )}
               {layout ? (
                 <EventInventoryViewer
-                  layout={layout}
-                  layoutSeats={displayedSeats}
-                  sections={displayedSections}
-                  eventSeats={eventSeats}
-                  seatStatusMap={seatStatusMap}
-                  locationStatusMap={locationStatusMap}
-                  imageUrl={displayedImageUrl}
-                  onSeatClick={() => {}} // Read-only preview
-                  selectedSeatIds={new Set()}
-                  selectedSectionId={selectedSectionId}
-                  onSelectedSectionIdChange={setSelectedSectionId}
-                  showLegend={false}
+                  data={{
+                    layout,
+                    layoutSeats: displayedSeats,
+                    sections: displayedSections,
+                    eventSeats,
+                    seatStatusMap,
+                    locationStatusMap,
+                  }}
+                  display={{
+                    imageUrl: displayedImageUrl,
+                    showLegend: false,
+                  }}
+                  selection={{
+                    selectedSeatIds: new Set(),
+                    selectedSectionId,
+                    onSelectedSectionIdChange: setSelectedSectionId,
+                  }}
+                  interaction={{ onSeatClick: () => {} }}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
