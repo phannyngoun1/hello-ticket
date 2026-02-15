@@ -25,7 +25,7 @@ export interface DatasheetViewProps {
   onOpenChange: (open: boolean) => void;
   readOnly?: boolean;
   viewingSection: SectionMarker | null;
-  venueType: "small" | "large";
+  designMode: "seat-level" | "section-level";
   displayedSeats: SeatMarker[];
   seats: SeatMarker[];
   sectionMarkers: SectionMarker[];
@@ -58,7 +58,7 @@ export function DatasheetView({
   onOpenChange,
   readOnly = false,
   viewingSection,
-  venueType,
+  designMode,
   displayedSeats,
   seats,
   sectionMarkers,
@@ -93,14 +93,14 @@ export function DatasheetView({
           <SheetTitle>
             {viewingSection
               ? `Seats - ${viewingSection.name}`
-              : venueType === "large"
+              : designMode === "section-level"
                 ? "Sections"
                 : "Seats"}
           </SheetTitle>
           <SheetDescription>
             {viewingSection
               ? `${displayedSeats.length} seat(s) in ${viewingSection.name}`
-              : venueType === "large"
+              : designMode === "section-level"
                 ? `${sectionMarkers.length} section(s) placed`
                 : `${seats.length} seat(s) placed`}
           </SheetDescription>
@@ -175,7 +175,7 @@ export function DatasheetView({
                 </div>
               ))}
             </div>
-          ) : venueType === "large" ? (
+          ) : designMode === "section-level" ? (
             // Large venue main view - show sections
             <div className="space-y-2">
               {isSectionFormOpen && !readOnly && (

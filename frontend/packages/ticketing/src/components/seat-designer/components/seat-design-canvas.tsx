@@ -2,7 +2,7 @@
  * Seat Design Canvas Component
  *
  * Wraps LayoutCanvas + ZoomControls with optional ImageUploadCard.
- * Used when designing seats only (venueType="small", no sections).
+ * Used when designing seats only (designMode="seat-level", no sections).
  * Shared by seat-level main view and section-level drill-down.
  */
 
@@ -364,7 +364,7 @@ export function SeatDesignCanvas({
             onMarkersInRect={onMarkersInRect}
             containerWidth={containerDimensions.width}
             containerHeight={containerDimensions.height}
-            venueType="small"
+            designMode="seat-level"
             selectedShapeTool={selectedShapeTool ?? null}
             shapeOverlays={shapeOverlays}
             selectedOverlayId={selectedOverlayId}

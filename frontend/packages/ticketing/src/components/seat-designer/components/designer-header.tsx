@@ -33,7 +33,7 @@ export interface DesignerHeaderProps {
   layoutName?: string;
   isLoading: boolean;
   seatsError: unknown;
-  venueType: "small" | "large";
+  designMode: "seat-level" | "section-level";
   sectionMarkers: SectionMarker[];
   seats: SeatMarker[];
   viewingSection: SectionMarker | null;
@@ -97,7 +97,7 @@ export function DesignerHeader({
   layoutName,
   isLoading,
   seatsError,
-  venueType,
+  designMode,
   sectionMarkers,
   seats,
   viewingSection,
@@ -140,15 +140,15 @@ export function DesignerHeader({
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
     !isFullscreen &&
-    ((venueType === "large" && sectionMarkers.length > 0) ||
-      (venueType === "small" && seats.length > 0) ||
+    ((designMode === "section-level" && sectionMarkers.length > 0) ||
+      (designMode === "seat-level" && seats.length > 0) ||
       (viewingSection && displayedSeats.length > 0));
 
   // Logic for showing dropdown menu (when we have image)
   const showImageMenu =
     mainImageUrl &&
     !readOnly &&
-    (isPlacingSeats || (venueType === "large" && isPlacingSections));
+    (isPlacingSeats || (designMode === "section-level" && isPlacingSections));
 
   const dropdownMenuItems: React.ReactNode[] = useMemo(() => {
     return [

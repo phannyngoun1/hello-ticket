@@ -118,7 +118,7 @@ interface LayoutCanvasProps {
   onPanEnd?: () => void;
   containerWidth: number;
   containerHeight: number;
-  venueType: "small" | "large";
+  designMode: "seat-level" | "section-level";
   selectedShapeTool?: PlacementShapeType | null;
   shapeOverlays?: Array<{
     id: string;
@@ -181,7 +181,7 @@ export function LayoutCanvas({
   onPanEnd,
   containerWidth,
   containerHeight,
-  venueType,
+  designMode,
   selectedShapeTool,
   shapeOverlays = [],
   selectedOverlayId,
@@ -1652,7 +1652,7 @@ export function LayoutCanvas({
             />
           );
         })}
-        {venueType === "large" &&
+        {designMode === "section-level" &&
           staticSections.map((section) => {
             const pos =
               section.id === draggedSectionId && dragPosition
@@ -1756,7 +1756,7 @@ export function LayoutCanvas({
             />
           );
         })}
-        {venueType === "large" &&
+        {designMode === "section-level" &&
           selectedSections.map((section) => {
             const pos =
               section.id === draggedSectionId && dragPosition
@@ -1837,7 +1837,7 @@ export function LayoutCanvas({
               />
             );
           })()}
-        {venueType === "large" &&
+        {designMode === "section-level" &&
           draggedSection &&
           draggedSectionId &&
           !selectedSectionIdSet.has(draggedSectionId) &&

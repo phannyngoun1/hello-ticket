@@ -73,9 +73,9 @@ export function useSeatDesignerState({
         [recordSnapshot]
     );
 
-    const clearAllPlacements = useCallback((venueType: "small" | "large") => {
+    const clearAllPlacements = useCallback((designMode: "seat-level" | "section-level") => {
         recordSnapshot();
-        if (venueType === "small") {
+        if (designMode === "seat-level") {
             setSeats([]);
         } else {
             setSectionMarkers([]);

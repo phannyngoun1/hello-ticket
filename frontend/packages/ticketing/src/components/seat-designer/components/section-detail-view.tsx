@@ -664,7 +664,7 @@ export function SectionDetailView({
         onOpenChange={setIsDatasheetOpen}
         readOnly={readOnly}
         viewingSection={viewingSection}
-        venueType="small"
+        designMode="seat-level"
         displayedSeats={displayedSeats}
         seats={seats}
         sectionMarkers={[]}
