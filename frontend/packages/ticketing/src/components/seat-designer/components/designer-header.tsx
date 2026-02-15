@@ -29,114 +29,133 @@ import {
 } from "lucide-react";
 import { SectionMarker, SeatMarker } from "../types";
 
+/** Grouped props for DesignerHeader - reduces prop sprawl */
 export interface DesignerHeaderProps {
-  layoutName?: string;
-  isLoading: boolean;
-  seatsError: unknown;
-  designMode: "seat-level" | "section-level";
-  sectionMarkers: SectionMarker[];
-  seats: SeatMarker[];
-  viewingSection: SectionMarker | null;
-  displayedSeats: SeatMarker[];
-  onToggleDatasheet: () => void;
-  readOnly: boolean;
-  onSave: () => void;
-  isSaving: boolean;
-  isFullscreen: boolean;
+  design: {
+    layoutName?: string;
+    designMode: "seat-level" | "section-level";
+    sectionMarkers: SectionMarker[];
+    seats: SeatMarker[];
+    viewingSection: SectionMarker | null;
+    displayedSeats: SeatMarker[];
+    readOnly: boolean;
+  };
+  image: {
+    mainImageUrl?: string;
+    isPlacingSeats: boolean;
+    isPlacingSections: boolean;
+    onMainImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    /** Called when user removes the floor plan image (switch to simple floor) */
+    onRemoveImage?: () => void | Promise<void>;
+    onClearAllPlacements: () => void;
+  };
+  detection?: {
+    onDetectSections?: () => void;
+    isDetectingSections?: boolean;
+    onDetectSeats?: () => void;
+    isDetectingSeats?: boolean;
+  };
+  canvas?: {
+    canvasBackgroundColor?: string;
+    onCanvasBackgroundColorChange?: (color: string) => void;
+    markerFillTransparency?: number;
+    onMarkerFillTransparencyChange?: (transparency: number) => void;
+  };
+  grid?: {
+    snapToGrid?: boolean;
+    onSnapToGridChange?: (enabled: boolean) => void;
+    gridSize?: number;
+    onGridSizeChange?: (size: number) => void;
+    showGrid?: boolean;
+    onShowGridChange?: (enabled: boolean) => void;
+  };
+  actions: {
+    onToggleDatasheet: () => void;
+    onSave: () => void;
+    onPreview?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    onRefresh?: () => void | Promise<void>;
+  };
+  state: {
+    isLoading: boolean;
+    seatsError: unknown;
+    isSaving: boolean;
+    isFullscreen: boolean;
+    isDirty?: boolean;
+    isRefreshing?: boolean;
+    canUndo?: boolean;
+    canRedo?: boolean;
+  };
   onToggleFullscreen: () => void;
-  mainImageUrl?: string;
-  isPlacingSeats: boolean;
-  isPlacingSections: boolean;
-  onClearAllPlacements: () => void;
-  onMainImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  /** Called when user removes the floor plan image (switch to simple floor) */
-  onRemoveImage?: () => void | Promise<void>;
-  onDetectSections?: () => void;
-  isDetectingSections?: boolean;
-  onDetectSeats?: () => void;
-  isDetectingSeats?: boolean;
-  /** Canvas background color when no image; shown only when !mainImageUrl */
-  canvasBackgroundColor?: string;
-  /** Called when user changes canvas background color; only relevant when no image */
-  onCanvasBackgroundColorChange?: (color: string) => void;
-  /** Enable/disable snap to grid */
-  snapToGrid?: boolean;
-  /** Called when user toggles snap to grid */
-  onSnapToGridChange?: (enabled: boolean) => void;
-  /** Current grid size in percentage */
-  gridSize?: number;
-  /** Called when user changes grid size */
-  onGridSizeChange?: (size: number) => void;
-  /** Show grid lines on canvas */
-  showGrid?: boolean;
-  /** Called when user toggles show grid */
-  onShowGridChange?: (enabled: boolean) => void;
-  /** Called when user clicks preview button to see booking view */
-  onPreview?: () => void;
-  /** Marker fill transparency (0.0 to 1.0) */
-  markerFillTransparency?: number;
-  /** Called when user changes marker fill transparency */
-  onMarkerFillTransparencyChange?: (transparency: number) => void;
-  /** Undo last change */
-  onUndo?: () => void;
-  /** Redo last undone change */
-  onRedo?: () => void;
-  /** Whether undo is available */
-  canUndo?: boolean;
-  /** Whether redo is available */
-  canRedo?: boolean;
-  /** Whether there are unsaved changes */
-  isDirty?: boolean;
-  /** Called when user clicks refresh button to reload data from server */
-  onRefresh?: () => void | Promise<void>;
-  /** Whether refresh is in progress */
-  isRefreshing?: boolean;
 }
 
 export function DesignerHeader({
-  layoutName,
-  isLoading,
-  seatsError,
-  designMode,
-  sectionMarkers,
-  seats,
-  viewingSection,
-  displayedSeats,
-  onToggleDatasheet,
-  readOnly,
-  onSave,
-  isSaving,
-  isFullscreen,
+  design,
+  image,
+  detection,
+  canvas,
+  grid,
+  actions,
+  state,
   onToggleFullscreen,
-  mainImageUrl,
-  isPlacingSeats,
-  isPlacingSections,
-  onClearAllPlacements,
-  onMainImageSelect,
-  onRemoveImage,
-  onDetectSections,
-  isDetectingSections = false,
-  onDetectSeats,
-  isDetectingSeats = false,
-  canvasBackgroundColor = "#e5e7eb",
-  onCanvasBackgroundColorChange,
-  snapToGrid = false,
-  onSnapToGridChange,
-  gridSize = 5,
-  onGridSizeChange,
-  showGrid = false,
-  onShowGridChange,
-  onPreview,
-  markerFillTransparency = 1.0,
-  onMarkerFillTransparencyChange,
-  onUndo,
-  onRedo,
-  canUndo = false,
-  canRedo = false,
-  isDirty = false,
-  onRefresh,
-  isRefreshing = false,
 }: DesignerHeaderProps) {
+  const {
+    layoutName,
+    designMode,
+    sectionMarkers,
+    seats,
+    viewingSection,
+    displayedSeats,
+    readOnly,
+  } = design;
+  const {
+    mainImageUrl,
+    isPlacingSeats,
+    isPlacingSections,
+    onMainImageSelect,
+    onRemoveImage,
+    onClearAllPlacements,
+  } = image;
+  const {
+    onDetectSections,
+    isDetectingSections = false,
+    onDetectSeats,
+    isDetectingSeats = false,
+  } = detection ?? {};
+  const {
+    canvasBackgroundColor = "#e5e7eb",
+    onCanvasBackgroundColorChange,
+    markerFillTransparency = 1.0,
+    onMarkerFillTransparencyChange,
+  } = canvas ?? {};
+  const {
+    snapToGrid = false,
+    onSnapToGridChange,
+    gridSize = 5,
+    onGridSizeChange,
+    showGrid = false,
+    onShowGridChange,
+  } = grid ?? {};
+  const {
+    onToggleDatasheet,
+    onSave,
+    onPreview,
+    onUndo,
+    onRedo,
+    onRefresh,
+  } = actions;
+  const {
+    isLoading,
+    seatsError,
+    isSaving,
+    isFullscreen,
+    isDirty = false,
+    isRefreshing = false,
+    canUndo = false,
+    canRedo = false,
+  } = state;
+
   // Logic for showing datasheet toggle (hidden in full screen to maximize canvas focus)
   const showDatasheetButton =
     !isFullscreen &&
