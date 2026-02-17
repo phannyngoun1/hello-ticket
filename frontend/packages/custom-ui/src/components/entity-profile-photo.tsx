@@ -105,8 +105,7 @@ export function EntityProfilePhoto({
           { file_upload_id: uploadResponse.id }
         );
 
-        // Update preview
-        setPreviewUrl(profilePhoto.url);
+        // Notify parent - preview updates via currentPhoto or refetched data
         onPhotoChange?.(profilePhoto);
 
         // Reset file input
@@ -139,6 +138,8 @@ export function EntityProfilePhoto({
         disabled={disabled || uploading}
         className="hidden"
         id={`${entityType}-photo-${entityId}`}
+        aria-label={`Upload ${altText} photo`}
+        title={`Upload ${altText} photo`}
       />
       
       <div
