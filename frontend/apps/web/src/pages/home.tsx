@@ -43,6 +43,7 @@ import {
 } from "@truths/custom-ui";
 import {
   DashboardService,
+  RECENT_EVENTS_BOOKINGS_TITLE,
   type DashboardAnalytics,
   type RevenueAnalytics,
   type DashboardFilters,
@@ -125,7 +126,8 @@ export function HomePage() {
   const formatActivityItems = (
     analytics: DashboardAnalytics
   ): ActivityItem[] => {
-    const items: ActivityItem[] = [];
+    type ActivityItemWithDate = ActivityItem & { created_at: string };
+    const items: ActivityItemWithDate[] = [];
 
     // Recent events
     analytics.recent_events.forEach((event) => {
@@ -134,7 +136,13 @@ export function HomePage() {
         type: "info",
         title: `Event Created: ${event.title}`,
         description: `Status: ${event.status}`,
-        timestamp: new Date(event.created_at).toLocaleDateString(),
+        timestamp: new Date(event.created_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        created_at: event.created_at,
       });
     });
 
@@ -145,7 +153,13 @@ export function HomePage() {
         type: "success",
         title: `New Booking: ${booking.customer_name}`,
         description: `${DashboardService.formatCurrency(booking.total_amount)} - ${booking.status}`,
-        timestamp: new Date(booking.created_at).toLocaleDateString(),
+        timestamp: new Date(booking.created_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        created_at: booking.created_at,
       });
     });
 
@@ -156,11 +170,22 @@ export function HomePage() {
         type: "success",
         title: `Payment Received`,
         description: `${DashboardService.formatCurrency(payment.amount)} - ${payment.status}`,
-        timestamp: new Date(payment.created_at).toLocaleDateString(),
+        timestamp: new Date(payment.created_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        created_at: payment.created_at,
       });
     });
 
-    return items.slice(0, 10);
+    return items
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      .slice(0, 10);
   };
 
   const getEventStatusChartData = (
@@ -277,7 +302,7 @@ export function HomePage() {
               <TabsTrigger
                 value="overview"
                 className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 py-1 text-xs font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm gap-1.5 hover:bg-muted/50"
-                title="View dashboard overview with key metrics and recent activity"
+                title={`View dashboard overview with key metrics and ${RECENT_EVENTS_BOOKINGS_TITLE.toLowerCase()}`}
               >
                 <Home className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Overview</span>
@@ -440,6 +465,7 @@ export function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <ActivityFeed
+              title={RECENT_EVENTS_BOOKINGS_TITLE}
               activities={formatActivityItems(analytics)}
               maxItems={6}
               showMoreLink={

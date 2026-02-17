@@ -41,6 +41,15 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
         """Handle dashboard analytics query."""
         tenant_id = require_tenant_context()
 
+        def _in_date_range(dt: datetime, start: Optional[datetime], end: Optional[datetime]) -> bool:
+            if start is None and end is None:
+                return True
+            if start is not None and dt < start:
+                return False
+            if end is not None and dt > end:
+                return False
+            return True
+
         now = datetime.now(timezone.utc)
         start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month = start_of_month - timedelta(days=1)
@@ -48,47 +57,55 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
 
         # Event metrics
         all_events = await self.event_repository.get_all(tenant_id)
-        total_events = len(all_events)
+        filtered_events = [
+            e for e in all_events
+            if _in_date_range(e.created_at, query.start_date, query.end_date)
+        ]
+        total_events = len(filtered_events)
 
         upcoming_events = len([
-            event for event in all_events
+            event for event in filtered_events
             if event.start_dt > now
         ])
 
         active_events = len([
-            event for event in all_events
+            event for event in filtered_events
             if event.start_dt <= now and event.end_dt >= now
         ])
 
         events_this_month = len([
-            event for event in all_events
+            event for event in filtered_events
             if event.created_at >= start_of_month
         ])
 
         event_status_breakdown = defaultdict(int)
-        for event in all_events:
+        for event in filtered_events:
             event_status_breakdown[event.status] += 1
 
         # Booking/Sales metrics
         all_bookings = await self.booking_repository.get_all(tenant_id)
-        total_bookings = len(all_bookings)
+        filtered_bookings = [
+            b for b in all_bookings
+            if _in_date_range(b.created_at, query.start_date, query.end_date)
+        ]
+        total_bookings = len(filtered_bookings)
 
         bookings_this_month = len([
-            booking for booking in all_bookings
+            booking for booking in filtered_bookings
             if booking.created_at >= start_of_month
         ])
 
         # Calculate revenue
-        total_revenue = sum(booking.total_amount for booking in all_bookings)
+        total_revenue = sum(booking.total_amount for booking in filtered_bookings)
         revenue_this_month = sum(
-            booking.total_amount for booking in all_bookings
+            booking.total_amount for booking in filtered_bookings
             if booking.created_at >= start_of_month
         )
 
         average_ticket_price = total_revenue / total_bookings if total_bookings > 0 else 0
 
         booking_status_breakdown = defaultdict(int)
-        for booking in all_bookings:
+        for booking in filtered_bookings:
             booking_status_breakdown[booking.status] += 1
 
         # Customer metrics
@@ -97,25 +114,36 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
             limit=10000  # Large limit to get all customers for analytics
         )
         all_customers = all_customers_result.items
-        total_customers = len(all_customers)
+        filtered_customers = [
+            c for c in all_customers
+            if _in_date_range(c.created_at, query.start_date, query.end_date)
+        ]
+        total_customers = len(filtered_customers)
 
         new_customers_this_month = len([
-            customer for customer in all_customers
+            customer for customer in filtered_customers
             if customer.created_at >= start_of_month
         ])
 
         active_customers = len([
-            customer for customer in all_customers
+            customer for customer in filtered_customers
             if customer.updated_at >= start_of_month
         ])
 
-        # User metrics
+        # User metrics (filter by last_login in range when date filter provided)
         all_users = await self.user_repository.get_all()
         total_users = len(all_users)
-        active_users = len([
-            user for user in all_users
-            if user.last_login and user.last_login >= start_of_month
-        ])
+        if query.start_date or query.end_date:
+            filtered_users = [
+                u for u in all_users
+                if u.last_login and _in_date_range(u.last_login, query.start_date, query.end_date)
+            ]
+            active_users = len(filtered_users)
+        else:
+            active_users = len([
+                user for user in all_users
+                if user.last_login and user.last_login >= start_of_month
+            ])
 
         # Recent activity (last 10 items each)
         recent_events = [
@@ -126,7 +154,7 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
                 "created_at": event.created_at.isoformat(),
                 "start_dt": event.start_dt.isoformat(),
             }
-            for event in sorted(all_events, key=lambda x: x.created_at, reverse=True)[:10]
+            for event in sorted(filtered_events, key=lambda x: x.created_at, reverse=True)[:10]
         ]
 
         recent_bookings = [
@@ -137,10 +165,14 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
                 "status": booking.status,
                 "created_at": booking.created_at.isoformat(),
             }
-            for booking in sorted(all_bookings, key=lambda x: x.created_at, reverse=True)[:10]
+            for booking in sorted(filtered_bookings, key=lambda x: x.created_at, reverse=True)[:10]
         ]
 
         all_payments = await self.payment_repository.get_all(tenant_id)
+        filtered_payments = [
+            p for p in all_payments
+            if _in_date_range(p.created_at, query.start_date, query.end_date)
+        ]
         recent_payments = [
             {
                 "id": payment.id,
@@ -148,39 +180,61 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
                 "status": payment.status,
                 "created_at": payment.created_at.isoformat(),
             }
-            for payment in sorted(all_payments, key=lambda x: x.created_at, reverse=True)[:10]
+            for payment in sorted(filtered_payments, key=lambda x: x.created_at, reverse=True)[:10]
         ]
 
         # Calculate growth percentages
-        last_month_events = len([
-            event for event in all_events
-            if start_of_last_month <= event.created_at < start_of_month
-        ])
-        events_growth = ((events_this_month - last_month_events) / last_month_events * 100) if last_month_events > 0 else 0
+        if query.start_date and query.end_date:
+            # Compare to previous period of same length
+            period_delta = query.end_date - query.start_date
+            prev_start = query.start_date - period_delta
+            prev_end = query.start_date
 
-        last_month_bookings = len([
-            booking for booking in all_bookings
-            if start_of_last_month <= booking.created_at < start_of_month
-        ])
-        bookings_growth = ((bookings_this_month - last_month_bookings) / last_month_bookings * 100) if last_month_bookings > 0 else 0
+            def _in_prev_range(dt: datetime) -> bool:
+                return prev_start <= dt < prev_end
 
-        last_month_revenue = sum(
-            booking.total_amount for booking in all_bookings
-            if start_of_last_month <= booking.created_at < start_of_month
-        )
-        revenue_growth = ((revenue_this_month - last_month_revenue) / last_month_revenue * 100) if last_month_revenue > 0 else 0
+            prev_events = len([e for e in all_events if _in_prev_range(e.created_at)])
+            events_growth = ((total_events - prev_events) / prev_events * 100) if prev_events > 0 else 0.0
 
-        last_month_customers = len([
-            customer for customer in all_customers
-            if start_of_last_month <= customer.created_at < start_of_month
-        ])
-        customers_growth = ((new_customers_this_month - last_month_customers) / last_month_customers * 100) if last_month_customers > 0 else 0
+            prev_bookings = len([b for b in all_bookings if _in_prev_range(b.created_at)])
+            bookings_growth = ((total_bookings - prev_bookings) / prev_bookings * 100) if prev_bookings > 0 else 0.0
+
+            prev_revenue = sum(b.total_amount for b in all_bookings if _in_prev_range(b.created_at))
+            revenue_growth = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0.0
+
+            prev_customers = len([c for c in all_customers if _in_prev_range(c.created_at)])
+            customers_growth = ((total_customers - prev_customers) / prev_customers * 100) if prev_customers > 0 else 0.0
+        else:
+            last_month_events = len([
+                event for event in all_events
+                if start_of_last_month <= event.created_at < start_of_month
+            ])
+            events_growth = ((events_this_month - last_month_events) / last_month_events * 100) if last_month_events > 0 else 0
+
+            last_month_bookings = len([
+                booking for booking in all_bookings
+                if start_of_last_month <= booking.created_at < start_of_month
+            ])
+            bookings_growth = ((bookings_this_month - last_month_bookings) / last_month_bookings * 100) if last_month_bookings > 0 else 0
+
+            last_month_revenue = sum(
+                booking.total_amount for booking in all_bookings
+                if start_of_last_month <= booking.created_at < start_of_month
+            )
+            revenue_growth = ((revenue_this_month - last_month_revenue) / last_month_revenue * 100) if last_month_revenue > 0 else 0
+
+            last_month_customers = len([
+                customer for customer in all_customers
+                if start_of_last_month <= customer.created_at < start_of_month
+            ])
+            customers_growth = ((new_customers_this_month - last_month_customers) / last_month_customers * 100) if last_month_customers > 0 else 0
 
         events_by_id = {event.id: event for event in all_events}
 
-        # Top performers
+        # Top performers (use filtered data when date range provided)
+        top_bookings = filtered_bookings if (query.start_date or query.end_date) else all_bookings
         event_bookings = defaultdict(int)
-        for booking in all_bookings:
+        for booking in top_bookings:
             # Safely get event using event_id since booking.event is not populated
             if booking.event_id and booking.event_id in events_by_id:
                 event_bookings[booking.event_id] += 1
@@ -196,7 +250,7 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
 
         # For simplicity, we'll use show_id and venue_id directly since Event doesn't have full relationships
         show_revenue = defaultdict(float)
-        for booking in all_bookings:
+        for booking in top_bookings:
             if booking.event_id and booking.event_id in events_by_id:
                 event = events_by_id[booking.event_id]
                 if event.show_id:  # Use show_id instead of event.show
@@ -211,8 +265,9 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
             for show_id, revenue in sorted(show_revenue.items(), key=lambda x: x[1], reverse=True)[:5]
         ]
 
+        top_events = filtered_events if (query.start_date or query.end_date) else all_events
         venue_events = defaultdict(int)
-        for event in all_events:
+        for event in top_events:
             if event.venue_id:  # Use venue_id instead of event.venue
                 venue_events[event.venue_id] += 1
 

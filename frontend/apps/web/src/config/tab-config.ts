@@ -6,6 +6,7 @@
  */
 
 import type { TabConfiguration } from "@truths/custom-ui";
+import { RECENT_EVENTS_BOOKINGS_TITLE } from "@truths/shared";
 
 /**
  * Module order for tab grouping and dropdown display
@@ -24,6 +25,16 @@ export const moduleOrder = [
 export const tabConfiguration: TabConfiguration = {
     tabs: [
         // General/Home
+        {
+            path: "/activity",
+            title: RECENT_EVENTS_BOOKINGS_TITLE,
+            iconName: "Activity",
+            pageType: "list",
+            module: "General",
+            group: "primary",
+            sequence: 2,
+            priority: 2,
+        },
         {
             path: "/",
             title: "Home",

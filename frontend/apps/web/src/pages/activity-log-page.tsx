@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import {
   DashboardService,
+  RECENT_EVENTS_BOOKINGS_TITLE,
   type DashboardAnalytics,
   type DashboardFilters,
 } from "@truths/shared";
@@ -49,7 +50,7 @@ function formatActivityItems(analytics: DashboardAnalytics): ActivityEntry[] {
     items.push({
       id: `event-${event.id}`,
       category: "event",
-      title: event.title,
+      title: `Event Created: ${event.title}`,
       description: `Status: ${event.status}`,
       timestampIso: event.created_at,
       timestamp: "",
@@ -61,8 +62,8 @@ function formatActivityItems(analytics: DashboardAnalytics): ActivityEntry[] {
     items.push({
       id: `booking-${booking.id}`,
       category: "booking",
-      title: `Booking: ${booking.customer_name}`,
-      description: `${DashboardService.formatCurrency(booking.total_amount)} • ${booking.status}`,
+      title: `New Booking: ${booking.customer_name}`,
+      description: `${DashboardService.formatCurrency(booking.total_amount)} - ${booking.status}`,
       timestampIso: booking.created_at,
       timestamp: "",
       link: `/sales/bookings/${booking.id}`,
@@ -74,7 +75,7 @@ function formatActivityItems(analytics: DashboardAnalytics): ActivityEntry[] {
       id: `payment-${payment.id}`,
       category: "payment",
       title: "Payment Received",
-      description: `${DashboardService.formatCurrency(payment.amount)} • ${payment.status}`,
+      description: `${DashboardService.formatCurrency(payment.amount)} - ${payment.status}`,
       timestampIso: payment.created_at,
       timestamp: "",
       link: `/sales/payments/${payment.id}`,
@@ -158,8 +159,8 @@ export function ActivityLogPage() {
       const analyticsData = await DashboardService.getAnalytics(filters);
       setAnalytics(analyticsData);
     } catch (err) {
-      console.error("Failed to load activity:", err);
-      setError("Failed to load activity log");
+      console.error(`Failed to load ${RECENT_EVENTS_BOOKINGS_TITLE}:`, err);
+      setError(`Failed to load ${RECENT_EVENTS_BOOKINGS_TITLE}`);
     } finally {
       setLoading(false);
     }
@@ -223,7 +224,7 @@ export function ActivityLogPage() {
         </Button>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Activity className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Unable to Load Activity</h3>
+          <h3 className="text-lg font-semibold mb-2">Unable to Load {RECENT_EVENTS_BOOKINGS_TITLE}</h3>
           <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={loadAnalytics} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -236,14 +237,15 @@ export function ActivityLogPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold">{RECENT_EVENTS_BOOKINGS_TITLE}</h1>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </Button>
           <Select value={dateRange} onValueChange={setDateRange} disabled={loading}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Period" />
@@ -358,7 +360,7 @@ export function ActivityLogPage() {
           <p className="text-muted-foreground">
             {searchQuery || typeFilter !== "all"
               ? "No results. Try different filters."
-              : "No activity for this period."}
+              : "No events or bookings for this period."}
           </p>
         </div>
       )}

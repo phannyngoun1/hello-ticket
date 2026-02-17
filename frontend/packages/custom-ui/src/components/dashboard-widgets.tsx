@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
 import { cn } from "@truths/ui/lib/utils";
+import { RECENT_EVENTS_BOOKINGS_TITLE } from "@truths/shared";
 import {
   TrendingUp,
   TrendingDown,
@@ -184,12 +185,12 @@ export interface ActivityFeedProps {
   activities: ActivityItem[];
   maxItems?: number;
   className?: string;
-  /** Optional "Show more" link (e.g. Link to activity log page) */
+  /** Optional "Show more" link (e.g. Link to recent events & bookings page) */
   showMoreLink?: React.ReactNode;
 }
 
 export function ActivityFeed({
-  title = "Recent Activity",
+  title = RECENT_EVENTS_BOOKINGS_TITLE,
   activities,
   maxItems = 10,
   className = "",
