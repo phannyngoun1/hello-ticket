@@ -98,13 +98,24 @@ class TenantMiddleware(BaseHTTPMiddleware):
                 tenant_id = tenant_slug
                 logger.debug(f"Tenant '{tenant_id}' from X-Tenant-Slug header")
         
-        # Strategy 4: Check subdomain
+        # Strategy 4: Check subdomain (skip for deployment platform hostnames)
         if not tenant_id:
-            host = request.headers.get("host", "")
-            parts = host.split(".")
-            if len(parts) > 2:  # e.g., tenant1.api.example.com
-                tenant_id = parts[0]
-                logger.debug(f"Tenant '{tenant_id}' from subdomain")
+            host = request.headers.get("host", "").split(":")[0]  # strip port
+            # Don't use subdomain for Railway, Vercel, Heroku, Render, etc.
+            # e.g. hello-ticket-production.up.railway.app should use default-tenant
+            deployment_hosts = (
+                "railway.app",
+                "vercel.app",
+                "herokuapp.com",
+                "onrender.com",
+                "netlify.app",
+                "fly.dev",
+            )
+            if not any(h in host for h in deployment_hosts):
+                parts = host.split(".")
+                if len(parts) > 2:  # e.g., tenant1.api.example.com
+                    tenant_id = parts[0]
+                    logger.debug(f"Tenant '{tenant_id}' from subdomain")
         
         # Strategy 5: Check query parameter
         if not tenant_id:
