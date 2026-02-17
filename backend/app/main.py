@@ -27,9 +27,16 @@ from app.presentation.middleware.audit_middleware import AuditMiddleware
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure logging to output to console
+# Log level: DEBUG for issue tracking, INFO default, WARNING/ERROR to reduce noise
+# Set LOG_LEVEL=DEBUG or ENABLE_DEBUG_LOG=true in production to troubleshoot issues
+_log_level_name = (
+    os.getenv("LOG_LEVEL", "").upper()
+    or ("DEBUG" if os.getenv("ENABLE_DEBUG_LOG", "").lower() == "true" else "INFO")
+)
+_log_level = getattr(logging, _log_level_name, logging.INFO)
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=_log_level,
     format="%(asctime)s | %(levelname)-7s | %(message)s",
     datefmt="%H:%M:%S",
     handlers=[logging.StreamHandler()],
@@ -69,11 +76,12 @@ for logger_name in (
 ):
     logging.getLogger(logger_name).addFilter(traceback_filter)
 
-# Reduce SQLAlchemy verbosity (only show warnings and errors)
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
-logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
-logging.getLogger('sqlalchemy.orm').setLevel(logging.WARNING)
+# Reduce SQLAlchemy verbosity (only show warnings and errors; DEBUG when ENABLE_DEBUG_LOG)
+_sql_level = logging.DEBUG if _log_level <= logging.DEBUG else logging.WARNING
+logging.getLogger('sqlalchemy.engine').setLevel(_sql_level)
+logging.getLogger('sqlalchemy.pool').setLevel(_sql_level)
+logging.getLogger('sqlalchemy.dialects').setLevel(_sql_level)
+logging.getLogger('sqlalchemy.orm').setLevel(_sql_level)
 
 # Disable uvicorn access log (we use ErrorLoggingMiddleware for request/response)
 logging.getLogger('uvicorn.access').setLevel(logging.WARNING)

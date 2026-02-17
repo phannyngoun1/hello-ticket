@@ -88,6 +88,7 @@ Railway sets `PORT`; the Dockerfile uses it so the app listens on the correct po
 From `backend/env.example` you may also set:
 
 - `DEFAULT_TENANT_ID` – e.g. `default-tenant`
+- `LOG_LEVEL=DEBUG` or `ENABLE_DEBUG_LOG=true` – enable verbose logging to track issues (errors are always written to `logs/errors.log`)
 - `DEFAULT_ADMIN_USERNAME`, `DEFAULT_ADMIN_EMAIL`, `DEFAULT_ADMIN_PASSWORD`, `DEFAULT_ADMIN_NAME` – if you use the built-in admin creation (change password after first login).
 - `CACHE_BACKEND` – `disk` or `redis` (if you add Redis).
 - `REQUIRE_TENANT` – `true` in production if you want to require tenant headers.
