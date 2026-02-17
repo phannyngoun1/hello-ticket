@@ -16,12 +16,15 @@ from app.domain.sales.booking_repositories import BookingRepository
 from app.domain.sales.repositories import CustomerRepository
 from app.domain.sales.payment_repositories import PaymentRepository
 from app.domain.core.user.repository import UserRepository
+from app.infrastructure.shared.dashboard_analytics_repository import DashboardAnalyticsRepository
 from app.shared.mediator import Handler
 from app.shared.tenant_context import require_tenant_context
 
 
 class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, DashboardAnalyticsData]):
-    """Handler for dashboard analytics queries."""
+    """Handler for dashboard analytics queries.
+    Uses optimized date-filtered queries when date range is provided.
+    """
 
     def __init__(
         self,
@@ -30,15 +33,145 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
         customer_repository: CustomerRepository,
         payment_repository: PaymentRepository,
         user_repository: UserRepository,
+        dashboard_analytics_repository: Optional[DashboardAnalyticsRepository] = None,
     ):
         self.event_repository = event_repository
         self.booking_repository = booking_repository
         self.customer_repository = customer_repository
         self.payment_repository = payment_repository
         self.user_repository = user_repository
+        self.dashboard_repo = dashboard_analytics_repository or DashboardAnalyticsRepository()
+
+    def _use_optimized_path(self, query: GetDashboardAnalyticsQuery) -> bool:
+        """Use optimized DB-level filtering when date range is provided."""
+        return query.start_date is not None or query.end_date is not None
 
     async def handle_get_dashboard_analytics(self, query: GetDashboardAnalyticsQuery) -> DashboardAnalyticsData:
         """Handle dashboard analytics query."""
+        if self._use_optimized_path(query):
+            return await self._handle_optimized(query)
+        return await self._handle_legacy(query)
+
+    async def _handle_optimized(self, query: GetDashboardAnalyticsQuery) -> DashboardAnalyticsData:
+        """Optimized path: SQL aggregation (COUNT, SUM, GROUP BY) at DB level."""
+        tenant_id = require_tenant_context()
+        now = datetime.now(timezone.utc)
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        # SQL aggregation for statistics (no full table loads)
+        total_events = self.dashboard_repo.count_events(
+            tenant_id, query.start_date, query.end_date
+        )
+        upcoming_events = self.dashboard_repo.count_upcoming_events(
+            tenant_id, now, query.start_date, query.end_date
+        )
+        active_events = self.dashboard_repo.count_active_events(
+            tenant_id, now, query.start_date, query.end_date
+        )
+        event_status_breakdown = self.dashboard_repo.get_event_status_breakdown(
+            tenant_id, query.start_date, query.end_date
+        )
+
+        total_bookings = self.dashboard_repo.count_bookings(
+            tenant_id, query.start_date, query.end_date
+        )
+        total_revenue = self.dashboard_repo.sum_booking_revenue(
+            tenant_id, query.start_date, query.end_date
+        )
+        booking_status_breakdown = self.dashboard_repo.get_booking_status_breakdown(
+            tenant_id, query.start_date, query.end_date
+        )
+        average_ticket_price = total_revenue / total_bookings if total_bookings > 0 else 0
+
+        total_customers = self.dashboard_repo.count_customers(
+            tenant_id, query.start_date, query.end_date
+        )
+
+        # "This month" metrics: overlap of date range with current month
+        month_start = max(query.start_date, start_of_month) if query.start_date else start_of_month
+        events_this_month = self.dashboard_repo.count_events(
+            tenant_id, month_start, query.end_date
+        )
+        bookings_this_month = self.dashboard_repo.count_bookings(
+            tenant_id, month_start, query.end_date
+        )
+        revenue_this_month = self.dashboard_repo.sum_booking_revenue(
+            tenant_id, month_start, query.end_date
+        )
+        new_customers_this_month = self.dashboard_repo.count_customers(
+            tenant_id, month_start, query.end_date
+        )
+        active_customers = self.dashboard_repo.count_customers_updated_since(
+            tenant_id, start_of_month, query.start_date, query.end_date
+        )
+
+        # Recent activity (lightweight, limited)
+        recent_events = self.dashboard_repo.get_recent_events(
+            tenant_id, 10, query.start_date, query.end_date
+        )
+        recent_bookings = self.dashboard_repo.get_recent_bookings(
+            tenant_id, 10, query.start_date, query.end_date
+        )
+        recent_payments = self.dashboard_repo.get_recent_payments(
+            tenant_id, 10, query.start_date, query.end_date
+        )
+
+        # Top lists via SQL GROUP BY
+        top_events_by_bookings = self.dashboard_repo.get_top_events_by_bookings(
+            tenant_id, 5, query.start_date, query.end_date
+        )
+        top_shows_by_revenue = self.dashboard_repo.get_top_shows_by_revenue(
+            tenant_id, 5, query.start_date, query.end_date
+        )
+        top_venues_by_events = self.dashboard_repo.get_top_venues_by_events(
+            tenant_id, 5, query.start_date, query.end_date
+        )
+
+        # Users (no aggregation in dashboard repo)
+        all_users = await self.user_repository.get_all()
+        total_users = len(all_users)
+        if query.start_date or query.end_date:
+            def _in_range(dt, start, end):
+                if start and dt < start:
+                    return False
+                if end and dt > end:
+                    return False
+                return True
+            active_users = sum(1 for u in all_users if u.last_login and _in_range(u.last_login, query.start_date, query.end_date))
+        else:
+            active_users = sum(1 for u in all_users if u.last_login and u.last_login >= start_of_month)
+
+        # Growth: compare to previous period using SQL aggregation
+        events_growth = bookings_growth = revenue_growth = customers_growth = 0.0
+        if query.start_date and query.end_date:
+            period_delta = query.end_date - query.start_date
+            prev_start, prev_end = query.start_date - period_delta, query.start_date
+            prev_ec = self.dashboard_repo.count_events(tenant_id, prev_start, prev_end)
+            prev_bc = self.dashboard_repo.count_bookings(tenant_id, prev_start, prev_end)
+            prev_rev = self.dashboard_repo.sum_booking_revenue(tenant_id, prev_start, prev_end)
+            prev_cc = self.dashboard_repo.count_customers(tenant_id, prev_start, prev_end)
+            events_growth = ((total_events - prev_ec) / prev_ec * 100) if prev_ec > 0 else 0.0
+            bookings_growth = ((total_bookings - prev_bc) / prev_bc * 100) if prev_bc > 0 else 0.0
+            revenue_growth = ((total_revenue - prev_rev) / prev_rev * 100) if prev_rev > 0 else 0.0
+            customers_growth = ((total_customers - prev_cc) / prev_cc * 100) if prev_cc > 0 else 0.0
+
+        return DashboardAnalyticsData(
+            total_events=total_events, upcoming_events=upcoming_events, active_events=active_events,
+            events_this_month=events_this_month, event_status_breakdown=dict(event_status_breakdown),
+            total_bookings=total_bookings, bookings_this_month=bookings_this_month,
+            total_revenue=total_revenue, revenue_this_month=revenue_this_month,
+            average_ticket_price=average_ticket_price, booking_status_breakdown=dict(booking_status_breakdown),
+            total_customers=total_customers, new_customers_this_month=new_customers_this_month,
+            active_customers=active_customers, total_users=total_users, active_users=active_users,
+            recent_events=recent_events, recent_bookings=recent_bookings, recent_payments=recent_payments,
+            events_growth=events_growth, bookings_growth=bookings_growth,
+            revenue_growth=revenue_growth, customers_growth=customers_growth,
+            top_events_by_bookings=top_events_by_bookings, top_shows_by_revenue=top_shows_by_revenue,
+            top_venues_by_events=top_venues_by_events,
+        )
+
+    async def _handle_legacy(self, query: GetDashboardAnalyticsQuery) -> DashboardAnalyticsData:
+        """Legacy path when no date filter."""
         tenant_id = require_tenant_context()
 
         def _in_date_range(dt: datetime, start: Optional[datetime], end: Optional[datetime]) -> bool:

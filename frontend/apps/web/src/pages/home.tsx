@@ -188,43 +188,54 @@ export function HomePage() {
       .slice(0, 10);
   };
 
+  const formatStatusLabel = (status: string) => {
+    const normalized = status.replace(/^[A-Za-z]+\./, "").replace(/_/g, " ");
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
+  };
+
   const getEventStatusChartData = (
     analytics: DashboardAnalytics
   ): ChartDataPoint[] => {
-    return Object.entries(analytics.event_status_breakdown).map(
-      ([status, count]) => ({
-        label:
-          status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
-        value: count,
-        color:
-          status === "published"
-            ? "#22c55e"
-            : status === "draft"
-              ? "#f59e0b"
-              : status === "cancelled"
-                ? "#ef4444"
-                : "#6b7280",
-      })
+    return Object.entries(analytics.event_status_breakdown ?? {}).map(
+      ([status, count]) => {
+        const normalized = status.replace(/^[A-Za-z]+\./, "").toLowerCase();
+        return {
+          label: formatStatusLabel(status),
+          value: count,
+          color:
+            normalized === "published"
+              ? "#22c55e"
+              : normalized === "draft"
+                ? "#f59e0b"
+                : normalized === "cancelled"
+                  ? "#ef4444"
+                  : normalized === "on_sale"
+                    ? "#3b82f6"
+                    : "#6b7280",
+        };
+      }
     );
   };
 
   const getBookingStatusChartData = (
     analytics: DashboardAnalytics
   ): ChartDataPoint[] => {
-    return Object.entries(analytics.booking_status_breakdown).map(
-      ([status, count]) => ({
-        label:
-          status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, " "),
-        value: count,
-        color:
-          status === "confirmed"
-            ? "#22c55e"
-            : status === "pending"
-              ? "#f59e0b"
-              : status === "cancelled"
-                ? "#ef4444"
-                : "#6b7280",
-      })
+    return Object.entries(analytics.booking_status_breakdown ?? {}).map(
+      ([status, count]) => {
+        const normalized = status.replace(/^[A-Za-z]+\./, "").toLowerCase();
+        return {
+          label: formatStatusLabel(status),
+          value: count,
+          color:
+            normalized === "confirmed" || normalized === "paid"
+              ? "#22c55e"
+              : normalized === "pending"
+                ? "#f59e0b"
+                : normalized === "cancelled"
+                  ? "#ef4444"
+                  : "#6b7280",
+        };
+      }
     );
   };
 
@@ -422,7 +433,7 @@ export function HomePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analytics.top_shows_by_revenue
+                    {(analytics.top_shows_by_revenue ?? [])
                       .slice(0, 5)
                       .map((show, index) => (
                         <div
@@ -492,7 +503,7 @@ export function HomePage() {
                       Draft Events
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {analytics.event_status_breakdown.draft || 0} shows
+                      {analytics.event_status_breakdown?.draft ?? 0} shows
                       pending publication
                     </p>
                   </div>
@@ -506,7 +517,7 @@ export function HomePage() {
                       Pending Bookings
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {analytics.booking_status_breakdown.pending || 0} orders
+                      {analytics.booking_status_breakdown?.pending ?? 0} orders
                       awaiting confirmation
                     </p>
                   </div>
@@ -558,7 +569,7 @@ export function HomePage() {
 
           <div className="grid gap-4 md:grid-cols-3">
             <BarChart
-              data={analytics.top_events_by_bookings.map((event) => ({
+              data={(analytics.top_events_by_bookings ?? []).map((event) => ({
                 label:
                   event.event_title.length > 15
                     ? `${event.event_title.slice(0, 15)}...`
@@ -634,8 +645,8 @@ export function HomePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analytics.top_venues_by_events?.length > 0 ? (
-                    analytics.top_venues_by_events
+                  {(analytics.top_venues_by_events ?? []).length > 0 ? (
+                    (analytics.top_venues_by_events ?? [])
                       .slice(0, 5)
                       .map((venue, index) => (
                         <div

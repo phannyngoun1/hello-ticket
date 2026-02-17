@@ -60,28 +60,35 @@ export function BarChart({ data, title, height = 200, className = '' }: ChartPro
       )}
       <CardContent>
         <div style={{ height }} className="w-full">
-          <svg width="100%" height={chartHeight} className="overflow-visible">
+          <svg
+            width="100%"
+            height={chartHeight}
+            viewBox={`0 0 100 ${chartHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="overflow-visible"
+          >
             {data.map((item, index) => {
               const barHeight = maxValue > 0 ? (item.value / maxValue) * (chartHeight - 20) : 0;
-              const barWidth = Math.max(20, (100 / data.length) - 2);
-              const x = (index * 100) / data.length;
+              const barSpacing = 100 / data.length;
+              const barWidth = Math.max(4, barSpacing * 0.8);
+              const x = index * barSpacing + barSpacing * 0.1;
               const y = chartHeight - barHeight - 20;
 
               return (
-                <g key={item.label}>
+                <g key={`${item.label}-${index}`}>
                   {/* Bar */}
                   <rect
-                    x={`${x}%`}
+                    x={x}
                     y={y}
-                    width={`${barWidth}%`}
+                    width={barWidth}
                     height={barHeight}
-                    fill={item.color || `hsl(${(index * 360) / data.length}, 70%, 50%)`}
+                    fill={item.color || `hsl(${(index * 360) / Math.max(1, data.length)}, 70%, 50%)`}
                     className="transition-all hover:opacity-80"
                   />
                   {/* Value label */}
                   <text
-                    x={`${x + barWidth / 2}%`}
-                    y={y - 5}
+                    x={x + barWidth / 2}
+                    y={Math.max(10, y - 5)}
                     textAnchor="middle"
                     className="text-xs fill-muted-foreground"
                   >
@@ -89,11 +96,10 @@ export function BarChart({ data, title, height = 200, className = '' }: ChartPro
                   </text>
                   {/* Axis label */}
                   <text
-                    x={`${x + barWidth / 2}%`}
-                    y={chartHeight}
+                    x={x + barWidth / 2}
+                    y={chartHeight - 5}
                     textAnchor="middle"
                     className="text-xs fill-muted-foreground"
-                    transform={`rotate(45, ${x + barWidth / 2}%, ${chartHeight})`}
                   >
                     {item.label.length > 10 ? `${item.label.slice(0, 10)}...` : item.label}
                   </text>
@@ -170,7 +176,13 @@ export function LineChart({
       )}
       <CardContent>
         <div style={{ height }} className="w-full">
-          <svg width="100%" height={chartHeight} className="overflow-visible">
+          <svg
+            width="100%"
+            height={chartHeight}
+            viewBox={`0 0 100 ${chartHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="overflow-visible"
+          >
             {/* Grid lines */}
             {[0, 0.25, 0.5, 0.75, 1].map(ratio => {
               const y = chartHeight - (ratio * (chartHeight - 30)) - 10;
@@ -262,12 +274,39 @@ export interface PieChartProps {
 }
 
 export function PieChart({ data, title, height = 200, className = '' }: PieChartProps) {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+  // Filter out zero-value items to avoid degenerate arcs and division by zero
+  const filteredData = data.filter((item) => item.value > 0);
+  const total = filteredData.reduce((sum, item) => sum + item.value, 0);
   const radius = Math.min(height / 2 - 20, 80);
   const centerX = height / 2;
   const centerY = height / 2;
 
-  let currentAngle = -90; // Start from top
+  // Empty state or all zeros - avoid division by zero and NaN in arc paths
+  if (filteredData.length === 0 || total === 0) {
+    return (
+      <Card className={className}>
+        {title && (
+          <CardHeader>
+            <CardTitle className="text-lg">{title}</CardTitle>
+          </CardHeader>
+        )}
+        <CardContent>
+          <div style={{ height }} className="w-full flex items-center justify-center text-muted-foreground">
+            No data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Compute cumulative start angle per slice (avoid mutation in map)
+  const getStartAngle = (index: number) => {
+    let angle = -90;
+    for (let i = 0; i < index; i++) {
+      angle += (filteredData[i].value / total) * 360;
+    }
+    return angle;
+  };
 
   return (
     <Card className={className}>
@@ -279,11 +318,11 @@ export function PieChart({ data, title, height = 200, className = '' }: PieChart
       <CardContent>
         <div style={{ height }} className="w-full flex items-center justify-center">
           <svg width={height} height={height}>
-            {data.map((item, index) => {
+            {filteredData.map((item, index) => {
               const percentage = item.value / total;
               const angle = percentage * 360;
-              const startAngle = currentAngle;
-              const endAngle = currentAngle + angle;
+              const startAngle = getStartAngle(index);
+              const endAngle = startAngle + angle;
 
               const startAngleRad = (startAngle * Math.PI) / 180;
               const endAngleRad = (endAngle * Math.PI) / 180;
@@ -302,13 +341,11 @@ export function PieChart({ data, title, height = 200, className = '' }: PieChart
                 'Z'
               ].join(' ');
 
-              currentAngle = endAngle;
-
-              const color = item.color || `hsl(${(index * 360) / data.length}, 70%, 50%)`;
+              const color = item.color || `hsl(${(index * 360) / Math.max(1, filteredData.length)}, 70%, 50%)`;
 
               return (
                 <path
-                  key={item.label}
+                  key={`${item.label}-${index}`}
                   d={pathData}
                   fill={color}
                   className="hover:opacity-80 transition-all cursor-pointer"
@@ -337,12 +374,12 @@ export function PieChart({ data, title, height = 200, className = '' }: PieChart
 
           {/* Legend */}
           <div className="ml-6 space-y-2">
-            {data.map((item, index) => (
-              <div key={item.label} className="flex items-center space-x-2">
+            {filteredData.map((item, index) => (
+              <div key={`${item.label}-${index}`} className="flex items-center space-x-2">
                 <div
                   className="w-3 h-3 rounded-full"
                   style={{
-                    backgroundColor: item.color || `hsl(${(index * 360) / data.length}, 70%, 50%)`
+                    backgroundColor: item.color || `hsl(${(index * 360) / Math.max(1, filteredData.length)}, 70%, 50%)`
                   }}
                 />
                 <span className="text-sm text-muted-foreground">
