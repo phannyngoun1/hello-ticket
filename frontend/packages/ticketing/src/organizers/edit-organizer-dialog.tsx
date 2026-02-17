@@ -40,11 +40,6 @@ export function EditOrganizerDialog({
     return {
 
 
-
-
-
-
-      code: organizer.code ?? "",
       name: organizer.name ?? "",
       description: organizer.description ?? "",
       email: organizer.email ?? "",
@@ -82,9 +77,6 @@ export function EditOrganizerDialog({
 
 
 
-
-
-      code: data.code || undefined,
       name: data.name,
       description: data.description || undefined,
       email: data.email || undefined,

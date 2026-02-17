@@ -351,7 +351,7 @@ export function FullScreenDialog({
                               className={cn(
                                 density.buttonHeightSmall,
                                 density.textSizeSmall,
-                                "px-3 font-medium border-border hover:bg-muted",
+                                "px-3 font-medium border-border",
                                 action.className,
                               )}
                             >
@@ -369,7 +369,7 @@ export function FullScreenDialog({
                                 className={cn(
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
-                                  "px-3 font-medium border-border hover:bg-muted",
+                                  "px-3 font-medium border-border",
                                 )}
                               >
                                 Clear
@@ -385,7 +385,7 @@ export function FullScreenDialog({
                                 className={cn(
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
-                                  "px-3 font-medium border-border hover:bg-muted",
+                                  "px-3 font-medium border-border",
                                 )}
                               >
                                 Cancel
@@ -404,7 +404,7 @@ export function FullScreenDialog({
                                 className={cn(
                                   density.buttonHeightSmall,
                                   density.textSizeSmall,
-                                  "px-3 font-medium border-border hover:bg-muted",
+                                  "px-3 font-medium border-border",
                                   loading && "cursor-not-allowed",
                                 )}
                               >

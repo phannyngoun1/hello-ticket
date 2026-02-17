@@ -13,10 +13,9 @@ import {
   TextareaInputField,
 } from "@truths/custom-ui";
 
-// Form schema excludes timestamp fields (created_at, updated_at) as they are backend-managed
+// Form schema excludes timestamp fields (created_at, updated_at) and code (auto-generated) as they are backend-managed
 const organizerFormSchema = z
   .object({
-    code: z.string().optional(),
     name: z.string().min(1, "Name is required"),
     description: z.string().optional(),
     email: z.string().email("Invalid email").optional().or(z.literal("")),
@@ -54,7 +53,6 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
     } = useForm<OrganizerFormData>({
       resolver: zodResolver(organizerFormSchema),
       defaultValues: {
-        code: "",
         name: "",
         description: "",
         email: "",
@@ -80,16 +78,7 @@ export const OrganizerForm = forwardRef<HTMLFormElement, OrganizerFormProps>(
         className="space-y-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Row 1: Code, Name */}
-          <TextInputField
-            name="code"
-            control={control}
-            label="Code"
-            placeholder="Enter code"
-            type="text"
-            disabled={isLoading}
-          />
-
+          {/* Row 1: Name */}
           <TextInputField
             name="name"
             control={control}
