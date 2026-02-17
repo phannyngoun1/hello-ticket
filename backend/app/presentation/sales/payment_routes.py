@@ -145,6 +145,38 @@ async def get_payments_by_booking(
     )
 
 
+@router.get("/{payment_id}", response_model=PaymentResponse)
+async def get_payment(
+    payment_id: str,
+    current_user: AuthenticatedUser = Depends(RequirePermission(MANAGE_PERMISSION)),
+    repository: PaymentRepository = Depends(get_payment_repository),
+):
+    """Get a single payment by ID"""
+    from app.shared.tenant_context import require_tenant_context
+    tenant_id = require_tenant_context()
+
+    payment = await repository.get_by_id(tenant_id, payment_id)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    return PaymentResponse(
+        id=payment.id,
+        tenant_id=payment.tenant_id,
+        booking_id=payment.booking_id,
+        payment_code=payment.payment_code,
+        amount=payment.amount,
+        currency=payment.currency,
+        payment_method=payment.payment_method.value,
+        status=payment.status.value,
+        transaction_reference=payment.transaction_reference,
+        notes=payment.notes,
+        processed_at=payment.processed_at,
+        created_at=payment.created_at,
+        updated_at=payment.updated_at,
+        version=payment.version,
+    )
+
+
 @router.post("/{payment_id}/cancel", response_model=PaymentResponse)
 async def cancel_payment(
     payment_id: str,

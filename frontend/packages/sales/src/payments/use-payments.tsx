@@ -22,6 +22,15 @@ export function useCreatePayment(service: PaymentService) {
   });
 }
 
+export function usePayment(service: PaymentService, paymentId: string | null) {
+  return useQuery<Payment, Error>({
+    queryKey: ["payments", "detail", paymentId],
+    queryFn: () => (paymentId ? service.getPaymentById(paymentId) : Promise.reject(new Error("No payment ID"))),
+    enabled: !!paymentId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function usePaymentsByBooking(service: PaymentService, bookingId: string | null) {
   return useQuery<Payment[]>({
     queryKey: ["payments", "booking", bookingId],

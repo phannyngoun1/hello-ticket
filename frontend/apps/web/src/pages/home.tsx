@@ -442,6 +442,13 @@ export function HomePage() {
             <ActivityFeed
               activities={formatActivityItems(analytics)}
               maxItems={6}
+              showMoreLink={
+                <Button variant="ghost" size="sm" className="h-auto py-0 text-muted-foreground hover:text-foreground" asChild>
+                  <Link to="/activity">
+                    Show more <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                  </Link>
+                </Button>
+              }
             />
 
             <Card>

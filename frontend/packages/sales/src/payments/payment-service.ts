@@ -65,6 +65,23 @@ export class PaymentService {
   }
 
   /**
+   * Get a single payment by ID
+   */
+  async getPaymentById(paymentId: string): Promise<Payment> {
+    try {
+      const baseEndpoint = this.endpoints.payments.replace(/\/$/, "");
+      const response = await this.apiClient.get<PaymentDTO>(
+        `${baseEndpoint}/${paymentId}`,
+        { requiresAuth: true }
+      );
+      return this.transformPayment(response);
+    } catch (error) {
+      console.error(`Error fetching payment ${paymentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get payments for a booking
    */
   async getPaymentsByBooking(bookingId: string): Promise<Payment[]> {

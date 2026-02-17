@@ -18,7 +18,7 @@ export interface PaymentListContainerProps {
 }
 
 export function PaymentListContainer({
-  // onNavigateToPayment,
+  onNavigateToPayment,
 }: PaymentListContainerProps) {
   const [pagination, setPagination] = useState<Pagination>({ page: 1, pageSize: 50 });
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -59,10 +59,17 @@ export function PaymentListContainer({
     setPagination({ page: 1, pageSize });
   }, []);
 
-  const handleViewPayment = useCallback((payment: Payment) => {
-    setSelectedPayment(payment);
-    setDetailDialogOpen(true);
-  }, []);
+  const handleViewPayment = useCallback(
+    (payment: Payment) => {
+      if (onNavigateToPayment) {
+        onNavigateToPayment(payment.id);
+      } else {
+        setSelectedPayment(payment);
+        setDetailDialogOpen(true);
+      }
+    },
+    [onNavigateToPayment]
+  );
 
   // Calculate pagination with total and totalPages
   const paginationWithTotal = useMemo(() => {

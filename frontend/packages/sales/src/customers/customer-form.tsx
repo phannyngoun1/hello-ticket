@@ -7,7 +7,7 @@
  */
 
 import { forwardRef, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -21,40 +21,50 @@ import {
 import { Separator } from "@truths/ui";
 
 
-const customerFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  business_name: z.string().optional(),
-  street_address: z.string().optional(),
-  city: z.string().optional(),
-  state_province: z.string().optional(),
-  postal_code: z.string().optional(),
-  country: z.string().optional(),
-  date_of_birth: z.string().optional(),
-  gender: z.string().optional(),
-  nationality: z.string().optional(),
-  id_number: z.string().optional(),
-  id_type: z.string().optional(),
-  event_preferences: z.string().optional(),
-  seating_preferences: z.string().optional(),
-  accessibility_needs: z.string().optional(),
-  dietary_restrictions: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
-  emergency_contact_relationship: z.string().optional(),
-  preferred_language: z.string().optional(),
-  marketing_opt_in: z.boolean().optional(),
-  email_marketing: z.boolean().optional(),
-  sms_marketing: z.boolean().optional(),
-  facebook_url: z.string().url("Invalid URL").optional().or(z.literal("")),
-  twitter_handle: z.string().optional(),
-  linkedin_url: z.string().url("Invalid URL").optional().or(z.literal("")),
-  instagram_handle: z.string().optional(),
-  website: z.string().url("Invalid URL").optional().or(z.literal("")),
-  notes: z.string().optional(),
-  public_notes: z.string().optional(),
-});
+const customerFormSchema = z
+  .object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Invalid email address").optional().or(z.literal("")),
+    phone: z.string().optional(),
+    business_name: z.string().optional(),
+    street_address: z.string().optional(),
+    city: z.string().optional(),
+    state_province: z.string().optional(),
+    postal_code: z.string().optional(),
+    country: z.string().optional(),
+    date_of_birth: z.string().optional(),
+    gender: z.string().optional(),
+    nationality: z.string().optional(),
+    id_number: z.string().optional(),
+    id_type: z.string().optional(),
+    event_preferences: z.string().optional(),
+    seating_preferences: z.string().optional(),
+    accessibility_needs: z.string().optional(),
+    dietary_restrictions: z.string().optional(),
+    emergency_contact_name: z.string().optional(),
+    emergency_contact_phone: z.string().optional(),
+    emergency_contact_relationship: z.string().optional(),
+    preferred_language: z.string().optional(),
+    marketing_opt_in: z.boolean().optional(),
+    email_marketing: z.boolean().optional(),
+    sms_marketing: z.boolean().optional(),
+    facebook_url: z.string().url("Invalid URL").optional().or(z.literal("")),
+    twitter_handle: z.string().optional(),
+    linkedin_url: z.string().url("Invalid URL").optional().or(z.literal("")),
+    instagram_handle: z.string().optional(),
+    website: z.string().url("Invalid URL").optional().or(z.literal("")),
+    notes: z.string().optional(),
+    public_notes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.id_type && data.id_type.trim() !== "") {
+        return data.id_number != null && data.id_number.trim() !== "";
+      }
+      return true;
+    },
+    { message: "ID Number is required when ID type is selected", path: ["id_number"] }
+  );
 
 export type CustomerFormData = z.infer<typeof customerFormSchema>;
 
@@ -67,13 +77,7 @@ export interface CustomerFormProps {
 
 export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
   function CustomerForm({ defaultValues, onSubmit, isLoading = false }, ref) {
-    const {
-      handleSubmit,
-      control,
-      watch,
-      setValue,
-      formState: { errors, isSubmitted },
-    } = useForm<CustomerFormData>({
+    const methods = useForm<CustomerFormData>({
       resolver: zodResolver(customerFormSchema),
       defaultValues: {
         name: "",
@@ -86,6 +90,12 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         ...defaultValues,
       },
     });
+    const {
+      handleSubmit,
+      watch,
+      setValue,
+      formState: { errors, isSubmitted },
+    } = methods;
 
     const firstErrorRef = useRef<HTMLDivElement | null>(null);
 
@@ -121,12 +131,13 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
     };
 
     return (
-      <form
-        ref={ref}
-        id="customer-form"
-        onSubmit={handleSubmit(handleFormSubmit)}
-        className="space-y-6"
-      >
+      <FormProvider {...methods}>
+        <form
+          ref={ref}
+          id="customer-form"
+          onSubmit={handleSubmit(handleFormSubmit)}
+          className="space-y-6"
+        >
         <div className="flex justify-end">
           <AIAssistFormButton
             formType="customer"
@@ -144,7 +155,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <h3 className="text-base font-semibold">Personal Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextInputField
-              control={control}
               name="name"
               label="Name"
               placeholder="Full name"
@@ -153,7 +163,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="email"
               label="Email"
               type="email"
@@ -162,7 +171,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="phone"
               label="Phone"
               type="tel"
@@ -171,7 +179,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="business_name"
               label="Business Name"
               placeholder="Business name"
@@ -184,14 +191,12 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <DateInputField
-              control={control}
               name="date_of_birth"
               label="Date of Birth"
               disabled={isLoading}
             />
 
             <SelectInputField
-              control={control}
               name="gender"
               label="Gender"
               placeholder="Select gender"
@@ -205,7 +210,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="nationality"
               label="Nationality"
               placeholder="Nationality"
@@ -213,7 +217,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <SelectInputField
-              control={control}
               name="id_type"
               label="ID Type"
               placeholder="Select ID type"
@@ -228,7 +231,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
 
             <div className="md:col-span-2">
               <TextInputField
-                control={control}
                 name="id_number"
                 label="ID Number"
                 placeholder="Government ID number"
@@ -246,7 +248,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <TextInputField
-                control={control}
                 name="street_address"
                 label="Street Address"
                 placeholder="123 Main Street"
@@ -255,7 +256,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             </div>
 
             <TextInputField
-              control={control}
               name="city"
               label="City"
               placeholder="City"
@@ -263,7 +263,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="state_province"
               label="State/Province"
               placeholder="State or Province"
@@ -271,7 +270,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="postal_code"
               label="Postal Code"
               placeholder="12345"
@@ -279,7 +277,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="country"
               label="Country"
               placeholder="Country"
@@ -294,7 +291,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <h4 className="text-sm font-medium">Emergency Contact</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <TextInputField
-              control={control}
               name="emergency_contact_name"
               label="Contact Name"
               placeholder="Emergency contact name"
@@ -302,7 +298,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="emergency_contact_phone"
               label="Contact Phone"
               type="tel"
@@ -311,7 +306,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="emergency_contact_relationship"
               label="Relationship"
               placeholder="Relationship"
@@ -328,7 +322,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <TextareaInputField
-                control={control}
                 name="event_preferences"
                 label="Event Preferences"
                 placeholder="Preferred event types or categories"
@@ -337,7 +330,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               />
 
               <TextareaInputField
-                control={control}
                 name="seating_preferences"
                 label="Seating Preferences"
                 placeholder="Preferred seating areas"
@@ -346,7 +338,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               />
 
               <TextareaInputField
-                control={control}
                 name="accessibility_needs"
                 label="Accessibility Needs"
                 placeholder="Special accessibility requirements"
@@ -355,7 +346,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               />
 
               <TextareaInputField
-                control={control}
                 name="dietary_restrictions"
                 label="Dietary Restrictions"
                 placeholder="Dietary restrictions for events with catering"
@@ -364,7 +354,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               />
 
               <SelectInputField
-                control={control}
                 name="preferred_language"
                 label="Preferred Language"
                 placeholder="e.g., English, Spanish"
@@ -389,19 +378,16 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               <h4 className="text-sm font-medium">Marketing Preferences</h4>
               <div className="space-y-2">
                 <CheckboxField
-                  control={control}
                   name="marketing_opt_in"
                   label="Marketing Opt-in"
                   disabled={isLoading}
                 />
                 <CheckboxField
-                  control={control}
                   name="email_marketing"
                   label="Email Marketing"
                   disabled={isLoading}
                 />
                 <CheckboxField
-                  control={control}
                   name="sms_marketing"
                   label="SMS Marketing"
                   disabled={isLoading}
@@ -418,7 +404,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <h3 className="text-base font-semibold">Social & Online</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextInputField
-              control={control}
               name="website"
               label="Website"
               placeholder="https://example.com"
@@ -426,7 +411,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="facebook_url"
               label="Facebook URL"
               placeholder="https://facebook.com/..."
@@ -434,7 +418,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="twitter_handle"
               label="Twitter/X Handle"
               placeholder="@username"
@@ -442,7 +425,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="linkedin_url"
               label="LinkedIn URL"
               placeholder="https://linkedin.com/in/..."
@@ -450,7 +432,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             />
 
             <TextInputField
-              control={control}
               name="instagram_handle"
               label="Instagram Handle"
               placeholder="@username"
@@ -467,7 +448,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <TextareaInputField
-                control={control}
                 name="notes"
                 label="Internal Notes"
                 placeholder="Internal notes (staff only)"
@@ -478,7 +458,6 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
 
             <div className="md:col-span-2">
               <TextareaInputField
-                control={control}
                 name="public_notes"
                 label="Public Notes"
                 placeholder="Public notes (visible to customer)"
@@ -488,7 +467,8 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
             </div>
           </div>
         </div>
-      </form>
+        </form>
+      </FormProvider>
     );
   }
 );

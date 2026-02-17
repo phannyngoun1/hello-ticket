@@ -63,8 +63,10 @@ export function RootLayout({ children }: RootLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background min-w-[1024px]">
-      <HeaderWithTabs onCommandPaletteOpen={() => setOpen(true)} />
-      {tabPosition === "separate" && <TabManager />}
+      <div className="print:hidden">
+        <HeaderWithTabs onCommandPaletteOpen={() => setOpen(true)} />
+        {tabPosition === "separate" && <TabManager />}
+      </div>
       <main className="container py-3">{children}</main>
       <AppCommandPalette
         open={open}

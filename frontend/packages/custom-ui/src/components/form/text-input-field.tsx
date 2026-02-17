@@ -121,7 +121,7 @@ export function TextInputField<TFieldValues extends FieldValues = FieldValues>({
   control: controlProp,
 }: TextInputFieldProps<TFieldValues>) {
   let control: Control<TFieldValues>;
-  let errors: any = {};
+  let errors: Record<string, { message?: string }> = {};
 
   if (controlProp) {
     control = controlProp;
@@ -131,7 +131,7 @@ export function TextInputField<TFieldValues extends FieldValues = FieldValues>({
   } else {
     const formContext = useFormContext<TFieldValues>();
     control = formContext.control;
-    errors = formContext.formState.errors;
+    errors = formContext.formState.errors ?? {};
   }
 
   const error = errors[name];

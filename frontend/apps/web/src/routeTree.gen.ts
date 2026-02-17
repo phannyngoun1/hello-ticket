@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
@@ -63,6 +64,11 @@ const UsersRoute = UsersRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplatRoute = SplatRouteImport.update({
@@ -292,6 +298,7 @@ const TicketingVenuesIdSeatsDesignerRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/activity': typeof ActivityRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRouteWithChildren
   '/change-password': typeof authChangePasswordRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/activity': typeof ActivityRoute
   '/profile': typeof ProfileRoute
   '/change-password': typeof authChangePasswordRoute
   '/login': typeof authLoginRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/activity': typeof ActivityRoute
   '/profile': typeof ProfileRoute
   '/users': typeof UsersRouteWithChildren
   '/(auth)/change-password': typeof authChangePasswordRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/activity'
     | '/profile'
     | '/users'
     | '/change-password'
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/activity'
     | '/profile'
     | '/change-password'
     | '/login'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/activity'
     | '/profile'
     | '/users'
     | '/(auth)/change-password'
@@ -560,6 +572,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  ActivityRoute: typeof ActivityRoute
   ProfileRoute: typeof ProfileRoute
   UsersRoute: typeof UsersRouteWithChildren
   authChangePasswordRoute: typeof authChangePasswordRoute
@@ -601,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$': {
@@ -1042,6 +1062,7 @@ const TicketingVenuesRouteWithChildren = TicketingVenuesRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  ActivityRoute: ActivityRoute,
   ProfileRoute: ProfileRoute,
   UsersRoute: UsersRouteWithChildren,
   authChangePasswordRoute: authChangePasswordRoute,

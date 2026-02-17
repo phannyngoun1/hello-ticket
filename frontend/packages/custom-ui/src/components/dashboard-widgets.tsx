@@ -184,6 +184,8 @@ export interface ActivityFeedProps {
   activities: ActivityItem[];
   maxItems?: number;
   className?: string;
+  /** Optional "Show more" link (e.g. Link to activity log page) */
+  showMoreLink?: React.ReactNode;
 }
 
 export function ActivityFeed({
@@ -191,6 +193,7 @@ export function ActivityFeed({
   activities,
   maxItems = 10,
   className = "",
+  showMoreLink,
 }: ActivityFeedProps) {
   const density = useDensityStyles();
   
@@ -211,8 +214,9 @@ export function ActivityFeed({
 
   return (
     <Card className={className}>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className={cn("font-medium", density.textSizeCardDescription)}>{title}</CardTitle>
+        {showMoreLink}
       </CardHeader>
       <CardContent>
         <div className={density.spacingFormSection}>
