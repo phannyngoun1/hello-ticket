@@ -167,12 +167,19 @@ export function BookingListContainer({
   }, []);
 
   const handleCreateSubmit = useCallback(
-    async (input: CreateBookingInput) => {
+    async (
+      input: CreateBookingInput,
+      options?: { payNow?: boolean }
+    ) => {
       try {
-        await createMutation.mutateAsync(input);
+        const booking = await createMutation.mutateAsync(input);
         toast({ title: "Success", description: "Booking created successfully" });
         setCreateDialogOpen(false);
         onCreateDialogClose?.();
+        if (options?.payNow && canProcessPayment(booking.status)) {
+          setBookingForPayment(booking);
+          setPaymentDialogOpen(true);
+        }
       } catch (err) {
         toast({
           title: "Error",

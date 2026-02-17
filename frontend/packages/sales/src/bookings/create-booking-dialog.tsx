@@ -26,6 +26,8 @@ import {
   CommandGroup,
   CommandItem,
   ScrollArea,
+  Label,
+  Switch,
 } from "@truths/ui";
 import { LayoutGrid, List } from "lucide-react";
 import { ShowService } from "@truths/ticketing/shows";
@@ -57,7 +59,7 @@ export interface CreateBookingTransactionData {
 export interface CreateBookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateBookingInput) => Promise<void>;
+  onSubmit: (data: CreateBookingInput, options?: { payNow?: boolean }) => Promise<void>;
   title?: string;
   maxWidth?: string;
   initialShowId?: string | null;
@@ -80,6 +82,7 @@ export function CreateBookingDialog({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] =
     useState<CreateBookingTransactionData | null>(null);
+  const [payNow, setPayNow] = useState(false);
 
   // Show and Event selection
   const [selectedShowId, setSelectedShowId] = useState<string | null>(
@@ -318,6 +321,7 @@ export function CreateBookingDialog({
       setSeatViewMode("visualization");
       setSelectedSectionId(null);
       setPendingData(null);
+      setPayNow(false);
       setShowConfirmDialog(false);
       setCustomerSearchQuery("");
       setCustomerPopoverOpen(false);
@@ -535,8 +539,9 @@ export function CreateBookingDialog({
         currency: "USD",
       };
 
-      await onSubmit(bookingInput);
+      await onSubmit(bookingInput, { payNow });
       setPendingData(null);
+      setPayNow(false);
       setShowConfirmDialog(false);
       onOpenChange(false);
     } catch (error) {
@@ -550,6 +555,7 @@ export function CreateBookingDialog({
   const handleClose = () => {
     setShowConfirmDialog(false);
     setPendingData(null);
+    setPayNow(false);
     onOpenChange(false);
   };
 
@@ -839,6 +845,7 @@ export function CreateBookingDialog({
           setShowConfirmDialog(dialogOpen);
           if (!dialogOpen) {
             setPendingData(null);
+            setPayNow(false);
           }
         }}
         title="Confirm Booking Creation"
@@ -862,6 +869,16 @@ export function CreateBookingDialog({
                   <span className="font-medium">Total:</span> $
                   {totalAmount.toFixed(2)}
                 </div>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border p-3 mt-4">
+                <Label htmlFor="pay-now" className="cursor-pointer flex-1">
+                  Pay right away
+                </Label>
+                <Switch
+                  id="pay-now"
+                  checked={payNow}
+                  onCheckedChange={setPayNow}
+                />
               </div>
             </div>
           ) : undefined

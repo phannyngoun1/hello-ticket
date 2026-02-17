@@ -1,37 +1,21 @@
-import { useRef, useMemo } from "react";
+import { useMemo } from "react";
 import { useParams, Link } from "@tanstack/react-router";
 import { Button, Skeleton } from "@truths/ui";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { api } from "@truths/api";
 import {
   PaymentService,
   usePayment,
   useBooking,
   useBookingService,
+  usePaymentsByBooking,
+  BookingInvoiceReceipt,
 } from "@truths/sales";
 import { useRequireAuth } from "../../hooks/use-require-auth";
-import { formatDate } from "@truths/utils";
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  credit_card: "Credit Card",
-  debit_card: "Debit Card",
-  paypal: "PayPal",
-  bank_transfer: "Bank Transfer",
-  cash: "Cash",
-  other: "Other",
-};
-
-function formatCurrency(amount: number, currency: string = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-  }).format(amount);
-}
 
 export function ViewPaymentPage() {
   useRequireAuth();
   const { id } = useParams({ from: "/sales/payments/$id" });
-  const printRef = useRef<HTMLDivElement>(null);
 
   const paymentService = useMemo(
     () =>
@@ -52,6 +36,11 @@ export function ViewPaymentPage() {
   const { data: booking } = useBooking(
     bookingService,
     payment?.booking_id ?? null
+  );
+
+  const { data: payments = [] } = usePaymentsByBooking(
+    paymentService,
+    booking?.id ?? null
   );
 
   const handlePrint = () => {
@@ -97,6 +86,47 @@ export function ViewPaymentPage() {
     );
   }
 
+  // When we have booking, show combined invoice + receipt
+  if (booking) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4 print:hidden">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/sales/payments">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Payments
+            </Link>
+          </Button>
+        </div>
+        <BookingInvoiceReceipt
+          booking={booking}
+          payments={payments}
+          showPrintButton={true}
+          onPrint={handlePrint}
+        />
+      </div>
+    );
+  }
+
+  // Fallback: minimal invoice+receipt when booking not yet loaded
+  const fallbackBooking = {
+    id: payment.booking_id,
+    tenant_id: "",
+    booking_number: payment.booking_id?.slice(0, 8).toUpperCase() || "—",
+    customer_name: undefined as string | undefined,
+    event_id: "",
+    status: "—",
+    subtotal_amount: payment.amount,
+    discount_amount: 0,
+    tax_amount: 0,
+    tax_rate: 0,
+    total_amount: payment.amount,
+    currency: payment.currency,
+    due_balance: 0,
+    items: [] as { id?: string; section_name?: string; row_name?: string; seat_number?: string; unit_price?: number }[],
+    created_at: payment.created_at instanceof Date ? payment.created_at : new Date(payment.created_at),
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4 print:hidden">
@@ -106,81 +136,13 @@ export function ViewPaymentPage() {
             Back to Payments
           </Link>
         </Button>
-        <Button onClick={handlePrint} variant="outline" size="sm">
-          <Printer className="h-4 w-4 mr-2" />
-          Print Receipt
-        </Button>
       </div>
-
-      <div
-        ref={printRef}
-        className="mx-auto max-w-lg border rounded-lg bg-background p-8 shadow-sm print:shadow-none print:border print:p-6"
-      >
-        {/* Receipt Header */}
-        <div className="text-center border-b pb-6 mb-6">
-          <h1 className="text-xl font-bold">PAYMENT RECEIPT</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {payment.payment_code || `PAY-${payment.id.slice(0, 8).toUpperCase()}`}
-          </p>
-        </div>
-
-        {/* Amount - prominent */}
-        <div className="text-center py-6 border-b mb-6">
-          <p className="text-sm text-muted-foreground mb-1">Amount Paid</p>
-          <p className="text-3xl font-bold">
-            {formatCurrency(payment.amount, payment.currency)}
-          </p>
-          <p
-            className={`mt-2 text-sm font-medium ${
-              payment.status === "completed" ? "text-green-600" : "text-muted-foreground"
-            }`}
-          >
-            {payment.status.toUpperCase()}
-          </p>
-        </div>
-
-        {/* Receipt Details */}
-        <div className="space-y-4 text-sm">
-          <ReceiptRow label="Date" value={formatDate(payment.created_at)} />
-          <ReceiptRow
-            label="Payment Method"
-            value={PAYMENT_METHOD_LABELS[payment.payment_method] || payment.payment_method}
-          />
-          <ReceiptRow
-            label="Booking"
-            value={booking?.booking_number || payment.booking_id?.slice(0, 8).toUpperCase() || "—"}
-          />
-          {booking?.customer_name && (
-            <ReceiptRow label="Customer" value={booking.customer_name} />
-          )}
-          {payment.transaction_reference && (
-            <ReceiptRow label="Transaction Ref" value={payment.transaction_reference} />
-          )}
-          {payment.processed_at && (
-            <ReceiptRow label="Processed" value={formatDate(payment.processed_at)} />
-          )}
-          {payment.notes && (
-            <ReceiptRow label="Notes" value={payment.notes} />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t text-center text-xs text-muted-foreground">
-          <p>Thank you for your payment</p>
-          <p className="mt-1">
-            Receipt generated on {formatDate(new Date().toISOString())}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ReceiptRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-right">{value || "—"}</span>
+      <BookingInvoiceReceipt
+        booking={fallbackBooking}
+        payments={[payment]}
+        showPrintButton={true}
+        onPrint={handlePrint}
+      />
     </div>
   );
 }

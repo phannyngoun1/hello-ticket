@@ -25,6 +25,7 @@ import {
   Calendar,
   User,
   XCircle,
+  Printer,
 } from "lucide-react";
 import { Booking } from "./types";
 import { EventService } from "@truths/ticketing/events";
@@ -43,6 +44,7 @@ import { VoidPaymentsDialog } from "../payments/void-payments-dialog";
 import { api } from "@truths/api";
 import type { Payment } from "../payments/types";
 import { CopyButton } from "@truths/custom-ui";
+import { BookingInvoiceReceipt } from "./components/booking-invoice-receipt";
 
 export interface BookingDetailProps {
   className?: string;
@@ -259,7 +261,18 @@ export function BookingDetail({
   const hasMetadata = showMetadata;
 
   return (
-    <Card className={cn("p-6", className)}>
+    <div className={className}>
+      {/* Printable invoice - hidden on screen, shown when printing */}
+      <div className="hidden print:block">
+        <BookingInvoiceReceipt
+          booking={data}
+          payments={payments}
+          showPrintButton={false}
+        />
+      </div>
+
+      {/* Main booking detail - hidden when printing */}
+      <Card className={cn("p-6 print:hidden")}>
       <div>
         {/* Header */}
         <div className="flex items-start justify-between">
@@ -313,6 +326,17 @@ export function BookingDetail({
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               {customActions?.(data)}
+              {/* Print Invoice & Receipt */}
+              {data && (
+                <Button
+                  variant="outline"
+                  className="gap-2 print:hidden"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </Button>
+              )}
               {/* Void Payment button if there are payments */}
               {data && hasVoidablePayments && (
                 <Button
@@ -849,5 +873,6 @@ export function BookingDetail({
         />
       )}
     </Card>
+    </div>
   );
 }
