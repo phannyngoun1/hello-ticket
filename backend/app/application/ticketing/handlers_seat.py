@@ -168,23 +168,25 @@ class SeatCommandHandler:
         from datetime import datetime, timezone
         
         section_name_to_id = {}
+        valid_section_ids = set()
         unique_section_names = {seat_data.get("section", "") for seat_data in command.seats if seat_data.get("section")}
         
-        if unique_section_names:
-            with get_session_sync() as session:
-                # Get existing sections for this layout
-                statement = select(SectionModel).where(
-                    SectionModel.tenant_id == tenant_id,
-                    SectionModel.layout_id == command.layout_id,
-                    SectionModel.is_deleted == False
-                )
-                existing_sections = session.exec(statement).all()
-                
-                # Map existing sections
-                for section in existing_sections:
-                    section_name_to_id[section.name] = section.id
-                
-                # Create missing sections
+        with get_session_sync() as session:
+            # Get existing sections for this layout (includes newly created from bulk save)
+            statement = select(SectionModel).where(
+                SectionModel.tenant_id == tenant_id,
+                SectionModel.layout_id == command.layout_id,
+                SectionModel.is_deleted == False
+            )
+            existing_sections = session.exec(statement).all()
+            
+            # Map existing sections
+            for section in existing_sections:
+                section_name_to_id[section.name] = section.id
+                valid_section_ids.add(section.id)
+            
+            if unique_section_names:
+                # Create missing sections (for seat creates that use section name)
                 for section_name in unique_section_names:
                     if section_name and section_name not in section_name_to_id:
                         new_section = SectionModel(
@@ -200,6 +202,7 @@ class SeatCommandHandler:
                         )
                         session.add(new_section)
                         section_name_to_id[section_name] = new_section.id
+                        valid_section_ids.add(new_section.id)
                         logger.info("Created section '%s' with ID %s for layout %s", section_name, new_section.id, command.layout_id)
                 
                 session.commit()
@@ -261,8 +264,15 @@ class SeatCommandHandler:
                     
                     # Update seat details
                     update_kwargs = {}
-                    if "section_id" in seat_data:
-                        update_kwargs["section_id"] = seat_data["section_id"]
+                    # Resolve section: use section_id if valid, else resolve by section name
+                    # (for newly created sections sent as name from frontend)
+                    section_id_to_use = seat_data.get("section_id")
+                    if section_id_to_use and section_id_to_use not in valid_section_ids:
+                        section_id_to_use = None  # Invalid/client-generated ID
+                    if not section_id_to_use and seat_data.get("section"):
+                        section_id_to_use = section_name_to_id.get(seat_data["section"])
+                    if section_id_to_use is not None:
+                        update_kwargs["section_id"] = section_id_to_use
                     if "row" in seat_data:
                         update_kwargs["row"] = seat_data["row"]
                     if "seat_number" in seat_data:

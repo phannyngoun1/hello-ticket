@@ -349,6 +349,7 @@ export function SeatDesigner({
   const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  const [pendingSectionForSeatEdit, setPendingSectionForSeatEdit] = useState(false);
 
   // Store coordinates when clicking to place a section (pending section creation)
   const [pendingSectionCoordinates, setPendingSectionCoordinates] = useState<{
@@ -1243,6 +1244,13 @@ export function SeatDesigner({
       // Prepare sections array with operation type determined by presence of 'id' and 'delete' flag
       const sectionsPayload: Array<Record<string, any>> = [];
 
+      // In seat-level mode, include new sections from sectionMarkers (created via "New Section" in seat edit)
+      // In section-level mode, process all section operations
+      const sectionsToProcess =
+        designMode === "section-level"
+          ? sectionMarkers
+          : sectionMarkers.filter((s) => s.isNew);
+
       if (designMode === "section-level") {
         // Process section deletions
         for (const sectionId of deletedSectionIds) {
@@ -1251,61 +1259,60 @@ export function SeatDesigner({
             delete: true,
           });
         }
+      }
 
-        // Process section creates and updates
-        for (const section of sectionMarkers) {
-          // Always send marker_fill_transparency for sections
-          const layoutTransparency =
-            markerFillTransparencyRef.current ?? markerFillTransparency ?? 1.0;
-          const sectionTransparency =
-            section.markerFillTransparency !== undefined &&
-            section.markerFillTransparency !== null
-              ? section.markerFillTransparency
-              : layoutTransparency;
+      for (const section of sectionsToProcess) {
+        // Always send marker_fill_transparency for sections
+        const layoutTransparency =
+          markerFillTransparencyRef.current ?? markerFillTransparency ?? 1.0;
+        const sectionTransparency =
+          section.markerFillTransparency !== undefined &&
+          section.markerFillTransparency !== null
+            ? section.markerFillTransparency
+            : layoutTransparency;
 
-          const finalTransparency =
-            typeof sectionTransparency === "number" &&
-            !isNaN(sectionTransparency)
-              ? sectionTransparency
-              : 1.0;
+        const finalTransparency =
+          typeof sectionTransparency === "number" &&
+          !isNaN(sectionTransparency)
+            ? sectionTransparency
+            : 1.0;
 
-          if (section.isNew) {
-            // Create: no id field
-            const sectionPayload: Record<string, any> = {
-              name: section.name,
-              x_coordinate: section.x,
-              y_coordinate: section.y,
-              canvas_background_color:
-                section.canvasBackgroundColor || undefined,
-              marker_fill_transparency: finalTransparency,
-              shape: section.shape ? JSON.stringify(section.shape) : undefined,
-            };
-            sectionsPayload.push(sectionPayload);
-          } else {
-            // Update: has id field
-            const originalSection = effectiveSectionsData?.find(
-              (s) => s.id === section.id,
-            ) as { file_id?: string | null } | undefined;
-            const fileIdValue =
-              section.file_id === null
-                ? "" // User removed background
-                : section.file_id !== undefined
-                  ? section.file_id
-                  : (originalSection?.file_id ?? undefined);
+        if (section.isNew) {
+          // Create: no id field
+          const sectionPayload: Record<string, any> = {
+            name: section.name,
+            x_coordinate: section.x,
+            y_coordinate: section.y,
+            canvas_background_color:
+              section.canvasBackgroundColor || undefined,
+            marker_fill_transparency: finalTransparency,
+            shape: section.shape ? JSON.stringify(section.shape) : undefined,
+          };
+          sectionsPayload.push(sectionPayload);
+        } else {
+          // Update: has id field (section-level only)
+          const originalSection = effectiveSectionsData?.find(
+            (s) => s.id === section.id,
+          ) as { file_id?: string | null } | undefined;
+          const fileIdValue =
+            section.file_id === null
+              ? "" // User removed background
+              : section.file_id !== undefined
+                ? section.file_id
+                : (originalSection?.file_id ?? undefined);
 
-            const sectionPayload: Record<string, any> = {
-              id: section.id,
-              name: section.name,
-              x_coordinate: section.x,
-              y_coordinate: section.y,
-              canvas_background_color:
-                section.canvasBackgroundColor || undefined,
-              marker_fill_transparency: finalTransparency,
-              shape: section.shape ? JSON.stringify(section.shape) : undefined,
-              file_id: fileIdValue,
-            };
-            sectionsPayload.push(sectionPayload);
-          }
+          const sectionPayload: Record<string, any> = {
+            id: section.id,
+            name: section.name,
+            x_coordinate: section.x,
+            y_coordinate: section.y,
+            canvas_background_color:
+              section.canvasBackgroundColor || undefined,
+            marker_fill_transparency: finalTransparency,
+            shape: section.shape ? JSON.stringify(section.shape) : undefined,
+            file_id: fileIdValue,
+          };
+          sectionsPayload.push(sectionPayload);
         }
       }
 
@@ -1340,9 +1347,15 @@ export function SeatDesigner({
             }
           }
 
-          return {
+          // If sectionId is client-generated (new section not yet in DB), pass section name
+          // so backend can resolve it after creating the section
+          const isNewSection =
+            sectionId?.startsWith("section-") &&
+            sectionMarkers.some(
+              (s) => s.id === sectionId && s.name === seat.seat.section,
+            );
+          const seatPayload: Record<string, unknown> = {
             id: seat.id,
-            section_id: sectionId || seat.seat.section,
             row: seat.seat.row,
             seat_number: seat.seat.seatNumber,
             seat_type: seat.seat.seatType,
@@ -1350,6 +1363,12 @@ export function SeatDesigner({
             y_coordinate: seat.y,
             shape: seat.shape ? JSON.stringify(seat.shape) : undefined,
           };
+          if (isNewSection) {
+            seatPayload.section = seat.seat.section;
+          } else {
+            seatPayload.section_id = sectionId || seat.seat.section;
+          }
+          return seatPayload;
         }
       });
 
@@ -1609,6 +1628,7 @@ export function SeatDesigner({
     updateSeat,
     sectionForm,
     setIsManageSectionsOpen,
+    setPendingSectionForSeatEdit,
     selectedShapeTool,
     displayedShapeOverlays,
     selectedOverlayId,
@@ -2074,6 +2094,7 @@ export function SeatDesigner({
             setEditingSectionId(null);
             sectionForm.reset({ name: "" });
             setPendingSectionCoordinates(null);
+            setPendingSectionForSeatEdit(false);
           }
         }}
         form={sectionForm}
@@ -2084,7 +2105,13 @@ export function SeatDesigner({
           if (editingSectionId) {
             updateSection(editingSectionId, { name: data.name });
           } else {
-            addSection({ name: data.name }); // x,y will default or be updated later
+            const newSectionId = `section-${Date.now()}`;
+            addSection({ name: data.name, id: newSectionId });
+            if (pendingSectionForSeatEdit) {
+              seatEditForm.setValue("section", data.name);
+              seatEditForm.setValue("sectionId", newSectionId);
+              setPendingSectionForSeatEdit(false);
+            }
           }
           setIsSectionFormOpen(false);
           setEditingSectionId(null);
@@ -2094,6 +2121,7 @@ export function SeatDesigner({
           setIsSectionFormOpen(false);
           setEditingSectionId(null);
           sectionForm.reset({ name: "" });
+          setPendingSectionForSeatEdit(false);
         }}
       />
 

@@ -62,6 +62,8 @@ export interface SeatLevelViewProps {
     setSelectedSectionIds: (ids: string[] | ((prev: string[]) => string[])) => void;
     setSelectedOverlayId: (id: string | null) => void;
     setIsManageSectionsOpen: (open: boolean) => void;
+    onNewSectionFromSeatEdit?: () => void;
+    onManageSectionsFromSeatEdit?: () => void;
   };
   actions: {
     recordSnapshot: () => void;
@@ -178,6 +180,8 @@ export function SeatLevelView({
     setSelectedSectionIds,
     setSelectedOverlayId,
     setIsManageSectionsOpen,
+    onNewSectionFromSeatEdit,
+    onManageSectionsFromSeatEdit,
   } = forms;
   const { recordSnapshot, removeSeat, removeSection, updateSeat } = actions;
   const {
@@ -301,6 +305,8 @@ export function SeatLevelView({
               }}
               isUpdating={false}
               standalone
+              onNewSection={onNewSectionFromSeatEdit}
+              onManageSections={onManageSectionsFromSeatEdit}
             />
           ) : undefined
         }

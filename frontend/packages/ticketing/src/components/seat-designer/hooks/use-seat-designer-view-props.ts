@@ -68,6 +68,7 @@ export interface SeatLevelViewParams {
   ) => void;
   sectionForm: { reset: (data?: { name?: string }) => void };
   setIsManageSectionsOpen: (open: boolean) => void;
+  setPendingSectionForSeatEdit: (pending: boolean) => void;
   selectedShapeTool: PlacementShapeType | null;
   displayedShapeOverlays: Array<{
     id: string;
@@ -203,6 +204,15 @@ export function useSeatLevelViewProps(
         setSelectedSectionIds: params.setSelectedSectionIds,
         setSelectedOverlayId: params.setSelectedOverlayId,
         setIsManageSectionsOpen: params.setIsManageSectionsOpen,
+        setPendingSectionForSeatEdit: params.setPendingSectionForSeatEdit,
+        onNewSectionFromSeatEdit: () => {
+          params.setPendingSectionForSeatEdit(true);
+          params.setIsSectionFormOpen(true);
+          params.setEditingSectionId(null);
+          params.sectionForm.reset({ name: "" });
+        },
+        onManageSectionsFromSeatEdit: () =>
+          params.setIsManageSectionsOpen(true),
       },
       actions: {
         recordSnapshot: params.recordSnapshot,

@@ -31,8 +31,8 @@ export function getUniqueSections(
     });
   }
 
-  // Add sections from sectionMarkers (for section-level mode)
-  if (designMode === "section-level" && sectionMarkers) {
+  // Add sections from sectionMarkers (for both modes - needed for newly created sections)
+  if (sectionMarkers) {
     sectionMarkers.forEach((section) => {
       sections.add(section.name);
     });

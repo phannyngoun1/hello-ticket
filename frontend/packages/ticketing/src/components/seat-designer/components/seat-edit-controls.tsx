@@ -7,7 +7,7 @@
 
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
-import { Check, X } from "lucide-react";
+import { Check, Edit, X } from "lucide-react";
 import { Controller, UseFormReturn } from "react-hook-form";
 import { SeatType } from "../../../seats/types";
 import type { SeatFormData } from "../form-schemas";
@@ -24,6 +24,10 @@ export interface SeatEditControlsProps {
   isUpdating?: boolean;
   /** When true, no left border (edit mode is the only thing in toolbox) */
   standalone?: boolean;
+  /** Open new section form; when section is created, it will be set on the seat (seat-level only) */
+  onNewSection?: () => void;
+  /** Open manage sections sheet */
+  onManageSections?: () => void;
 }
 
 export function SeatEditControls({
@@ -37,11 +41,15 @@ export function SeatEditControls({
   onCancel,
   isUpdating = false,
   standalone = false,
+  onNewSection,
+  onManageSections,
 }: SeatEditControlsProps) {
   const handleSectionChange = (value: string) => {
     form.setValue("section", value);
-    const source = designMode === "seat-level" ? sectionsData : sectionMarkers;
-    const section = source?.find((s) => s.name === value);
+    const section =
+      (designMode === "seat-level" ? sectionsData : sectionMarkers)?.find(
+        (s) => s.name === value,
+      ) ?? sectionMarkers?.find((s) => s.name === value);
     if (section) form.setValue("sectionId", section.id);
   };
 
@@ -66,7 +74,15 @@ export function SeatEditControls({
         render={({ field }) => (
           <Select
             value={viewingSection ? viewingSection.name : field.value || ""}
-            onValueChange={handleSectionChange}
+            onValueChange={(value) => {
+              if (value === "new-section" && onNewSection) {
+                onNewSection();
+              } else if (value === "manage-sections" && onManageSections) {
+                onManageSections();
+              } else {
+                handleSectionChange(value);
+              }
+            }}
             disabled={!!viewingSection}
           >
             <SelectTrigger className="h-6 text-xs w-28 min-w-28">
@@ -78,6 +94,26 @@ export function SeatEditControls({
                   {section}
                 </SelectItem>
               ))}
+              {!viewingSection && designMode === "seat-level" && (
+                <>
+                  <div className="h-px bg-border my-1 mx-2" />
+                  {onNewSection && (
+                    <SelectItem value="new-section">
+                      <div className="flex items-center gap-2 font-medium text-primary">
+                        <span>+ New Section</span>
+                      </div>
+                    </SelectItem>
+                  )}
+                  {onManageSections && (
+                    <SelectItem value="manage-sections">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Edit className="h-3 w-3" />
+                        <span>Manage Sections</span>
+                      </div>
+                    </SelectItem>
+                  )}
+                </>
+              )}
             </SelectContent>
           </Select>
         )}
