@@ -84,6 +84,7 @@ export function SectionMarkerTransformer({
   onTransformProgress,
 }: SectionMarkerTransformerProps) {
   const keepRatio =
+    shape.type === PlacementShapeType.CIRCLE ||
     shape.type === PlacementShapeType.SOFA ||
     shape.type === PlacementShapeType.STAGE;
   const enabledAnchors = keepRatio ? CORNER_ANCHORS : ALL_ANCHORS;

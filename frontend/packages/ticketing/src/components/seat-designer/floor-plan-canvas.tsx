@@ -571,14 +571,21 @@ export function FloorPlanCanvas({
             };
             onShapeDraw(shape, centerX, centerY);
           } else if (selectedShapeTool === PlacementShapeType.SOFA) {
+            // Sofa: lock aspect ratio width:height = 10:20 (1:2)
+            const SOFA_RATIO_W = 10;
+            const SOFA_RATIO_H = 20;
+            const size = Math.max(4, Math.max(width, height));
+            const sofaWidth = (size * SOFA_RATIO_W) / SOFA_RATIO_H;
+            const sofaHeight = size;
+            const minW = (4 * SOFA_RATIO_W) / SOFA_RATIO_H;
             shape = {
               type: PlacementShapeType.SOFA,
-              width: Math.max(5, width),
-              height: Math.max(4, height),
+              width: Math.max(minW, sofaWidth),
+              height: Math.max(4, sofaHeight),
               fillColor: "#60a5fa",
               strokeColor: "#2563eb",
             };
-            onShapeDraw(shape, centerX, centerY, width, height);
+            onShapeDraw(shape, centerX, centerY, shape.width, shape.height);
           } else if (selectedShapeTool === PlacementShapeType.STAGE) {
             shape = {
               type: PlacementShapeType.STAGE,

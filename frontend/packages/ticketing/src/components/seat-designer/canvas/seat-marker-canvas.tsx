@@ -303,6 +303,7 @@ export function SeatMarkerCanvas({
   }, [shape, imageWidth, imageHeight, onShapeTransform, seat.id, layerToPercentage]);
 
   const isFixedAspect =
+    shape.type === PlacementShapeType.CIRCLE ||
     shape.type === PlacementShapeType.SOFA ||
     shape.type === PlacementShapeType.STAGE;
   const transformerEnabledAnchors = isFixedAspect
@@ -485,6 +486,7 @@ export function SeatMarkerCanvas({
           padding={0}
           ignoreStroke={true}
           keepRatio={
+            shape.type === PlacementShapeType.CIRCLE ||
             shape.type === PlacementShapeType.SOFA ||
             shape.type === PlacementShapeType.STAGE
           }

@@ -50,13 +50,22 @@ function getPreviewShapeForType(
       type: PlacementShapeType.POLYGON,
       points: [-1, -1, 1, -1, 1.5, 0, 1, 1, -1, 1, -1.5, 0],
     }),
-    [PlacementShapeType.SOFA]: () => ({
-      type: PlacementShapeType.SOFA,
-      width: Math.max(5, w),
-      height: Math.max(4, h),
-      fillColor: "#60a5fa",
-      strokeColor: "#2563eb",
-    }),
+    [PlacementShapeType.SOFA]: () => {
+      // Sofa: lock aspect ratio width:height = 10:20 (1:2)
+      const SOFA_RATIO_W = 10;
+      const SOFA_RATIO_H = 20;
+      const size = Math.max(4, Math.max(w, h));
+      const sofaWidth = (size * SOFA_RATIO_W) / SOFA_RATIO_H;
+      const sofaHeight = size;
+      const minW = (4 * SOFA_RATIO_W) / SOFA_RATIO_H;
+      return {
+        type: PlacementShapeType.SOFA,
+        width: Math.max(minW, sofaWidth),
+        height: Math.max(4, sofaHeight),
+        fillColor: "#60a5fa",
+        strokeColor: "#2563eb",
+      };
+    },
     [PlacementShapeType.STAGE]: () => ({
       type: PlacementShapeType.STAGE,
       width: Math.max(20, w),
