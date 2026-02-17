@@ -466,12 +466,24 @@ export function SeatDesigner({
   const [selectedShapeTool, setSelectedShapeTool] =
     useState<PlacementShapeType | null>(null);
 
-  // When selection changes while in section edit mode, sync to the newly selected section
+  // When selection changes while in section edit mode: sync to new section or cancel if multi-select
   useEffect(() => {
     if (
-      designMode === "section-level" &&
-      isSectionCreationPending &&
-      editingSectionId &&
+      designMode !== "section-level" ||
+      !isSectionCreationPending ||
+      !editingSectionId
+    ) {
+      return;
+    }
+    // Multi-select: cancel edit mode (like seat editing when multiple seats selected)
+    if (selectedSectionIds.length > 1) {
+      setIsSectionCreationPending(false);
+      setEditingSectionId(null);
+      setPendingSectionCoordinates(null);
+      return;
+    }
+    // Single select: sync to newly selected section
+    if (
       selectedSectionMarker &&
       selectedSectionMarker.id !== editingSectionId
     ) {
@@ -485,6 +497,7 @@ export function SeatDesigner({
     designMode,
     isSectionCreationPending,
     editingSectionId,
+    selectedSectionIds.length,
     selectedSectionMarker?.id,
   ]);
 
