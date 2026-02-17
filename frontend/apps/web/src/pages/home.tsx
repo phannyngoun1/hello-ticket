@@ -62,29 +62,46 @@ export function HomePage() {
   useRequireAuth();
 
   const getDateFilter = (range: string): DashboardFilters => {
-    const end = new Date();
-    const start = new Date();
+    const now = new Date();
+    let start: Date;
+    let end: Date;
 
     switch (range) {
       case "7":
-        start.setDate(end.getDate() - 7);
+        start = new Date(now);
+        start.setDate(now.getDate() - 7);
+        end = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
       case "30":
-        start.setDate(end.getDate() - 30);
+        start = new Date(now);
+        start.setDate(now.getDate() - 30);
+        end = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
       case "thisMonth":
-        start.setDate(1);
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
         break;
       case "lastMonth":
-        start.setMonth(start.getMonth() - 1);
-        start.setDate(1);
-        end.setDate(0);
+        // Use first of current month to avoid month boundary bugs (e.g. March 31 -> Feb 31)
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
         break;
       case "year":
-        start.setMonth(0, 1);
+        start = new Date(now.getFullYear(), 0, 1);
+        end = new Date(now);
+        end.setHours(23, 59, 59, 999);
         break;
       default:
-        start.setDate(end.getDate() - 30);
+        start = new Date(now);
+        start.setDate(now.getDate() - 30);
+        end = new Date(now);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
     }
 
     return {
@@ -387,7 +404,7 @@ export function HomePage() {
                 analytics.bookings_growth > 0 ? "positive" : "negative"
               }
               icon={<Ticket className="h-4 w-4 text-muted-foreground" />}
-              description={`${analytics.bookings_this_month} this month`}
+              description={`${analytics.bookings_this_month} ${dateRange === "lastMonth" ? "in period" : "this month"}`}
             />
 
             <MetricCard
@@ -398,7 +415,7 @@ export function HomePage() {
                 analytics.revenue_growth > 0 ? "positive" : "negative"
               }
               icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
-              description={`${DashboardService.formatCurrency(analytics.revenue_this_month)} this month`}
+              description={`${DashboardService.formatCurrency(analytics.revenue_this_month)} ${dateRange === "lastMonth" ? "in period" : "this month"}`}
             />
 
             <MetricCard
@@ -409,7 +426,7 @@ export function HomePage() {
                 analytics.customers_growth > 0 ? "positive" : "negative"
               }
               icon={<Users className="h-4 w-4 text-muted-foreground" />}
-              description={`${analytics.new_customers_this_month} new this month`}
+              description={`${analytics.new_customers_this_month} new ${dateRange === "lastMonth" ? "in period" : "this month"}`}
             />
           </div>
 

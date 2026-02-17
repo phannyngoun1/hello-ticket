@@ -87,8 +87,18 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
             tenant_id, query.start_date, query.end_date
         )
 
-        # "This month" metrics: overlap of date range with current month
-        month_start = max(query.start_date, start_of_month) if query.start_date else start_of_month
+        # "This month" / "in period" metrics: when range overlaps current month, use overlap;
+        # when range is entirely in the past (e.g. Last Month), use period = total
+        period_in_past = query.end_date and query.end_date < start_of_month
+        if period_in_past:
+            month_start = query.start_date
+            updated_since = query.start_date
+            updated_before = query.end_date  # "active" = updated within selected period
+        else:
+            month_start = max(query.start_date, start_of_month) if query.start_date else start_of_month
+            updated_since = start_of_month
+            updated_before = None  # no upper bound for "active this month"
+
         events_this_month = self.dashboard_repo.count_events(
             tenant_id, month_start, query.end_date
         )
@@ -102,7 +112,7 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
             tenant_id, month_start, query.end_date
         )
         active_customers = self.dashboard_repo.count_customers_updated_since(
-            tenant_id, start_of_month, query.start_date, query.end_date
+            tenant_id, updated_since, query.start_date, query.end_date, updated_before
         )
 
         # Recent activity (lightweight, limited)
@@ -141,11 +151,13 @@ class GetDashboardAnalyticsHandler(Handler[GetDashboardAnalyticsQuery, Dashboard
         else:
             active_users = sum(1 for u in all_users if u.last_login and u.last_login >= start_of_month)
 
-        # Growth: compare to previous period using SQL aggregation
+        # Growth: compare to previous period using SQL aggregation (no overlap)
         events_growth = bookings_growth = revenue_growth = customers_growth = 0.0
         if query.start_date and query.end_date:
             period_delta = query.end_date - query.start_date
-            prev_start, prev_end = query.start_date - period_delta, query.start_date
+            # Previous period ends just before current starts to avoid double-counting
+            prev_end = query.start_date - timedelta(microseconds=1)
+            prev_start = prev_end - period_delta
             prev_ec = self.dashboard_repo.count_events(tenant_id, prev_start, prev_end)
             prev_bc = self.dashboard_repo.count_bookings(tenant_id, prev_start, prev_end)
             prev_rev = self.dashboard_repo.sum_booking_revenue(tenant_id, prev_start, prev_end)

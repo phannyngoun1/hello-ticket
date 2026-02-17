@@ -325,12 +325,15 @@ class DashboardAnalyticsRepository:
         updated_since: datetime,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        updated_before: Optional[datetime] = None,
     ) -> int:
-        """Count customers in date range (by created_at) with updated_at >= updated_since."""
+        """Count customers in date range (by created_at) with updated_at in [updated_since, updated_before]."""
         with self._session_factory() as session:
             conditions = self._base_customer_conditions(tenant_id)
             self._add_date_filter(conditions, CustomerModel, start_date, end_date)
             conditions.append(CustomerModel.updated_at >= updated_since)
+            if updated_before is not None:
+                conditions.append(CustomerModel.updated_at <= updated_before)
             stmt = select(func.count(CustomerModel.id)).where(and_(*conditions))
             return session.exec(stmt).one() or 0
 
