@@ -52,6 +52,13 @@ import { Customer } from "../types";
 
 import { CustomerProfilePhotoUpload } from "./customer-profile-photo-upload";
 
+const ID_TYPE_LABELS: Record<string, string> = {
+  passport: "Passport",
+  driver_license: "Driver's License",
+  national_id: "National ID",
+  other: "Other",
+};
+
 export interface CustomerDetailProps {
   className?: string;
   cus?: Customer;
@@ -446,7 +453,15 @@ export function CustomerDetail({
                       label="Nationality"
                       value={cus.nationality}
                     />
-                    <DescriptionItem label="ID Type" value={cus.id_type} />
+                    <DescriptionItem
+                      label="ID Type"
+                      value={cus.id_type}
+                      render={(value) =>
+                        (value && ID_TYPE_LABELS[value as string]) ||
+                        (value as string) ||
+                        undefined
+                      }
+                    />
                     <DescriptionItem label="ID Number" value={cus.id_number} />
                   </DescriptionList>
                   {/* 1. Essential Information */}
