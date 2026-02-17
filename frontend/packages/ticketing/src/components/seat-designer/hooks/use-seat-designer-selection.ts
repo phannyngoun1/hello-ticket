@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { SeatMarker, SectionMarker } from "../types";
 
 export type UseSeatDesignerSelectionProps = {
@@ -15,6 +15,19 @@ export function useSeatDesignerSelection({
 
     const [selectedSeat, setSelectedSeat] = useState<SeatMarker | null>(null);
     const [selectedSectionMarker, setSelectedSectionMarker] = useState<SectionMarker | null>(null);
+
+    // Sync selected markers when underlying data changes (e.g. after name edit)
+    // so the toolbox displays the updated name immediately
+    useEffect(() => {
+        if (selectedSeatIds.length === 1) {
+            const seat = seats.find((s) => s.id === selectedSeatIds[0]) ?? null;
+            setSelectedSeat(seat);
+        }
+        if (selectedSectionIds.length === 1) {
+            const section = sectionMarkers.find((s) => s.id === selectedSectionIds[0]) ?? null;
+            setSelectedSectionMarker(section);
+        }
+    }, [seats, sectionMarkers, selectedSeatIds, selectedSectionIds]);
 
     const handleSelectionChange = useCallback((
         newSelectedSeatIds: string[],
