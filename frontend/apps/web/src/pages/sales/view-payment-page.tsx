@@ -10,6 +10,7 @@ import {
   useBookingService,
   usePaymentsByBooking,
   BookingInvoiceReceipt,
+  type Booking,
 } from "@truths/sales";
 import { useRequireAuth } from "../../hooks/use-require-auth";
 
@@ -109,11 +110,11 @@ export function ViewPaymentPage() {
   }
 
   // Fallback: minimal invoice+receipt when booking not yet loaded
-  const fallbackBooking = {
+  const fallbackBooking: Booking = {
     id: payment.booking_id,
     tenant_id: "",
     booking_number: payment.booking_id?.slice(0, 8).toUpperCase() || "—",
-    customer_name: undefined as string | undefined,
+    customer_name: undefined,
     event_id: "",
     status: "—",
     subtotal_amount: payment.amount,
@@ -123,7 +124,7 @@ export function ViewPaymentPage() {
     total_amount: payment.amount,
     currency: payment.currency,
     due_balance: 0,
-    items: [] as { id?: string; section_name?: string; row_name?: string; seat_number?: string; unit_price?: number }[],
+    items: [],
     created_at: payment.created_at instanceof Date ? payment.created_at : new Date(payment.created_at),
   };
 

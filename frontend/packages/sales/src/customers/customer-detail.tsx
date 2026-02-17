@@ -475,9 +475,11 @@ export function CustomerDetail({
                       label="ID Type"
                       value={cus.id_type}
                       render={(value) =>
-                        (value && ID_TYPE_LABELS[value as string]) ||
-                        (value as string) ||
-                        undefined
+                        typeof value === "string" && ID_TYPE_LABELS[value]
+                          ? ID_TYPE_LABELS[value]
+                          : typeof value === "string"
+                            ? value
+                            : null
                       }
                     />
                     <DescriptionItem label="ID Number" value={cus.id_number} />

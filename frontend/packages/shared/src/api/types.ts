@@ -162,9 +162,10 @@ export interface ApiClient {
 
 /**
  * Generic service configuration type
- * Allows services to define their specific endpoint structure
+ * Allows services to define their specific endpoint structure.
+ * Endpoint values may be string or undefined for optional endpoints.
  */
-export type ServiceConfig<TEndpoints extends Record<string, string> = Record<string, string>> = {
+export type ServiceConfig<TEndpoints extends Record<string, string | undefined> = Record<string, string | undefined>> = {
     apiClient: ApiClient;
     endpoints: TEndpoints;
 };

@@ -234,7 +234,7 @@ function transformToBackend(input: CreateCustomerInput | UpdateCustomerInput): R
   return payload;
 }
 
-interface CustomerEndpoints extends Record<string, string> {
+interface CustomerEndpoints extends Record<string, string | undefined> {
   "customers": string;
   "idTypes"?: string;
 }
