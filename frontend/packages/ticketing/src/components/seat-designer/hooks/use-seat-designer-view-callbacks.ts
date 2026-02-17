@@ -89,6 +89,31 @@ export function getMarkerBounds(
   };
 }
 
+const SHAPE_DEFAULTS = { radius: 0.8, width: 2, height: 1.5 };
+
+/**
+ * Clamp position so the full shape stays within canvas (0-100%).
+ * Prevents half of a shape from extending outside the layer.
+ */
+export function clampPositionToCanvas(
+  x: number,
+  y: number,
+  shape: PlacementShape | undefined,
+  defaults = SHAPE_DEFAULTS,
+): { x: number; y: number } {
+  const bounds = getMarkerBounds({ x, y, shape }, defaults);
+  const halfW = (bounds.right - bounds.left) / 2;
+  const halfH = (bounds.bottom - bounds.top) / 2;
+  const minX = halfW;
+  const maxX = 100 - halfW;
+  const minY = halfH;
+  const maxY = 100 - halfH;
+  return {
+    x: Math.max(minX, Math.min(maxX, x)),
+    y: Math.max(minY, Math.min(maxY, y)),
+  };
+}
+
 /** Apply alignment to markers; returns updates per marker id (exported for SectionDetailView) */
 export function applyAlignment<
   T extends { id: string; x: number; y: number; shape?: PlacementShape },

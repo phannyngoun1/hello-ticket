@@ -41,6 +41,7 @@ import { useSeatDesignerHotkeys } from "./hooks/use-seat-designer-hotkeys";
 import {
   getMarkerBounds,
   applyAlignment,
+  clampPositionToCanvas,
   type AlignmentType,
 } from "./hooks/use-seat-designer-view-callbacks";
 import {
@@ -816,14 +817,16 @@ export function SeatDesigner({
         snappedX = Math.round(x / gridSize) * gridSize;
         snappedY = Math.round(y / gridSize) * gridSize;
       }
-      const clampedX = Math.max(0, Math.min(100, snappedX));
-      const clampedY = Math.max(0, Math.min(100, snappedY));
-
       const finalShape: PlacementShape = {
         ...shape,
         ...(width && { width }),
         ...(height && { height }),
       };
+      const { x: clampedX, y: clampedY } = clampPositionToCanvas(
+        snappedX,
+        snappedY,
+        finalShape,
+      );
 
       if (selectedShapeTool) {
         if (
@@ -939,12 +942,15 @@ export function SeatDesigner({
         snappedX = Math.round(newX / gridSize) * gridSize;
         snappedY = Math.round(newY / gridSize) * gridSize;
       }
-      updateSeat(seatId, {
-        x: Math.max(0, Math.min(100, snappedX)),
-        y: Math.max(0, Math.min(100, snappedY)),
-      });
+      const seat = seats.find((s) => s.id === seatId);
+      const { x, y } = clampPositionToCanvas(
+        snappedX,
+        snappedY,
+        seat?.shape,
+      );
+      updateSeat(seatId, { x, y });
     },
-    [recordSnapshot, snapToGrid, gridSize, updateSeat],
+    [recordSnapshot, snapToGrid, gridSize, updateSeat, seats],
   );
 
   const handleKonvaSectionDragEnd = useCallback(
@@ -956,12 +962,15 @@ export function SeatDesigner({
         snappedX = Math.round(newX / gridSize) * gridSize;
         snappedY = Math.round(newY / gridSize) * gridSize;
       }
-      updateSection(sectionId, {
-        x: Math.max(0, Math.min(100, snappedX)),
-        y: Math.max(0, Math.min(100, snappedY)),
-      });
+      const section = sectionMarkers.find((s) => s.id === sectionId);
+      const { x, y } = clampPositionToCanvas(
+        snappedX,
+        snappedY,
+        section?.shape,
+      );
+      updateSection(sectionId, { x, y });
     },
-    [recordSnapshot, snapToGrid, gridSize, updateSection],
+    [recordSnapshot, snapToGrid, gridSize, updateSection, sectionMarkers],
   );
 
   const handleBatchSeatDragEnd = useCallback(
@@ -974,17 +983,17 @@ export function SeatDesigner({
           snappedX = Math.round(x / gridSize) * gridSize;
           snappedY = Math.round(y / gridSize) * gridSize;
         }
-        return {
-          id,
-          updates: {
-            x: Math.max(0, Math.min(100, snappedX)),
-            y: Math.max(0, Math.min(100, snappedY)),
-          },
-        };
+        const seat = seats.find((s) => s.id === id);
+        const { x: clampedX, y: clampedY } = clampPositionToCanvas(
+          snappedX,
+          snappedY,
+          seat?.shape,
+        );
+        return { id, updates: { x: clampedX, y: clampedY } };
       });
       batchUpdateSeats(snapped);
     },
-    [recordSnapshot, snapToGrid, gridSize, batchUpdateSeats],
+    [recordSnapshot, snapToGrid, gridSize, batchUpdateSeats, seats],
   );
 
   const handleBatchSectionDragEnd = useCallback(
@@ -997,17 +1006,17 @@ export function SeatDesigner({
           snappedX = Math.round(x / gridSize) * gridSize;
           snappedY = Math.round(y / gridSize) * gridSize;
         }
-        return {
-          id,
-          updates: {
-            x: Math.max(0, Math.min(100, snappedX)),
-            y: Math.max(0, Math.min(100, snappedY)),
-          },
-        };
+        const section = sectionMarkers.find((s) => s.id === id);
+        const { x: clampedX, y: clampedY } = clampPositionToCanvas(
+          snappedX,
+          snappedY,
+          section?.shape,
+        );
+        return { id, updates: { x: clampedX, y: clampedY } };
       });
       batchUpdateSections(snapped);
     },
-    [recordSnapshot, snapToGrid, gridSize, batchUpdateSections],
+    [recordSnapshot, snapToGrid, gridSize, batchUpdateSections, sectionMarkers],
   );
 
   const handleSeatShapeTransform = useCallback(
@@ -1018,12 +1027,15 @@ export function SeatDesigner({
     ) => {
       const seat = seats.find((s) => s.id === id);
       const oldShape = seat?.shape;
+      const pos = position
+        ? clampPositionToCanvas(position.x, position.y, shape)
+        : undefined;
       const updates: { id: string; updates: Partial<SeatMarker> }[] = [
         {
           id,
           updates: {
             shape,
-            ...(position && { x: position.x, y: position.y }),
+            ...(pos && { x: pos.x, y: pos.y }),
           },
         },
       ];
@@ -1057,12 +1069,15 @@ export function SeatDesigner({
     ) => {
       const section = sectionMarkers.find((s) => s.id === id);
       const oldShape = section?.shape;
+      const pos = position
+        ? clampPositionToCanvas(position.x, position.y, shape)
+        : undefined;
       const updates: { id: string; updates: Partial<SectionMarker> }[] = [
         {
           id,
           updates: {
             shape,
-            ...(position && { x: position.x, y: position.y }),
+            ...(pos && { x: pos.x, y: pos.y }),
           },
         },
       ];
