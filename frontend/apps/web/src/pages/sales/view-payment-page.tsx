@@ -11,6 +11,7 @@ import {
   usePaymentsByBooking,
   BookingInvoiceReceipt,
   type Booking,
+  type BookingItem,
 } from "@truths/sales";
 import { useRequireAuth } from "../../hooks/use-require-auth";
 
@@ -124,7 +125,7 @@ export function ViewPaymentPage() {
     total_amount: payment.amount,
     currency: payment.currency,
     due_balance: 0,
-    items: [],
+    items: [] as BookingItem[],
     created_at: payment.created_at instanceof Date ? payment.created_at : new Date(payment.created_at),
   };
 
