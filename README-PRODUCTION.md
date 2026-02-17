@@ -66,13 +66,13 @@ The repo includes a root **Dockerfile** that builds the frontend and runs the ba
   | `SECRET_KEY`       | Long random secret (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`) |
   | `ALLOWED_ORIGINS`  | `https://<your-app>.up.railway.app` (or your custom domain) |
 
-- **Settings → Deploy → Release Command** (optional but recommended if you use migrations):
+- **Settings → Deploy → Release Command** (recommended if you use migrations):
 
   ```bash
-  python tools/migrate-db.py upgrade-or-stamp
+  python tools/migrate-db.py upgrade
   ```
 
-  Upgrades to the latest migration. If the DB has an unknown revision (e.g. "Can't locate revision" after you squashed migrations and pushed new versions), it stamps to head then upgrades so you don't need a manual one-off. Tables are also created automatically on app startup (see “Database schema on Railway” below); use this when you have migration files for schema changes.
+  Runs pending migrations incrementally before each deploy. Use upgrade-or-stamp only when recovering from a squashed migration history (DB has unknown revision); otherwise it can mark the DB as head without running migrations. Tables are also created automatically on app startup (see “Database schema on Railway” below); use this when you have migration files for schema changes.
 
 ### 4. Deploy
 
@@ -111,8 +111,8 @@ Then deploy again. Migrations run before uvicorn in the Docker CMD.
 1. **On startup (automatic)**  
    When the app boots, it creates any missing tables from the Python models (single operational database). So the initial schema is created without running any migration command.
 
-2. **Migrations (optional but recommended for changes)**  
-   Use the **Release Command** `python tools/migrate-db.py upgrade` when you have Alembic migrations (e.g. after adding a column or index via a migration). That runs before each deploy and applies pending migrations. For a brand‑new DB with no migrations, you can omit the Release Command and rely on startup; for ongoing schema changes, keep the Release Command.
+2. **Migrations (recommended for schema changes)**  
+   Use the **Release Command** `python tools/migrate-db.py upgrade` when you have Alembic migrations. That runs before each deploy and applies pending migrations incrementally. For a brand‑new DB with no migrations, you can omit the Release Command and rely on startup; for ongoing schema changes, keep the Release Command. Do **not** use `upgrade-or-stamp` for normal deploys—it can skip migrations and stamp to head without applying them.
 
 **Summary:** You don’t need to “create the DB schema” manually. Link Postgres, set `DATABASE_URL`, and start the app – tables are created on first start. Use the Release Command if you use migrations for schema evolution.
 

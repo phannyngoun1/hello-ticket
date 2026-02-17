@@ -238,7 +238,7 @@ export function DataDescription({
               <h3
                 className={cn(
                   "mb-4 text-sm font-medium text-muted-foreground",
-                  Icon && "flex items-center gap-2"
+                  Icon && "flex items-center gap-2",
                 )}
               >
                 {Icon && <Icon className="h-4 w-4" />}
@@ -259,7 +259,7 @@ export function DataDescription({
                     // formatValue always returns a string, which is a valid ReactNode
                     displayValue = defaultFormatValue(
                       field.value,
-                      field.dataType
+                      field.dataType,
                     );
                   }
 
@@ -289,7 +289,7 @@ export function DataDescription({
                             ? "text-primary hover:underline"
                             : !isReactComponent && "text-muted-foreground",
                           field.preserveWhitespace && "whitespace-pre-wrap",
-                          field.className
+                          field.className,
                         )}
                       >
                         {isLink ? (
@@ -457,7 +457,7 @@ export function DescriptionItem({
         <dt
           className={cn(
             "text-sm font-medium flex items-center gap-1",
-            labelClassName
+            labelClassName,
           )}
         >
           {Icon && <Icon className="h-3 w-3" />}
@@ -470,7 +470,7 @@ export function DescriptionItem({
           !isReactComponent && !isLink && "text-muted-foreground",
           preserveWhitespace && "whitespace-pre-wrap",
           valueClassName,
-          className
+          className,
         )}
       >
         {isLink ? (
@@ -532,7 +532,7 @@ export function DescriptionList({
 }: DescriptionListProps) {
   // Filter out null children (DescriptionItem returns null when value is empty)
   const visibleChildren = React.Children.toArray(children).filter(
-    (child) => child !== null && child !== undefined
+    (child) => child !== null && child !== undefined,
   );
 
   // If conditional and no visible children, don't render
@@ -553,7 +553,7 @@ export function DescriptionList({
         <h3
           className={cn(
             "mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider",
-            Icon && "flex items-center gap-2"
+            Icon && "flex items-center gap-2",
           )}
         >
           {Icon && <Icon className="h-4 w-4" />}

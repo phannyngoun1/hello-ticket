@@ -33,6 +33,6 @@ ENV PORT=8000
 WORKDIR /app
 EXPOSE 8000
 
-# Start the app (run migrations manually: python tools/migrate-db.py upgrade, or from backend: alembic upgrade head).
+# Run migrations then start the app. Railway Release Command can also run migrations before deploy.
 # Railway sets PORT at runtime; use it so the app listens on the right port.
-CMD ["sh", "-c", "cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python tools/migrate-db.py upgrade && cd /app/backend && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

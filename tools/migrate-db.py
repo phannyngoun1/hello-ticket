@@ -6,7 +6,7 @@ Command-line interface for managing database migrations using Alembic.
 
 Usage:
     python tools/migrate-db.py upgrade [revision]
-    python tools/migrate-db.py upgrade-or-stamp           # Recommended for Railway: upgrade, or stamp then upgrade if DB has unknown revision
+    python tools/migrate-db.py upgrade-or-stamp           # Only for recovery: if DB has unknown revision after squashing, stamp to head (use upgrade for normal deploys)
     python tools/migrate-db.py downgrade [revision]
     python tools/migrate-db.py current
     python tools/migrate-db.py history
@@ -29,6 +29,15 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 backend_dir = project_root / "backend"
 sys.path.insert(0, str(backend_dir))
+
+# Load .env from project root and backend (production uses env vars from Railway/etc.)
+def _load_env():
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(project_root / ".env")
+        load_dotenv(backend_dir / ".env")
+    except ImportError:
+        pass
 
 # Note: Working directory will be changed to backend_dir when running migration commands
 # This ensures Alembic can find alembic.ini and alembic/ directory
@@ -59,8 +68,9 @@ def migrate_upgrade(args):
 
 
 def migrate_upgrade_or_stamp(args):
-    """Upgrade to head; if DB has an unknown revision (e.g. after squashing migrations), stamp then upgrade.
-    Use this as the Railway release command so the first deploy after a history change self-heals."""
+    """Upgrade to head. If DB has an unknown revision (e.g. after squashing migrations), clear and stamp to head.
+    WARNING: Use 'upgrade' for normal production deploys. Only use upgrade-or-stamp when you intentionally
+    changed migration history (squashed) and production schema already matches head."""
     original_cwd = os.getcwd()
     os.chdir(str(backend_dir))
     try:
@@ -70,7 +80,9 @@ def migrate_upgrade_or_stamp(args):
         except Exception as e:
             err_msg = str(e)
             if "Can't locate revision" in err_msg or "No such revision" in err_msg:
-                print("Database has an unknown revision; clearing alembic_version then stamping to head...")
+                print("WARNING: Database has an unknown revision. This should only happen after squashing migrations.")
+                print("If production schema already matches head, stamping. Otherwise, fix manually.")
+                print("Clearing alembic_version and stamping to head...")
                 migrations.clear_version_table()
                 migrations.stamp_migration("head")
             else:
@@ -428,7 +440,8 @@ Examples:
     clear_version_direct.set_defaults(func=migrate_clear_version)
     
     args = parser.parse_args()
-    
+    _load_env()
+
     if not args.command:
         parser.print_help()
         sys.exit(1)
