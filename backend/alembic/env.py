@@ -42,11 +42,11 @@ load_dotenv()
 from app.infrastructure.shared.database.models import (
     operational_metadata,
     # Sales master data
-    CustomerTypeModel,
+    LookupValueModel,
     CustomerGroupModel,
     # Ticketing master data
     VenueModel, LayoutModel, SectionModel, SeatModel,
-    OrganizerModel, EventTypeModel, EventModel, ShowModel,
+    OrganizerModel, EventModel, ShowModel,
     ShowImageModel, EventSeatModel,
     # Legacy models
     UserCacheModel,

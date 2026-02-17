@@ -236,6 +236,13 @@ function transformToBackend(input: CreateCustomerInput | UpdateCustomerInput): R
 
 interface CustomerEndpoints extends Record<string, string> {
   "customers": string;
+  "idTypes"?: string;
+}
+
+export interface IdTypeOption {
+  id: string;
+  code: string;
+  name: string;
 }
 
 export type CustomerServiceConfig = ServiceConfig<CustomerEndpoints>;
@@ -318,6 +325,21 @@ export class CustomerService {
     });
   }
 
+  async fetchIdTypes(): Promise<IdTypeOption[]> {
+    const idTypesEndpoint = this.config.endpoints?.["idTypes"];
+    if (!idTypesEndpoint) return [];
+
+    const { apiClient } = this.config;
+    const data = await apiClient.get<{ items?: { id: string; code: string; name: string }[] }>(
+      `${idTypesEndpoint}?limit=100`,
+      { requiresAuth: true }
+    );
+    return (data.items ?? []).map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+    }));
+  }
 }
 
 export type CustomerEndpointsMap = CustomerEndpoints;

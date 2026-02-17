@@ -23,6 +23,7 @@ import {
   useCreateCustomer,
   useUpdateCustomer,
   useDeleteCustomer,
+  useIdTypes,
 } from "./use-customers";
 import { useCustomerService } from "./customer-provider";
 
@@ -68,6 +69,8 @@ export function CustomerListContainer({
   const createMutation = useCreateCustomer(customerService);
   const updateMutation = useUpdateCustomer(customerService);
   const deleteMutation = useDeleteCustomer(customerService);
+  const { data: idTypes = [] } = useIdTypes(customerService);
+  const idTypeOptions = idTypes.map((t) => ({ value: t.code, label: t.name }));
 
   const customers = data?.data ?? [];
   const paginationData = data?.pagination;
@@ -210,6 +213,7 @@ export function CustomerListContainer({
           }
         }}
         onSubmit={handleCreateSubmit}
+        idTypeOptions={idTypeOptions}
       />
 
       <EditCustomerDialog
@@ -222,6 +226,7 @@ export function CustomerListContainer({
         }}
         onSubmit={handleEditSubmit}
         customer={customerToEdit}
+        idTypeOptions={idTypeOptions}
       />
     </>
   );

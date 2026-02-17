@@ -1,18 +1,14 @@
-"""FastAPI routes for Sales customer_types"""
+"""FastAPI routes for Sales customer_types - uses unified lookup_values table"""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.application.sales.commands_customer_type import (
-    CreateCustomerTypeCommand,
-    UpdateCustomerTypeCommand,
-    DeleteCustomerTypeCommand,
-
+from app.application.shared.commands_lookup import (
+    CreateLookupCommand,
+    UpdateLookupCommand,
+    DeleteLookupCommand,
 )
-from app.application.sales.queries_customer_type import (
-    GetCustomerTypeByIdQuery,
-    SearchCustomerTypesQuery,
-)
+from app.application.shared.queries_lookup import GetLookupByIdQuery, SearchLookupsQuery
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
 from app.presentation.api.sales.schemas_customer_type import (
@@ -21,7 +17,6 @@ from app.presentation.api.sales.schemas_customer_type import (
     CustomerTypeResponse,
     CustomerTypeUpdateRequest,
 )
-from app.presentation.api.sales.mapper_customer_type import SalesApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
@@ -30,8 +25,22 @@ from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationEr
 # Permission constants for easy management and code generation
 MANAGE_PERMISSION = Permission.MANAGE_SALES_CUSTOMER_TYPE
 VIEW_PERMISSION = Permission.VIEW_SALES_CUSTOMER_TYPE
+TYPE_CODE = "customer_type"
 
 router = APIRouter(prefix="/sales/customer-types", tags=["sales"])
+
+
+def _lookup_to_response(lookup):
+    """Convert LookupValue to CustomerTypeResponse format."""
+    return CustomerTypeResponse(
+        id=lookup.id,
+        tenant_id=lookup.tenant_id,
+        code=lookup.code,
+        name=lookup.name,
+        is_active=lookup.is_active,
+        created_at=lookup.created_at,
+        updated_at=lookup.updated_at,
+    )
 
 
 @router.post("", response_model=CustomerTypeResponse, status_code=201)
@@ -43,13 +52,13 @@ async def create_customer_type(
     """Create a new customer_type"""
 
     try:
-        command = CreateCustomerTypeCommand(
+        command = CreateLookupCommand(
+            type_code=TYPE_CODE,
             code=request.code,
             name=request.name,
-
         )
-        customer_type = await mediator.send(command)
-        return SalesApiMapper.customer_type_to_response(customer_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -67,14 +76,15 @@ async def list_customer_types(
 
     try:
         result = await mediator.query(
-            SearchCustomerTypesQuery(
+            SearchLookupsQuery(
+                type_code=TYPE_CODE,
                 search=search,
                 is_active=is_active,
                 skip=skip,
                 limit=limit,
             )
         )
-        items = [SalesApiMapper.customer_type_to_response(customer_type) for customer_type in result.items]
+        items = [_lookup_to_response(lookup) for lookup in result.items]
         return CustomerTypeListResponse(
             items=items,
             skip=skip,
@@ -95,8 +105,10 @@ async def get_customer_type(
     """Retrieve a customer_type by identifier"""
 
     try:
-        customer_type = await mediator.query(GetCustomerTypeByIdQuery(customer_type_id=customer_type_id))
-        return SalesApiMapper.customer_type_to_response(customer_type)
+        lookup = await mediator.query(
+            GetLookupByIdQuery(type_code=TYPE_CODE, lookup_id=customer_type_id)
+        )
+        return _lookup_to_response(lookup)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -111,14 +123,14 @@ async def update_customer_type(
     """Update customer_type fields"""
 
     try:
-        command = UpdateCustomerTypeCommand(
-            customer_type_id=customer_type_id,
+        command = UpdateLookupCommand(
+            type_code=TYPE_CODE,
+            lookup_id=customer_type_id,
             code=request.code,
             name=request.name,
-
         )
-        customer_type = await mediator.send(command)
-        return SalesApiMapper.customer_type_to_response(customer_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
@@ -134,7 +146,9 @@ async def delete_customer_type(
     """Delete a customer_type (soft-delete by default)"""
 
     try:
-        await mediator.send(DeleteCustomerTypeCommand(customer_type_id=customer_type_id))
+        await mediator.send(
+            DeleteLookupCommand(type_code=TYPE_CODE, lookup_id=customer_type_id)
+        )
         return Response(status_code=204)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

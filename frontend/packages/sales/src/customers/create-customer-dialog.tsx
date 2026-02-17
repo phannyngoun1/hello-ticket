@@ -19,6 +19,7 @@ export interface CreateCustomerDialogProps {
   onSubmit: (data: CreateCustomerInput) => Promise<void>;
   title?: string;
   maxWidth?: string;
+  idTypeOptions?: { value: string; label: string }[];
 }
 
 export function CreateCustomerDialog({
@@ -27,6 +28,7 @@ export function CreateCustomerDialog({
   onSubmit,
   title = "Create Customer",
   maxWidth = "720px",
+  idTypeOptions,
 }: CreateCustomerDialogProps) {
   const density = useDensityStyles();
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -184,6 +186,7 @@ export function CreateCustomerDialog({
             onSubmit={handleFormSubmit}
             isLoading={isSubmitting}
             mode="create"
+            idTypeOptions={idTypeOptions}
           />
         </div>
       </FullScreenDialog>

@@ -1,18 +1,14 @@
-"""FastAPI routes for Ticketing venue_types"""
+"""FastAPI routes for Ticketing venue_types - uses unified lookup_values table"""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.application.ticketing.commands_venue_type import (
-    CreateVenueTypeCommand,
-    UpdateVenueTypeCommand,
-    DeleteVenueTypeCommand,
-
+from app.application.shared.commands_lookup import (
+    CreateLookupCommand,
+    UpdateLookupCommand,
+    DeleteLookupCommand,
 )
-from app.application.ticketing.queries_venue_type import (
-    GetVenueTypeByIdQuery,
-    SearchVenueTypesQuery,
-)
+from app.application.shared.queries_lookup import GetLookupByIdQuery, SearchLookupsQuery
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
 from app.presentation.api.ticketing.schemas_venue_type import (
@@ -21,7 +17,6 @@ from app.presentation.api.ticketing.schemas_venue_type import (
     VenueTypeResponse,
     VenueTypeUpdateRequest,
 )
-from app.presentation.api.ticketing.mapper_venue_type import TicketingApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
@@ -30,8 +25,22 @@ from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationEr
 # Permission constants for easy management and code generation
 MANAGE_PERMISSION = Permission.MANAGE_TICKETING_VENUE_TYPE
 VIEW_PERMISSION = Permission.VIEW_TICKETING_VENUE_TYPE
+TYPE_CODE = "venue_type"
 
 router = APIRouter(prefix="/ticketing/venue-types", tags=["ticketing"])
+
+
+def _lookup_to_response(lookup):
+    """Convert LookupValue to VenueTypeResponse format."""
+    return VenueTypeResponse(
+        id=lookup.id,
+        tenant_id=lookup.tenant_id,
+        code=lookup.code,
+        name=lookup.name,
+        is_active=lookup.is_active,
+        created_at=lookup.created_at,
+        updated_at=lookup.updated_at,
+    )
 
 
 @router.post("", response_model=VenueTypeResponse, status_code=201)
@@ -43,13 +52,13 @@ async def create_venue_type(
     """Create a new venue_type"""
 
     try:
-        command = CreateVenueTypeCommand(
+        command = CreateLookupCommand(
+            type_code=TYPE_CODE,
             code=request.code,
             name=request.name,
-
         )
-        venue_type = await mediator.send(command)
-        return TicketingApiMapper.venue_type_to_response(venue_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -67,14 +76,15 @@ async def list_venue_types(
 
     try:
         result = await mediator.query(
-            SearchVenueTypesQuery(
+            SearchLookupsQuery(
+                type_code=TYPE_CODE,
                 search=search,
                 is_active=is_active,
                 skip=skip,
                 limit=limit,
             )
         )
-        items = [TicketingApiMapper.venue_type_to_response(venue_type) for venue_type in result.items]
+        items = [_lookup_to_response(lookup) for lookup in result.items]
         return VenueTypeListResponse(
             items=items,
             skip=skip,
@@ -95,8 +105,10 @@ async def get_venue_type(
     """Retrieve a venue_type by identifier"""
 
     try:
-        venue_type = await mediator.query(GetVenueTypeByIdQuery(venue_type_id=venue_type_id))
-        return TicketingApiMapper.venue_type_to_response(venue_type)
+        lookup = await mediator.query(
+            GetLookupByIdQuery(type_code=TYPE_CODE, lookup_id=venue_type_id)
+        )
+        return _lookup_to_response(lookup)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -111,14 +123,14 @@ async def update_venue_type(
     """Update venue_type fields"""
 
     try:
-        command = UpdateVenueTypeCommand(
-            venue_type_id=venue_type_id,
+        command = UpdateLookupCommand(
+            type_code=TYPE_CODE,
+            lookup_id=venue_type_id,
             code=request.code,
             name=request.name,
-
         )
-        venue_type = await mediator.send(command)
-        return TicketingApiMapper.venue_type_to_response(venue_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
@@ -134,7 +146,9 @@ async def delete_venue_type(
     """Delete a venue_type (soft-delete by default)"""
 
     try:
-        await mediator.send(DeleteVenueTypeCommand(venue_type_id=venue_type_id))
+        await mediator.send(
+            DeleteLookupCommand(type_code=TYPE_CODE, lookup_id=venue_type_id)
+        )
         return Response(status_code=204)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

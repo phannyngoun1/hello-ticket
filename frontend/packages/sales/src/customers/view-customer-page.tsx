@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@truths/ui";
 import { ConfirmationDialog } from "@truths/custom-ui";
 import { CustomerDetail } from "./customer-detail";
-import { useCustomer, useUpdateCustomer, useDeleteCustomer } from "./use-customers";
+import { useCustomer, useUpdateCustomer, useDeleteCustomer, useIdTypes } from "./use-customers";
 import { useCustomerService } from "./customer-provider";
 import { EditCustomerDialog } from "./edit-customer-dialog";
 import { CustomerTagsDialog } from "./customer-tags-dialog";
@@ -63,6 +63,11 @@ function CustomerDetailContent({
 }) {
   const service = useCustomerService();
   const { toast } = useToast();
+  const { data: idTypes = [] } = useIdTypes(service);
+  const idTypeOptions = useMemo(
+    () => idTypes.map((t) => ({ value: t.code, label: t.name })),
+    [idTypes]
+  );
   const {
     data: customer,
     isLoading,
@@ -311,6 +316,7 @@ function CustomerDetailContent({
             onOpenChange={setEditDialogOpen}
             customer={customer}
             onSubmit={handleEditSubmit}
+            idTypeOptions={idTypeOptions}
           />
 
           <ConfirmationDialog

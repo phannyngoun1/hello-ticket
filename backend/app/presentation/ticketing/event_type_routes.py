@@ -1,18 +1,14 @@
-"""FastAPI routes for Ticketing event_types"""
+"""FastAPI routes for Ticketing event_types - uses unified lookup_values table"""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
-from app.application.ticketing.commands_event_type import (
-    CreateEventTypeCommand,
-    UpdateEventTypeCommand,
-    DeleteEventTypeCommand,
-
+from app.application.shared.commands_lookup import (
+    CreateLookupCommand,
+    UpdateLookupCommand,
+    DeleteLookupCommand,
 )
-from app.application.ticketing.queries_event_type import (
-    GetEventTypeByIdQuery,
-    SearchEventTypesQuery,
-)
+from app.application.shared.queries_lookup import GetLookupByIdQuery, SearchLookupsQuery
 from app.domain.shared.authenticated_user import AuthenticatedUser
 from app.domain.shared.value_objects.role import Permission
 from app.presentation.api.ticketing.schemas_event_type import (
@@ -21,7 +17,6 @@ from app.presentation.api.ticketing.schemas_event_type import (
     EventTypeResponse,
     EventTypeUpdateRequest,
 )
-from app.presentation.api.ticketing.mapper_event_type import TicketingApiMapper
 from app.presentation.core.dependencies.auth_dependencies import RequirePermission, RequireAnyPermission
 from app.presentation.shared.dependencies import get_mediator_dependency
 from app.shared.mediator import Mediator
@@ -30,8 +25,22 @@ from app.shared.exceptions import BusinessRuleError, NotFoundError, ValidationEr
 # Permission constants for easy management and code generation
 MANAGE_PERMISSION = Permission.MANAGE_TICKETING_EVENT_TYPE
 VIEW_PERMISSION = Permission.VIEW_TICKETING_EVENT_TYPE
+TYPE_CODE = "event_type"
 
 router = APIRouter(prefix="/ticketing/event-types", tags=["ticketing"])
+
+
+def _lookup_to_response(lookup):
+    """Convert LookupValue to EventTypeResponse format."""
+    return EventTypeResponse(
+        id=lookup.id,
+        tenant_id=lookup.tenant_id,
+        code=lookup.code,
+        name=lookup.name,
+        is_active=lookup.is_active,
+        created_at=lookup.created_at,
+        updated_at=lookup.updated_at,
+    )
 
 
 @router.post("", response_model=EventTypeResponse, status_code=201)
@@ -43,13 +52,13 @@ async def create_event_type(
     """Create a new event_type"""
 
     try:
-        command = CreateEventTypeCommand(
+        command = CreateLookupCommand(
+            type_code=TYPE_CODE,
             code=request.code,
             name=request.name,
-
         )
-        event_type = await mediator.send(command)
-        return TicketingApiMapper.event_type_to_response(event_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -67,14 +76,15 @@ async def list_event_types(
 
     try:
         result = await mediator.query(
-            SearchEventTypesQuery(
+            SearchLookupsQuery(
+                type_code=TYPE_CODE,
                 search=search,
                 is_active=is_active,
                 skip=skip,
                 limit=limit,
             )
         )
-        items = [TicketingApiMapper.event_type_to_response(event_type) for event_type in result.items]
+        items = [_lookup_to_response(lookup) for lookup in result.items]
         return EventTypeListResponse(
             items=items,
             skip=skip,
@@ -95,8 +105,10 @@ async def get_event_type(
     """Retrieve a event_type by identifier"""
 
     try:
-        event_type = await mediator.query(GetEventTypeByIdQuery(event_type_id=event_type_id))
-        return TicketingApiMapper.event_type_to_response(event_type)
+        lookup = await mediator.query(
+            GetLookupByIdQuery(type_code=TYPE_CODE, lookup_id=event_type_id)
+        )
+        return _lookup_to_response(lookup)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
@@ -111,14 +123,14 @@ async def update_event_type(
     """Update event_type fields"""
 
     try:
-        command = UpdateEventTypeCommand(
-            event_type_id=event_type_id,
+        command = UpdateLookupCommand(
+            type_code=TYPE_CODE,
+            lookup_id=event_type_id,
             code=request.code,
             name=request.name,
-
         )
-        event_type = await mediator.send(command)
-        return TicketingApiMapper.event_type_to_response(event_type)
+        lookup = await mediator.send(command)
+        return _lookup_to_response(lookup)
     except (BusinessRuleError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except NotFoundError as exc:
@@ -134,7 +146,9 @@ async def delete_event_type(
     """Delete a event_type (soft-delete by default)"""
 
     try:
-        await mediator.send(DeleteEventTypeCommand(event_type_id=event_type_id))
+        await mediator.send(
+            DeleteLookupCommand(type_code=TYPE_CODE, lookup_id=event_type_id)
+        )
         return Response(status_code=204)
     except NotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc))

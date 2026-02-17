@@ -20,6 +20,7 @@ export interface EditCustomerDialogProps {
   customer: Customer | null;
   title?: string;
   maxWidth?: string;
+  idTypeOptions?: { value: string; label: string }[];
 }
 
 export function EditCustomerDialog({
@@ -29,6 +30,7 @@ export function EditCustomerDialog({
   customer,
   title = "Edit Customer",
   maxWidth = "720px",
+  idTypeOptions,
 }: EditCustomerDialogProps) {
   const density = useDensityStyles();
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -235,6 +237,7 @@ export function EditCustomerDialog({
             onSubmit={handleFormSubmit}
             isLoading={isSubmitting}
             mode="edit"
+            idTypeOptions={idTypeOptions}
           />
         </div>
       </FullScreenDialog>

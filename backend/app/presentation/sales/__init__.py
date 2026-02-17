@@ -4,12 +4,14 @@ from .booking_routes import router as booking_router
 from .payment_routes import router as payment_router
 from .customer_group_routes import router as customer_group_router
 from .customer_type_routes import router as customer_type_router
+from .id_type_routes import router as id_type_router
 from .routes import router as sales_router
 
 # Main router that combines all sales routes
 router = APIRouter()
 router.include_router(sales_router)
 router.include_router(customer_type_router)
+router.include_router(id_type_router)
 router.include_router(customer_group_router)
 router.include_router(booking_router)
 router.include_router(payment_router)

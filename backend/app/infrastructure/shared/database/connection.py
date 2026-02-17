@@ -9,11 +9,11 @@ from sqlmodel import SQLModel, create_engine, Session
 from typing import Generator
 from app.infrastructure.shared.database.models import (
     # Sales master data
-    CustomerTypeModel,
+    LookupValueModel,
     CustomerGroupModel,
     # Ticketing master data
     VenueModel, LayoutModel, SectionModel, SeatModel,
-    OrganizerModel, EventTypeModel,
+    OrganizerModel,
     # Legacy models
     UserCacheModel,
     # UI Builder
@@ -27,8 +27,6 @@ from app.infrastructure.shared.database.models import (
     ShowModel,
     # Ticketing master data
     EventModel,
-    # Ticketing master data
-    VenueTypeModel,
     # Sales master data
     EmployeeModel,
     # Shared module - file uploads (must be imported for FK dependencies)

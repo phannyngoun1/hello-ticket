@@ -68,15 +68,24 @@ const customerFormSchema = z
 
 export type CustomerFormData = z.infer<typeof customerFormSchema>;
 
+const DEFAULT_ID_TYPE_OPTIONS = [
+  { value: "passport", label: "Passport" },
+  { value: "driver_license", label: "Driver's License" },
+  { value: "national_id", label: "National ID" },
+  { value: "other", label: "Other" },
+];
+
 export interface CustomerFormProps {
   defaultValues?: Partial<CustomerFormData>;
   onSubmit: (data: CustomerFormData) => Promise<void> | void;
   isLoading?: boolean;
   mode?: "create" | "edit";
+  /** ID type options from API - falls back to defaults if not provided */
+  idTypeOptions?: { value: string; label: string }[];
 }
 
 export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
-  function CustomerForm({ defaultValues, onSubmit, isLoading = false }, ref) {
+  function CustomerForm({ defaultValues, onSubmit, isLoading = false, idTypeOptions }, ref) {
     const methods = useForm<CustomerFormData>({
       resolver: zodResolver(customerFormSchema),
       defaultValues: {
@@ -220,12 +229,7 @@ export const CustomerForm = forwardRef<HTMLFormElement, CustomerFormProps>(
               name="id_type"
               label="ID Type"
               placeholder="Select ID type"
-              options={[
-                { value: "passport", label: "Passport" },
-                { value: "driver_license", label: "Driver's License" },
-                { value: "national_id", label: "National ID" },
-                { value: "other", label: "Other" },
-              ]}
+              options={idTypeOptions ?? DEFAULT_ID_TYPE_OPTIONS}
               disabled={isLoading}
             />
 

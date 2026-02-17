@@ -15,7 +15,7 @@ import type {
   CustomerFilter,
 } from "../types";
 import type { Pagination, PaginatedResponse } from "@truths/shared";
-import type { CustomerService } from "./customer-service";
+import type { CustomerService, IdTypeOption } from "./customer-service";
 
 export interface UseCustomersParams {
   filter?: CustomerFilter;
@@ -45,6 +45,14 @@ export function useCustomers(service: CustomerService, params?: UseCustomersPara
       });
     },
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useIdTypes(service: CustomerService) {
+  return useQuery<IdTypeOption[]>({
+    queryKey: ["idTypes"],
+    queryFn: () => service.fetchIdTypes(),
+    staleTime: 10 * 60 * 1000, // 10 minutes - lookup data changes rarely
   });
 }
 

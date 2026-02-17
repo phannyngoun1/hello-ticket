@@ -313,19 +313,21 @@ class CustomerGroupModel(SQLModel, table=True):
 
 
 
-class CustomerTypeModel(SQLModel, table=True):
-    """Customer type master data database model"""
-    __tablename__ = "customer_types"
+class LookupValueModel(SQLModel, table=True):
+    """Unified lookup/reference data - replaces customer_types, venue_types, event_types"""
+    __tablename__ = "lookup_values"
     metadata = operational_metadata
-    
+
     id: str = Field(primary_key=True, default_factory=generate_id)
     tenant_id: str = Field(index=True)
+    type_code: str = Field(index=True, description="Lookup type: customer_type, venue_type, event_type")
     code: str = Field(index=True)
     name: str
+    sort_order: int = Field(default=0, description="Display order within type")
     is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
+    is_deleted: bool = Field(default=False, index=True)
     version: int = Field(default=0)
-    
+
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
@@ -334,15 +336,15 @@ class CustomerTypeModel(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True))
     )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
+    deleted_at: Optional[datetime] = Field(
         default=None,
         sa_column=Column(DateTime(timezone=True))
     )
-    
+
     __table_args__ = (
-        Index('ix_customer_types_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_customer_types_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_customer_types_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
+        Index('ix_lookup_values_tenant_type_code', 'tenant_id', 'type_code', 'code', unique=True),
+        Index('ix_lookup_values_tenant_type_active', 'tenant_id', 'type_code', 'is_active'),
+        Index('ix_lookup_values_tenant_type_deleted', 'tenant_id', 'type_code', 'is_deleted'),
     )
 
 
@@ -501,40 +503,6 @@ class TagLinkModel(SQLModel, table=True):
 
 # ============================================================================
 # TICKETING MODULE
-
-class VenueTypeModel(SQLModel, table=True):
-    """VenueType master data database model"""
-    __tablename__ = "venue_types"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_venue_types_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_venue_types_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_venue_types_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-    )
-
-
 
 class EventModel(SQLModel, table=True):
     """Event database model"""
@@ -753,40 +721,6 @@ class ShowImageModel(SQLModel, table=True):
     
     __table_args__ = (
     )
-
-
-class EventTypeModel(SQLModel, table=True):
-    """EventType master data database model"""
-    __tablename__ = "event_types"
-    metadata = operational_metadata
-    
-    id: str = Field(primary_key=True, default_factory=generate_id)
-    tenant_id: str = Field(index=True)
-    code: str = Field(index=True)
-    name: str
-    is_active: bool = Field(default=True, index=True)
-    is_deleted: bool = Field(default=False, index=True)  # Soft delete flag
-    version: int = Field(default=0)
-    
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    updated_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        sa_column=Column(DateTime(timezone=True))
-    )
-    deleted_at: Optional[datetime] = Field(  # When soft deleted
-        default=None,
-        sa_column=Column(DateTime(timezone=True))
-    )
-    
-    __table_args__ = (
-        Index('ix_event_types_tenant_code', 'tenant_id', 'code', unique=True),
-        Index('ix_event_types_tenant_active', 'tenant_id', 'is_active'),
-        Index('ix_event_types_tenant_deleted', 'tenant_id', 'is_deleted'),  # For filtering deleted records
-    )
-
 
 
 class OrganizerModel(SQLModel, table=True):

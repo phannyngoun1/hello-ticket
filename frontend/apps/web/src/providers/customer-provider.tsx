@@ -10,6 +10,7 @@ export function GlobalCustomerProvider({
     apiClient: api,
     endpoints: {
       customers: "/api/v1/sales/customers",
+      idTypes: "/api/v1/sales/id-types",
     },
   };
   return <CustomerProvider config={serviceConfig}>{children}</CustomerProvider>;

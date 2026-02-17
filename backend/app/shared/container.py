@@ -16,14 +16,13 @@ from app.shared.container_registrations.auth import register_auth_container
 from app.shared.container_registrations.audit import register_audit_container
 from app.shared.container_registrations.code_generator import register_code_generator_container
 from app.shared.container_registrations.customer import register_customer_container, register_customer_mediator
-from app.shared.container_registrations.customer_type import register_customer_type_container, register_customer_type_mediator
+from app.shared.container_registrations.lookup import register_lookup_container, register_lookup_mediator
 from app.shared.container_registrations.customer_group import register_customer_group_container, register_customer_group_mediator
 
 from app.shared.container_registrations.venue import register_venue_container, register_venue_mediator
 from app.shared.container_registrations.layout import register_layout_container, register_layout_mediator
 from app.shared.container_registrations.seat import register_seat_container, register_seat_mediator
 from app.shared.container_registrations.organizer import register_organizer_container, register_organizer_mediator
-from app.shared.container_registrations.event_type import register_event_type_container, register_event_type_mediator
 from app.shared.container_registrations.booking import register_booking_container, register_booking_mediator
 from app.shared.container_registrations.payment import register_payment_container, register_payment_mediator
 from app.shared.container_registrations.show import register_show_container, register_show_mediator
@@ -31,7 +30,6 @@ from app.shared.container_registrations.event import register_event_container, r
 from app.shared.container_registrations.event_seat import register_event_seat_container, register_event_seat_mediator
 from app.shared.container_registrations.tag import register_tag_container, register_tag_mediator
 from app.shared.container_registrations.attachment import register_attachment_container, register_attachment_mediator
-from app.shared.container_registrations.venue_type import register_venue_type_container, register_venue_type_mediator
 from app.shared.container_registrations.dashboard import register_dashboard_container, register_dashboard_mediator
 from app.shared.container_registrations.employee import register_employee_container, register_employee_mediator
 def setup_container() -> Container:
@@ -60,7 +58,7 @@ def setup_container() -> Container:
 
     # Sales modules
 
-    register_customer_type_container(container)
+    register_lookup_container(container)
     register_customer_group_container(container)
 
 
@@ -74,8 +72,6 @@ def setup_container() -> Container:
     # Ticketing - Organizers
     register_organizer_container(container)
 
-    # Ticketing - Event Types
-    register_event_type_container(container)
 
     #bookings
     register_booking_container(container)
@@ -90,8 +86,6 @@ def setup_container() -> Container:
     #event-seats
     register_event_seat_container(container)
 
-    #venue types
-    register_venue_type_container(container)
 
     #dashboard
     register_dashboard_container(container)
@@ -118,20 +112,18 @@ def setup_mediator(container: Container) -> Mediator:
     register_tag_mediator(mediator)  # Tags must be registered before entities that use them
     register_attachment_mediator(mediator)  # Attachments must be registered before entities that use them
     register_customer_mediator(mediator)
-    register_customer_type_mediator(mediator)
+    register_lookup_mediator(mediator)
     register_customer_group_mediator(mediator)
 
     register_venue_mediator(mediator)
     register_layout_mediator(mediator)
     register_seat_mediator(mediator)
     register_organizer_mediator(mediator)
-    register_event_type_mediator(mediator)
     register_booking_mediator(mediator)
     register_payment_mediator(mediator)
     register_show_mediator(mediator)
     register_event_mediator(mediator)
     register_event_seat_mediator(mediator)
-    register_venue_type_mediator(mediator)
     register_dashboard_mediator(mediator)
     register_employee_mediator(mediator)
     return mediator
