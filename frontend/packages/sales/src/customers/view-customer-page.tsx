@@ -19,7 +19,8 @@ import { CustomerTagsDialog } from "./customer-tags-dialog";
 import { CustomerAttachmentsDialog } from "./customer-attachments-dialog";
 import { CreateBookingDialog } from "../bookings/create-booking-dialog";
 import { useCreateBooking } from "../bookings/use-bookings";
-import type { Customer, CreateBookingInput, UpdateCustomerInput } from "../types";
+import type { Customer, UpdateCustomerInput } from "../types";
+import type { CreateBookingInput } from "../bookings/types";
 import { TagService, AttachmentService, type FileUpload } from "@truths/shared";
 import { BookingService } from "../bookings/booking-service";
 import type { ServiceConfig } from "@truths/shared";
@@ -120,7 +121,7 @@ function CustomerDetailContent({
         title: "Success",
         description: "Customer deleted successfully",
       });
-      onNavigateToBookings?.();
+      onNavigateToCustomers?.();
     } catch (err) {
       toast({
         title: "Error",

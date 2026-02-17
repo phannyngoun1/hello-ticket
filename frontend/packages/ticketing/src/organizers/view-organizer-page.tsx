@@ -16,6 +16,7 @@ import { OrganizerTagsDialog } from "./organizer-tags-dialog";
 import { OrganizerAttachmentsDialog } from "./organizer-attachments-dialog";
 import { OrganizerProfilePhotoUpload } from "./organizer-profile-photo-upload";
 import { TagService, AttachmentService, type FileUpload } from "@truths/shared";
+import type { Organizer } from "./types";
 import type { OrganizerServiceConfig } from "./organizer-service";
 import type { AttachmentServiceConfig } from "@truths/shared";
 import type { ServiceConfig } from "@truths/shared";
@@ -47,7 +48,7 @@ function OrganizerDetailContent({
   );
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [organizerToEdit, setOrganizerToEdit] = useState<typeof data>(null);
+  const [organizerToEdit, setOrganizerToEdit] = useState<Organizer | null>(null);
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState<FileUpload | null>(null);
@@ -78,8 +79,8 @@ function OrganizerDetailContent({
     enabled: !!organizerId,
   });
 
-  const handleEdit = (organizer: typeof data) => {
-    setOrganizerToEdit(organizer);
+  const handleEdit = (organizer: Organizer | undefined) => {
+    setOrganizerToEdit(organizer ?? null);
     setEditDialogOpen(true);
   };
 
