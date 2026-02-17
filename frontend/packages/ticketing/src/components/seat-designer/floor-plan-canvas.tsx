@@ -1276,6 +1276,10 @@ export function FloorPlanCanvas({
     );
   }
 
+  let stageCursor: React.CSSProperties["cursor"] = "pointer";
+  if (isPanning || isSpacePressed) stageCursor = "grab";
+  else if (selectedShapeTool) stageCursor = "crosshair";
+
   return (
     <Stage
       ref={stageRef}
@@ -1290,12 +1294,7 @@ export function FloorPlanCanvas({
       style={{
         display: "block",
         willChange: "transform",
-        cursor:
-          isPanning || isSpacePressed
-            ? "grab"
-            : selectedShapeTool
-              ? "crosshair"
-              : "pointer", // Pointer tool shows pointer cursor
+        cursor: stageCursor,
       }}
     >
       <BackgroundLayer
