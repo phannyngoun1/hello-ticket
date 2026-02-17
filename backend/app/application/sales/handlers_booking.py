@@ -119,6 +119,13 @@ class BookingCommandHandler(BaseApplicationHandler):
         updated_tickets = []
         updated_seats = []
         
+        # Batch fetch event seats for items
+        event_seat_ids = [item.event_seat_id for item in booking.items if item.event_seat_id]
+        seat_map = {}
+        if event_seat_ids and self._event_seat_repository:
+            seats = await self._event_seat_repository.get_by_ids(tenant_id, event_seat_ids)
+            seat_map = {s.id: s for s in seats}
+        
         for item in booking.items:
             # Get ticket by event_seat_id or ticket_number
             ticket = None
@@ -136,26 +143,20 @@ class BookingCommandHandler(BaseApplicationHandler):
                 )
                 updated_tickets.append(ticket)
             
-            # Get and update event seat
-            if item.event_seat_id and self._event_seat_repository:
-                event_seat = await self._event_seat_repository.get_by_id(tenant_id, item.event_seat_id)
-                if event_seat:
-                    # Reserve the seat
-                    try:
-                        event_seat.reserve()
-                        updated_seats.append(event_seat)
-                    except BusinessRuleError as e:
-                        logger.warning(f"Cannot reserve event seat {item.event_seat_id}: {e}")
+            # Update event seat from batch
+            if item.event_seat_id and item.event_seat_id in seat_map:
+                event_seat = seat_map[item.event_seat_id]
+                try:
+                    event_seat.reserve()
+                    updated_seats.append(event_seat)
+                except BusinessRuleError as e:
+                    logger.warning(f"Cannot reserve event seat {item.event_seat_id}: {e}")
         
-        # Save all updated tickets
+        # Batch save tickets and seats
         if updated_tickets and self._ticket_repository:
-            for ticket in updated_tickets:
-                await self._ticket_repository.save(ticket)
-        
-        # Save all updated event seats
+            await self._ticket_repository.save_all(updated_tickets)
         if updated_seats and self._event_seat_repository:
-            for seat in updated_seats:
-                await self._event_seat_repository.save(seat)
+            await self._event_seat_repository.save_all(updated_seats)
 
     async def handle_update_booking(self, command: UpdateBookingCommand) -> Booking:
         tenant_id = self.get_tenant_id()
@@ -213,6 +214,13 @@ class BookingCommandHandler(BaseApplicationHandler):
         updated_tickets = []
         updated_seats = []
         
+        # Batch fetch event seats (avoids N+1 queries)
+        event_seat_ids = [t.event_seat_id for t in tickets if t.event_seat_id]
+        seat_map = {}
+        if event_seat_ids and self._event_seat_repository:
+            seats = await self._event_seat_repository.get_by_ids(tenant_id, event_seat_ids)
+            seat_map = {s.id: s for s in seats}
+        
         for ticket in tickets:
             # Confirm the ticket
             try:
@@ -222,24 +230,19 @@ class BookingCommandHandler(BaseApplicationHandler):
                 logger.warning(f"Cannot confirm ticket {ticket.id}: {e}")
             
             # Mark the event seat as sold
-            if ticket.event_seat_id and self._event_seat_repository:
-                event_seat = await self._event_seat_repository.get_by_id(tenant_id, ticket.event_seat_id)
-                if event_seat:
-                    try:
-                        event_seat.sell()
-                        updated_seats.append(event_seat)
-                    except BusinessRuleError as e:
-                        logger.warning(f"Cannot mark event seat {ticket.event_seat_id} as sold: {e}")
+            if ticket.event_seat_id and ticket.event_seat_id in seat_map:
+                event_seat = seat_map[ticket.event_seat_id]
+                try:
+                    event_seat.sell()
+                    updated_seats.append(event_seat)
+                except BusinessRuleError as e:
+                    logger.warning(f"Cannot mark event seat {ticket.event_seat_id} as sold: {e}")
         
-        # Save all updated tickets
+        # Batch save tickets and seats (avoids N sequential round-trips)
         if updated_tickets:
-            for ticket in updated_tickets:
-                await self._ticket_repository.save(ticket)
-        
-        # Save all updated event seats
+            await self._ticket_repository.save_all(updated_tickets)
         if updated_seats and self._event_seat_repository:
-            for seat in updated_seats:
-                await self._event_seat_repository.save(seat)
+            await self._event_seat_repository.save_all(updated_seats)
 
     async def handle_delete_booking(self, command: DeleteBookingCommand) -> bool:
         tenant_id = self.get_tenant_id()
@@ -273,6 +276,13 @@ class BookingCommandHandler(BaseApplicationHandler):
         updated_tickets = []
         updated_seats = []
         
+        # Batch fetch event seats
+        event_seat_ids = [t.event_seat_id for t in tickets if t.event_seat_id]
+        seat_map = {}
+        if event_seat_ids and self._event_seat_repository:
+            seats = await self._event_seat_repository.get_by_ids(tenant_id, event_seat_ids)
+            seat_map = {s.id: s for s in seats}
+        
         for ticket in tickets:
             # Release the ticket back to available
             try:
@@ -282,24 +292,19 @@ class BookingCommandHandler(BaseApplicationHandler):
                 logger.warning(f"Cannot release ticket {ticket.id}: {e}")
             
             # Release the event seat
-            if ticket.event_seat_id and self._event_seat_repository:
-                event_seat = await self._event_seat_repository.get_by_id(tenant_id, ticket.event_seat_id)
-                if event_seat:
-                    try:
-                        event_seat.release()
-                        updated_seats.append(event_seat)
-                    except BusinessRuleError as e:
-                        logger.warning(f"Cannot release event seat {ticket.event_seat_id}: {e}")
+            if ticket.event_seat_id and ticket.event_seat_id in seat_map:
+                event_seat = seat_map[ticket.event_seat_id]
+                try:
+                    event_seat.release()
+                    updated_seats.append(event_seat)
+                except BusinessRuleError as e:
+                    logger.warning(f"Cannot release event seat {ticket.event_seat_id}: {e}")
         
-        # Save all updated tickets
+        # Batch save tickets and seats
         if updated_tickets:
-            for ticket in updated_tickets:
-                await self._ticket_repository.save(ticket)
-        
-        # Save all updated event seats
+            await self._ticket_repository.save_all(updated_tickets)
         if updated_seats and self._event_seat_repository:
-            for seat in updated_seats:
-                await self._event_seat_repository.save(seat)
+            await self._event_seat_repository.save_all(updated_seats)
 
 
 

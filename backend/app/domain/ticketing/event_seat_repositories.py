@@ -30,6 +30,10 @@ class EventSeatRepository(ABC):
         """Retrieve event seat by identifier scoped to tenant"""
 
     @abstractmethod
+    async def get_by_ids(self, tenant_id: str, event_seat_ids: List[str]) -> List[EventSeat]:
+        """Retrieve event seats by IDs scoped to tenant (batch fetch)"""
+
+    @abstractmethod
     async def get_by_event(
         self,
         tenant_id: str,

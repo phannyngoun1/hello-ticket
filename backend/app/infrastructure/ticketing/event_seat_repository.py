@@ -116,6 +116,21 @@ class SQLEventSeatRepository(EventSeatRepository):
             model = session.exec(statement).first()
             return self._mapper.to_domain(model) if model else None
 
+    async def get_by_ids(self, tenant_id: str, event_seat_ids: List[str]) -> List[EventSeat]:
+        """Get event seats by IDs (batch fetch)"""
+        if not event_seat_ids:
+            return []
+        with self._session_factory() as session:
+            statement = select(EventSeatModel).where(
+                and_(
+                    EventSeatModel.id.in_(event_seat_ids),
+                    EventSeatModel.tenant_id == tenant_id,
+                    EventSeatModel.is_deleted == False
+                )
+            )
+            models = session.exec(statement).all()
+            return [self._mapper.to_domain(m) for m in models]
+
     async def get_by_event(
         self,
         tenant_id: str,

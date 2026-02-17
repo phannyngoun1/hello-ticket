@@ -168,6 +168,13 @@ class PaymentCommandHandler:
         updated_tickets = []
         updated_seats = []
         
+        # Batch fetch event seats (avoids N+1 queries)
+        event_seat_ids = [t.event_seat_id for t in tickets if t.event_seat_id]
+        seat_map = {}
+        if event_seat_ids and self._event_seat_repository:
+            seats = await self._event_seat_repository.get_by_ids(tenant_id, event_seat_ids)
+            seat_map = {s.id: s for s in seats}
+        
         for ticket in tickets:
             # Confirm the ticket
             try:
@@ -177,24 +184,19 @@ class PaymentCommandHandler:
                 logger.warning(f"Cannot confirm ticket {ticket.id}: {e}")
             
             # Mark the event seat as sold
-            if ticket.event_seat_id and self._event_seat_repository:
-                event_seat = await self._event_seat_repository.get_by_id(tenant_id, ticket.event_seat_id)
-                if event_seat:
-                    try:
-                        event_seat.sell()
-                        updated_seats.append(event_seat)
-                    except BusinessRuleError as e:
-                        logger.warning(f"Cannot mark event seat {ticket.event_seat_id} as sold: {e}")
+            if ticket.event_seat_id and ticket.event_seat_id in seat_map:
+                event_seat = seat_map[ticket.event_seat_id]
+                try:
+                    event_seat.sell()
+                    updated_seats.append(event_seat)
+                except BusinessRuleError as e:
+                    logger.warning(f"Cannot mark event seat {ticket.event_seat_id} as sold: {e}")
         
-        # Save all updated tickets
+        # Batch save tickets and seats (avoids N sequential round-trips)
         if updated_tickets:
-            for ticket in updated_tickets:
-                await self._ticket_repository.save(ticket)
-        
-        # Save all updated event seats
+            await self._ticket_repository.save_all(updated_tickets)
         if updated_seats and self._event_seat_repository:
-            for seat in updated_seats:
-                await self._event_seat_repository.save(seat)
+            await self._event_seat_repository.save_all(updated_seats)
         
         logger.info(
             "Confirmed %d tickets and marked %d event-seats as sold for booking %s",

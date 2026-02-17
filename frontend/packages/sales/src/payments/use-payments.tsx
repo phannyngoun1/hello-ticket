@@ -18,6 +18,8 @@ export function useCreatePayment(service: PaymentService) {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       // Invalidate payments for this booking
       queryClient.invalidateQueries({ queryKey: ["payments", "booking", data.booking_id] });
+      // Invalidate event seats so seat status (sold) updates immediately in Event Inventory
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     },
   });
 }
@@ -50,6 +52,8 @@ export function useVoidPayment(service: PaymentService) {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       // Invalidate payments for this booking
       queryClient.invalidateQueries({ queryKey: ["payments", "booking", data.booking_id] });
+      // Invalidate event seats so seat status updates after void (e.g. back to available)
+      queryClient.invalidateQueries({ queryKey: ["events"] });
     },
   });
 }
