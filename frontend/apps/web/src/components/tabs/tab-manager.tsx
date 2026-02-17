@@ -52,6 +52,7 @@ import {
 
 const TABS_STORAGE_KEY = "app_tabs";
 const ENABLE_TABS_STORAGE_KEY = "enable_tabs";
+const TABS_LAST_USED_STORAGE_KEY = "app_tabs_last_used";
 
 export interface AppTab {
   id: string;
@@ -73,6 +74,10 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
   const location = useLocation();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const activeTabRef = useRef<HTMLDivElement>(null);
+  // Track last-used time per tab for MRU (Most Recently Used) - like VS Code/Cursor
+  const lastUsedByTabIdRef = useRef<Record<string, number>>(
+    storage.get<Record<string, number>>(TABS_LAST_USED_STORAGE_KEY) ?? {},
+  );
 
   const [tabs, setTabs] = useState<AppTab[]>(() => {
     // Load saved tabs from localStorage
@@ -172,6 +177,10 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
           }
         }
 
+        lastUsedByTabIdRef.current[newTab.id] = Date.now();
+        storage.set(TABS_LAST_USED_STORAGE_KEY, {
+          ...lastUsedByTabIdRef.current,
+        });
         setActiveTabId(newTab.id);
         if (onTabChange) {
           onTabChange(newTab);
@@ -181,6 +190,10 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         return sortTabsWithPins(combined);
       } else {
         // Switch to existing tab
+        lastUsedByTabIdRef.current[currentTab.id] = Date.now();
+        storage.set(TABS_LAST_USED_STORAGE_KEY, {
+          ...lastUsedByTabIdRef.current,
+        });
         setActiveTabId(currentTab.id);
         if (onTabChange) {
           onTabChange(currentTab);
@@ -279,9 +292,16 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     [navigate],
   );
 
+  const recordTabUsed = useCallback((tabId: string) => {
+    const now = Date.now();
+    lastUsedByTabIdRef.current[tabId] = now;
+    storage.set(TABS_LAST_USED_STORAGE_KEY, { ...lastUsedByTabIdRef.current });
+  }, []);
+
   const handleTabClick = useCallback(
     (tab: AppTab) => {
       setUserInitiatedTabChange(true);
+      recordTabUsed(tab.id);
       setActiveTabId(tab.id);
       navigateToTabPath(tab.path);
       if (onTabChange) {
@@ -290,7 +310,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       // Reset the flag after a short delay
       setTimeout(() => setUserInitiatedTabChange(false), 100);
     },
-    [navigateToTabPath, onTabChange],
+    [navigateToTabPath, onTabChange, recordTabUsed],
   );
 
   const handleTabClose = useCallback(
@@ -300,32 +320,46 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
       const isClosingActiveTab = activeTabId === tabId;
       const newTabs = tabs.filter((tab) => tab.id !== tabId);
 
+      // Clean up lastUsed for closed tab to avoid storage bloat
+      delete lastUsedByTabIdRef.current[tabId];
+      storage.set(TABS_LAST_USED_STORAGE_KEY, { ...lastUsedByTabIdRef.current });
+
       setTabs(newTabs);
 
-      // Smart tab selection when closing the active tab
+      // Smart tab selection when closing the active tab (VS Code/Cursor behavior)
       if (isClosingActiveTab) {
         if (newTabs.length > 0) {
-          let nextTab;
+          // 1. MRU: pick tab with highest lastUsed (persisted across reloads)
+          const mruTab = newTabs.reduce(
+            (best, tab) => {
+              const bestTime = lastUsedByTabIdRef.current[best.id] ?? 0;
+              const tabTime = lastUsedByTabIdRef.current[tab.id] ?? 0;
+              return tabTime > bestTime ? tab : best;
+            },
+            newTabs[0],
+          );
+          const mruTime = lastUsedByTabIdRef.current[mruTab.id] ?? 0;
 
-          // Prefer next tab to the right first
-          if (tabIndex < newTabs.length) {
-            nextTab = newTabs[tabIndex];
-          } else {
-            // Fall back to previous tab if closing the last tab
-            nextTab = newTabs[tabIndex - 1];
-          }
+          // 2. When no usage data: prefer tab to the right, else left - like VS Code
+          const nextTab =
+            mruTime > 0
+              ? mruTab
+              : tabIndex < newTabs.length
+                ? newTabs[tabIndex]
+                : newTabs[tabIndex - 1];
 
-          // Navigate with a small delay for smooth transition
-          setTimeout(() => {
-            navigate({ to: nextTab.path });
-          }, 50);
+          // Update active tab immediately and navigate (handles query params correctly)
+          setActiveTabId(nextTab.id);
+          recordTabUsed(nextTab.id);
+          navigateToTabPath(nextTab.path);
         } else {
           // No more tabs, go to home
+          setActiveTabId(null);
           navigate({ to: "/" });
         }
       }
     },
-    [tabs, activeTabId, navigate],
+    [tabs, activeTabId, navigate, navigateToTabPath, recordTabUsed],
   );
 
   const handleCloseOthers = useCallback(() => {
