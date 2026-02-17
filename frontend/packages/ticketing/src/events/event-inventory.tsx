@@ -1008,10 +1008,10 @@ export function EventInventory({ eventId, className }: EventInventoryProps) {
           className="w-[600px] sm:w-[740px] sm:max-w-[740px] flex flex-col p-0 overflow-hidden"
           style={{ width: "600px", maxWidth: "740px" }}
         >
-          <SheetHeader className="px-6 pt-6 pb-4 ml-6 border-b flex-shrink-0">
+          <SheetHeader className="px-6 pt-3 pb-2 ml-6 border-b flex-shrink-0">
             <SheetTitle>Seat List ({totalSeats})</SheetTitle>
           </SheetHeader>
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-w-0">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 pt-3 pb-6 min-w-0">
             <EventSeatList
               eventSeats={eventSeats}
               isLoading={seatsLoading}

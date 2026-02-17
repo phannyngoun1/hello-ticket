@@ -236,6 +236,8 @@ export interface ButtonTabsProps {
   value?: string;
   /** Callback when tab changes */
   onValueChange?: (value: string) => void;
+  /** Compact styling - smaller padding, text, and gaps */
+  compact?: boolean;
   /** Additional className for root */
   className?: string;
   /** Additional className for tab button */
@@ -257,6 +259,7 @@ export function ButtonTabs({
   defaultValue,
   value,
   onValueChange,
+  compact = false,
   className,
   tabClassName,
   contentClassName,
@@ -284,8 +287,8 @@ export function ButtonTabs({
   return (
     <div className={cn("", className)}>
       {/* Tab Bar */}
-      <div className="border-b mb-4">
-        <div className="flex gap-4">
+      <div className={cn("border-b", compact ? "mb-2" : "mb-4")}>
+        <div className={cn("flex", compact ? "gap-1.5" : "gap-4")}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = currentValue === tab.value;
@@ -294,7 +297,10 @@ export function ButtonTabs({
               <button
                 key={tab.value}
                 className={cn(
-                  "border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+                  "border-b-2 font-medium transition-colors",
+                  compact
+                    ? "px-2 py-1 text-xs"
+                    : "px-4 py-2 text-sm",
                   isActive
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground",
@@ -304,8 +310,12 @@ export function ButtonTabs({
                 onClick={() => !tab.disabled && handleTabChange(tab.value)}
                 disabled={tab.disabled}
               >
-                <span className="flex items-center gap-2">
-                  {Icon && <Icon className="h-4 w-4" />}
+                <span
+                  className={cn("flex items-center", compact ? "gap-1" : "gap-2")}
+                >
+                  {Icon && (
+                    <Icon className={compact ? "h-3 w-3" : "h-4 w-4"} />
+                  )}
                   {tab.label}
                 </span>
               </button>

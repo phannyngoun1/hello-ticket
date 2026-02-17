@@ -626,13 +626,14 @@ export function EventSeatList({
   }
 
   return (
-    <div className={cn("space-y-4 min-w-0", className)}>
+    <div className={cn("space-y-3 min-w-0", className)}>
       {/* Status Tabs */}
       <ButtonTabs
         tabs={statusTabs}
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as EventSeatStatus)}
-        className="mb-4"
+        compact
+        className="mb-2"
       />
 
       {/* Search, Filter and Actions */}
