@@ -57,14 +57,14 @@ class AuditEventHandler(DomainEventHandler):
         )
         
         context = get_audit_context()
+        from app.shared.tenant_context import get_tenant_context
+        tenant_id = get_tenant_context() or 'unknown'
         if not context:
             # No context means this event happened outside a request (e.g., background job)
             # Still log but with minimal context
-            from app.shared.tenant_context import get_tenant_context
-            tenant_id = get_tenant_context() or 'unknown'
-            
             audit_event = AuditLogEvent(
                 event_type=AuditEventType.UPDATE,
+                tenant_id=tenant_id,
                 entity_type=event.__class__.__name__.replace("Event", "").lower(),
                 entity_id=getattr(event, 'user_id', None) or getattr(event, 'order_id', None) or 'unknown',
                 description=f"Domain event: {event.event_type()}",
@@ -85,7 +85,7 @@ class AuditEventHandler(DomainEventHandler):
                 description=f"Domain event: {event.event_type()}",
                 severity=AuditSeverity.LOW
             )
-            
+            audit_event.tenant_id = audit_event.tenant_id or tenant_id
             # Add event-specific data
             audit_event.metadata.update({
                 "domain_event_id": event.event_id,

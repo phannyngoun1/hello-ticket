@@ -68,9 +68,9 @@ class AsyncAuditLogger(AuditLogger):
             session = await get_async_session()
             
             try:
-                # Convert events to database records
-                records = []
-                tenant_id = get_tenant_context() or 'unknown'
+                # Convert events to database records (use tenant_id from each event;
+                # fallback to context for events created before tenant_id was added)
+                fallback_tenant = get_tenant_context() or 'unknown'
                 
                 # Convert events to AuditLogModel instances
                 # This approach lets SQLAlchemy handle type conversions properly
@@ -95,6 +95,7 @@ class AsyncAuditLogger(AuditLogger):
                     from datetime import datetime, timezone
                     event_ts = event.event_timestamp if event.event_timestamp else datetime.now(timezone.utc)
                     
+                    tenant_id = getattr(event, 'tenant_id', None) or fallback_tenant
                     model = AuditLogModel(
                         id=log_id,
                         tenant_id=tenant_id,

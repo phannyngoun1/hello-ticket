@@ -303,5 +303,14 @@ async def run_shutdown_tasks() -> None:
     This is called when the application is shutting down.
     """
     logger.info("Shutting down application...")
-    # Add any cleanup tasks here if needed
+    try:
+        from app.shared.container import container
+        from app.infrastructure.shared.audit.audit_logger import AuditLogger
+        from app.infrastructure.shared.audit.async_audit_logger import AsyncAuditLogger
+        audit_logger = container.resolve(AuditLogger)
+        if isinstance(audit_logger, AsyncAuditLogger) and hasattr(audit_logger, "shutdown"):
+            await audit_logger.shutdown()
+            logger.info("✓  Flushed audit log buffer")
+    except Exception as e:
+        logger.warning(f"Could not flush audit buffer on shutdown: {e}")
 

@@ -47,6 +47,9 @@ class AuditLogEvent:
     event_type: AuditEventType = AuditEventType.READ
     severity: AuditSeverity = AuditSeverity.LOW
     
+    # Tenant (set at creation so flush can use it when request context is gone)
+    tenant_id: Optional[str] = None
+    
     # Entity information
     entity_type: str = ""
     entity_id: str = ""
@@ -191,9 +194,11 @@ class AuditContext:
         parent_entity_id: Optional[str] = None
     ) -> AuditLogEvent:
         """Create audit event with context"""
+        from app.shared.tenant_context import get_tenant_context
         event = AuditLogEvent(
             event_type=event_type,
             severity=severity,
+            tenant_id=get_tenant_context(),
             entity_type=entity_type,
             entity_id=entity_id,
             parent_entity_type=parent_entity_type,
@@ -297,11 +302,13 @@ async def create_audit_event(
         # Fallback for non-HTTP contexts (background jobs, system operations)
         from app.shared.utils import generate_id
 
+        from app.shared.tenant_context import get_tenant_context
         audit_event = AuditLogEvent(
             event_id=generate_id(),
             event_timestamp=datetime.now(timezone.utc),  # When business event occurred
             event_type=event_type,
             severity=severity,
+            tenant_id=get_tenant_context(),
             entity_type=entity_type,
             entity_id=entity_id,
             parent_entity_type=parent_entity_type,
@@ -318,9 +325,13 @@ async def create_audit_event(
 
 async def log_audit_event(event: AuditLogEvent) -> None:
     """Log audit event using logger from context"""
-    logger = _audit_logger_var.get()
-    if logger:
-        await logger.log_event(event)
+    audit_logger = _audit_logger_var.get()
+    if audit_logger:
+        await audit_logger.log_event(event)
+    else:
+        logger.debug(
+            "Audit event not logged: no audit logger in context (middleware may not have set it)"
+        )
 
 
 def get_audit_context() -> Optional[AuditContext]:
