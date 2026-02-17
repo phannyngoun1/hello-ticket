@@ -153,7 +153,7 @@ export function SectionCreationToolbar({
           onChange={(e) => setName(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Section Name (e.g. Stage)"
-          className="h-6 text-xs w-36 min-w-36"
+          className="h-6 text-xs w-44 min-w-44"
         />
         <div className="flex items-center gap-1">
           <button

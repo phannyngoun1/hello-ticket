@@ -4,7 +4,6 @@ import type { SeatMarker, SectionMarker } from "../../types";
 import type { ShapeToolboxProps, ShapeToolboxStyle } from "./types";
 import { ShapeToolbarSection } from "./shape-toolbar-section";
 import { AlignmentToolbarSection } from "./alignment-toolbar-section";
-import { ColorControlsSection } from "./color-controls-section";
 import { SizeControlsSection } from "./size-controls-section";
 import { MarkerActionsSection } from "./marker-actions-section";
 
@@ -83,12 +82,6 @@ export function ShapeToolbox({
         ? (style: ShapeToolboxStyle) => onSectionShapeStyleChange(selectedSection.id, style)
         : undefined;
 
-  const showColorControls =
-    !readOnly &&
-    selectedMarker &&
-    onStyleChange &&
-    (selectedSeat || (selectedSection && selectedSection.shape));
-
   const isEditMode = !!(selectedSeat && seatEditControls);
 
   return (
@@ -115,13 +108,6 @@ export function ShapeToolbox({
               {seatPlacementControls}
             </div>
           )}
-
-        {!isEditMode && showColorControls && (
-          <ColorControlsSection
-            markerShape={markerShape}
-            onStyleChange={onStyleChange}
-          />
-        )}
 
         {!isEditMode && markerShape && (
           <SizeControlsSection

@@ -45,6 +45,16 @@ export function SeatEditControls({
     if (section) form.setValue("sectionId", section.id);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      form.handleSubmit(onSave)();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
   return (
     <div className={cn("flex items-center gap-2 flex-wrap", !standalone && "border-l pl-2.5")}>
       <span className="text-xs font-medium text-muted-foreground whitespace-nowrap shrink-0">
@@ -59,7 +69,7 @@ export function SeatEditControls({
             onValueChange={handleSectionChange}
             disabled={!!viewingSection}
           >
-            <SelectTrigger className="h-6 text-xs w-20 min-w-20">
+            <SelectTrigger className="h-6 text-xs w-28 min-w-28">
               <SelectValue placeholder="Section" />
             </SelectTrigger>
             <SelectContent>
@@ -78,8 +88,9 @@ export function SeatEditControls({
         render={({ field }) => (
           <Input
             {...field}
-            className="h-6 text-xs w-10"
+            className="h-6 text-xs w-14 min-w-14"
             placeholder="Row"
+            onKeyDown={handleKeyDown}
           />
         )}
       />
@@ -89,8 +100,9 @@ export function SeatEditControls({
         render={({ field }) => (
           <Input
             {...field}
-            className="h-6 text-xs w-10"
+            className="h-6 text-xs w-14 min-w-14"
             placeholder="#"
+            onKeyDown={handleKeyDown}
           />
         )}
       />
@@ -99,7 +111,7 @@ export function SeatEditControls({
         control={form.control}
         render={({ field }) => (
           <Select value={field.value} onValueChange={field.onChange}>
-            <SelectTrigger className="h-6 text-xs w-20">
+            <SelectTrigger className="h-6 text-xs w-28 min-w-28">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
