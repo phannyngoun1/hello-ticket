@@ -298,6 +298,17 @@ export class SessionMonitor {
     }
 
     /**
+     * Check if user has been idle (no interaction) for at least the idle timeout period.
+     * Used to distinguish "session timeout due to inactivity" from "401 during active use".
+     */
+    hasUserBeenIdle(): boolean {
+        const idleTimeoutMinutes = this.sessionConfig?.idle_timeout_minutes ?? this.config.idleTimeoutMinutes;
+        const idleTimeoutMs = idleTimeoutMinutes * 60 * 1000;
+        const timeSinceActivity = Date.now() - this.lastUserActivityTime;
+        return timeSinceActivity >= idleTimeoutMs;
+    }
+
+    /**
      * Get current token expiration info
      */
     getExpirationInfo(): { expiration: Date | null; timeUntilExpiration: number | null; isExpired: boolean } {

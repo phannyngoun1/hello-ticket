@@ -17,15 +17,24 @@ export function SessionProvider({ children }: SessionProviderProps) {
 
   const showSessionExpiredDialog = useCallback(() => {
     // Check if there was a previous login by checking for last_username
-    // If no previous login, redirect to login page instead of showing dialog
     const lastUsername = storage.get<string>("last_username");
     if (!lastUsername) {
-      // No previous login - redirect to login page
-      // Use window.location.href for reliable redirect outside React Router context
       window.location.href = "/login";
       return;
     }
-    // Previous login exists - show session expired dialog
+
+    // Only show "Session Timeout" dialog when user has been idle (no interaction) for a period.
+    // When 401 occurs during active use, redirect to login instead.
+    const monitor = getSessionMonitor();
+    const wasIdle = monitor?.hasUserBeenIdle() ?? false;
+
+    if (!wasIdle) {
+      // User was actively using the system - redirect to login (session invalidated)
+      window.location.href = "/login";
+      return;
+    }
+
+    // User was idle - show session timeout dialog to re-enter credentials
     setIsDialogOpen(true);
   }, []);
 
@@ -141,6 +150,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
       <SessionExpiredDialog
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
+        title="Session Timeout"
+        description="You have been inactive for a while. Please log in again to continue your work."
       />
       <SessionWarningDialog
         open={isWarningDialogOpen}
