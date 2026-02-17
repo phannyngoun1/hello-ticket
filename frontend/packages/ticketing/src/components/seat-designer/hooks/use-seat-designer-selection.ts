@@ -17,15 +17,20 @@ export function useSeatDesignerSelection({
     const [selectedSectionMarker, setSelectedSectionMarker] = useState<SectionMarker | null>(null);
 
     // Sync selected markers when underlying data changes (e.g. after name edit)
-    // so the toolbox displays the updated name immediately
+    // or when selection changes (e.g. rect/multi-select) - preserve multi-select by clearing
+    // single-selection state when count !== 1
     useEffect(() => {
         if (selectedSeatIds.length === 1) {
             const seat = seats.find((s) => s.id === selectedSeatIds[0]) ?? null;
             setSelectedSeat(seat);
+        } else {
+            setSelectedSeat(null);
         }
         if (selectedSectionIds.length === 1) {
             const section = sectionMarkers.find((s) => s.id === selectedSectionIds[0]) ?? null;
             setSelectedSectionMarker(section);
+        } else {
+            setSelectedSectionMarker(null);
         }
     }, [seats, sectionMarkers, selectedSeatIds, selectedSectionIds]);
 
@@ -54,29 +59,49 @@ export function useSeatDesignerSelection({
         }
     }, []);
 
+    // Update only derived state (selectedSeat, selectedSectionMarker) - used from inside
+    // setState callbacks to avoid nested setState which corrupts shift+select
+    const updateDerivedSelection = useCallback((
+        newSeatIds: string[],
+        newSectionIds: string[],
+    ) => {
+        if (newSeatIds.length === 1) {
+            const seat = seats.find((s) => s.id === newSeatIds[0]) ?? null;
+            setSelectedSeat(seat);
+        } else {
+            setSelectedSeat(null);
+        }
+        if (newSectionIds.length === 1) {
+            const section = sectionMarkers.find((s) => s.id === newSectionIds[0]) ?? null;
+            setSelectedSectionMarker(section);
+        } else {
+            setSelectedSectionMarker(null);
+        }
+    }, [seats, sectionMarkers]);
+
     const handleSeatClick = useCallback((seat: SeatMarker, e?: { shiftKey?: boolean; cancelBubble?: boolean }) => {
         if (e && e.cancelBubble !== undefined) e.cancelBubble = true;
         const seatId = seat.id;
         const isShift = e?.shiftKey || false;
 
         setSelectedSeatIds((prev) => {
+            let newIds: string[];
             if (isShift) {
                 if (prev.includes(seatId)) {
-                    const newIds = prev.filter((id) => id !== seatId);
-                    handleSelectionChange(newIds, selectedSectionIds, seats, sectionMarkers);
-                    return newIds;
+                    newIds = prev.filter((id) => id !== seatId);
                 } else {
-                    const newIds = [...prev, seatId];
-                    handleSelectionChange(newIds, selectedSectionIds, seats, sectionMarkers);
-                    return newIds;
+                    newIds = [...prev, seatId];
                 }
             } else {
-                const newIds = [seatId];
-                handleSelectionChange(newIds, [], seats, sectionMarkers);
-                return newIds;
+                newIds = [seatId];
             }
+            updateDerivedSelection(newIds, isShift ? selectedSectionIds : []);
+            return newIds;
         });
-    }, [handleSelectionChange, selectedSectionIds, seats, sectionMarkers]);
+        if (!isShift) {
+            setSelectedSectionIds([]);
+        }
+    }, [updateDerivedSelection, selectedSectionIds]);
 
     const handleSectionClick = useCallback((section: SectionMarker, e?: { shiftKey?: boolean; cancelBubble?: boolean }) => {
         if (e && e.cancelBubble !== undefined) e.cancelBubble = true;
@@ -84,23 +109,23 @@ export function useSeatDesignerSelection({
         const isShift = e?.shiftKey || false;
 
         setSelectedSectionIds((prev) => {
+            let newIds: string[];
             if (isShift) {
                 if (prev.includes(sectionId)) {
-                    const newIds = prev.filter((id) => id !== sectionId);
-                    handleSelectionChange(selectedSeatIds, newIds, seats, sectionMarkers);
-                    return newIds;
+                    newIds = prev.filter((id) => id !== sectionId);
                 } else {
-                    const newIds = [...prev, sectionId];
-                    handleSelectionChange(selectedSeatIds, newIds, seats, sectionMarkers);
-                    return newIds;
+                    newIds = [...prev, sectionId];
                 }
             } else {
-                const newIds = [sectionId];
-                handleSelectionChange([], newIds, seats, sectionMarkers);
-                return newIds;
+                newIds = [sectionId];
             }
+            updateDerivedSelection(isShift ? selectedSeatIds : [], newIds);
+            return newIds;
         });
-    }, [handleSelectionChange, selectedSeatIds, seats, sectionMarkers]);
+        if (!isShift) {
+            setSelectedSeatIds([]);
+        }
+    }, [updateDerivedSelection, selectedSeatIds]);
 
     const handleDeselect = useCallback(() => {
         setSelectedSeatIds([]);
