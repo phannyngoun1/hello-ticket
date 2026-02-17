@@ -61,12 +61,11 @@ export function ShapeToolbox({
       : selectedSection && onSectionEdit
         ? () => onSectionEdit(selectedSection)
         : undefined;
+  // View button only for sections (not for seats in toolbar)
   const handleView =
-    selectedSeat && onSeatView
-      ? () => onSeatView(selectedSeat)
-      : selectedSection && onSectionView
-        ? () => onSectionView(selectedSection)
-        : undefined;
+    selectedSection && onSectionView
+      ? () => onSectionView(selectedSection)
+      : undefined;
   const handleDelete =
     selectedSeat && onSeatDelete
       ? () => onSeatDelete(selectedSeat)
