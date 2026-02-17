@@ -27,6 +27,7 @@ import {
   TagList,
   DescriptionSection,
   ButtonTabs,
+  RefreshButton,
 } from "@truths/custom-ui";
 import type { ButtonTabItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
@@ -46,6 +47,8 @@ export interface OrganizerDetailProps {
   onEdit?: (data: Organizer) => void;
 
   customActions?: (data: Organizer) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 
   onManageTags?: (data: Organizer) => void;
   onManageAttachments?: (data: Organizer) => void;
@@ -66,6 +69,8 @@ export function OrganizerDetail({
   onEdit,
 
   customActions,
+  onRefresh,
+  isRefetching = false,
 
   onManageTags,
   onManageAttachments,
@@ -247,6 +252,20 @@ export function OrganizerDetail({
 
           <div className="flex items-center gap-1.5">
             <ActionList
+              customActions={
+                onRefresh || customActions ? (
+                  <>
+                    {onRefresh && (
+                      <RefreshButton
+                        onRefresh={onRefresh}
+                        isRefetching={isRefetching}
+                        size="icon"
+                      />
+                    )}
+                    {customActions?.(data)}
+                  </>
+                ) : undefined
+              }
               actions={[
                 ...(editable && onEdit
                   ? [
@@ -281,7 +300,6 @@ export function OrganizerDetail({
                     ]
                   : []),
               ]}
-              customActions={customActions?.(data)}
             />
           </div>
         </div>

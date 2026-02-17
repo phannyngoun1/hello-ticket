@@ -58,6 +58,8 @@ export function UserListContainer({
     data: usersResponse,
     isLoading,
     error,
+    refetch,
+    isFetching,
   } = useUsers(userService, {
     filter: {
       ...filter,
@@ -315,6 +317,8 @@ export function UserListContainer({
         onUnlock={handleUnlock}
         onActivate={handleActivate}
         onDeactivate={handleDeactivate}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
         searchable
         showAvatar
         showRole

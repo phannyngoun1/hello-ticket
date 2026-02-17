@@ -13,6 +13,7 @@ import {
   createIdentifiedColumn,
   createTextColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Customer } from "../types";
@@ -28,6 +29,8 @@ export interface CustomerListProps {
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function CustomerList({
@@ -41,6 +44,8 @@ export function CustomerList({
   onSearch,
   onPageChange,
   onPageSizeChange,
+  onRefresh,
+  isRefetching = false,
 }: CustomerListProps) {
   const density = useDensityStyles();
 
@@ -161,6 +166,15 @@ export function CustomerList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
     </div>
   );

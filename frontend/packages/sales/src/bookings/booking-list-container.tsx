@@ -80,10 +80,10 @@ export function BookingListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useBookings(bookingService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useBookings(
+    bookingService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateBooking(bookingService);
   const deleteMutation = useDeleteBooking(bookingService);
@@ -224,6 +224,8 @@ export function BookingListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateBookingDialog

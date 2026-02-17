@@ -49,10 +49,10 @@ export function VenueListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useVenues(venueService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useVenues(
+    venueService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateVenue(venueService);
   const updateMutation = useUpdateVenue(venueService);
@@ -171,6 +171,8 @@ export function VenueListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateVenueDialog

@@ -42,7 +42,7 @@ function OrganizerDetailContent({
   attachmentService: AttachmentService;
 }) {
   const service = useOrganizerService();
-  const { data, isLoading, error, refetch } = useOrganizer(
+  const { data, isLoading, error, refetch, isFetching } = useOrganizer(
     service,
     organizerId ?? null,
   );
@@ -173,6 +173,8 @@ function OrganizerDetailContent({
         onManageTags={handleManageTags}
         onManageAttachments={handleManageAttachments}
         attachmentService={attachmentService}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
         profilePhotoComponent={
           data ? (
             <OrganizerProfilePhotoUpload

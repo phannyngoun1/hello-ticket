@@ -17,7 +17,10 @@ export interface ViewBookingPageProps {
 
 function BookingDetailContent({ bookingId }: { bookingId: string }) {
   const service = useBookingService();
-  const { data, isLoading, error } = useBooking(service, bookingId ?? null);
+  const { data, isLoading, error, refetch, isFetching } = useBooking(
+    service,
+    bookingId ?? null
+  );
 
   useEffect(() => {
     if (!data) return;
@@ -38,6 +41,8 @@ function BookingDetailContent({ bookingId }: { bookingId: string }) {
       loading={isLoading}
       error={error as Error | null}
       editable={true}
+      onRefresh={() => refetch()}
+      isRefetching={isFetching}
     />
   );
 }

@@ -52,10 +52,10 @@ export function ShowListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useShows(showService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useShows(
+    showService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateShow(showService);
   const updateMutation = useUpdateShow(showService);
@@ -152,6 +152,8 @@ export function ShowListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateShowDialog

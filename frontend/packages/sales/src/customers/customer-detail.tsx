@@ -43,6 +43,7 @@ import {
   CopyButton,
   TagList,
   ButtonTabs,
+  RefreshButton,
 } from "@truths/custom-ui";
 import type { ButtonTabItem } from "@truths/custom-ui";
 import { AttachmentService, FileUpload } from "@truths/shared";
@@ -79,6 +80,8 @@ export interface CustomerDetailProps {
   profilePhoto?: FileUpload | null;
   onProfilePhotoChange?: (photo: FileUpload | null) => void;
   customActions?: (cus: Customer) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function CustomerDetail({
@@ -100,6 +103,8 @@ export function CustomerDetail({
   profilePhoto,
   onProfilePhotoChange,
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: CustomerDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "overview" | "profile" | "account" | "social" | "metadata" | "documents"
@@ -324,6 +329,20 @@ export function CustomerDetail({
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5">
             <ActionList
+              customActions={
+                onRefresh || customActions ? (
+                  <>
+                    {onRefresh && (
+                      <RefreshButton
+                        onRefresh={onRefresh}
+                        isRefetching={isRefetching}
+                        size="icon"
+                      />
+                    )}
+                    {customActions?.(cus)}
+                  </>
+                ) : undefined
+              }
               actions={[
                 ...(cus && onCreateBooking
                   ? [
@@ -415,7 +434,6 @@ export function CustomerDetail({
                     ]
                   : []),
               ]}
-              customActions={customActions?.(cus)}
             />
           </div>
         </div>

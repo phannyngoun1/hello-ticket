@@ -14,6 +14,7 @@ import {
   createTextColumn,
   createDateTimeColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Venue } from "./types";
@@ -32,6 +33,8 @@ export interface VenueListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (venue: Venue) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function VenueList({
@@ -45,6 +48,8 @@ export function VenueList({
   onSearch,
   onPageChange,
   onPageSizeChange,
+  onRefresh,
+  isRefetching = false,
 }: VenueListProps) {
   const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -251,6 +256,15 @@ export function VenueList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
 
       <ConfirmationDialog

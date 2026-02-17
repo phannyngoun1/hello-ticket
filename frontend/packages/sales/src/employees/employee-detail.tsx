@@ -42,6 +42,7 @@ import {
   DocumentList,
   CopyButton,
   ButtonTabs,
+  RefreshButton,
 } from "@truths/custom-ui";
 import type { ButtonTabItem } from "@truths/custom-ui";
 import { Employee } from "./types";
@@ -65,6 +66,8 @@ export interface EmployeeDetailProps {
   profilePhotoComponent?: React.ReactNode;
 
   customActions?: (data: Employee) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function EmployeeDetail({
@@ -83,6 +86,8 @@ export function EmployeeDetail({
   profilePhotoComponent,
 
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: EmployeeDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "profile" | "contact" | "sales" | "metadata" | "documents"
@@ -245,6 +250,13 @@ export function EmployeeDetail({
           {/* Action Buttons */}
           <div className="flex items-center gap-1.5">
             <div className="flex items-center gap-1.5">
+              {onRefresh && (
+                <RefreshButton
+                  onRefresh={onRefresh}
+                  isRefetching={isRefetching}
+                  size="icon"
+                />
+              )}
               {customActions?.(data)}
               {editable && onEdit && (
                 <Button

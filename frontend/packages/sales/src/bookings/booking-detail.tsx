@@ -43,7 +43,7 @@ import { PaymentDialog } from "../payments/payment-dialog";
 import { VoidPaymentsDialog } from "../payments/void-payments-dialog";
 import { api } from "@truths/api";
 import type { Payment } from "../payments/types";
-import { CopyButton } from "@truths/custom-ui";
+import { CopyButton, RefreshButton } from "@truths/custom-ui";
 import { BookingInvoiceReceipt } from "./components/booking-invoice-receipt";
 
 export interface BookingDetailProps {
@@ -59,6 +59,8 @@ export interface BookingDetailProps {
   onPayment?: (booking: Booking) => void;
 
   customActions?: (data: Booking) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function BookingDetail({
@@ -73,6 +75,8 @@ export function BookingDetail({
   onPayment,
 
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: BookingDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "information" | "payments" | "metadata"
@@ -325,6 +329,13 @@ export function BookingDetail({
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
+              {onRefresh && (
+                <RefreshButton
+                  onRefresh={onRefresh}
+                  isRefetching={isRefetching}
+                  size="icon"
+                />
+              )}
               {customActions?.(data)}
               {/* Print Invoice & Receipt */}
               {data && (

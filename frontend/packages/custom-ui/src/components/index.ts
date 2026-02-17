@@ -222,6 +222,10 @@ export { DocumentList } from './document-list';
 export { CopyButton } from './copy-button';
 export type { CopyButtonProps } from './copy-button';
 
+// Refresh Button
+export { RefreshButton } from './refresh-button';
+export type { RefreshButtonProps } from './refresh-button';
+
 // Tag Badge
 export { TagBadge, TagList } from './tag-badge';
 export type { TagBadgeProps, TagListProps } from './tag-badge';

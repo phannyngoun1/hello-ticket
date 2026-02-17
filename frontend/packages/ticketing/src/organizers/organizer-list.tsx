@@ -12,6 +12,7 @@ import {
   createIdentifiedColumn,
   createTextColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Organizer } from "./types";
@@ -30,6 +31,8 @@ export interface OrganizerListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (organizer: Organizer) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function OrganizerList({
@@ -46,6 +49,8 @@ export function OrganizerList({
   onPageChange,
   onPageSizeChange,
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: OrganizerListProps) {
   const density = useDensityStyles();
 
@@ -171,8 +176,16 @@ export function OrganizerList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
-
     </div>
   );
 }

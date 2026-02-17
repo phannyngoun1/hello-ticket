@@ -14,6 +14,7 @@ import {
   DescriptionItem,
   DescriptionSection,
   ButtonTabs,
+  RefreshButton,
 } from "@truths/custom-ui";
 import type { ActionItem, ButtonTabItem } from "@truths/custom-ui";
 import { cn } from "@truths/ui/lib/utils";
@@ -48,6 +49,8 @@ export interface VenueDetailProps {
   profilePhotoComponent?: React.ReactNode;
 
   customActions?: (data: Venue) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function VenueDetail({
@@ -64,6 +67,8 @@ export function VenueDetail({
   profilePhotoComponent,
 
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: VenueDetailProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -212,7 +217,20 @@ export function VenueDetail({
           <ActionList
             actions={actionItems}
             maxVisibleActions={2}
-            customActions={customActions?.(data)}
+            customActions={
+              onRefresh || customActions ? (
+                <>
+                  {onRefresh && (
+                    <RefreshButton
+                      onRefresh={onRefresh}
+                      isRefetching={isRefetching}
+                      size="icon"
+                    />
+                  )}
+                  {customActions?.(data)}
+                </>
+              ) : undefined
+            }
             size="sm"
           />
         </div>

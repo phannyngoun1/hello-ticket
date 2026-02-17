@@ -44,10 +44,10 @@ export function EmployeeListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useEmployees(employeeService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useEmployees(
+    employeeService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateEmployee(employeeService);
 
@@ -125,6 +125,8 @@ export function EmployeeListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateEmployeeDialog

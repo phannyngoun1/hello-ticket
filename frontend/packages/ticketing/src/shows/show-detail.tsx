@@ -18,6 +18,7 @@ import {
   DescriptionSection,
   DescriptionItem,
   AuditLogs,
+  RefreshButton,
 } from "@truths/custom-ui";
 import type { ActionItem, ButtonTabItem } from "@truths/custom-ui";
 import {
@@ -58,6 +59,8 @@ export interface ShowDetailProps {
   onNavigateToVenue?: (venueId: string) => void;
 
   customActions?: (data: Show) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function ShowDetail({
@@ -75,6 +78,8 @@ export function ShowDetail({
   onNavigateToVenue,
 
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: ShowDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "profile" | "images" | "note" | "metadata" | "events"
@@ -450,7 +455,20 @@ export function ShowDetail({
           <ActionList
             actions={actionItems}
             maxVisibleActions={2}
-            customActions={customActions?.(data)}
+            customActions={
+              onRefresh || customActions ? (
+                <>
+                  {onRefresh && (
+                    <RefreshButton
+                      onRefresh={onRefresh}
+                      isRefetching={isRefetching}
+                      size="icon"
+                    />
+                  )}
+                  {customActions?.(data)}
+                </>
+              ) : undefined
+            }
             size="sm"
           />
         </div>

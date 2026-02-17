@@ -15,6 +15,7 @@ import {
   createTextColumn,
   createDateTimeColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import {
   Dialog,
@@ -127,6 +128,8 @@ export interface BookingListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (booking: Booking) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function BookingList({
@@ -144,6 +147,8 @@ export function BookingList({
   onPageChange,
   onPageSizeChange,
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: BookingListProps) {
   const density = useDensityStyles();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -348,6 +353,15 @@ export function BookingList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
 
       <Dialog open={cancelDialogOpen} onOpenChange={handleCancelDialogChange}>

@@ -73,6 +73,7 @@ import { api } from "@truths/api";
 import { API_CONFIG } from "@truths/config";
 import { useToast } from "@truths/ui";
 import { useDensityStyles } from "@truths/utils";
+import { RefreshButton } from "@truths/custom-ui";
 
 export interface UserDetailProps {
   className?: string;
@@ -91,6 +92,8 @@ export interface UserDetailProps {
   onUnlock?: (user: User) => Promise<void>;
   customActions?: (user: User) => React.ReactNode;
   onBack?: () => void;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function UserDetail({
@@ -110,6 +113,8 @@ export function UserDetail({
   onUnlock,
   customActions,
   onBack,
+  onRefresh,
+  isRefetching = false,
 }: UserDetailProps) {
   const [activeTab, setActiveTab] = useState<
     "profile" | "login" | "activity" | "metadata"
@@ -304,7 +309,16 @@ export function UserDetail({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">{customActions?.(user)}</div>
+          <div className="flex items-center gap-1.5">
+            {onRefresh && (
+              <RefreshButton
+                onRefresh={onRefresh}
+                isRefetching={isRefetching}
+                size="icon"
+              />
+            )}
+            {customActions?.(user)}
+          </div>
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -45,7 +45,7 @@ function EmployeeDetailContent({
   const [attachmentsDialogOpen, setAttachmentsDialogOpen] = useState(false);
 
   const updateMutation = useUpdateEmployee(service);
-  const { data, isLoading, error, refetch } = useEmployee(
+  const { data, isLoading, error, refetch, isFetching } = useEmployee(
     service,
     employeeId ?? null,
   );
@@ -118,6 +118,8 @@ function EmployeeDetailContent({
         attachmentService={attachmentService}
         onManageTags={() => setTagsDialogOpen(true)}
         onManageAttachments={() => setAttachmentsDialogOpen(true)}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
         profilePhotoComponent={
           data ? (
             <EmployeeProfilePhotoUpload

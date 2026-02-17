@@ -14,6 +14,7 @@ import {
   createTextColumn,
   createIdentifiedColumn,
   createActionsColumn,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Lock, Unlock, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@truths/ui/lib/utils";
@@ -51,6 +52,8 @@ export interface UserListProps {
   onUnlock?: (user: User) => void;
   onActivate?: (user: User) => void;
   onDeactivate?: (user: User) => void;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function UserList({
@@ -80,6 +83,8 @@ export function UserList({
   onUnlock,
   onActivate,
   onDeactivate,
+  onRefresh,
+  isRefetching = false,
 }: UserListProps) {
   const density = useDensityStyles();
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
@@ -409,6 +414,15 @@ export function UserList({
         }
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
 
       <UserFilterSheet

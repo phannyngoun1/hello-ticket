@@ -73,6 +73,7 @@ function CustomerDetailContent({
     isLoading,
     error,
     refetch,
+    isFetching,
   } = useCustomer(service, customerId ?? null);
   const updateMutation = useUpdateCustomer(service);
   const deleteMutation = useDeleteCustomer(service);
@@ -308,6 +309,8 @@ function CustomerDetailContent({
         onManageAttachments={handleManageAttachments}
         profilePhoto={profilePhoto}
         onProfilePhotoChange={handleProfilePhotoChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       {customer && (

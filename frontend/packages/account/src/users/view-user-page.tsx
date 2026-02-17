@@ -66,6 +66,8 @@ export function ViewUser({ userId, onBack, onUpdateTabTitle }: ViewUserProps) {
     data: user,
     isLoading,
     error,
+    refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["user", userId],
     queryFn: () => userService.fetchUser(userId),
@@ -331,6 +333,8 @@ export function ViewUser({ userId, onBack, onUpdateTabTitle }: ViewUserProps) {
         onLock={handleLock}
         onUnlock={handleUnlock}
         onBack={handleBack}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
       {user && (
         <EditUserDialog

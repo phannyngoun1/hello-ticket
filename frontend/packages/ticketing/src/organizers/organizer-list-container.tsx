@@ -44,10 +44,10 @@ export function OrganizerListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useOrganizers(organizerService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useOrganizers(
+    organizerService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateOrganizer(organizerService);
 
@@ -124,6 +124,8 @@ export function OrganizerListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateOrganizerDialog

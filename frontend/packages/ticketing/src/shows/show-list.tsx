@@ -13,6 +13,7 @@ import {
   createIdentifiedColumn,
   createTextColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Show } from "./types";
@@ -29,6 +30,8 @@ export interface ShowListProps {
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function ShowList({
@@ -42,6 +45,8 @@ export function ShowList({
   onSearch,
   onPageChange,
   onPageSizeChange,
+  onRefresh,
+  isRefetching = false,
 }: ShowListProps) {
   const density = useDensityStyles();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -220,6 +225,15 @@ export function ShowList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
 
       <ConfirmationDialog

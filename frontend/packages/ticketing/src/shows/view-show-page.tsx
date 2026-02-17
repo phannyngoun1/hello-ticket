@@ -47,7 +47,10 @@ function ShowDetailContent({
   onNavigateToVenue?: (venueId: string) => void;
 }) {
   const service = useShowService();
-  const { data, isLoading, error } = useShow(service, showId ?? null);
+  const { data, isLoading, error, refetch, isFetching } = useShow(
+    service,
+    showId ?? null
+  );
 
   useEffect(() => {
     if (!data) return;
@@ -70,6 +73,8 @@ function ShowDetailContent({
       editable={true}
       onNavigateToInventory={onNavigateToInventory}
       onNavigateToVenue={onNavigateToVenue}
+      onRefresh={() => refetch()}
+      isRefetching={isFetching}
     />
   );
 }

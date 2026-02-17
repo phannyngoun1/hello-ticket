@@ -61,10 +61,10 @@ export function CustomerListContainer({
     prevAutoOpenRef.current = !!autoOpenCreate;
   }, [autoOpenCreate]);
 
-  const { data, isLoading, error } = useCustomers(customerService, {
-    filter,
-    pagination,
-  });
+  const { data, isLoading, error, refetch, isFetching } = useCustomers(
+    customerService,
+    { filter, pagination }
+  );
 
   const createMutation = useCreateCustomer(customerService);
   const updateMutation = useUpdateCustomer(customerService);
@@ -202,6 +202,8 @@ export function CustomerListContainer({
         pagination={serverPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
       />
 
       <CreateCustomerDialog

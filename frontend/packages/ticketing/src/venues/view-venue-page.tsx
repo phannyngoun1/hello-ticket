@@ -48,7 +48,10 @@ function VenueDetailContent({
   onNavigateToSeatDesigner?: (venueId: string, layoutId: string) => void;
 }) {
   const service = useVenueService();
-  const { data, isLoading, error } = useVenue(service, venueId ?? null);
+  const { data, isLoading, error, refetch, isFetching } = useVenue(
+    service,
+    venueId ?? null
+  );
   const updateMutation = useUpdateVenue(service);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -100,6 +103,8 @@ function VenueDetailContent({
         editable={true}
         onEdit={handleEdit}
         onNavigateToSeatDesigner={onNavigateToSeatDesigner}
+        onRefresh={() => refetch()}
+        isRefetching={isFetching}
         profilePhotoComponent={
           data ? (
             <VenueProfilePhotoUpload

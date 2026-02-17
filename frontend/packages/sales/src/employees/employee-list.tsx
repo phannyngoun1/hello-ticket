@@ -14,6 +14,7 @@ import {
   createTextColumn,
   createDateTimeColumn,
   DataTable,
+  RefreshButton,
 } from "@truths/custom-ui";
 import { Pagination } from "@truths/shared";
 import type { Employee } from "./types";
@@ -30,6 +31,8 @@ export interface EmployeeListProps {
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   customActions?: (employee: Employee) => React.ReactNode;
+  onRefresh?: () => void;
+  isRefetching?: boolean;
 }
 
 export function EmployeeList({
@@ -44,6 +47,8 @@ export function EmployeeList({
   onPageChange,
   onPageSizeChange,
   customActions,
+  onRefresh,
+  isRefetching = false,
 }: EmployeeListProps) {
   const density = useDensityStyles();
 
@@ -174,6 +179,15 @@ export function EmployeeList({
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         loading={loading}
+        customActions={
+          onRefresh ? (
+            <RefreshButton
+              onRefresh={onRefresh}
+              isRefetching={isRefetching}
+              size="icon"
+            />
+          ) : undefined
+        }
       />
     </div>
   );
