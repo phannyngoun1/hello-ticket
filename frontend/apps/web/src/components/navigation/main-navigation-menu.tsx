@@ -118,6 +118,7 @@ export function MainNavigationMenu() {
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => authService.getCurrentUser(),
+    staleTime: 2 * 60 * 1000, // 2 min - shared across nav, dropdown, etc.
   });
   const { data } = useNavigation(navService, { enabled: !!currentUser });
   const navItems = data ?? [];

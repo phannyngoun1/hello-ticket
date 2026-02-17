@@ -110,8 +110,8 @@ async def sync_system_roles(tenant_id: Optional[str]) -> None:
         from app.infrastructure.core.rbac.role_repository import RoleRepository
         from app.infrastructure.shared.database.platform_connection import get_platform_session
         
-        # Get platform database session
-        platform_session = get_platform_session()
+        # Get platform database session (async - must await)
+        platform_session = await get_platform_session()
         
         try:
             # Create role repository and sync service

@@ -88,12 +88,13 @@ function CustomerDetailContent({
   const [profilePhoto, setProfilePhoto] = useState<FileUpload | null>(null);
 
   const { data: profilePhotoData, refetch: refetchProfilePhoto } = useQuery({
-    queryKey: ["profilePhoto", customer?.id, "customer"],
+    queryKey: ["profilePhoto", "customer", customer?.id],
     queryFn: () =>
       customer
         ? attachmentService.getProfilePhoto("customer", customer.id)
         : null,
     enabled: !!customer,
+    staleTime: 5 * 60 * 1000, // 5 min - matches EntityProfilePhoto, deduplicates
   });
 
   useEffect(() => {

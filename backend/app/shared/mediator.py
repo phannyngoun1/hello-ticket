@@ -154,7 +154,7 @@ class Mediator:
         
         # Log in development mode
         if self._is_dev_mode:
-            logger.info(f"⚙️  Invoking handler method: {handler_class_name}.{method_name}()")
+            logger.debug(f"Invoking handler: {handler_class_name}.{method_name}()")
         
         if hasattr(handler, method_name):
             method = getattr(handler, method_name)

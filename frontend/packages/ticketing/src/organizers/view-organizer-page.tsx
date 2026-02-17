@@ -56,12 +56,13 @@ function OrganizerDetailContent({
   const updateMutation = useUpdateOrganizer(service);
 
   const { data: profilePhotoData, refetch: refetchProfilePhoto } = useQuery({
-    queryKey: ["profilePhoto", organizerId, "organizer"],
+    queryKey: ["profilePhoto", "organizer", organizerId],
     queryFn: () =>
       organizerId
         ? attachmentService.getProfilePhoto("organizer", organizerId)
         : null,
     enabled: !!organizerId,
+    staleTime: 5 * 60 * 1000, // 5 min - matches EntityProfilePhoto, deduplicates
   });
 
   useEffect(() => {

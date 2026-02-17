@@ -29,10 +29,11 @@ export function ProfileDropdown({ className }: ProfileDropdownProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch current user data
+  // Fetch current user data (shared cache with nav, command palette)
   const { data: user, isLoading } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => authService.getCurrentUser(),
+    staleTime: 2 * 60 * 1000, // 2 min - reduce auth/me calls
   });
 
   const handleLogout = async () => {

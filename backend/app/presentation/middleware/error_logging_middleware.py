@@ -151,20 +151,31 @@ class ErrorLoggingMiddleware(BaseHTTPMiddleware):
         
         # Get user from request state if available
         user_id = getattr(request.state, "user_id", None)
-        
-        # Log request
-        logger.info(
-            "Request started",
-            extra={
-                "type": "request",
-                "method": method,
-                "path": path,
-                "query_params": query_params,
-                "client_ip": client_ip,
-                "tenant_id": tenant_id,
-                "user_id": user_id,
-            }
+
+        # Paths to log at DEBUG only (reduce noise from health checks, OPTIONS preflight)
+        _quiet_paths = ("/health", "/api/v1/health")
+        is_quiet = (
+            method == "OPTIONS"
+            or any(path.rstrip("/").startswith(p.rstrip("/")) for p in _quiet_paths)
         )
+
+        # Log request (include path in message for console visibility)
+        log_msg = f"{method} {path}"
+        if is_quiet:
+            logger.debug(log_msg, extra={"type": "request", "path": path})
+        else:
+            logger.info(
+                log_msg,
+                extra={
+                    "type": "request",
+                    "method": method,
+                    "path": path,
+                    "query_params": query_params,
+                    "client_ip": client_ip,
+                    "tenant_id": tenant_id,
+                    "user_id": user_id,
+                },
+            )
         
         try:
             # Process request
@@ -176,22 +187,27 @@ class ErrorLoggingMiddleware(BaseHTTPMiddleware):
             # Get response status code
             status_code = response.status_code
             
-            # Log response
-            log_level = "warning" if status_code >= 400 else "info"
-            logger.log(
-                logging.WARNING if log_level == "warning" else logging.INFO,
-                "Request completed",
-                extra={
-                    "type": "response",
-                    "method": method,
-                    "path": path,
-                    "status_code": status_code,
-                    "duration_ms": round(duration * 1000, 2),
-                    "client_ip": client_ip,
-                    "tenant_id": tenant_id,
-                    "user_id": user_id,
-                }
-            )
+            # Log response (include path, status, duration in message)
+            duration_ms = round(duration * 1000, 2)
+            log_msg = f"{method} {path} -> {status_code} ({duration_ms}ms)"
+            log_level = logging.WARNING if status_code >= 400 else logging.INFO
+            if is_quiet:
+                logger.debug(log_msg, extra={"type": "response", "path": path})
+            else:
+                logger.log(
+                    log_level,
+                    log_msg,
+                    extra={
+                        "type": "response",
+                        "method": method,
+                        "path": path,
+                        "status_code": status_code,
+                        "duration_ms": duration_ms,
+                        "client_ip": client_ip,
+                        "tenant_id": tenant_id,
+                        "user_id": user_id,
+                    },
+                )
             
             # Add performance header
             if isinstance(response, Response):

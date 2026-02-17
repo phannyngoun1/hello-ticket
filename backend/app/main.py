@@ -75,6 +75,9 @@ logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
 logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
 logging.getLogger('sqlalchemy.orm').setLevel(logging.WARNING)
 
+# Disable uvicorn access log (we use ErrorLoggingMiddleware for request/response)
+logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
@@ -324,5 +327,6 @@ if __name__ == "__main__":
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True
+        reload=True,
+        access_log=False,  # Use ErrorLoggingMiddleware for request logs
     )

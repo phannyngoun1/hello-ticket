@@ -18,7 +18,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     
     Configuration:
     - RATE_LIMIT_ENABLED: Enable/disable rate limiting (default: true in production)
-    - RATE_LIMIT_REQUESTS: Max requests per window (default: 100)
+    - RATE_LIMIT_REQUESTS: Max requests per window (default: 300)
     - RATE_LIMIT_WINDOW_SECONDS: Time window in seconds (default: 60)
     """
     
@@ -29,7 +29,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.enabled = enabled if enabled is not None else (
             os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
         )
-        self.max_requests = max_requests or int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+        self.max_requests = max_requests or int(os.getenv("RATE_LIMIT_REQUESTS", "300"))
         self.window_seconds = window_seconds or int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
         
         # In-memory storage (use Redis in production for distributed systems)
@@ -42,6 +42,10 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/openapi.json",
             "/.well-known",
+        ]
+        # Paths excluded only for GET (read-only, high-volume: profile photos, attachments)
+        self._excluded_for_get_paths = [
+            "/api/v1/shared/attachments/entity",
         ]
     
     def _get_client_identifier(self, request: Request) -> str:
@@ -86,10 +90,20 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         
         return False, request_count
     
+    def _should_skip_rate_limit(self, request: Request) -> bool:
+        """Check if request should skip rate limiting"""
+        if any(request.url.path.startswith(p) for p in self._excluded_paths):
+            return True
+        # Skip GET requests to read-only attachment endpoints (profile photos, etc.)
+        if request.method == "GET" and any(
+            request.url.path.startswith(p) for p in self._excluded_for_get_paths
+        ):
+            return True
+        return False
+
     async def dispatch(self, request: Request, call_next):
         """Process request with rate limiting"""
-        # Skip rate limiting for excluded paths
-        if any(request.url.path.startswith(path) for path in self._excluded_paths):
+        if self._should_skip_rate_limit(request):
             return await call_next(request)
         
         # Get client identifier

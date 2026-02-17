@@ -531,7 +531,6 @@ class EventSeatQueryHandler:
             blocked_seats = 0
 
             for status, count in status_counts:
-                print(f"DEBUG: Processing status={status}, count={count}, type={type(status)}")
                 if status == EventSeatStatusEnum.AVAILABLE:
                     available_seats = count
                 elif status == EventSeatStatusEnum.RESERVED:
@@ -543,7 +542,7 @@ class EventSeatQueryHandler:
                 elif status == EventSeatStatusEnum.BLOCKED:
                     blocked_seats = count
                 else:
-                    print(f"WARNING: Unhandled status: {status} (type: {type(status)})")
+                    pass  # Unhandled status - ignore
 
             return EventSeatStatistics(
                 total_seats=total_seats,

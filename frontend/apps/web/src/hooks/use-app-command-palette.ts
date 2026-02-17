@@ -59,6 +59,7 @@ export function useAppCommandPalette(
     queryKey: ["currentUser"],
     queryFn: () => authService.getCurrentUser(),
     enabled: open, // Only fetch when palette is open
+    staleTime: 2 * 60 * 1000, // 2 min - shared with nav, dropdown
   });
 
   const userId = currentUser?.id || currentUser?.sub || undefined;

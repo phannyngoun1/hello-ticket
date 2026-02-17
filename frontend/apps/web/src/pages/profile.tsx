@@ -21,7 +21,7 @@ export function ProfilePage() {
   // Check authentication on mount
   useRequireAuth();
 
-  // Fetch current user data
+  // Fetch current user data (shared cache)
   const {
     data: user,
     isLoading,
@@ -29,6 +29,7 @@ export function ProfilePage() {
   } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => authService.getCurrentUser(),
+    staleTime: 2 * 60 * 1000, // 2 min
   });
 
   if (isLoading) {

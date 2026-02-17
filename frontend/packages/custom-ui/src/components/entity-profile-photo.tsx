@@ -1,10 +1,13 @@
 /**
  * Entity Profile Photo Upload Component
  *
- * Generic component for uploading and managing profile photos for various entities
+ * Generic component for uploading and managing profile photos for various entities.
+ * Uses React Query for caching and deduplication - multiple instances for the same
+ * entity share one request.
  */
 
 import React, { useCallback, useRef, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button, Avatar, AvatarFallback, AvatarImage } from "@truths/ui";
 import { cn } from "@truths/ui/lib/utils";
 import { Camera, Loader2, Pencil } from "lucide-react";
@@ -52,54 +55,26 @@ export function EntityProfilePhoto({
 }: EntityProfilePhotoProps) {
   const [uploading, setUploading] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    currentPhoto?.url || defaultImageUrl || null
-  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update preview when currentPhoto or defaultImageUrl changes
+  // Fetch via React Query when parent doesn't provide currentPhoto - deduplicates requests
+  const { data: fetchedPhoto } = useQuery({
+    queryKey: ["profilePhoto", entityType, entityId],
+    queryFn: () => attachmentService.getProfilePhoto(entityType, entityId),
+    enabled: !currentPhoto?.url && !defaultImageUrl && !!entityId,
+    staleTime: 5 * 60 * 1000, // 5 min - reduce refetch when switching tabs
+  });
+
+  // Resolve preview: parent's currentPhoto > fetched > defaultImageUrl
+  const previewUrl =
+    currentPhoto?.url || fetchedPhoto?.url || defaultImageUrl || null;
+
+  // Notify parent when we fetch and get a result (for pages that don't fetch themselves)
   useEffect(() => {
-    if (currentPhoto?.url) {
-      setPreviewUrl(currentPhoto.url);
-      return;
+    if (fetchedPhoto?.url && onPhotoChange && !currentPhoto?.url) {
+      onPhotoChange(fetchedPhoto);
     }
-    
-    if (defaultImageUrl) {
-      setPreviewUrl(defaultImageUrl);
-      return;
-    }
-
-    // If neither is available, try to fetch from service
-    // This handles cases where entity doesn't have image URL field (like Employee)
-    // or when it's missing (fallback for Venue)
-    let isMounted = true;
-    
-    const fetchProfilePhoto = async () => {
-      try {
-        // Avoid fetching if we already have a preview URL that might be manually set? 
-        // No, we want to sync with props primarily.
-        // But if this is initial load and inputs are null, we fetch.
-        
-        const photo = await attachmentService.getProfilePhoto(entityType, entityId);
-        if (isMounted && photo?.url) {
-          setPreviewUrl(photo.url);
-          // We can optionally notify parent, but parent might default to null if it doesn't support the field
-          if (onPhotoChange) {
-            onPhotoChange(photo);
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${entityType} profile photo:`, error);
-      }
-    };
-
-    fetchProfilePhoto();
-
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhoto, defaultImageUrl, entityId, entityType]);
+  }, [fetchedPhoto, onPhotoChange, currentPhoto?.url]);
 
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
