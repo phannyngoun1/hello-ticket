@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { storage } from "@truths/utils";
 import {
@@ -209,23 +209,35 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
     getTabMetadataForPath,
   ]);
 
-  // Scroll active tab into view when it changes (except for user clicks)
-  useEffect(() => {
-    // Don't scroll if this was a user-initiated click
-    if (userInitiatedTabChange) return;
+  // Scroll active tab into view when it changes (including when user selects off-screen tab from dropdown)
+  // Use scrollTo + getBoundingClientRect instead of scrollIntoView to avoid double-scroll
+  // (scroll-smooth + scrollIntoView can cause: scroll to 0 first, then to target)
+  useLayoutEffect(() => {
+    const viewport = scrollViewportRef.current;
+    const tabEl = activeTabRef.current;
+    if (!viewport || !tabEl) return;
 
-    // Small timeout to ensure DOM is ready and layout is stable
-    const timer = setTimeout(() => {
-      if (activeTabRef.current) {
-        activeTabRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-      }
-    }, 10);
-    return () => clearTimeout(timer);
-  }, [activeTabId, tabs, userInitiatedTabChange]);
+    const runScroll = () => {
+      const viewportRect = viewport.getBoundingClientRect();
+      const tabRect = tabEl.getBoundingClientRect();
+      const tabLeftRelative = tabRect.left - viewportRect.left;
+      const targetScrollLeft =
+        viewport.scrollLeft +
+        tabLeftRelative -
+        viewportRect.width / 2 +
+        tabRect.width / 2;
+      const scrollLeft = Math.max(
+        0,
+        Math.min(targetScrollLeft, viewport.scrollWidth - viewport.clientWidth),
+      );
+      // Use "instant" to avoid smooth-scroll conflicts that cause double-scroll
+      viewport.scrollTo({ left: scrollLeft, behavior: "instant" });
+    };
+
+    // Defer to next frame so layout is fully complete (avoids race with other effects)
+    const rafId = requestAnimationFrame(runScroll);
+    return () => cancelAnimationFrame(rafId);
+  }, [activeTabId, tabs]);
 
   // Listen for dynamic tab title updates from pages (e.g., after data load)
   useEffect(() => {
@@ -672,7 +684,7 @@ export function TabManager({ onTabChange, inline = false }: TabManagerProps) {
         <div className="flex-1 min-w-0 overflow-hidden relative group/tabs-container">
           <div
             className={cn(
-              "flex items-center scroll-smooth tab-container",
+              "flex items-center tab-container",
               inline ? "gap-1.5" : "gap-0.5",
             )}
             ref={scrollViewportRef}
