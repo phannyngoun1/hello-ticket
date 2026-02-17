@@ -100,12 +100,7 @@ class AuditEventHandler(DomainEventHandler):
     def event_types(self) -> List[Type[DomainEvent]]:
         """Handle all domain events"""
         from app.domain.core.user.events import UserCreated, UserUpdated, UserDeactivated
-        from app.domain.events.order_events import OrderCreated, OrderConfirmed, OrderShipped, OrderCancelled
-        
-        return [
-            UserCreated, UserUpdated, UserDeactivated,
-            OrderCreated, OrderConfirmed, OrderShipped, OrderCancelled
-        ]
+        return [UserCreated, UserUpdated, UserDeactivated]
 
 
 class NotificationEventHandler(DomainEventHandler):
@@ -120,33 +115,17 @@ class NotificationEventHandler(DomainEventHandler):
         
         if event_type == "user.created":
             await self._handle_user_created(event)
-        elif event_type == "order.confirmed":
-            await self._handle_order_confirmed(event)
-        elif event_type == "order.shipped":
-            await self._handle_order_shipped(event)
     
     async def _handle_user_created(self, event) -> None:
         """Handle user creation notification"""
         # Send welcome email
         logger.info(f"Sending welcome email to {event.email}")
     
-    async def _handle_order_confirmed(self, event) -> None:
-        """Handle order confirmation notification"""
-        # Send order confirmation email
-        logger.info(f"Sending order confirmation for order {event.order_id}")
-    
-    async def _handle_order_shipped(self, event) -> None:
-        """Handle order shipped notification"""
-        # Send shipping notification
-        logger.info(f"Sending shipping notification for order {event.order_id}, tracking: {event.tracking_number}")
-    
     @property
     def event_types(self) -> List[Type[DomainEvent]]:
         """Handle specific notification events"""
         from app.domain.core.user.events import UserCreated
-        from app.domain.events.order_events import OrderConfirmed, OrderShipped
-        
-        return [UserCreated, OrderConfirmed, OrderShipped]
+        return [UserCreated]
 
 
 
