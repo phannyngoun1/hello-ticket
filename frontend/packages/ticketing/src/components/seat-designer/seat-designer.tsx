@@ -434,6 +434,19 @@ export function SeatDesigner({
     },
   });
 
+  // When selection changes while in edit mode, sync form to the newly selected seat
+  useEffect(() => {
+    if (isEditingSeat && selectedSeat) {
+      seatEditForm.reset({
+        section: selectedSeat.seat.section,
+        sectionId: selectedSeat.seat.sectionId,
+        row: selectedSeat.seat.row,
+        seatNumber: selectedSeat.seat.seatNumber,
+        seatType: selectedSeat.seat.seatType,
+      });
+    }
+  }, [isEditingSeat, selectedSeat?.id, seatEditForm]);
+
   const [showSaveConfirmDialog, setShowSaveConfirmDialog] = useState(false);
   const [isSectionCreationPending, setIsSectionCreationPending] =
     useState(false);
@@ -452,6 +465,28 @@ export function SeatDesigner({
   // Selected shape tool from toolbox
   const [selectedShapeTool, setSelectedShapeTool] =
     useState<PlacementShapeType | null>(null);
+
+  // When selection changes while in section edit mode, sync to the newly selected section
+  useEffect(() => {
+    if (
+      designMode === "section-level" &&
+      isSectionCreationPending &&
+      editingSectionId &&
+      selectedSectionMarker &&
+      selectedSectionMarker.id !== editingSectionId
+    ) {
+      setEditingSectionId(selectedSectionMarker.id);
+      if (selectedSectionMarker.shape) {
+        setPlacementShape(selectedSectionMarker.shape);
+        setSelectedShapeTool(selectedSectionMarker.shape.type);
+      }
+    }
+  }, [
+    designMode,
+    isSectionCreationPending,
+    editingSectionId,
+    selectedSectionMarker?.id,
+  ]);
 
   // When a shape tool is selected and user clicks on a seat/section, switch to select tool
   const handleSeatClickWithToolSwitch = useCallback(
